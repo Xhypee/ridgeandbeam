@@ -7,6 +7,7 @@ import { requireMoneyAccess } from "@/lib/dal";
 import { date, isoDate, label, money } from "@/lib/format";
 import { daysUntil } from "@/lib/production";
 import { netCredit, RETURN_STATUSES } from "@/lib/production-orders";
+import { listOrgSuppliers } from "@/lib/suppliers";
 import { addReturn, deleteOrder, markDelivered, sendOrder, setOrderStatus, setReturnStatus } from "../actions";
 import { OrderEditor } from "./order-editor";
 
@@ -17,17 +18,19 @@ const ORDER_TONE = { draft: "slate", sent: "amber", confirmed: "blue", delivered
 export default async function OrderPage({ params, searchParams }: PageProps<"/app/orders/[id]">) {
   const { id } = await params;
   const { empty } = await searchParams;
-  const { supabase } = await requireMoneyAccess();
+  const { supabase, org } = await requireMoneyAccess();
   const { data: o } = await supabase
     .from("material_orders")
-    .select("*, material_order_items(*), material_returns(*), jobs(id, title, site_address, customers(name))")
+    .select("*, material_order_items(*), material_returns(*), org_suppliers(account_number), jobs(id, title, site_address, customers(name))")
     .eq("id", id)
     .maybeSingle();
   if (!o) notFound();
   const job = o.jobs as { id: string; title: string; site_address: string | null; customers: { name: string } | null };
-  const items = ((o.material_order_items ?? []) as { position: number; description: string; sku: string | null; quantity: number; unit: string; unit_cost: number }[])
+  const items = ((o.material_order_items ?? []) as { position: number; description: string; sku: string | null; quantity: number; unit: string; unit_cost: number; calc_key: string | null; supplier_price_item_id: string | null }[])
     .sort((a, b) => a.position - b.position)
-    .map(({ description, sku, quantity, unit, unit_cost }) => ({ description, sku, quantity: Number(quantity), unit, unit_cost: Number(unit_cost) }));
+    .map(({ description, sku, quantity, unit, unit_cost, calc_key, supplier_price_item_id }) => ({ description, sku, quantity: Number(quantity), unit, unit_cost: Number(unit_cost), calc_key: calc_key ?? null, supplier_price_item_id: supplier_price_item_id ?? null }));
+  const suppliers = await listOrgSuppliers(supabase, org.id);
+  const account = (o.org_suppliers as { account_number: string | null } | null)?.account_number ?? null;
   const returns = (o.material_returns ?? []) as { id: string; description: string; quantity: number; credit_amount: number; restocking_fee: number; credit_window_ends_on: string | null; status: string; created_at: string }[];
   const today = isoDate(new Date());
   const locked = o.status === "delivered";
@@ -53,16 +56,19 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ap
       />
       {empty && <p className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">The job has no accepted estimate with material lines, so this order started blank.</p>}
       <p className="mb-4 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
-        Direct ordering through ABC Supply, SRS Roof Hub or QXO needs partner API credentials. Until then, “Send to branch” emails this structured order to the branch and you can print or export it.
+        “Send to branch” emails this order — product codes and quantities, no prices{account ? `, with your account number ${account}` : ""} — to the branch. You can also print it or download a CSV.
+        {suppliers.length === 0 && <> <Link href="/app/settings/suppliers" className="font-medium text-brand-600 hover:underline">Add your suppliers</Link> to use their product codes.</>}
       </p>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
+        <div className="min-w-0 space-y-6 lg:col-span-2">
           <Card title="Order">
             <OrderEditor
               locked={locked}
               items={items}
-              initial={{ id, supplier: o.supplier, branch: o.branch, branch_email: o.branch_email, branch_phone: o.branch_phone, po_number: o.po_number, color: o.color, delivery_date: o.delivery_date, delivery_type: o.delivery_type, notes: o.notes }}
+              suppliers={suppliers.map((s) => ({ id: s.id, name: s.name, hasSheet: Boolean(s.active_list), branch_name: s.branch_name, branch_email: s.branch_email, branch_phone: s.branch_phone }))}
+              legacySupplier={o.org_supplier_id ? null : o.supplier}
+              initial={{ id, org_supplier_id: o.org_supplier_id ?? null, branch: o.branch, branch_email: o.branch_email, branch_phone: o.branch_phone, po_number: o.po_number, color: o.color, delivery_date: o.delivery_date, delivery_type: o.delivery_type, notes: o.notes }}
             />
           </Card>
 
@@ -108,7 +114,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ap
           </Card>
         </div>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <Card title="Status">
             <ol className="mb-4 flex flex-wrap gap-1 text-xs">
               {["draft", "sent", "confirmed", "delivered"].map((s, i, arr) => (
@@ -119,7 +125,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ap
               <>
                 <ActionForm action={sendOrder} className="space-y-2">
                   <input type="hidden" name="id" value={id} />
-                  <Field label="Send to branch email"><Input name="to" type="email" defaultValue={o.branch_email ?? ""} placeholder="orders@branch.com" /></Field>
+                  <Field label="Send to branch email"><Input key={o.branch_email ?? ""} name="to" type="email" defaultValue={o.branch_email ?? ""} placeholder="orders@branch.com.au" /></Field>
                   <SubmitButton>Send to branch</SubmitButton>
                 </ActionForm>
                 <form action={setOrderStatus} className="mt-3 flex flex-wrap gap-2">
