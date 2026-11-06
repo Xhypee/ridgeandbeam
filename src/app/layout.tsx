@@ -6,7 +6,7 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: { default: "RoofDesk", template: "%s · RoofDesk" },
+  title: { default: "Ridge & Beam", template: "%s · Ridge & Beam" },
   description: "Estimates, jobs, scheduling, and invoicing for roofing contractors.",
 };
 

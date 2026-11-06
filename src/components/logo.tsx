@@ -6,7 +6,7 @@ export function Logo({ className = "" }: { className?: string }) {
         <path d="M6 17 16 8l10 9" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
         <path d="M10 15.5V24h12v-8.5" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinejoin="round" />
       </svg>
-      <span className="text-lg">RoofDesk</span>
+      <span className="text-lg">Ridge & Beam</span>
     </span>
   );
 }

@@ -20,7 +20,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         <SubmitButton className="w-full">Sign in</SubmitButton>
       </ActionForm>
       <p className="mt-6 text-center text-sm text-slate-500">
-        New to RoofDesk? <Link className="font-medium text-brand-600 hover:underline" href={`/signup?next=${encodeURIComponent(nextStr)}`}>Create an account</Link>
+        New to Ridge & Beam? <Link className="font-medium text-brand-600 hover:underline" href={`/signup?next=${encodeURIComponent(nextStr)}`}>Create an account</Link>
       </p>
     </>
   );

@@ -1,4 +1,4 @@
--- RoofDesk: multi-tenant roofing CRM / estimating / jobs / invoicing
+-- Ridge & Beam: multi-tenant roofing CRM / estimating / jobs / invoicing
 -- Every business table carries org_id and is protected by RLS via is_org_member().
 
 create extension if not exists pgcrypto;

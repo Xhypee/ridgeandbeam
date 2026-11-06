@@ -1,4 +1,4 @@
-// End-to-end walk through RoofDesk against local Supabase.
+// End-to-end walk through Ridge & Beam against local Supabase.
 const { chromium } = require("playwright");
 const BASE = "http://localhost:3000";
 const SHOTS = process.argv[2] || require("os").tmpdir();

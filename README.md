@@ -1,4 +1,4 @@
-# RoofDesk
+# Ridge & Beam
 
 Multi-tenant SaaS for roofing contractors: CRM, roof-measurement estimating, job pipeline and crew scheduling, invoicing and payments.
 

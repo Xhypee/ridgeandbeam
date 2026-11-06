@@ -3,7 +3,7 @@ import { Logo } from "@/components/logo";
 import { LinkButton } from "@/components/ui";
 
 const FEATURES = [
-  { title: "Estimates in minutes", body: "Enter plan area, pitch, and edge lengths. RoofDesk works out squares, waste, bundles, underlayment, ice & water, drip edge, ridge cap, and labor from your own price book." },
+  { title: "Estimates in minutes", body: "Enter plan area, pitch, and edge lengths. Ridge & Beam works out squares, waste, bundles, underlayment, ice & water, drip edge, ridge cap, and labor from your own price book." },
   { title: "Customers sign online", body: "Send a link. Homeowners review a clean, printable quote and accept it with a typed signature, and the job moves to Sold automatically." },
   { title: "Pipeline & scheduling", body: "Every job from lead to inspection to install to paid, on one board. Put crews on a weekly calendar, color-coded." },
   { title: "Invoices & payments", body: "Turn an accepted estimate into an invoice in one click. Record deposits and checks, and see what's overdue at a glance." },
@@ -28,7 +28,7 @@ export default function Home() {
           Measure, quote, schedule, and get paid, all in one place.
         </h1>
         <p className="mt-6 max-w-2xl text-lg text-slate-600">
-          RoofDesk replaces the spreadsheets, paper estimates, and whiteboard schedule. Your quote is ready before you&apos;re off the ladder.
+          Ridge & Beam replaces the spreadsheets, paper estimates, and whiteboard schedule. Your quote is ready before you&apos;re off the ladder.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <LinkButton href="/signup" className="px-5 py-3 text-base">Create your company</LinkButton>
@@ -47,7 +47,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="mt-auto border-t border-slate-100 py-6 text-center text-xs text-slate-400">© {new Date().getFullYear()} RoofDesk</footer>
+      <footer className="mt-auto border-t border-slate-100 py-6 text-center text-xs text-slate-400">© {new Date().getFullYear()} Ridge & Beam</footer>
     </div>
   );
 }
