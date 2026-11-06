@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { asAuState } from "@/lib/au";
+import { asAuState, isValidAbn } from "@/lib/au";
 import { getUser, ORG_COOKIE } from "@/lib/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/components/action-form";
@@ -11,6 +11,8 @@ export async function createCompany(_: ActionResult, fd: FormData): Promise<Acti
   const user = await getUser();
   const name = String(fd.get("name") ?? "").trim();
   if (!name) return { error: "Company name is required." };
+  const abn = String(fd.get("abn") ?? "").replace(/\s/g, "");
+  if (abn && !isValidAbn(abn)) return { error: "That ABN isn't valid. Check the 11 digits (it must pass the ATO check)." };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("create_organization", {
     p_name: name,
@@ -23,7 +25,7 @@ export async function createCompany(_: ActionResult, fd: FormData): Promise<Acti
   const gst = fd.get("gst_registered") === "on";
   await supabase
     .from("organizations")
-    .update({ phone: phone || null, state, service_states: state ? [state] : [], gst_registered: gst, tax_rate: gst ? 10 : 0 })
+    .update({ phone: phone || null, state, service_states: state ? [state] : [], gst_registered: gst, tax_rate: gst ? 10 : 0, abn: abn || null })
     .eq("id", orgId);
   (await cookies()).set(ORG_COOKIE, orgId, { path: "/", httpOnly: true, sameSite: "lax", maxAge: 60 * 60 * 24 * 365 });
   redirect("/app");

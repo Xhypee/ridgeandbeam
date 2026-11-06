@@ -116,7 +116,7 @@ async function noHorizontalScroll(page, what) {
   sql(`update customers set state = 'NSW', zip = '2026' where id = (select customer_id from jobs where id = '${jobId}')`);
 
   console.log("5. Quote: metric calculator, cut list, options, GST");
-  await page.click('button:has-text("New estimate")');
+  await page.click('button:has-text("New quote")');
   await page.waitForURL(/\/app\/estimates\/[0-9a-f-]+$/);
   const estUrl = page.url();
   const estId = estUrl.split("/").pop();

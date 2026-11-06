@@ -40,7 +40,7 @@ export async function createInvoice(fd: FormData) {
 export async function createInvoiceFromEstimate(fd: FormData) {
   const { supabase, org, user } = await requireOrg();
   const estimateId = String(fd.get("estimate_id"));
-  const { data: est } = await supabase.from("estimates").select("id, job_id, number, discount").eq("id", estimateId).single();
+  const { data: est } = await supabase.from("estimates").select("id, job_id, number, discount, gst_inclusive").eq("id", estimateId).single();
   if (!est) throw new Error("Quote not found.");
   const accepted = await acceptedEstimateTotal(supabase, est.job_id);
   const items = accepted && accepted.estimateId === est.id ? accepted.items : [];
@@ -50,7 +50,9 @@ export async function createInvoiceFromEstimate(fd: FormData) {
       org_id: org.id,
       job_id: est.job_id,
       estimate_id: est.id,
+      // Keep the quote's price basis: ex-GST quote lines must not be re-read as GST-inclusive (or vice versa).
       ...gstFor(org),
+      amounts_include_gst: est.gst_inclusive !== false,
       discount: est.discount,
       notes: `As per accepted quote #${est.number}.`,
       terms: org.invoice_terms,

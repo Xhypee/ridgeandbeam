@@ -78,7 +78,7 @@ const daysAgo = (n) => { const d = new Date(); d.setDate(d.getDate() - n); retur
   await page.fill('input[name="phone"]', "0412 345 678");
   await page.fill('input[name="address"]', "9 Storm Ct");
   await page.fill('input[name="city"]', "Penrith");
-  await page.fill('input[name="state"]', "NSW");
+  await page.selectOption('select[name="state"]', "NSW");
   await page.fill('input[name="zip"]', "2750");
   await page.fill('input[name="job_title"]', "Hail re-roof");
   await page.check('input[name="job_kind"][value="insurance"]');

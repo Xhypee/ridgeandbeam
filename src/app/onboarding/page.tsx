@@ -3,6 +3,7 @@ import { ActionForm, SubmitButton } from "@/components/action-form";
 import { Logo } from "@/components/logo";
 import { Field, Input, Select } from "@/components/ui";
 import { AU_STATES, AU_STATE_NAME } from "@/lib/au";
+import { AbnInput } from "@/app/app/settings/abn-input";
 import { getUser } from "@/lib/dal";
 import { createCompany } from "./actions";
 
@@ -26,6 +27,7 @@ export default async function OnboardingPage() {
             <Field label="Phone"><Input name="phone" type="tel" placeholder="04xx xxx xxx" /></Field>
             <Field label="State"><Select name="state" defaultValue="NSW" required>{AU_STATES.map((s) => <option key={s} value={s}>{AU_STATE_NAME[s]}</option>)}</Select></Field>
           </div>
+          <Field label="ABN" hint="Shown on every quote and tax invoice. You can add it later in Settings."><AbnInput defaultValue="" /></Field>
           <label className="flex items-center gap-2 text-sm text-slate-700">
             <input type="checkbox" name="gst_registered" defaultChecked className="h-5 w-5 accent-brand-500" />
             Registered for GST (quotes and tax invoices include 10% GST)
