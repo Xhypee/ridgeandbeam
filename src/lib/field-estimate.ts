@@ -15,12 +15,12 @@ export async function acceptedEstimateItems(db: SupabaseClient, jobId: string) {
   return { estimateId: est.id as string, optionId: est.selected_option_id as string | null, items: list };
 }
 
-/** Product names worth registering for warranty: shingles + warranty lines from the accepted estimate. */
+/** Product names worth lodging a manufacturer warranty for: roof sheeting, tiles, membrane, coatings and warranty lines from the accepted estimate. */
 export async function warrantyProducts(db: SupabaseClient, jobId: string) {
   const est = await acceptedEstimateItems(db, jobId);
   if (!est) return [];
   const names = est.items
-    .filter((i) => ["shingles", "warranty", "underlayment", "ridge_cap", "ice_water", "starter", "low_slope"].includes(i.calc_key ?? "") || /shingle|warranty|system/i.test(i.description))
+    .filter((i) => ["metal_sheet", "roof_tile", "membrane_roof", "roof_coating", "warranty"].includes(i.calc_key ?? "") || /colorbond|zincalume|warranty|system/i.test(i.description))
     .map((i) => i.description as string);
   return [...new Set(names)];
 }

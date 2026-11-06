@@ -16,7 +16,7 @@ export default async function ChangeOrdersPage({ params }: PageProps<"/app/jobs/
   if (!job) notFound();
   const [{ data: cos }, { data: deck }, { data: photos }] = await Promise.all([
     supabase.from("change_orders").select("id, title, status, created_at, approved_at, approved_name, approval_method, change_order_items(quantity, unit_price)").eq("job_id", id).order("created_at", { ascending: false }),
-    supabase.from("catalog_items").select("name, unit, unit_price, unit_cost").eq("org_id", job.org_id).eq("calc_key", "decking").order("tier", { nullsFirst: true }).limit(1).maybeSingle(),
+    supabase.from("catalog_items").select("name, unit, unit_price, unit_cost").eq("org_id", job.org_id).eq("calc_key", "tile_battens").order("tier", { nullsFirst: true }).limit(1).maybeSingle(),
     supabase.from("job_files").select("id, storage_path, caption").eq("job_id", id).eq("kind", "photo").order("created_at", { ascending: false }).limit(30),
   ]);
   const urls = await signPaths(supabase, (photos ?? []).map((p) => p.storage_path));
@@ -25,7 +25,7 @@ export default async function ChangeOrdersPage({ params }: PageProps<"/app/jobs/
       <div className="min-w-0 lg:col-span-3">
         <h2 className="mb-2 text-lg font-bold">New change order</h2>
         <ChangeOrderBuilder jobId={job.id} orgId={job.org_id}
-          decking={deck ? { name: deck.name, unit: deck.unit, unit_price: Number(deck.unit_price), unit_cost: Number(deck.unit_cost) } : null}
+          battens={deck ? { name: deck.name, unit: deck.unit, unit_price: Number(deck.unit_price), unit_cost: Number(deck.unit_cost) } : null}
           photos={(photos ?? []).map((p) => ({ id: p.id, url: urls.get(p.storage_path) ?? null, caption: p.caption }))} />
       </div>
       <div className="min-w-0 lg:col-span-2">

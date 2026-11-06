@@ -3,7 +3,7 @@ import { anonClient } from "@/lib/public";
 import { afterLeadCreated, normalizeLead, rateLimited } from "@/lib/leads";
 
 /**
- * Public lead intake: website forms (form-encoded or JSON), Zapier / Angi / Facebook lead-ad webhooks.
+ * Public lead intake: website forms (form-encoded or JSON), Zapier / hipages / Facebook lead-ad webhooks.
  * POST /api/leads/<intake key>   — CORS-enabled, honeypot field "_gotcha", rate limited per IP.
  */
 

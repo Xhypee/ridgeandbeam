@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { COUNT_CATEGORY } from "@/lib/field";
 import { backoffMs, newClientId, queue, type QueueItem } from "@/lib/field-queue";
 import { postStatusEvent } from "@/app/app/jobs/[id]/field/actions";
 
@@ -33,7 +34,7 @@ async function uploadOne(item: QueueItem): Promise<void> {
       {
         org_id: item.orgId, job_id: item.jobId, client_id: item.id, kind: item.kind ?? "photo", storage_path: storagePath,
         mime_type: item.mime ?? null, size_bytes: item.blob.size, caption: item.caption || null, category: item.category ?? "other",
-        slope: item.slope ?? null, test_square_hits: item.category === "test_square" ? (item.hits ?? 0) : null,
+        slope: item.slope ?? null, test_square_hits: item.category === COUNT_CATEGORY ? (item.hits ?? 0) : null,
         annotations, taken_at: item.takenAt ?? null, uploaded_by: userId,
       },
       { onConflict: "org_id,client_id", ignoreDuplicates: true },

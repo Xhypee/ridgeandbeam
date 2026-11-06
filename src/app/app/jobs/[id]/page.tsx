@@ -5,7 +5,7 @@ import { Badge, Card, Field, Input, Select, Textarea, cx } from "@/components/ui
 import { requireOrg } from "@/lib/dal";
 import { date, daysSince, money, STAGE_LABEL, STATUS_TONE, label } from "@/lib/format";
 import { EVENT_LABEL } from "@/lib/field";
-import { jobReadiness, type ReadinessJob } from "@/lib/production";
+import { jobReadiness, READINESS_LABEL, type ReadinessJob } from "@/lib/production";
 import { readinessContexts } from "@/lib/production-data";
 import { JOB_STAGES, type Crew, type Customer, type Job } from "@/lib/types";
 import { createEstimate } from "../../estimates/actions";
@@ -23,9 +23,9 @@ type LeadCols = {
 };
 type FinApp = { id: string; lender: string; amount: number; status: string; dealer_fee_pct: number; notes: string | null; created_at: string; funded_on: string | null };
 const FIN_STATUSES = ["link_sent", "prequalified", "approved", "declined", "funded", "cancelled"];
-const SOURCE_SUGGESTIONS = ["website", "instant_quote", "google_ads", "facebook", "hipages", "angi", "referral", "door_knock", "storm", "repeat", "yard_sign", "other"];
+const SOURCE_SUGGESTIONS = ["website", "instant_quote", "google_ads", "facebook", "hipages", "oneflare", "serviceseeking", "referral", "door_knock", "storm", "repeat", "site_sign", "other"];
 /** Readiness gates in Australian wording (HOA → strata / body corporate, dumpster → skip bin). */
-const READY_AU: Record<string, string> = { permit: "Building permit", hoa: "Strata / body corporate", colors: "Colours confirmed", materials: "Materials", dumpster: "Skip bin", deposit: "Deposit" };
+const READY_AU: Record<string, string> = READINESS_LABEL;
 const human = (s: string) => s.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
 type Activity = { id: string; at: string; title: string; body: string | null; by: string | null };
 const one = <T,>(x: T | T[] | null | undefined) => (Array.isArray(x) ? x[0] : x);

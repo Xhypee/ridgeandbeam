@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { exifTakenAt, parseExifDate } from "./field-exif";
-import { claimExplainer, deriveMilestones, headlineMilestone, type PublicJob } from "./field-milestones";
-import { statusSms, warrantyDaysLeft } from "./field";
+import { claimProgress, deriveMilestones, headlineMilestone, type PublicClaim, type PublicJob } from "./field-milestones";
+import { CATEGORY_LABEL, COUNT_CATEGORY, DAMAGE_CATEGORIES, FILE_CATEGORIES, PHOTO_CATEGORIES, statusSms, warrantyDaysLeft } from "./field";
 
 function jpegWithExif(date: string, little = true): ArrayBuffer {
   // SOI, APP1(Exif) with IFD0 -> ExifIFD -> DateTimeOriginal (ASCII, 20 bytes)
@@ -60,35 +60,62 @@ describe("milestones", () => {
     expect(ms.find((m) => m.key === "complete")!.status).toBe("current");
   });
   it("implies earlier build steps once a later one is tapped, but not the claim", () => {
-    const claim = { carrier: "X", claim_number: "1", stage: "supplementing", policy_type: "rcv", rcv_amount: 0, depreciation_amount: 0, deductible: 0, mortgagee_name: null, checks: [] };
+    const claim: PublicClaim = { ...auClaim, stage: "scope_received" };
     const ms = deriveMilestones({ ...base, stage: "in_progress", claim, events: [{ kind: "tear_off_started", note: null, created_at: "2026-03-01T10:00:00Z", photo: null }] });
     expect(ms.find((m) => m.key === "materials_ordered")!.status).toBe("done");
     expect(ms.find((m) => m.key === "permit")!.status).toBe("done");
     expect(ms.find((m) => m.key === "claim")!.status).toBe("current");
+    expect(ms.find((m) => m.key === "claim")!.detail).toBe("The insurer has sent its scope of works");
     expect(headlineMilestone(ms)!.key).toBe("dry_in");
   });
-  it("includes the claim step for insurance jobs", () => {
-    const claim = { carrier: "State Farm", claim_number: "1", stage: "approved", policy_type: "rcv", rcv_amount: 20000, depreciation_amount: 5000, deductible: 1000, mortgagee_name: null, checks: [] };
-    const ms = deriveMilestones({ ...base, claim });
-    expect(ms[1]).toMatchObject({ key: "claim", status: "done" });
+  it("includes the claim step for insurance jobs, in Australian terms", () => {
+    const ms = deriveMilestones({ ...base, claim: { ...auClaim, stage: "work_authorised" } });
+    expect(ms[1]).toMatchObject({ key: "claim", status: "done", detail: "The work is authorised" });
+    // legacy US stage values map to the AU stage
+    expect(deriveMilestones({ ...base, claim: { ...auClaim, stage: "adjuster_scheduled" } })[1].detail).toBe("The insurer's assessor is booked to inspect");
+    expect(deriveMilestones({ ...base, claim: { ...auClaim, stage: "declined" } })[1].status).not.toBe("done");
+  });
+  it("uses Australian build words", () => {
+    const labels = deriveMilestones(base).map((m) => m.label);
+    expect(labels).toContain("Council / building approval");
+    expect(labels).toContain("Watertight");
+    expect(labels.join(" ")).not.toMatch(/Dry-in|Tear-off|magnet|Permit$/);
   });
 });
 
-describe("claim explainer", () => {
-  it("explains deductible, held-back depreciation and next check", () => {
-    const x = claimExplainer({
-      carrier: "State Farm", claim_number: "1", stage: "built", policy_type: "rcv", rcv_amount: 20000, depreciation_amount: 5000, deductible: 1000, mortgagee_name: "Chase",
-      checks: [
-        { kind: "acv", payer: "carrier", label: null, expected_amount: 14000, received_amount: 14000, received_on: "2026-02-01", endorsement: "endorsed" },
-        { kind: "depreciation", payer: "carrier", label: null, expected_amount: 5000, received_amount: 0, received_on: null, endorsement: "needed" },
-      ],
-    });
-    expect(x.heldBack).toBe(5000);
-    expect(x.receivedFromInsurer).toBe(14000);
-    expect(x.nextCheck).toMatchObject({ amount: 5000 });
-    expect(x.lines[0]).toContain("$1,000.00");
-    expect(x.lines.join(" ")).toContain("Held back by your insurer until we finish: $5,000.00");
-    expect(x.lines.join(" ")).toContain("Chase");
+const auClaim: PublicClaim = {
+  insurer: "Coastal Home Insurance", claim_number: "HB-1", stage: "assessor_booked", excess: 750, settlement_path: "own_builder", approved_amount: 18500,
+  payments: [
+    { kind: "scope", payer: "carrier", label: null, expected_amount: 17750, received_amount: 10000, received_on: "2026-02-01" },
+    { kind: "excess", payer: "homeowner", label: null, expected_amount: 750, received_amount: 750, received_on: "2026-02-01" },
+  ],
+};
+
+describe("claim progress (AU)", () => {
+  it("shows excess, approved amount and insurer money expected vs received", () => {
+    const p = claimProgress(auClaim);
+    expect(p.stage).toBe("assessor_booked");
+    expect(p.stageText).toBe("The insurer's assessor is booked to inspect");
+    expect(p.excess).toBe(750);
+    expect(p.approved).toBe(18500);
+    expect(p.receivedFromInsurer).toBe(10000);
+    expect(p.stillExpected).toBe(7750);
+    expect(p.step).toBe(1);
+    expect(p.isCashSettlement).toBe(false);
+    expect(claimProgress({ ...auClaim, stage: "cash_settlement_offered" }).isCashSettlement).toBe(true);
+    expect(claimProgress({ ...auClaim, stage: "coc_sent" }).stage).toBe("invoiced");
+  });
+});
+
+describe("storm damage photos", () => {
+  it("has Australian damage categories and no US test squares", () => {
+    expect(DAMAGE_CATEGORIES).toEqual(["broken_tiles", "ridge_capping", "sheet_damage", "hail_dents", "gutter_damage", "internal_water", "damage"]);
+    expect(PHOTO_CATEGORIES).not.toContain("test_square");
+    expect(FILE_CATEGORIES).toContain("test_square"); // legacy rows still load
+    expect(COUNT_CATEGORY).toBe("broken_tiles");
+    expect(CATEGORY_LABEL.broken_tiles).toBe("Broken / cracked tiles");
+    expect(CATEGORY_LABEL.ridge_capping).toBe("Ridge capping");
+    expect(CATEGORY_LABEL.decking).toBe("Battens / sarking");
   });
 });
 
@@ -96,10 +123,11 @@ describe("helpers", () => {
   it("builds status SMS with link", () => {
     expect(statusSms("on_my_way", "Summit", "https://x/p/t")).toBe("Summit: we're on our way to your home now. Track your project: https://x/p/t");
     expect(statusSms("note", "Summit", "L", "Skylight flashed")).toBe("Summit: update on your roof project: Skylight flashed Track your project: L");
+    expect(statusSms("dry_in", "Summit", "L")).toContain("watertight");
   });
   it("counts warranty registration days", () => {
     const now = new Date("2026-03-11T00:00:00Z");
-    expect(warrantyDaysLeft("2026-03-01T00:00:00Z", now)).toBe(35);
+    expect(warrantyDaysLeft("2026-03-01T00:00:00Z", now)).toBe(20);
     expect(warrantyDaysLeft(null, now)).toBeNull();
   });
 });

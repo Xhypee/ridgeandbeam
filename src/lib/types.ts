@@ -59,8 +59,9 @@ export const JOB_STAGES = [
 ] as const;
 export type JobStage = (typeof JOB_STAGES)[number];
 
-export const JOB_TYPES = ["replacement", "repair", "inspection", "new_construction", "gutters", "other"] as const;
-export type JobType = (typeof JOB_TYPES)[number];
+import type { AuJobType } from "./job-types";
+export { AU_JOB_TYPES as JOB_TYPES } from "./job-types";
+export type JobType = AuJobType;
 
 export const CUSTOMER_SOURCES = ["referral", "website", "door_knock", "storm", "repeat", "ads", "other"] as const;
 

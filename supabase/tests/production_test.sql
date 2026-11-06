@@ -25,11 +25,12 @@ insert into memberships (org_id, user_id, role, full_name, email) values (:'org_
 
 set local role authenticated;
 select null from set_config('request.jwt.claim.sub', :'alice', true);
-insert into crews (org_id, name, language) values (:'org_a', 'Crew One', 'es') returning id as crew1, public_token as tok1 \gset
+insert into crews (org_id, name, pay_rate_m2, pay_steep_m2, pay_strip_m2, pay_gutter_lm) values (:'org_a', 'Crew One', 12, 3, 4.5, 9)
+  returning id as crew1, public_token as tok1 \gset
 insert into crews (org_id, name) values (:'org_a', 'Crew Two') returning id as crew2, public_token as tok2 \gset
-insert into customers (org_id, name, phone) values (:'org_a', 'Pat Homeowner', '555-0101') returning id as cust \gset
+insert into customers (org_id, name, phone) values (:'org_a', 'Pat Homeowner', '0412 345 678') returning id as cust \gset
 insert into jobs (org_id, customer_id, title, site_address, crew_id, scheduled_start, scheduled_end, gate_code, sales_rep_id)
-  values (:'org_a', :'cust', 'Crew one job', '1 Main St', :'crew1', current_date + 2, current_date + 3, '4321', :'ray') returning id as j1 \gset
+  values (:'org_a', :'cust', 'Crew one job', '1 Main St, Ballarat VIC 3350', :'crew1', current_date + 2, current_date + 3, '4321', :'ray') returning id as j1 \gset
 insert into jobs (org_id, customer_id, title, crew_id, scheduled_start, scheduled_end)
   values (:'org_a', :'cust', 'Crew two job', :'crew2', current_date + 2, current_date + 2) returning id as j2 \gset
 insert into jobs (org_id, customer_id, title, crew_id) values (:'org_a', :'cust', 'Unscheduled crew one job', :'crew1') returning id as j3 \gset
@@ -39,7 +40,18 @@ insert into jobs (org_id, customer_id, title, crew_id, scheduled_start, schedule
 -- Accepted estimate with a priced material line: the portal must show quantity but never price.
 insert into estimates (org_id, job_id, status, accepted_at) values (:'org_a', :'j1', 'accepted', now()) returning id as est \gset
 insert into estimate_items (org_id, estimate_id, description, quantity, unit, unit_price, unit_cost, category)
-  values (:'org_a', :'est', 'Architectural shingles', 75, 'bundle', 42, 30, 'material');
+  values (:'org_a', :'est', 'COLORBOND Trimdek 0.42 BMT', 75, 'lm', 42, 30, 'material');
+insert into job_files (org_id, job_id, kind, storage_path, category, slope, test_square_hits)
+  values (:'org_a', :'j1', 'photo', :'org_a' || '/' || :'j1' || '/broken.jpg', 'broken_tiles', 'front', 14),
+         (:'org_a', :'j1', 'photo', :'org_a' || '/' || :'j1' || '/progress.jpg', 'progress', 'front', null);
+
+-- Metric pay sheet: negative rates are rejected.
+do $$ begin
+  begin
+    update crews set pay_rate_m2 = -1 where name = 'Crew One';
+    raise exception 'negative pay rate accepted';
+  exception when check_violation then null; end;
+end $$;
 
 -- ---------------------------------------------------------------------------
 -- Crew portal RPC only returns that crew's (scheduled, current) jobs
@@ -50,8 +62,8 @@ select public.get_crew_portal(:'tok1') as portal1 \gset
 select (:'portal1'::jsonb -> 'jobs') as jobs1 \gset
 select jsonb_array_length(:'jobs1'::jsonb) = 1 and (:'jobs1'::jsonb -> 0 ->> 'id') = :'j1' as only_own \gset
 \if :only_own \else \echo 'FAIL crew portal returned other jobs' \quit \endif
-select (:'portal1'::jsonb -> 'crew' ->> 'language') = 'es' as lang_ok \gset
-\if :lang_ok \else \echo 'FAIL crew language' \quit \endif
+select not (:'portal1'::jsonb -> 'crew' ? 'language') as no_lang \gset
+\if :no_lang \else \echo 'FAIL crew portal still returns a language' \quit \endif
 select public.get_crew_portal('not-a-real-token-at-all-000') is null as bad_tok \gset
 \if :bad_tok \else \echo 'FAIL bad token returned data' \quit \endif
 
@@ -61,7 +73,10 @@ select public.get_crew_job(:'tok1', :'j1') as job1 \gset
 select (:'job1'::jsonb -> 'job' ->> 'gate_code') = '4321'
    and (:'job1'::jsonb -> 'estimate_items' -> 0 ->> 'quantity')::numeric = 75
    and not (:'job1'::jsonb -> 'estimate_items' -> 0 ? 'unit_price')
-   and not (:'job1'::jsonb -> 'estimate_items' -> 0 ? 'unit_cost') as job_ok \gset
+   and not (:'job1'::jsonb -> 'estimate_items' -> 0 ? 'unit_cost')
+   and jsonb_array_length(:'job1'::jsonb -> 'photos') = 1
+   and (:'job1'::jsonb -> 'photos' -> 0 ->> 'category') = 'broken_tiles'
+   and (:'job1'::jsonb -> 'photos' -> 0 ->> 'count')::int = 14 as job_ok \gset
 \if :job_ok \else \echo 'FAIL crew job detail wrong or leaks prices' \quit \endif
 do $$ begin
   if (select count(*) from jobs) <> 0 then raise exception 'anon reads jobs directly'; end if;
@@ -84,13 +99,15 @@ do $$ begin
     raise exception 'problem on other crew job accepted';
   exception when raise_exception then if sqlerrm like 'problem on other%' then raise; end if; end;
 end $$;
-select (public.report_crew_problem(:'tok1', :'j1', 'missing_material', 'Short 3 bundles of ridge cap', 'Miguel') ->> 'job_id') = :'j1' as reported \gset
+select (public.report_crew_problem(:'tok1', :'j1', 'missing_material', 'Short 2 lengths of ridge capping', 'Miguel') ->> 'job_id') = :'j1' as reported \gset
 \if :reported \else \echo 'FAIL problem report' \quit \endif
+select (public.report_crew_problem(:'tok1', :'j1', 'damage_found', 'Rotten battens on rear slope') ->> 'label') = 'Damage found (battens, sarking, etc.)' as au_label \gset
+\if :au_label \else \echo 'FAIL crew problem label not Australian' \quit \endif
 
 set local role authenticated;
 select null from set_config('request.jwt.claim.sub', :'alice', true);
 do $$ begin
-  if not exists (select 1 from job_notes where body like '[Crew report] Missing material: Short 3 bundles%' and author_name like 'Miguel (Crew One)') then
+  if not exists (select 1 from job_notes where body like '[Crew report] Missing material: Short 2 lengths%' and author_name like 'Miguel (Crew One)') then
     raise exception 'problem note missing';
   end if;
   if not exists (select 1 from notifications where kind = 'crew_problem' and url like '%/production') then raise exception 'problem notification missing'; end if;
@@ -142,7 +159,7 @@ end $$;
 select null from set_config('request.jwt.claim.sub', :'alice', true);
 insert into material_orders (org_id, job_id, supplier, branch_email) values (:'org_a', :'j1', 'SRS Distribution', 'branch@example.com') returning id as ord \gset
 insert into material_order_items (org_id, order_id, description, quantity, unit_cost) values (:'org_a', :'ord', 'Shingles', 75, 30);
-insert into material_returns (org_id, order_id, description, quantity, credit_amount, restocking_fee) values (:'org_a', :'ord', 'Leftover bundles', 4, 120, 18);
+insert into material_returns (org_id, order_id, description, quantity, credit_amount, restocking_fee) values (:'org_a', :'ord', 'Leftover Trimdek sheets', 4, 120, 18);
 insert into job_costs (org_id, job_id, category, amount, source, source_id) values (:'org_a', :'j1', 'materials', 2250, 'order', :'ord');
 insert into job_costs (org_id, job_id, category, amount, source) values (:'org_a', :'j1', 'materials', -102, 'return');
 do $$ begin

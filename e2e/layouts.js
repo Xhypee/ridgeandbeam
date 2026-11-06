@@ -193,7 +193,7 @@ async function seed(orgId, ownerId) {
     check((await waiting.first().getByRole("link", { name: "Open job" }).count()) === 1, "each task has Open job");
     const roofs = page.locator("[data-on-roofs] [data-roof-job]");
     check((await roofs.count()) === 2, "On roofs today shows the two jobs on a roof today");
-    check((await page.locator("[data-on-roofs]").textContent()).includes("Tear-off started"), "roof card shows the latest field status");
+    check((await page.locator("[data-on-roofs]").textContent()).includes("Strip started"), "roof card shows the latest field status");
     // search
     await page.fill('input[name="q"]', "ALZ-44781");
     await page.press('input[name="q"]', "Enter");

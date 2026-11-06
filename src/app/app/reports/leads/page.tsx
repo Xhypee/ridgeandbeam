@@ -10,7 +10,7 @@ import { acceptedTotal, buildRows, type LeadJob } from "./report";
 
 export const metadata: Metadata = { title: "Lead sources" };
 
-const SOURCES = ["website", "instant_quote", "google_ads", "facebook", "angi", "referral", "door_knock", "storm", "yard_sign"];
+const SOURCES = ["website", "instant_quote", "google_ads", "facebook", "hipages", "oneflare", "serviceseeking", "referral", "door_knock", "storm", "site_sign"];
 
 export default async function LeadSourcesReport({ searchParams }: PageProps<"/app/reports/leads">) {
   const { supabase, org, isAdmin } = await requireMoneyAccess();
@@ -108,7 +108,7 @@ export default async function LeadSourcesReport({ searchParams }: PageProps<"/ap
             <ActionForm action={saveLeadSpend} className="space-y-3">
               <div className="grid gap-3 sm:grid-cols-3">
                 <Field label="Source">
-                  <Input name="source" list="spend-sources" required placeholder="angi" />
+                  <Input name="source" list="spend-sources" required placeholder="hipages" />
                   <datalist id="spend-sources">{SOURCES.map((s) => <option key={s} value={s} />)}</datalist>
                 </Field>
                 <Field label="Month"><Input name="month" type="month" defaultValue={thisMonth} required /></Field>

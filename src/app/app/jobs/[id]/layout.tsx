@@ -3,22 +3,12 @@ import { notFound } from "next/navigation";
 import { JobTimeline } from "@/components/job-timeline";
 import { Badge } from "@/components/ui";
 import { requireOrg } from "@/lib/dal";
-import { label, STAGE_LABEL, STAGE_TONE } from "@/lib/format";
+import { STAGE_LABEL, STAGE_TONE } from "@/lib/format";
 import { dollars, jobSteps, nextStep, type NextStepJob } from "@/lib/next-step";
 import { asNextStepJob, loadNextStepCtx, NEXT_STEP_JOB_COLS } from "@/lib/next-step-server";
 import { createEstimate } from "../../estimates/actions";
+import { jobTypeLabel } from "@/lib/job-types";
 
-/** Plain-language Australian job types (falls back to the stored value for new types). */
-const JOB_TYPE_AU: Record<string, string> = {
-  replacement: "Re-roof",
-  repair: "Repair / leak",
-  inspection: "Inspection",
-  new_construction: "New build",
-  gutters: "Gutters & downpipes",
-  restoration: "Restoration",
-  asbestos: "Asbestos roof replacement",
-  other: "Other",
-};
 
 const btn = "inline-flex min-h-11 items-center rounded-xl bg-white px-4 text-sm font-semibold text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50";
 const primary = "inline-flex min-h-13 items-center rounded-xl bg-brand-300 px-6 text-base font-bold text-ink hover:bg-brand-200";
@@ -65,7 +55,7 @@ export default async function JobLayout({ children, params }: LayoutProps<"/app/
           </div>
           <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 text-[15px] text-slate-600">
             {job.site_address && <><span>{job.site_address}</span><span aria-hidden>·</span></>}
-            <span>{JOB_TYPE_AU[row.job_type] ?? label(row.job_type)}</span>
+            <span>{jobTypeLabel(row.job_type)}</span>
             <span aria-hidden>·</span>
             <h2 className="text-[15px] font-normal text-slate-600" style={{ fontFamily: "var(--font-sans)", letterSpacing: 0 }}>{row.title}</h2>
             {value !== null && <><span aria-hidden>·</span><span className="font-semibold text-ink">{dollars(value)}{est?.status === "sent" ? " quoted" : ""}</span></>}

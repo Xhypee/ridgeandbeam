@@ -4,11 +4,12 @@ import { revalidatePath } from "next/cache";
 import { requireOrg } from "@/lib/dal";
 import { friendly, str } from "@/lib/form";
 import type { ActionResult } from "@/components/action-form";
-import { crewPay, DELIVERY_TYPES, DUMPSTER_STATUSES, HOA_STATUSES, MATERIALS_STATUSES, PERMIT_STATUSES } from "@/lib/production";
+import { crewPay, crewPayDescription, DELIVERY_TYPES, DUMPSTER_STATUSES, HOA_STATUSES, MATERIALS_STATUSES, PERMIT_STATUSES, type CrewPaySheet } from "@/lib/production";
 import { acceptedEstimate } from "@/lib/production-data";
 import { loadReadiness } from "@/lib/production-server";
 
 const isoRe = /^\d{4}-\d{2}-\d{2}$/;
+
 
 async function office() {
   const ctx = await requireOrg();
@@ -77,24 +78,6 @@ export async function unlockSchedule(fd: FormData) {
   revalidatePath("/app/schedule");
 }
 
-export async function saveLien(_: ActionResult, fd: FormData): Promise<ActionResult> {
-  let ctx;
-  try { ctx = await office(); } catch (e) { return { error: (e as Error).message }; }
-  const id = String(fd.get("job_id"));
-  const last = str(fd, "last_furnished_on");
-  const bid = str(fd, "bid_due_on");
-  const state = str(fd, "state")?.toUpperCase() ?? null;
-  if ((last && !isoRe.test(last)) || (bid && !isoRe.test(bid))) return { error: "Use a valid date." };
-  if (state && !/^[A-Z]{2}$/.test(state)) return { error: "Use a 2-letter state code." };
-  const update: Record<string, unknown> = { last_furnished_on: last };
-  if (fd.has("bid_due_on")) update.bid_due_on = bid;
-  if (fd.has("state")) update.state = state;
-  const { error } = await ctx.supabase.from("jobs").update(update).eq("id", id);
-  if (error) return { error: friendly(error) };
-  revalidatePath(`/app/jobs/${id}`, "layout");
-  return { ok: "Saved." };
-}
-
 export async function saveBidDue(_: ActionResult, fd: FormData): Promise<ActionResult> {
   let ctx;
   try { ctx = await office(); } catch (e) { return { error: (e as Error).message }; }
@@ -113,15 +96,15 @@ export async function postCrewPay(_: ActionResult, fd: FormData): Promise<Action
   if (!canSeeMoney) return { error: "You don't have permission to do that." };
   const id = String(fd.get("job_id"));
   const { data: job } = await supabase.from("jobs").select("id, crew_id, crews(*)").eq("id", id).maybeSingle();
-  const crew = job?.crews as unknown as { id: string; name: string; rate_per_square: number; steep_adder: number; high_steep_adder: number; layer_adder: number; low_slope_rate: number } | null;
+  const crew = job?.crews as unknown as (CrewPaySheet & { id: string; name: string }) | null;
   if (!job || !crew) return { error: "Assign a crew first." };
   const est = await acceptedEstimate(supabase, id);
   if (!est) return { error: "Crew pay comes from the accepted estimate's measurements — no accepted estimate yet." };
   const pay = crewPay(est.measurements, crew);
-  if (pay.total <= 0) return { error: "Crew pay is $0 — fill in the crew's pay sheet in Settings → Crews & pay." };
+  if (pay.total <= 0) return { error: "Crew pay is $0 — fill in the crew's $/m² pay sheet in Settings → Crews & pay." };
   const row = {
     org_id: org.id, job_id: id, category: "labor", vendor: crew.name, amount: pay.total, source: "crew_pay", source_id: crew.id,
-    description: `Crew pay: ${pay.squares} sq — ${pay.lines.map((l) => l.label).join(", ")}`, created_by: user.id,
+    description: crewPayDescription(pay), created_by: user.id,
   };
   const { data: existing } = await supabase.from("job_costs").select("id").eq("job_id", id).eq("source", "crew_pay").maybeSingle();
   const { error } = existing

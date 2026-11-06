@@ -32,14 +32,14 @@ insert into customers (org_id, name, phone)
   returning id as cust1 \gset
 insert into jobs (org_id, customer_id, title, stage, assigned_to) values (:'org1', :'cust1', 'Hail replacement', 'sold', :'u1')
   returning id as job1, public_token as job_token \gset
-insert into claims (org_id, job_id, carrier, claim_number, rcv_amount, depreciation_amount, deductible, stage)
-  values (:'org1', :'job1', 'Acme Mutual', 'C-1', 20000, 5000, 1000, 'approved') returning id as claim1 \gset
+insert into claims (org_id, job_id, carrier, claim_number, excess, settlement_path, approved_amount, stage)
+  values (:'org1', :'job1', 'Coastal Home Insurance', 'C-1', 750, 'own_builder', 18500, 'assessor_booked') returning id as claim1 \gset
 insert into claim_checks (org_id, claim_id, kind, expected_amount, received_amount) values
-  (:'org1', :'claim1', 'acv', 14000, 14000), (:'org1', :'claim1', 'depreciation', 5000, 0);
+  (:'org1', :'claim1', 'scope', 17750, 0), (:'org1', :'claim1', 'excess', 750, 750);
 
 -- Offline queue idempotency (files by (org_id, client_id) upsert target; events unique client_id)
 insert into job_files (org_id, job_id, client_id, storage_path, category, slope, test_square_hits, shared_with_homeowner)
-  values (:'org1', :'job1', 'cid-photo-1', :'org1' || '/' || :'job1' || '/cid-photo-1.jpg', 'test_square', 'front', 9, true) returning id as file1 \gset
+  values (:'org1', :'job1', 'cid-photo-1', :'org1' || '/' || :'job1' || '/cid-photo-1.jpg', 'broken_tiles', 'front', 9, true) returning id as file1 \gset
 insert into job_files (org_id, job_id, client_id, storage_path) values (:'org1', :'job1', 'cid-photo-2', :'org1' || '/' || :'job1' || '/cid-photo-2.jpg');
 insert into job_files (org_id, job_id, client_id, storage_path) values (:'org1', :'job1', 'cid-photo-1', 'dup')
   on conflict (org_id, client_id) do nothing;
@@ -56,8 +56,8 @@ end $$;
 insert into job_events (org_id, job_id, kind, note, visible_to_homeowner) values (:'org1', :'job1', 'note', 'internal only', false);
 insert into job_checklist_items (org_id, job_id, kind, label) values (:'org1', :'job1', 'punch', 'Reseal pipe boot');
 
--- Change orders: one sent (decking material + labor), one draft, one for on-site approval
-insert into change_orders (org_id, job_id, title, status, file_ids, created_by) values (:'org1', :'job1', 'Rotten decking', 'sent', array[:'file1']::uuid[], :'u1')
+-- Change orders: one sent (battens material + labour), one draft, one for on-site approval
+insert into change_orders (org_id, job_id, title, status, file_ids, created_by) values (:'org1', :'job1', 'Rotten battens', 'sent', array[:'file1']::uuid[], :'u1')
   returning id as co1, public_token as co_token \gset
 insert into change_order_items (org_id, change_order_id, position, description, quantity, unit, unit_price, unit_cost, category) values
   (:'org1', :'co1', 0, 'Decking (4x8 sheet)', 5, 'sheet', 72, 38, 'material'),
@@ -117,8 +117,14 @@ select public.get_public_job(:'job_token') as portal \gset
 select (:'portal'::jsonb->>'title') = 'Hail replacement'
    and jsonb_array_length(:'portal'::jsonb->'photos') = 1
    and jsonb_array_length(:'portal'::jsonb->'events') = 1
-   and (:'portal'::jsonb->'claim'->>'deductible')::numeric = 1000
-   and jsonb_array_length(:'portal'::jsonb->'claim'->'checks') = 2
+   and (:'portal'::jsonb->'claim'->>'excess')::numeric = 750
+   and (:'portal'::jsonb->'claim'->>'insurer') = 'Coastal Home Insurance'
+   and (:'portal'::jsonb->'claim'->>'settlement_path') = 'own_builder'
+   and (:'portal'::jsonb->'claim'->>'stage') = 'assessor_booked'
+   and not (:'portal'::jsonb->'claim' ? 'deductible')
+   and not (:'portal'::jsonb->'claim' ? 'mortgagee_name')
+   and jsonb_array_length(:'portal'::jsonb->'claim'->'payments') = 2
+   and (:'portal'::jsonb->'photos'->0->>'category') = 'broken_tiles'
    and jsonb_array_length(:'portal'::jsonb->'change_orders') = 1
    and (:'portal'::jsonb->'change_orders'->0->>'total')::numeric = 480
    and (:'portal'::jsonb->'events'->0->>'photo') is not null
@@ -154,14 +160,14 @@ select null from set_config('request.jwt.claim.sub', :'u1', true);
 do $$
 declare v_inv uuid; v_kind text;
 begin
-  select invoice_id into v_inv from change_orders where title = 'Rotten decking';
+  select invoice_id into v_inv from change_orders where title = 'Rotten battens';
   select kind into v_kind from invoices where id = v_inv;
   if v_kind is distinct from 'change_order' then raise exception 'expected change_order invoice, got %', v_kind; end if;
   if (select count(*) from invoice_items where invoice_id = v_inv) <> 2 then raise exception 'invoice items not added'; end if;
   if (select subtotal from invoice_totals where invoice_id = v_inv) <> 480 then raise exception 'invoice subtotal wrong'; end if;
-  if (select amount from job_costs where description = 'Change order: Rotten decking' and category = 'materials') <> 190 then raise exception 'materials cost wrong'; end if;
-  if (select amount from job_costs where description = 'Change order: Rotten decking' and category = 'labor') <> 60 then raise exception 'labor cost wrong'; end if;
-  if (select approved_ip from change_orders where title = 'Rotten decking') <> '1.2.3.4' then raise exception 'audit ip missing'; end if;
+  if (select amount from job_costs where description = 'Change order: Rotten battens' and category = 'materials') <> 190 then raise exception 'materials cost wrong'; end if;
+  if (select amount from job_costs where description = 'Change order: Rotten battens' and category = 'labor') <> 60 then raise exception 'labor cost wrong'; end if;
+  if (select approved_ip from change_orders where title = 'Rotten battens') <> '1.2.3.4' then raise exception 'audit ip missing'; end if;
   if not exists (select 1 from notifications where kind = 'change_order_approved') then raise exception 'no approval notification'; end if;
   if not exists (select 1 from job_events where kind = 'change_order_approved') then raise exception 'no approval event'; end if;
 end $$;

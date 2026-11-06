@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin, requireOrg } from "@/lib/dal";
 import { friendly, num, oneOf, str } from "@/lib/form";
 import type { ActionResult } from "@/components/action-form";
+import { PAY_SHEET_KEYS } from "@/lib/production";
 
 const done = (msg = "Saved.") => { revalidatePath("/app", "layout"); return { ok: msg }; };
 
@@ -98,7 +99,7 @@ export async function removeMember(fd: FormData) {
 }
 
 // ---------------------------------------------------------------------------
-// Production (builder D): crew pay sheets, member settings, commission plans
+// Production: crew pay sheets ($/m²), member settings, commission plans
 // ---------------------------------------------------------------------------
 const money2 = (fd: FormData, k: string) => Math.max(0, Math.round(num(fd, k) * 100) / 100);
 
@@ -111,13 +112,8 @@ export async function updateCrew(_: ActionResult, fd: FormData): Promise<ActionR
   const { error } = await supabase.from("crews").update({
     name, color,
     phone: str(fd, "phone"),
-    language: oneOf(fd, "language", ["en", "es"] as const, "en"),
     is_subcontractor: fd.get("is_subcontractor") === "on",
-    rate_per_square: money2(fd, "rate_per_square"),
-    steep_adder: money2(fd, "steep_adder"),
-    high_steep_adder: money2(fd, "high_steep_adder"),
-    layer_adder: money2(fd, "layer_adder"),
-    low_slope_rate: money2(fd, "low_slope_rate"),
+    ...Object.fromEntries(PAY_SHEET_KEYS.map((k) => [k, money2(fd, k)])),
   }).eq("id", String(fd.get("id")));
   if (error) return { error: friendly(error) };
   return done("Crew saved.");

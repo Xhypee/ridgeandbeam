@@ -977,7 +977,7 @@ export function roofSystemFrom(material: string | null | undefined): RoofSystem 
 /** jobs.job_type enum (US-era values + AU additions) → AU job type. */
 export function auJobTypeFrom(jobType: string | null | undefined): AuJobType {
   switch (jobType) {
-    case "replacement": case "re_roof": return "re_roof";
+    case "replacement": case "re_roof": case "tile_to_metal": return "re_roof";
     case "restoration": return "restoration";
     case "repair": return "repair";
     case "gutters": return "gutters";
