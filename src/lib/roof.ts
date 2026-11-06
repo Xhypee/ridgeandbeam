@@ -1,347 +1,621 @@
-// Roof measurement -> material & labor quantities.
-// Pure functions, no I/O, so the same math runs in the browser editor and in tests.
+// Australian roof calculator: measurements (m², lineal metres, pitch in degrees) -> quantities per calc key.
+// Pure functions, no I/O, so the same maths runs in the browser editor, on the server and in tests.
+// Calc keys and their units come from ./calc-keys (shared with supplier price sheets).
 
-export type RoofSystem = "shingle" | "low_slope" | "metal";
-export const ROOF_SYSTEMS: RoofSystem[] = ["shingle", "low_slope", "metal"];
-export const ROOF_SYSTEM_LABEL: Record<RoofSystem, string> = { shingle: "Shingle", low_slope: "Low-slope", metal: "Metal" };
+import { CALC_KEY_MAP, type CalcCategory, type CalcKeyDef, type CalcUnit } from "./calc-keys";
 
-/** Pitches below this (rise per 12) are low-slope: shingle waste tables don't apply (EagleView: valid at 3/12+). */
-export const LOW_SLOPE_BELOW = 3;
+// ---------------------------------------------------------------------------
+// Vocabulary
+// ---------------------------------------------------------------------------
+export type RoofSystem = "metal" | "concrete_tile" | "terracotta_tile" | "membrane";
+export const ROOF_SYSTEMS: RoofSystem[] = ["metal", "concrete_tile", "terracotta_tile", "membrane"];
+export const ROOF_SYSTEM_LABEL: Record<RoofSystem, string> = {
+  metal: "Metal (COLORBOND / ZINCALUME)",
+  concrete_tile: "Concrete tile",
+  terracotta_tile: "Terracotta tile",
+  membrane: "Membrane / low-slope",
+};
+/** Short names for narrow pickers. */
+export const ROOF_SYSTEM_SHORT: Record<RoofSystem, string> = { metal: "Metal", concrete_tile: "Concrete tile", terracotta_tile: "Terracotta tile", membrane: "Membrane" };
+export const isTile = (s: RoofSystem) => s === "concrete_tile" || s === "terracotta_tile";
 
+export type MetalProfile = "custom_orb" | "trimdek" | "klip_lok" | "spandek";
+export const METAL_PROFILES: MetalProfile[] = ["custom_orb", "trimdek", "klip_lok", "spandek"];
 /**
- * One roof facet / section. Mirrors an aerial-report facet (area + pitch); edge lengths stay global
- * on Measurements, as they are on the reports. `area` is the plan (footprint) area.
+ * Effective cover widths. Custom Orb, Trimdek (762 mm) and Klip-Lok 700 (700 mm) are confirmed from Lysaght
+ * specs (research notes). Spandek's 700 mm is NOT verified in our research: it is a default the user can edit
+ * in the calculator assumptions.
  */
-export type RoofSection = {
-  label: string;
-  /** Flat (plan-view) footprint area in square feet. */
-  area: number;
-  /** Rise in inches per 12" of run, e.g. 6 for a 6/12 roof. */
-  pitch: number;
-  /** Waste % for this section; null/undefined = use the estimate's waste % (low-slope: none). */
-  waste?: number | null;
-  /** Roofing system; undefined = auto (low-slope under 3/12, shingle otherwise). */
-  system?: RoofSystem;
+export const METAL_PROFILE_INFO: Record<MetalProfile, { label: string; coverMm: number; verified: boolean }> = {
+  custom_orb: { label: "Custom Orb (corrugated)", coverMm: 762, verified: true },
+  trimdek: { label: "Trimdek", coverMm: 762, verified: true },
+  klip_lok: { label: "Klip-Lok 700", coverMm: 700, verified: true },
+  spandek: { label: "Spandek", coverMm: 700, verified: false },
 };
 
-/** The system a section is priced as (explicit choice, else by pitch). */
-export function sectionSystem(s: Pick<RoofSection, "pitch" | "system">): RoofSystem {
-  if (s.system && ROOF_SYSTEMS.includes(s.system)) return s.system;
-  return (Number(s.pitch) || 0) < LOW_SLOPE_BELOW ? "low_slope" : "shingle";
+/** Guess a profile from free text (catalog / supplier description). */
+export function profileFromText(text: string | null | undefined): MetalProfile | null {
+  const t = ` ${(text ?? "").toLowerCase()} `;
+  if (/klip[\s_-]?lok/.test(t)) return "klip_lok";
+  if (t.includes("trimdek")) return "trimdek";
+  if (t.includes("spandek")) return "spandek";
+  if (t.includes("custom orb") || t.includes("corrugated") || t.includes("custom_orb")) return "custom_orb";
+  return null;
 }
 
-export type Measurements = {
-  sections: RoofSection[];
-  wastePct: number;
-  /** Linear feet */
-  eaves: number;
-  rakes: number;
-  ridges: number;
-  hips: number;
-  valleys: number;
-  /** Existing layers to tear off (0 = overlay / new deck). */
-  layers: number;
-  pipeBoots: number;
-  /** Rows of ice & water shield along eaves (each row ~3 ft wide). 0 to skip. */
-  iceWaterRows: number;
-  ridgeVent: boolean;
-  includeDumpster: boolean;
-  includePermit: boolean;
-  /** Decking replacement allowance in 4x8 sheets (priced per sheet; adjust on site with a change order). */
-  deckingSheets: number;
+export const JOB_TYPES = ["reroof", "tile_to_metal", "restoration", "repair", "gutters", "asbestos"] as const;
+export type JobType = (typeof JOB_TYPES)[number];
+export const JOB_TYPE_LABEL: Record<JobType, string> = {
+  reroof: "Re-roof",
+  tile_to_metal: "Tile to metal re-roof",
+  restoration: "Roof restoration",
+  repair: "Repair / leak",
+  gutters: "Gutters & downpipes only",
+  asbestos: "Asbestos roof replacement",
+};
+/** Job types that strip the old roof and install a new one. */
+const REPLACES_ROOF: JobType[] = ["reroof", "tile_to_metal", "asbestos"];
+
+export const EXISTING_ROOFS = ["tile", "metal", "fibro", "none"] as const;
+export type ExistingRoof = (typeof EXISTING_ROOFS)[number];
+export const EXISTING_ROOF_LABEL: Record<ExistingRoof, string> = {
+  tile: "Tiles", metal: "Metal sheets", fibro: "Fibro / cement sheet", none: "Nothing (new frame)",
 };
 
-export type CalcOptions = {
-  /** Shingle bundles per square (organizations.bundles_per_square), usually 3. */
-  bundlesPerSquare?: number;
+/** Calculator-only keys not (yet) in calc-keys.ts. Requested from the coordinator. */
+export const EXTRA_CALC_KEYS: CalcKeyDef[] = [
+  { key: "membrane_roof", label: "Membrane roofing system", unit: "m2", category: "material", systems: ["membrane"], hints: ["membrane roof", "torch on", "torch-on", "bitumen membrane"] },
+];
+const EXTRA_MAP: Record<string, CalcKeyDef> = Object.fromEntries(EXTRA_CALC_KEYS.map((k) => [k.key, k]));
+export const calcKeyDef = (key: string): CalcKeyDef | undefined => CALC_KEY_MAP[key] ?? EXTRA_MAP[key];
+export const calcKeyLabel = (key: string) => calcKeyDef(key)?.label ?? key;
+export const calcKeyUnit = (key: string): CalcUnit => calcKeyDef(key)?.unit ?? "ea";
+export const calcKeyCategory = (key: string): CalcCategory => calcKeyDef(key)?.category ?? "material";
+/** Every key the calculator can emit, in a stable display order. */
+export const CALCULATOR_KEYS: string[] = [...Object.keys(CALC_KEY_MAP), ...EXTRA_CALC_KEYS.map((k) => k.key)];
+export const isCurrentCalcKey = (key: string | null | undefined) => Boolean(key && calcKeyDef(key));
+
+// ---------------------------------------------------------------------------
+// Measurements
+// ---------------------------------------------------------------------------
+/** One roof section / facet. Edge lengths stay global (as on measurement reports). */
+export type RoofSection = {
+  label: string;
+  /** Plan (footprint, seen from above) area in m². */
+  area: number;
+  /** Roof pitch in degrees. */
+  pitch: number;
+  /** Roof system; undefined = metal. */
+  system?: RoofSystem;
+  /** Waste % for this section; null/undefined = the estimate's waste %. */
+  waste?: number | null;
+  /** Metal sheet profile (metal sections only); undefined = Custom Orb. */
+  profile?: MetalProfile;
+  /** Sheet run along the slope, eave to ridge, in metres (for an exact cut list). */
+  runLength?: number | null;
+  /** Width of the section along the eave in metres (number of sheets across). */
+  width?: number | null;
+};
+
+export type CalcSettings = {
+  /** Overrides of the profile cover widths (mm). */
+  coverWidthMm: Partial<Record<MetalProfile, number>>;
+  /** Sheet overhang into the gutter added to every cut length (mm). */
+  overhangMm: number;
+  /** Batten / purlin spacing for fixing counts (mm). */
+  supportSpacingMm: number;
+  /** Fasteners per sheet per support (Lysaght PAB04 method). */
+  screwsPerSheetPerSupport: number;
+  screwsPerBox: number;
+  /** Sarking roll coverage, m² (default 1350 mm × 30 m). */
+  sarkingRollM2: number;
+  /** Safety mesh roll coverage, m² (check your supplier's roll size). */
+  safetyMeshRollM2: number;
+  /** Tiles per m² before waste (Monier Elabana-type concrete tile ≈ 9.9). */
+  tilesPerM2: number;
+  /** Ridge / hip tiles per lineal metre. */
+  ridgeTilesPerLm: number;
+  /** Tile batten gauge (spacing), mm. */
+  battenGaugeMm: number;
+  /** Lineal metres of ridge/hip bedded and pointed per bag (or pail) of pointing. */
+  pointingLmPerBag: number;
+  /** Steep-roof allowance applies to sections pitched above this (degrees). */
+  steepAboveDeg: number;
+  /** Skip bin size, m³. */
+  skipBinM3: number;
+  /** Laps added to capping, flashing and valley iron, %. */
+  lapPct: number;
+};
+
+export const DEFAULT_SETTINGS: CalcSettings = {
+  coverWidthMm: {},
+  overhangMm: 50,
+  supportSpacingMm: 900,
+  screwsPerSheetPerSupport: 5,
+  screwsPerBox: 500,
+  sarkingRollM2: 40.5,
+  safetyMeshRollM2: 75,
+  tilesPerM2: 9.9,
+  ridgeTilesPerLm: 2.6,
+  battenGaugeMm: 345,
+  pointingLmPerBag: 5,
+  steepAboveDeg: 25,
+  skipBinM3: 6,
+  lapPct: 5,
+};
+
+/** Loose volume of stripped roofing per m² of roof (m³/m²), by what's on the roof now. Rough site rule. */
+export const OLD_ROOF_M3_PER_M2: Record<ExistingRoof, number> = { tile: 0.04, metal: 0.03, fibro: 0.03, none: 0 };
+
+export type Measurements = {
+  units: "metric";
+  jobType: JobType;
+  existingRoof: ExistingRoof;
+  sections: RoofSection[];
+  wastePct: number;
+  /** Lineal metres. */
+  ridge: number;
+  hip: number;
+  valley: number;
+  barge: number;
+  /** Eave / gutter line. */
+  eave: number;
+  /** Apron and wall flashings. */
+  apron: number;
+  downpipes: number;
+  whirlybirds: number;
+  /** Broken tiles to replace (count). */
+  replaceTiles: number;
+  /** Built before 1990 or asbestos suspected: licensed removal instead of a normal strip. */
+  asbestosSuspected: boolean;
+  includeSarking: boolean;
+  includeSafetyMesh: boolean;
+  includeGutters: boolean;
+  includeEdgeProtection: boolean;
+  includeSkip: boolean;
+  settings: CalcSettings;
 };
 
 export const DEFAULT_MEASUREMENTS: Measurements = {
-  sections: [{ label: "Main roof", area: 0, pitch: 6 }],
+  units: "metric",
+  jobType: "reroof",
+  existingRoof: "tile",
+  sections: [{ label: "Main roof", area: 0, pitch: 22.5, system: "metal", profile: "custom_orb" }],
   wastePct: 10,
-  eaves: 0,
-  rakes: 0,
-  ridges: 0,
-  hips: 0,
-  valleys: 0,
-  layers: 1,
-  pipeBoots: 0,
-  iceWaterRows: 1,
-  ridgeVent: true,
-  includeDumpster: true,
-  includePermit: true,
-  deckingSheets: 0,
+  ridge: 0, hip: 0, valley: 0, barge: 0, eave: 0, apron: 0,
+  downpipes: 0, whirlybirds: 0, replaceTiles: 0,
+  asbestosSuspected: false,
+  includeSarking: true,
+  includeSafetyMesh: true,
+  includeGutters: false,
+  includeEdgeProtection: true,
+  includeSkip: true,
+  settings: DEFAULT_SETTINGS,
 };
-
-/** Multiplier from plan area to actual sloped surface area. */
-export function pitchFactor(pitch: number): number {
-  const p = Math.max(0, Number(pitch) || 0);
-  return Math.sqrt(1 + (p / 12) ** 2);
-}
 
 export const round2 = (n: number) => Math.round(n * 100) / 100;
-const ceil = (n: number) => (n <= 0 ? 0 : Math.ceil(n - 1e-9));
+/** Round up, ignoring floating-point dust (10.668 / 0.762 is 14, not 14.000000001). */
+const ceil = (n: number) => (n <= 0 ? 0 : Math.ceil(n - 1e-6));
+const pos = (v: unknown) => Math.max(0, Number(v) || 0);
+const MAX_PITCH = 75;
 
-export type RoofSummary = {
-  /** Sloped surface area of every section, no waste (sq ft). */
-  surfaceArea: number;
-  /** Roofing squares (100 sq ft), every section, no waste. */
-  squares: number;
-  /** Shingle squares including per-section waste, rounded up to whole bundles. Low-slope/metal excluded. */
-  orderSquares: number;
-  /** Squares on steep-slope sections pitched 8/12 or steeper (no waste). Includes steepHighSquares. */
-  steepSquares: number;
-  /** Squares on steep-slope sections pitched 10/12 or steeper (no waste). */
-  steepHighSquares: number;
-  /** Shingle bundles to order (bundles per square, waste included, rounded up). */
-  bundles: number;
-  /** Squares by system, no waste. */
-  shingleSquares: number;
-  lowSlopeSquares: number;
-  metalSquares: number;
-  /** Low-slope squares plus any per-section waste override (default none). */
-  lowSlopeOrderSquares: number;
-  /** Metal squares with waste. */
-  metalOrderSquares: number;
-  /** Share (0..1) of surface area on steep-slope (shingle + metal) sections. */
-  steepSlopeShare: number;
+// ---------------------------------------------------------------------------
+// Geometry
+// ---------------------------------------------------------------------------
+const rad = (deg: number) => (deg * Math.PI) / 180;
+const clampPitch = (deg: number) => Math.min(MAX_PITCH, pos(deg));
+
+/** Plan area -> true (sloped) area multiplier: 1 / cos(pitch). 15° ≈ 1.035, 20° ≈ 1.064, 25° ≈ 1.103. */
+export function pitchFactor(pitchDeg: number): number {
+  return 1 / Math.cos(rad(clampPitch(pitchDeg)));
+}
+
+/** Pitch in degrees from a rise and a run in the same unit (e.g. 250 mm rise over 1000 mm run ≈ 14.04°). */
+export function pitchFromRiseRun(rise: number, run: number): number {
+  const r = Number(run);
+  if (!(r > 0)) return 0;
+  return round2(Math.min(MAX_PITCH, (Math.atan(pos(rise) / r) * 180) / Math.PI));
+}
+
+/** Rafter (sloped) length from a horizontal run. */
+export const rafterLength = (planRun: number, pitchDeg: number) => pos(planRun) * pitchFactor(pitchDeg);
+
+export const sectionSystem = (s: Pick<RoofSection, "system">): RoofSystem => (s.system && ROOF_SYSTEMS.includes(s.system) ? s.system : "metal");
+export const sectionProfile = (s: Pick<RoofSection, "profile">): MetalProfile => (s.profile && METAL_PROFILES.includes(s.profile) ? s.profile : "custom_orb");
+export const trueArea = (s: Pick<RoofSection, "area" | "pitch">) => pos(s.area) * pitchFactor(Number(s.pitch) || 0);
+
+export function coverWidthMm(profile: MetalProfile, settings: CalcSettings = DEFAULT_SETTINGS): number {
+  const o = Number(settings.coverWidthMm?.[profile]);
+  return o > 100 && o < 2000 ? o : METAL_PROFILE_INFO[profile].coverMm;
+}
+
+const sectionWaste = (s: RoofSection, m: Pick<Measurements, "wastePct">) =>
+  s.waste == null || !Number.isFinite(Number(s.waste)) ? pos(m.wastePct) : pos(s.waste);
+
+// ---------------------------------------------------------------------------
+// Metal sheet cut list
+// ---------------------------------------------------------------------------
+export type CutRow = {
+  section: string;
+  profile: MetalProfile;
+  coverMm: number;
+  /** 0 when the run/width are unknown (quantity estimated from area). */
+  sheets: number;
+  /** Order length per sheet incl. overhang, rounded up to 10 mm; 0 when estimated from area. */
+  lengthMm: number;
+  /** Lineal metres of sheet to order for this section. */
+  lm: number;
+  /** True when cut from a measured run (and width); false = area ÷ cover width + waste. */
+  exact: boolean;
+  /** Support rows crossed per sheet (for fixings); 0 when estimated. */
+  supports: number;
+  screws: number;
 };
 
-export function summarize(m: Measurements, opts: CalcOptions = {}): RoofSummary {
-  const bps = Number(opts.bundlesPerSquare) > 0 ? Number(opts.bundlesPerSquare) : 3;
-  const globalWaste = Math.max(0, Number(m.wastePct) || 0);
-  let surface = 0, steep = 0, steepHigh = 0;
-  let shingle = 0, shingleGross = 0, low = 0, lowGross = 0, metal = 0, metalGross = 0;
-  for (const s of m.sections) {
-    const pitch = Number(s.pitch) || 0;
-    const a = Math.max(0, Number(s.area) || 0) * pitchFactor(pitch);
-    const sys = sectionSystem(s);
-    const override = s.waste == null || !Number.isFinite(Number(s.waste)) ? null : Math.max(0, Number(s.waste));
-    surface += a;
-    if (sys !== "low_slope") {
-      if (pitch >= 8) steep += a;
-      if (pitch >= 10) steepHigh += a;
-    }
-    if (sys === "shingle") {
-      shingle += a;
-      shingleGross += a * (1 + (override ?? globalWaste) / 100);
-    } else if (sys === "metal") {
-      metal += a;
-      metalGross += a * (1 + (override ?? globalWaste) / 100);
-    } else {
-      low += a;
-      lowGross += a * (1 + (override ?? 0) / 100);
-    }
+export type ProfileOverride = { profile?: MetalProfile | null; coverMm?: number | null };
+
+/**
+ * Sheets are ordered cut to length per run. With a run length (along the slope, eave to ridge) and a width
+ * (along the eave): sheets = ceil(width ÷ cover width), length = run + overhang (rounded up to 10 mm).
+ * Give only one of run/width and the other is derived from the true area. Waste % does not apply to a cut list:
+ * the waste is the rounding up to whole sheets.
+ * With neither, lineal metres = true area × (1 + waste) ÷ cover width (no cut list).
+ * Fixings (Lysaght PAB04): fasteners per sheet per support × sheets × supports, supports = ceil(run ÷ spacing) + 1.
+ * Area-estimated: fasteners ≈ ceil(true area × (1 + waste) ÷ (cover × spacing)) × fasteners per sheet per support.
+ */
+export function metalCut(s: RoofSection, m: Pick<Measurements, "wastePct" | "settings">, override?: ProfileOverride): CutRow {
+  const settings = m.settings ?? DEFAULT_SETTINGS;
+  const profile = override?.profile ?? sectionProfile(s);
+  const coverMm = Number(override?.coverMm) > 100 ? Number(override!.coverMm) : coverWidthMm(profile, settings);
+  const cover = coverMm / 1000;
+  const area = trueArea(s);
+  let run = pos(s.runLength);
+  let width = pos(s.width);
+  if (run > 0 && !(width > 0) && area > 0) width = area / run;
+  if (width > 0 && !(run > 0) && area > 0) run = area / width;
+  const spacing = Math.max(0.1, pos(settings.supportSpacingMm) / 1000 || 0.9);
+  const perSupport = pos(settings.screwsPerSheetPerSupport);
+  if (run > 0 && width > 0) {
+    const sheets = ceil(width / cover);
+    const lengthMm = ceil((run * 1000 + pos(settings.overhangMm)) / 10) * 10;
+    const supports = ceil(run / spacing) + 1;
+    return { section: s.label, profile, coverMm, sheets, lengthMm, lm: round2((sheets * lengthMm) / 1000), exact: true, supports, screws: sheets * supports * perSupport };
   }
-  const bundles = ceil((shingleGross / 100) * bps);
+  const gross = area * (1 + sectionWaste(s, m) / 100);
+  return { section: s.label, profile, coverMm, sheets: 0, lengthMm: 0, lm: round2(gross / cover), exact: false, supports: 0, screws: ceil(round2(gross / (cover * spacing))) * perSupport };
+}
+
+/** Cut list for every metal section (optionally re-run with another profile, e.g. a Best-option Klip-Lok). */
+export function cutList(m: Measurements, override?: ProfileOverride): CutRow[] {
+  return m.sections.filter((s) => sectionSystem(s) === "metal" && pos(s.area) > 0).map((s) => metalCut(s, m, override));
+}
+
+// ---------------------------------------------------------------------------
+// Summary
+// ---------------------------------------------------------------------------
+export type RoofSummary = {
+  /** Plan (footprint) area, m². */
+  planArea: number;
+  /** True (sloped) area of every section, no waste, m². */
+  trueArea: number;
+  metalArea: number;
+  tileArea: number;
+  membraneArea: number;
+  /** True area of sections pitched above the steep threshold. */
+  steepArea: number;
+  maxPitch: number;
+  /** Lineal metres of ridge + hip. */
+  ridgeHip: number;
+};
+
+export function summarize(m: Measurements): RoofSummary {
+  const steepAbove = pos(m.settings?.steepAboveDeg ?? DEFAULT_SETTINGS.steepAboveDeg);
+  let plan = 0, area = 0, metal = 0, tile = 0, membrane = 0, steep = 0, maxPitch = 0;
+  for (const s of m.sections) {
+    if (pos(s.area) <= 0) continue;
+    const a = trueArea(s);
+    const p = clampPitch(Number(s.pitch) || 0);
+    plan += pos(s.area);
+    area += a;
+    const sys = sectionSystem(s);
+    if (sys === "metal") metal += a;
+    else if (sys === "membrane") membrane += a;
+    else tile += a;
+    if (p > steepAbove) steep += a;
+    maxPitch = Math.max(maxPitch, p);
+  }
   return {
-    surfaceArea: round2(surface),
-    squares: round2(surface / 100),
-    orderSquares: round2(bundles / bps),
-    steepSquares: round2(steep / 100),
-    steepHighSquares: round2(steepHigh / 100),
-    bundles,
-    shingleSquares: round2(shingle / 100),
-    lowSlopeSquares: round2(low / 100),
-    metalSquares: round2(metal / 100),
-    lowSlopeOrderSquares: round2(lowGross / 100),
-    metalOrderSquares: round2(metalGross / 100),
-    steepSlopeShare: surface > 0 ? (shingle + metal) / surface : 0,
+    planArea: round2(plan), trueArea: round2(area), metalArea: round2(metal), tileArea: round2(tile), membraneArea: round2(membrane),
+    steepArea: round2(steep), maxPitch: round2(maxPitch), ridgeHip: round2(pos(m.ridge) + pos(m.hip)),
   };
 }
 
-/** Keys match catalog_items.calc_key, seeded by create_organization() / seed_catalog_v2(). */
-export type CalcKey =
-  | "tearoff"
-  | "extra_layer"
-  | "labor"
-  | "steep"
-  | "steep_high"
-  | "shingles"
-  | "low_slope"
-  | "metal"
-  | "underlayment"
-  | "ice_water"
-  | "starter"
-  | "ridge_cap"
-  | "drip_edge"
-  | "ridge_vent"
-  | "nails"
-  | "pipe_boot"
-  | "decking"
-  | "dumpster"
-  | "permit";
-
-/** Every calculator key, in the order lines are generated. `warranty` is a per-option price-book key. */
-export const CALC_KEYS: CalcKey[] = [
-  "tearoff", "extra_layer", "labor", "steep", "steep_high", "shingles", "low_slope", "metal", "underlayment", "ice_water",
-  "starter", "ridge_cap", "drip_edge", "ridge_vent", "nails", "pipe_boot", "decking", "dumpster", "permit",
-];
-export const PRICE_BOOK_KEYS = [...CALC_KEYS, "warranty"] as const;
-
-export const CALC_KEY_LABEL: Record<string, string> = {
-  tearoff: "Tear-off (first layer)",
-  extra_layer: "Extra tear-off layers",
-  labor: "Installation labor",
-  steep: "Steep charge 8–9/12",
-  steep_high: "Steep charge 10/12 and up",
-  shingles: "Shingles",
-  low_slope: "Low-slope system (under 3/12)",
-  metal: "Metal roofing",
-  underlayment: "Underlayment",
-  ice_water: "Ice & water shield",
-  starter: "Starter strip",
-  ridge_cap: "Hip & ridge cap",
-  drip_edge: "Drip edge",
-  ridge_vent: "Ridge vent",
-  nails: "Nails",
-  pipe_boot: "Pipe boots",
-  decking: "Decking allowance (per sheet)",
-  dumpster: "Dumpster",
-  permit: "Permit",
-  warranty: "Warranty (per option)",
+// ---------------------------------------------------------------------------
+// Takeoff: quantities per calc key
+// ---------------------------------------------------------------------------
+export type Takeoff = {
+  key: string;
+  quantity: number;
+  unit: CalcUnit;
+  /** Metal sheet lines are split per profile. */
+  profile?: MetalProfile;
+  /** How the number was worked out (shown in the editor). */
+  basis?: string;
 };
 
-export type Takeoff = { key: CalcKey; quantity: number };
+export const ASBESTOS_WARNING =
+  "Asbestos suspected: removal must be done by a licensed asbestos removalist, and the work notified to your state's WHS regulator where required. Check before quoting.";
 
 /**
- * Quantities to order. Coverage assumptions (typical architectural-shingle system):
- * bundles/sq configurable (default 3) · underlayment 10 sq/roll · ice & water 2 sq/roll (~66 LF x 3 ft)
- * starter ~100 LF/bundle (eaves + rakes) · hip & ridge ~30 LF/bundle
- * drip edge 10 ft pieces (eaves + rakes) · ridge vent 4 ft pieces · nails ~15 sq/box
- *
- * Low-slope sections (under 3/12 unless overridden) get no shingles, underlayment, starter, install labor
- * or steep charges; they are priced per square through `low_slope`. Metal sections are priced through
- * `metal` (waste included) and share underlayment and install labor with shingles.
- * Pitch tiers: `steep` for 8/12 up to 10/12, `steep_high` for 10/12 and up.
- * Tear-off: `tearoff` is the first layer; every additional layer is `extra_layer`.
+ * Quantities by job type:
+ * - Re-roof / tile-to-metal / asbestos: strip (or licensed asbestos removal) + install m², the new roof's materials,
+ *   sarking, safety mesh (metal), capping, valley iron, flashings, steep allowance, edge protection, skip bins.
+ * - Restoration: clean m², rebed & repoint ridge + hip lm (tiles), coating m², broken tiles, steep, edge protection.
+ * - Repair: broken tiles, valley iron and flashings entered, edge protection.
+ * - Gutters only: gutter lm (eave line), downpipes, edge protection.
+ * Gutters & downpipes are added to any job with "include gutters".
  */
-export function takeoff(m: Measurements, opts: CalcOptions = {}): Takeoff[] {
-  const s = summarize(m, opts);
+export function takeoff(m: Measurements, opts: { profileOverride?: ProfileOverride } = {}): Takeoff[] {
+  const st = m.settings ?? DEFAULT_SETTINGS;
+  const s = summarize(m);
   const out: Takeoff[] = [];
-  const add = (key: CalcKey, q: number) => {
-    if (q > 0) out.push({ key, quantity: round2(q) });
+  const add = (key: string, q: number, extra: Partial<Takeoff> = {}) => {
+    if (q > 0) out.push({ key, quantity: round2(q), unit: calcKeyUnit(key), ...extra });
   };
-  const steepSlope = s.shingleSquares + s.metalSquares;
-  const steepSlopeGross = s.orderSquares + s.metalOrderSquares;
-  const eaveRake = Math.max(0, m.eaves) + Math.max(0, m.rakes);
-  const hipRidge = Math.max(0, m.hips) + Math.max(0, m.ridges);
-  const layers = Math.max(0, Math.round(Number(m.layers) || 0));
+  const job = m.jobType;
+  const replaces = REPLACES_ROOF.includes(job);
+  const asbestos = job === "asbestos" || Boolean(m.asbestosSuspected);
+  const lap = 1 + pos(st.lapPct) / 100;
+  const live = m.sections.filter((x) => pos(x.area) > 0);
+  const gross = (xs: RoofSection[]) => xs.reduce((a, x) => a + trueArea(x) * (1 + sectionWaste(x, m) / 100), 0);
+  const tiles = live.filter((x) => isTile(sectionSystem(x)));
+  const metalSecs = live.filter((x) => sectionSystem(x) === "metal");
+  const membraneSecs = live.filter((x) => sectionSystem(x) === "membrane");
+  const tileGross = gross(tiles);
 
-  if (layers > 0) add("tearoff", s.squares);
-  if (layers > 1) add("extra_layer", s.squares * (layers - 1));
-  add("labor", steepSlope);
-  add("steep", s.steepSquares - s.steepHighSquares);
-  add("steep_high", s.steepHighSquares);
-  add("shingles", s.bundles);
-  add("low_slope", s.lowSlopeOrderSquares);
-  add("metal", s.metalOrderSquares);
-  add("underlayment", ceil(round2(steepSlopeGross) / 10));
-  // Ice & water: eave rows plus valleys (valleys get a full-width 3 ft strip).
-  const iceWaterLf = Math.max(0, m.eaves) * Math.max(0, m.iceWaterRows) + Math.max(0, m.valleys);
-  add("ice_water", ceil(iceWaterLf / 66));
-  // Edges are global (as on aerial reports); starter only runs along the steep-slope share of them.
-  add("starter", ceil(round2(eaveRake * s.steepSlopeShare) / 100));
-  add("ridge_cap", ceil(hipRidge / 30));
-  add("drip_edge", ceil(eaveRake / 10));
-  if (m.ridgeVent) add("ridge_vent", ceil(Math.max(0, m.ridges) / 4));
-  add("nails", ceil(round2(steepSlopeGross) / 15));
-  add("pipe_boot", Math.max(0, Math.round(m.pipeBoots)));
-  add("decking", Math.max(0, Math.round(Number(m.deckingSheets) || 0)));
-  if (m.includeDumpster && s.squares > 0) add("dumpster", Math.max(1, ceil(s.squares / 30)));
-  if (m.includePermit && s.squares > 0) add("permit", 1);
+  if (replaces) {
+    // Old roof off.
+    if (m.existingRoof !== "none") {
+      if (asbestos) add("asbestos_removal", s.trueArea, { basis: `${s.trueArea} m² true area (licensed removal)` });
+      else add("labour_strip", s.trueArea, { basis: `${s.trueArea} m² true area` });
+    }
+    add("labour_install", s.trueArea, { basis: `${s.trueArea} m² true area` });
+    add("labour_steep", s.steepArea, { basis: `true area pitched above ${st.steepAboveDeg}°` });
+
+    // Metal: cut list per profile, fixings, capping.
+    const cuts = cutList(m, opts.profileOverride);
+    const byProfile = new Map<MetalProfile, CutRow[]>();
+    for (const c of cuts) byProfile.set(c.profile, [...(byProfile.get(c.profile) ?? []), c]);
+    for (const [profile, rows] of byProfile) {
+      const lm = rows.reduce((a, r) => a + r.lm, 0);
+      const exact = rows.every((r) => r.exact);
+      add("metal_sheet", lm, { profile, basis: `${METAL_PROFILE_INFO[profile].label}, ${rows[0].coverMm} mm cover${exact ? ", cut list" : ", from area + waste"}` });
+    }
+    const screws = cuts.reduce((a, r) => a + r.screws, 0);
+    const perBox = Math.max(1, pos(st.screwsPerBox) || 500);
+    add("roof_screws", ceil(screws / perBox), { basis: `≈${Math.round(screws)} screws (${st.screwsPerSheetPerSupport} per sheet per support at ${st.supportSpacingMm} mm), ${perBox}/box` });
+    if (metalSecs.length) {
+      add("ridge_capping", s.ridgeHip * lap, { basis: `ridge + hip ${s.ridgeHip} lm + ${st.lapPct}% laps` });
+      add("barge_capping", pos(m.barge) * lap, { basis: `barge ${pos(m.barge)} lm + ${st.lapPct}% laps` });
+      if (m.includeSafetyMesh) {
+        const metalArea = round2(metalSecs.reduce((a, x) => a + trueArea(x), 0));
+        add("safety_mesh", ceil(metalArea / Math.max(1, pos(st.safetyMeshRollM2))), { basis: `${metalArea} m² ÷ ${st.safetyMeshRollM2} m²/roll` });
+      }
+    }
+
+    // Tiles.
+    if (tiles.length) {
+      add("roof_tile", ceil(round2(tileGross * pos(st.tilesPerM2))), { basis: `${round2(tileGross)} m² incl. waste × ${st.tilesPerM2}/m²` });
+      add("ridge_tile", ceil(round2(s.ridgeHip * pos(st.ridgeTilesPerLm))), { basis: `ridge + hip ${s.ridgeHip} lm × ${st.ridgeTilesPerLm}/lm` });
+      const gauge = Math.max(0.1, pos(st.battenGaugeMm) / 1000);
+      add("tile_battens", tileGross / gauge, { basis: `${round2(tileGross)} m² ÷ ${st.battenGaugeMm} mm gauge` });
+      add("pointing", ceil(s.ridgeHip / Math.max(0.1, pos(st.pointingLmPerBag))), { basis: `${s.ridgeHip} lm ÷ ${st.pointingLmPerBag} lm/bag` });
+    }
+    // Membrane / low-slope.
+    const membraneGross = gross(membraneSecs);
+    add("membrane_roof", membraneGross, { basis: "true area incl. waste" });
+
+    const sarkArea = round2(gross([...metalSecs, ...tiles]));
+    if (m.includeSarking) add("sarking", ceil(sarkArea / Math.max(1, pos(st.sarkingRollM2))), { basis: `${sarkArea} m² incl. waste ÷ ${st.sarkingRollM2} m²/roll` });
+    add("valley_iron", pos(m.valley) * lap, { basis: `valleys ${pos(m.valley)} lm + ${st.lapPct}% laps` });
+    add("flashing", pos(m.apron) * lap, { basis: `apron / wall ${pos(m.apron)} lm + ${st.lapPct}% laps` });
+    add("whirlybird", Math.round(pos(m.whirlybirds)));
+
+    if (m.includeSkip && !asbestos && m.existingRoof !== "none") {
+      const vol = round2(s.trueArea * OLD_ROOF_M3_PER_M2[m.existingRoof]);
+      add("skip_bin", ceil(vol / Math.max(1, pos(st.skipBinM3))), { basis: `≈${vol} m³ of old ${EXISTING_ROOF_LABEL[m.existingRoof].toLowerCase()} ÷ ${st.skipBinM3} m³ bins` });
+    }
+  } else if (job === "restoration") {
+    add("restore_clean", s.trueArea, { basis: `${s.trueArea} m² true area` });
+    if (tiles.length) add("rebed_repoint", s.ridgeHip, { basis: "ridge + hip lm" });
+    add("roof_coating", s.trueArea, { basis: `${s.trueArea} m² true area` });
+    if (tiles.length) add("tile_replace", Math.round(pos(m.replaceTiles)));
+    add("labour_steep", s.steepArea, { basis: `true area pitched above ${st.steepAboveDeg}°` });
+  } else if (job === "repair") {
+    add("tile_replace", Math.round(pos(m.replaceTiles)));
+    add("valley_iron", pos(m.valley) * lap, { basis: `valleys ${pos(m.valley)} lm + ${st.lapPct}% laps` });
+    add("flashing", pos(m.apron) * lap, { basis: `apron / wall ${pos(m.apron)} lm + ${st.lapPct}% laps` });
+  }
+
+  if (job === "gutters" || m.includeGutters) {
+    add("gutter", pos(m.eave), { basis: "eave / gutter line" });
+    add("downpipe", Math.round(pos(m.downpipes)));
+  }
+  if (m.includeEdgeProtection && (out.length > 0 || job === "repair")) add("edge_protection", 1, { basis: "per job" });
   return out;
 }
 
-/** Accept anything stored in the jsonb column and fill in defaults. */
-export function normalizeMeasurements(raw: unknown, defaultWaste = 10): Measurements {
-  const r = (raw && typeof raw === "object" ? raw : {}) as Partial<Measurements>;
-  const num = (v: unknown, d: number) => (typeof v === "number" && Number.isFinite(v) ? v : d);
-  const sections: RoofSection[] =
-    Array.isArray(r.sections) && r.sections.length > 0
-      ? r.sections.map((s, i) => {
-          const sec: RoofSection = {
-            label: typeof s?.label === "string" ? s.label : `Section ${i + 1}`,
-            area: num(s?.area, 0),
-            pitch: num(s?.pitch, 6),
-            waste: typeof s?.waste === "number" && Number.isFinite(s.waste) ? s.waste : null,
-          };
-          if (s?.system && ROOF_SYSTEMS.includes(s.system)) sec.system = s.system;
-          return sec;
-        })
-      : DEFAULT_MEASUREMENTS.sections.map((s) => ({ ...s }));
+export type TakeoffWarning = { code: "asbestos" | "no_area"; text: string };
+
+export function takeoffWarnings(m: Measurements): TakeoffWarning[] {
+  const w: TakeoffWarning[] = [];
+  if (m.jobType === "asbestos" || m.asbestosSuspected) w.push({ code: "asbestos", text: ASBESTOS_WARNING });
+  if (!["gutters", "repair"].includes(m.jobType) && summarize(m).trueArea <= 0) w.push({ code: "no_area", text: "Enter the plan area of at least one roof section." });
+  return w;
+}
+
+// ---------------------------------------------------------------------------
+// Normalising stored jsonb (incl. the old US imperial format)
+// ---------------------------------------------------------------------------
+const SQM_PER_SQFT = 0.09290304;
+const M_PER_FT = 0.3048;
+/** "6/12" rise-per-12 -> degrees (6/12 ≈ 26.57°). */
+export const degFromRisePer12 = (r: number) => round2((Math.atan(pos(r) / 12) * 180) / Math.PI);
+
+const numOr = (v: unknown, d: number) => (typeof v === "number" && Number.isFinite(v) ? v : d);
+
+function normalizeSettings(raw: unknown, base: CalcSettings): CalcSettings {
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const cw: Partial<Record<MetalProfile, number>> = { ...(base.coverWidthMm ?? {}) };
+  if (r.coverWidthMm && typeof r.coverWidthMm === "object") {
+    for (const p of METAL_PROFILES) {
+      const v = Number((r.coverWidthMm as Record<string, unknown>)[p]);
+      if (v > 100 && v < 2000) cw[p] = v;
+    }
+  }
+  const out: CalcSettings = { ...base, coverWidthMm: cw };
+  for (const k of Object.keys(DEFAULT_SETTINGS) as (keyof CalcSettings)[]) {
+    if (k === "coverWidthMm") continue;
+    const v = r[k];
+    if (typeof v === "number" && Number.isFinite(v) && v >= 0) (out as Record<string, unknown>)[k] = v;
+  }
+  return out;
+}
+
+/** Calculator assumptions from organizations.calc_defaults (missing keys = defaults). */
+export const normalizeCalcSettings = (raw: unknown) => normalizeSettings(raw, DEFAULT_SETTINGS);
+
+/** True when stored measurements are the old imperial (sq ft, rise/12, feet) format. */
+export function isLegacyImperial(raw: unknown): boolean {
+  if (!raw || typeof raw !== "object") return false;
+  const r = raw as Record<string, unknown>;
+  if (r.units === "metric") return false;
+  const hasSections = Array.isArray(r.sections) && r.sections.length > 0;
+  return hasSections || ["eaves", "rakes", "ridges", "hips", "valleys"].some((k) => typeof r[k] === "number" && (r[k] as number) > 0);
+}
+
+/** Accept anything stored in estimates.measurements and fill in defaults (old imperial data is converted). */
+export function normalizeMeasurements(raw: unknown, defaultWaste = 10, orgSettings?: unknown): Measurements {
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const legacy = isLegacyImperial(raw);
+  const base = orgSettings ? normalizeCalcSettings(orgSettings) : DEFAULT_SETTINGS;
+  const rawSections = Array.isArray(r.sections) ? (r.sections as Record<string, unknown>[]) : [];
+  const sections: RoofSection[] = rawSections.length
+    ? rawSections.map((s, i) => {
+        const area = numOr(s?.area, 0);
+        const pitch = numOr(s?.pitch, legacy ? 6 : 22.5);
+        const sysRaw = s?.system as string | undefined;
+        const sec: RoofSection = {
+          label: typeof s?.label === "string" && s.label ? s.label : `Section ${i + 1}`,
+          area: legacy ? round2(area * SQM_PER_SQFT) : area,
+          pitch: legacy ? degFromRisePer12(pitch) : clampPitch(pitch),
+          waste: typeof s?.waste === "number" && Number.isFinite(s.waste) ? s.waste : null,
+          system: ROOF_SYSTEMS.includes(sysRaw as RoofSystem) ? (sysRaw as RoofSystem) : legacy && (sysRaw === "low_slope" || pitch < 3) ? "membrane" : "metal",
+        };
+        if (METAL_PROFILES.includes(s?.profile as MetalProfile)) sec.profile = s.profile as MetalProfile;
+        if (typeof s?.runLength === "number" && s.runLength > 0) sec.runLength = s.runLength;
+        if (typeof s?.width === "number" && s.width > 0) sec.width = s.width;
+        return sec;
+      })
+    : DEFAULT_MEASUREMENTS.sections.map((s) => ({ ...s }));
+  const lm = (metricKey: string, legacyKey: string) => (legacy ? round2(numOr(r[legacyKey], 0) * M_PER_FT) : numOr(r[metricKey], 0));
+  const bool = (k: string, d: boolean) => (typeof r[k] === "boolean" ? (r[k] as boolean) : d);
+  const jobType = JOB_TYPES.includes(r.jobType as JobType) ? (r.jobType as JobType) : "reroof";
   return {
+    units: "metric",
+    jobType,
+    existingRoof: EXISTING_ROOFS.includes(r.existingRoof as ExistingRoof) ? (r.existingRoof as ExistingRoof) : "tile",
     sections,
-    wastePct: num(r.wastePct, defaultWaste),
-    eaves: num(r.eaves, 0),
-    rakes: num(r.rakes, 0),
-    ridges: num(r.ridges, 0),
-    hips: num(r.hips, 0),
-    valleys: num(r.valleys, 0),
-    layers: num(r.layers, 1),
-    pipeBoots: num(r.pipeBoots, 0),
-    iceWaterRows: num(r.iceWaterRows, 1),
-    ridgeVent: typeof r.ridgeVent === "boolean" ? r.ridgeVent : true,
-    includeDumpster: typeof r.includeDumpster === "boolean" ? r.includeDumpster : true,
-    includePermit: typeof r.includePermit === "boolean" ? r.includePermit : true,
-    deckingSheets: num(r.deckingSheets, 0),
+    wastePct: numOr(r.wastePct, defaultWaste),
+    ridge: lm("ridge", "ridges"),
+    hip: lm("hip", "hips"),
+    valley: lm("valley", "valleys"),
+    barge: lm("barge", "rakes"),
+    eave: lm("eave", "eaves"),
+    apron: legacy ? 0 : numOr(r.apron, 0),
+    downpipes: numOr(r.downpipes, 0),
+    whirlybirds: numOr(r.whirlybirds, 0),
+    replaceTiles: numOr(r.replaceTiles, 0),
+    asbestosSuspected: bool("asbestosSuspected", jobType === "asbestos"),
+    includeSarking: bool("includeSarking", true),
+    includeSafetyMesh: bool("includeSafetyMesh", true),
+    includeGutters: bool("includeGutters", false),
+    includeEdgeProtection: bool("includeEdgeProtection", true),
+    includeSkip: bool("includeSkip", true),
+    settings: normalizeSettings(r.settings, base),
   };
 }
 
-/** The normalized measurements, keeping any extra keys stored in the jsonb (e.g. from the satellite tool). */
+/** Legacy US keys that must not survive a save once converted to metric. */
+const LEGACY_KEYS = ["eaves", "rakes", "ridges", "hips", "valleys", "layers", "pipeBoots", "iceWaterRows", "ridgeVent", "includeDumpster", "includePermit", "deckingSheets"];
+
+/** The normalised measurements, keeping extra keys stored in the jsonb (e.g. the satellite tracing). */
 export function mergeMeasurements(raw: unknown, m: Measurements): Record<string, unknown> {
-  const base = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  const base = raw && typeof raw === "object" && !Array.isArray(raw) ? { ...(raw as Record<string, unknown>) } : {};
+  for (const k of LEGACY_KEYS) delete base[k];
   return { ...base, ...m };
 }
 
 // ---------------------------------------------------------------------------
-// Measurement report import (EagleView / Hover / Roofr / GAF QuickMeasure / other)
+// Measurement report import (Nearmap / other aerial report / hand-measured table)
 // ---------------------------------------------------------------------------
-export const MEASUREMENT_SOURCES = ["manual", "satellite", "eagleview", "hover", "roofr", "gaf_quickmeasure", "other"] as const;
+export const MEASUREMENT_SOURCES = ["manual", "satellite", "nearmap", "roofgraf", "other", "eagleview", "hover", "roofr", "gaf_quickmeasure"] as const;
 export type MeasurementSource = (typeof MEASUREMENT_SOURCES)[number];
 export const MEASUREMENT_SOURCE_LABEL: Record<string, string> = {
   manual: "Hand measured",
   satellite: "Satellite self-measure",
+  nearmap: "Nearmap",
+  roofgraf: "Roofgraf",
+  other: "Other report",
   eagleview: "EagleView",
   hover: "Hover",
   roofr: "Roofr",
   gaf_quickmeasure: "GAF QuickMeasure",
-  other: "Other report",
 };
 
-/** Parse a pitch written as "6/12", "6", "6 / 12", "6:12" or "6in12". */
+/**
+ * Parse a pitch: degrees ("22.5", "22.5°", "22.5 deg"), a rise:run ratio ("1:4" = atan(1/4) ≈ 14.04°)
+ * or a rise per 12 ("6/12" ≈ 26.57°). Returns degrees, or null when not understood / out of range.
+ */
 export function parsePitch(v: string): number | null {
-  const t = String(v ?? "").trim().toLowerCase();
+  const t = String(v ?? "").trim().toLowerCase().replace(/\s+/g, " ");
   if (!t) return null;
-  const m = t.match(/^(\d+(?:\.\d+)?)\s*(?:(?:\/|in|:)\s*12)?$/);
-  if (!m) return null;
-  const n = Number(m[1]);
-  return Number.isFinite(n) && n >= 0 && n <= 30 ? n : null;
+  let m = t.match(/^(\d+(?:\.\d+)?)\s*(?:°|deg|degrees?)?$/);
+  if (m) {
+    const n = Number(m[1]);
+    return n <= MAX_PITCH ? round2(n) : null;
+  }
+  m = t.match(/^(\d+(?:\.\d+)?)\s*(?:\/|in)\s*12$/);
+  if (m) return Number(m[1]) <= 30 ? degFromRisePer12(Number(m[1])) : null;
+  m = t.match(/^(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)$/);
+  if (m && Number(m[2]) > 0) {
+    const d = pitchFromRiseRun(Number(m[1]), Number(m[2]));
+    return d < MAX_PITCH ? d : null;
+  }
+  return null;
 }
 
 export type FacetRow = { label: string; area: number; pitch: number };
 
-const AREA_SUFFIX = /\s*(sq\.?\s*ft\.?|sqft|sf|ft²|ft2)$/i;
+const AREA_SUFFIX = /\s*(m²|m2|sqm|sq\.?\s*m)$/i;
 const isNumber = (c: string) => /^\d[\d,]*(\.\d+)?$/.test(c.replace(AREA_SUFFIX, "").trim());
 
 /**
- * Facets pasted from a report as CSV / TSV: `label, area, pitch` (or `area, pitch`) per line.
+ * Facets pasted from a report as CSV / TSV: `name, area m², pitch°` (or `area, pitch`) per line.
  * A header line and blank lines are skipped. Returns parsed rows plus line-level errors.
  */
 export function parseFacetCsv(text: string): { rows: FacetRow[]; errors: string[] } {
   const rows: FacetRow[] = [];
   const errors: string[] = [];
-  const lines = String(text ?? "").split(/\r?\n/);
-  lines.forEach((line, idx) => {
+  String(text ?? "").split(/\r?\n/).forEach((line, idx) => {
     const raw = line.trim();
     if (!raw) return;
-    // Tabs or semicolons first (areas may contain thousands commas), then commas.
     const cells = (/[\t;]/.test(raw) ? raw.split(/[\t;]/) : raw.split(",")).map((c) => c.trim());
     let label = "", areaCell = "", pitchCell = "";
     if (cells.length >= 3) [label, areaCell, pitchCell] = cells;
     else if (cells.length === 2) [areaCell, pitchCell] = cells;
     else {
-      errors.push(`Line ${idx + 1}: expected "label, area, pitch"`);
+      errors.push(`Line ${idx + 1}: expected "name, area, pitch"`);
       return;
     }
     if (!isNumber(areaCell)) {
@@ -352,7 +626,7 @@ export function parseFacetCsv(text: string): { rows: FacetRow[]; errors: string[
     const area = Number(areaCell.replace(AREA_SUFFIX, "").replace(/,/g, ""));
     const pitch = parsePitch(pitchCell);
     if (pitch == null) {
-      errors.push(`Line ${idx + 1}: pitch "${pitchCell}" not understood (use 6/12 or 6)`);
+      errors.push(`Line ${idx + 1}: pitch "${pitchCell}" not understood (use degrees, e.g. 22.5)`);
       return;
     }
     if (!(area > 0)) {
@@ -365,23 +639,25 @@ export function parseFacetCsv(text: string): { rows: FacetRow[]; errors: string[
 }
 
 /**
- * Convert report facets to calculator sections. Aerial reports give the sloped (true) area per facet;
- * the calculator stores plan area, so divide by the pitch factor unless the areas are already plan.
+ * Report facets -> calculator sections. Aerial reports give the true (sloped) area per facet; the calculator
+ * stores plan area, so multiply by cos(pitch) unless the areas are already plan.
  */
-export function facetsToSections(facets: FacetRow[], areasAre: "sloped" | "plan" = "sloped"): RoofSection[] {
+export function facetsToSections(facets: FacetRow[], areasAre: "sloped" | "plan" = "sloped", system: RoofSystem = "metal"): RoofSection[] {
   return facets.map((f) => ({
     label: f.label,
     pitch: f.pitch,
     area: round2(areasAre === "sloped" ? f.area / pitchFactor(f.pitch) : f.area),
     waste: null,
+    system,
   }));
 }
 
 // ---------------------------------------------------------------------------
-// Money
+// Money (generic helpers, also used by invoices)
 // ---------------------------------------------------------------------------
 export type LineItem = { quantity: number; unit_price: number };
 
+/** Tax-exclusive totals: tax is added on top of (subtotal − discount). Estimates use estimateTotals() in estimate-totals.ts. */
 export function totals(items: LineItem[], discount: number, taxRate: number) {
   const subtotal = round2(items.reduce((sum, i) => sum + round2((Number(i.quantity) || 0) * (Number(i.unit_price) || 0)), 0));
   const taxable = Math.max(0, round2(subtotal - (Number(discount) || 0)));
@@ -391,7 +667,7 @@ export function totals(items: LineItem[], discount: number, taxRate: number) {
 
 export type CostedItem = LineItem & { unit_cost?: number | null };
 
-/** Cost vs sell for a set of lines, before tax. A discount comes straight out of profit. */
+/** Cost vs sell for a set of lines (same tax basis on both sides). A discount comes straight out of profit. */
 export function margin(items: CostedItem[], discount = 0) {
   const gross = items.reduce((s, i) => s + round2((Number(i.quantity) || 0) * (Number(i.unit_price) || 0)), 0);
   const sell = Math.max(0, round2(gross - (Number(discount) || 0)));
@@ -400,7 +676,7 @@ export function margin(items: CostedItem[], discount = 0) {
   return { sell, cost, profit, pct: sell > 0 ? round2((profit / sell) * 100) : 0 };
 }
 
-/** Standard amortized monthly payment. APR in percent (e.g. 9.99). 0% APR = straight division. */
+/** Standard amortised monthly repayment. APR in percent (e.g. 9.99). 0% = straight division. */
 export function monthlyPayment(principal: number, aprPct: number, months: number): number {
   const p = Number(principal) || 0;
   const n = Math.round(Number(months) || 0);
@@ -414,37 +690,38 @@ export function monthlyPayment(principal: number, aprPct: number, months: number
 // Instant quote (public website widget)
 // ---------------------------------------------------------------------------
 export const QUOTE_PITCHES = {
-  flat: { label: "Flat", pitch: 1, hint: "Barely sloped" },
-  low: { label: "Low", pitch: 4, hint: "Easy to walk on" },
-  medium: { label: "Medium", pitch: 7, hint: "Most houses" },
-  steep: { label: "Steep", pitch: 10, hint: "Hard to walk on" },
+  flat: { label: "Flat", deg: 3, range: "0–5°", hint: "Barely sloped" },
+  low: { label: "Low", deg: 12, range: "5–15°", hint: "Easy to walk on" },
+  medium: { label: "Medium", deg: 22.5, range: "15–30°", hint: "Most houses" },
+  steep: { label: "Steep", deg: 35, range: "30° +", hint: "Hard to walk on" },
 } as const;
 export type QuotePitch = keyof typeof QUOTE_PITCHES;
+export const QUOTE_ROOF_TYPES = { metal: "Metal (COLORBOND)", tile: "Tiles" } as const;
+export type QuoteRoofType = keyof typeof QUOTE_ROOF_TYPES;
 
-/** Eave overhangs and porches: roof plan area is roughly 15% larger than the floor footprint. */
+/** Eaves overhang: roof plan area is roughly 15% larger than the house footprint. */
 export const OVERHANG_FACTOR = 1.15;
 
 export type InstantQuoteInput =
-  | { mode: "house"; houseSqft: number; stories: number; pitch: QuotePitch }
-  | { mode: "squares"; squares: number; pitch: QuotePitch };
+  | { mode: "house"; floorM2: number; storeys: number; pitch: QuotePitch }
+  | { mode: "roof"; roofM2: number; pitch: QuotePitch };
 
 /**
- * Rough installed-price range. From house size: footprint = living area / stories, x overhang, x pitch
- * factor. Known squares are taken as already sloped. Prices per square come from the org's instant-quote
+ * Rough installed price range (GST inclusive). From house size: footprint = floor area ÷ storeys × overhang ×
+ * pitch factor. A known roof area is taken as already sloped. Rates per m² come from the company's instant-quote
  * settings; results round to the nearest $100.
  */
-export function instantQuoteRange(input: InstantQuoteInput, perSquareLow: number, perSquareHigh: number) {
-  const pitch = QUOTE_PITCHES[input.pitch]?.pitch ?? 6;
-  let squares: number;
-  if (input.mode === "squares") squares = Math.max(0, Number(input.squares) || 0);
+export function instantQuoteRange(input: InstantQuoteInput, perM2Low: number, perM2High: number) {
+  const deg = QUOTE_PITCHES[input.pitch]?.deg ?? 22.5;
+  let m2: number;
+  if (input.mode === "roof") m2 = pos(input.roofM2);
   else {
-    const stories = Math.min(4, Math.max(1, Math.round(Number(input.stories) || 1)));
-    const footprint = Math.max(0, Number(input.houseSqft) || 0) / stories;
-    squares = (footprint * OVERHANG_FACTOR * pitchFactor(pitch)) / 100;
+    const storeys = Math.min(4, Math.max(1, Math.round(Number(input.storeys) || 1)));
+    m2 = (pos(input.floorM2) / storeys) * OVERHANG_FACTOR * pitchFactor(deg);
   }
-  squares = round2(squares);
-  const lo = Math.min(Number(perSquareLow) || 0, Number(perSquareHigh) || 0);
-  const hi = Math.max(Number(perSquareLow) || 0, Number(perSquareHigh) || 0);
+  m2 = Math.round(m2);
+  const lo = Math.min(pos(perM2Low), pos(perM2High));
+  const hi = Math.max(pos(perM2Low), pos(perM2High));
   const r100 = (n: number) => Math.round(n / 100) * 100;
-  return { squares, low: r100(squares * lo), high: r100(squares * hi) };
+  return { m2, low: r100(m2 * lo), high: r100(m2 * hi) };
 }

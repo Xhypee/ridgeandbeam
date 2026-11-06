@@ -5,13 +5,13 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import type * as Leaflet from "leaflet";
 import { Button, Input, cx } from "@/components/ui";
 import { MapCanvas, type MapApi } from "@/components/map/map-canvas";
-import { polygonAreaSqFt, type LatLng } from "@/lib/geo";
+import { polygonAreaSqM, type LatLng } from "@/lib/geo";
 import { pitchFactor } from "@/lib/roof";
 import { saveSatelliteMeasure } from "../actions";
 
 export type Facet = { id: string; label: string; pitch: number; points: LatLng[] };
-const PITCHES = [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12];
-const US_CENTER: LatLng = [39.5, -98.35];
+const PITCHES = [0, 5, 10, 15, 20, 22.5, 25, 30, 35, 40, 45];
+const AU_CENTER: LatLng = [-25.27, 133.78];
 const fmt = (n: number, d = 0) => n.toLocaleString("en-AU", { maximumFractionDigits: d, minimumFractionDigits: d });
 
 export function SatelliteMeasure({ estimateId, address, initialCenter, initialZoom, initialFacets, locked }: {
@@ -28,7 +28,7 @@ export function SatelliteMeasure({ estimateId, address, initialCenter, initialZo
   const [ready, setReady] = useState(false);
   const api = useRef<MapApi | null>(null);
   const group = useRef<Leaflet.LayerGroup | null>(null);
-  const lastPitch = useRef(initialFacets.at(-1)?.pitch ?? 6);
+  const lastPitch = useRef(initialFacets.at(-1)?.pitch ?? 22.5);
   const click = useRef<(p: LatLng) => void>(() => {});
 
   const update = (fn: (f: Facet[]) => Facet[]) => { setFacets(fn); setDirty(true); setResult(null); };
@@ -97,8 +97,8 @@ export function SatelliteMeasure({ estimateId, address, initialCenter, initialZo
     for (const f of facets) {
       const isSel = f.id === selected && !drawing;
       const poly = L.polygon(f.points, { color: isSel ? "#f97316" : "#22d3ee", weight: isSel ? 3 : 2, fillOpacity: isSel ? 0.35 : 0.2 }).addTo(g);
-      const sq = (polygonAreaSqFt(f.points) * pitchFactor(f.pitch)) / 100;
-      poly.bindTooltip(`${f.label}: ${fmt(sq, 1)} sq`, { permanent: true, direction: "center", className: "!bg-white/90 !text-xs !font-semibold" });
+      const m2 = polygonAreaSqM(f.points) * pitchFactor(f.pitch);
+      poly.bindTooltip(`${f.label}: ${fmt(m2, 1)} m²`, { permanent: true, direction: "center", className: "!bg-white/90 !text-xs !font-semibold" });
       poly.on("click", (ev: Leaflet.LeafletMouseEvent) => {
         L.DomEvent.stopPropagation(ev);
         if (drawing) click.current([ev.latlng.lat, ev.latlng.lng]);
@@ -140,12 +140,12 @@ export function SatelliteMeasure({ estimateId, address, initialCenter, initialZo
   }, [facets, selected, drawing, removeMode, ready, locked]);
 
   const rows = facets.map((f) => {
-    const plan = polygonAreaSqFt(f.points);
+    const plan = polygonAreaSqM(f.points);
     const pf = pitchFactor(f.pitch);
-    return { f, plan, pf, squares: (plan * pf) / 100 };
+    return { f, plan, pf, area: plan * pf };
   });
   const totPlan = rows.reduce((s, r) => s + r.plan, 0);
-  const totSq = rows.reduce((s, r) => s + r.squares, 0);
+  const totArea = rows.reduce((s, r) => s + r.area, 0);
   const sel = rows.find((r) => r.f.id === selected);
 
   const save = () =>
@@ -165,13 +165,13 @@ export function SatelliteMeasure({ estimateId, address, initialCenter, initialZo
   return (
     <div className="space-y-4">
       <p className="rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-700 ring-1 ring-brand-100">
-        <b>Trace roof edges including overhangs; verify pitch on site.</b> Satellite photos can be off by a few feet and trees hide edges — treat this as a starting measurement.
+        <b>Trace roof edges including overhangs; verify pitch on site.</b> Satellite photos can be off by half a metre or more and trees hide edges — treat this as a starting measurement.
       </p>
       {geoMsg && <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-700" data-geo-message>{geoMsg}</p>}
 
       <div className="flex flex-wrap items-center gap-2">
         {locked ? (
-          <p className="text-sm text-slate-600">This estimate is accepted, so measurements are locked.</p>
+          <p className="text-sm text-slate-600">This quote is accepted, so measurements are locked.</p>
         ) : drawing ? (
           <>
             <span className="text-sm font-medium text-slate-800" data-drawing>Tap each roof corner · {drawing.length} point{drawing.length === 1 ? "" : "s"}</span>
@@ -193,27 +193,27 @@ export function SatelliteMeasure({ estimateId, address, initialCenter, initialZo
         )}
       </div>
 
-      <MapCanvas center={initialCenter ?? US_CENTER} zoom={initialCenter ? (initialZoom ?? 20) : 4} onReady={onReady} className="h-[55vh] min-h-80 cursor-crosshair" />
+      <MapCanvas center={initialCenter ?? AU_CENTER} zoom={initialCenter ? (initialZoom ?? 20) : 4} onReady={onReady} className="h-[55vh] min-h-80 cursor-crosshair" />
 
       <div className="rounded-xl bg-white ring-1 ring-slate-200">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
           <h2 className="text-sm font-semibold">Facets</h2>
           <p className="text-sm text-slate-600" data-measure-total>
-            Plan {fmt(totPlan)} sq ft · <b className="text-slate-900">{fmt(totSq, 2)} squares</b> with pitch (before waste)
+            Plan {fmt(totPlan, 1)} m² · <b className="text-slate-900">{fmt(totArea, 1)} m² true roof area</b> (before waste)
           </p>
         </div>
         {rows.length === 0 ? (
           <p className="px-4 py-6 text-sm text-slate-500">Tap <b>+ Trace a facet</b>, then tap each corner of one roof plane. Trace each plane that has a different pitch separately.</p>
         ) : (
           <ul className="divide-y divide-slate-100">
-            {rows.map(({ f, plan, pf, squares }) => (
+            {rows.map(({ f, plan, pf, area }) => (
               <li key={f.id} className={cx("space-y-2 px-4 py-3", f.id === selected && "bg-brand-50/50")} data-facet>
                 <div className="flex flex-wrap items-center gap-2">
                   <Input aria-label="Facet name" value={f.label} disabled={locked} onChange={(e) => update((fs) => fs.map((x) => (x.id === f.id ? { ...x, label: e.target.value } : x)))} onFocus={() => setSelected(f.id)} className="max-w-44" />
-                  <span className="text-sm tabular-nums text-slate-600">{fmt(plan)} sq ft plan × {pf.toFixed(3)} = <b className="text-slate-900">{fmt(squares, 2)} sq</b></span>
+                  <span className="text-sm tabular-nums text-slate-600">{fmt(plan, 1)} m² plan × {pf.toFixed(3)} = <b className="text-slate-900">{fmt(area, 1)} m²</b></span>
                 </div>
                 <div className="flex flex-wrap items-center gap-1" role="group" aria-label={`Pitch for ${f.label}`}>
-                  <span className="mr-1 text-xs text-slate-500">Pitch</span>
+                  <span className="mr-1 text-xs text-slate-500">Pitch °</span>
                   {PITCHES.map((p) => (
                     <button
                       key={p}
@@ -223,10 +223,10 @@ export function SatelliteMeasure({ estimateId, address, initialCenter, initialZo
                       onClick={() => { lastPitch.current = p; update((fs) => fs.map((x) => (x.id === f.id ? { ...x, pitch: p } : x))); }}
                       className={cx("min-h-9 min-w-11 rounded-md px-2 text-sm font-medium ring-1", f.pitch === p ? "bg-slate-900 text-white ring-slate-900" : "bg-white text-slate-700 ring-slate-300")}
                     >
-                      {p}/12
+                      {p}°
                     </button>
                   ))}
-                  <span className="w-20"><Input aria-label="Custom pitch" type="number" min={0} max={24} step={0.5} value={f.pitch} disabled={locked} onChange={(e) => update((fs) => fs.map((x) => (x.id === f.id ? { ...x, pitch: Math.max(0, Math.min(24, Number(e.target.value) || 0)) } : x)))} /></span>
+                  <span className="w-20"><Input aria-label="Custom pitch degrees" type="number" min={0} max={60} step={0.5} value={f.pitch} disabled={locked} onChange={(e) => update((fs) => fs.map((x) => (x.id === f.id ? { ...x, pitch: Math.max(0, Math.min(60, Number(e.target.value) || 0)) } : x)))} /></span>
                 </div>
               </li>
             ))}
@@ -236,9 +236,9 @@ export function SatelliteMeasure({ estimateId, address, initialCenter, initialZo
 
       {!locked && (
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="button" onClick={save} disabled={pending || !facets.length || !!drawing} className="min-h-11">{pending ? "Saving…" : "Save to estimate"}</Button>
+          <Button type="button" onClick={save} disabled={pending || !facets.length || !!drawing} className="min-h-11">{pending ? "Saving…" : "Save to quote"}</Button>
           {dirty && <span className="text-xs text-amber-700">Unsaved changes</span>}
-          {result?.ok && <span className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700" role="status">{result.ok} <Link className="font-medium underline" href={`/app/estimates/${estimateId}`}>Open estimate</Link></span>}
+          {result?.ok && <span className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700" role="status">{result.ok} <Link className="font-medium underline" href={`/app/estimates/${estimateId}`}>Open quote</Link></span>}
           {result?.error && <span role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{result.error}</span>}
         </div>
       )}

@@ -1,6 +1,6 @@
 // Production & operations: readiness gating, working-day math, rain-day planning,
 // crew pay, job-cost budgets and commissions. Pure functions (no I/O) so they are unit-tested.
-import { normalizeMeasurements, pitchFactor, round2 } from "./roof";
+import { round2 } from "./roof";
 
 // ---------------------------------------------------------------------------
 // Readiness (contract 9)
@@ -187,17 +187,20 @@ export const LOW_SLOPE_BELOW = 3;
  * plus an extra-layer adder per square for each tear-off layer beyond the first.
  */
 export function crewPay(rawMeasurements: unknown, sheet: CrewPaySheet): { lines: CrewPayLine[]; total: number; squares: number } {
-  const m = normalizeMeasurements(rawMeasurements);
+  // Note (AU): still the legacy US model (plan sq ft, rise per 12, layers). Reads the raw jsonb so the AU
+  // calculator's metric measurements (src/lib/roof.ts) don't change its maths; the owner should move it to m²/degrees.
+  const m = (rawMeasurements && typeof rawMeasurements === "object" ? rawMeasurements : {}) as { sections?: { area?: unknown; pitch?: unknown }[]; layers?: unknown };
   const r = (n: unknown) => Number(n) || 0;
+  const pitchFactor = (p: number) => Math.sqrt(1 + (Math.max(0, p) / 12) ** 2);
   let base = 0, low = 0, steep = 0, high = 0;
-  for (const s of m.sections) {
+  for (const s of Array.isArray(m.sections) ? m.sections : []) {
     const sq = (Math.max(0, r(s.area)) * pitchFactor(r(s.pitch))) / 100;
     const p = r(s.pitch);
     if (p < LOW_SLOPE_BELOW) low += sq; else base += sq;
     if (p >= 10) high += sq; else if (p >= 8) steep += sq;
   }
   const total = base + low;
-  const extraLayers = Math.max(0, Math.round(m.layers) - 1);
+  const extraLayers = Math.max(0, Math.round(m.layers == null ? 1 : r(m.layers)) - 1);
   const lines: CrewPayLine[] = [];
   const add = (label: string, squares: number, rate: number) => {
     if (squares > 0 && rate > 0) lines.push({ label, squares: round2(squares), rate, amount: round2(squares * rate) });

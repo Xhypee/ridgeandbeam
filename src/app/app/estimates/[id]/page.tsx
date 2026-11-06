@@ -2,13 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SubmitButton } from "@/components/action-form";
 import { CopyLink } from "@/components/copy-link";
+import { QuoteBusiness } from "@/components/quote-business";
+import { StateCompliancePanel } from "@/components/state-compliance-panel";
 import { Badge, Card, LinkButton, PageHeader, Select } from "@/components/ui";
 import { requireMoneyAccess } from "@/lib/dal";
-import { effectiveOptionId, itemsForOption } from "@/lib/estimate-totals";
-import type { CatalogRow, DraftItem, DraftOption } from "@/lib/estimating";
-import { date, label, money, siteUrl, STATUS_TONE } from "@/lib/format";
-import { totals } from "@/lib/roof";
-import { cancelBy, depositRule, maxDeposit, requiredNotices, resolveState, rulesFor, scheduledDeposit, VERIFY, type Notice } from "@/lib/state-rules";
+import { resolveJobState } from "@/lib/estimate-notices";
+import { effectiveOptionId } from "@/lib/estimate-totals";
+import { allowedCatalog, isLegacyItem, type CatalogRow, type DraftItem, type DraftOption } from "@/lib/estimating";
+import { date, label, siteUrl, STATUS_TONE } from "@/lib/format";
+import { listOrgSuppliers } from "@/lib/suppliers";
 import { createInvoiceFromEstimate } from "../../invoices/actions";
 import { deleteEstimate, duplicateEstimate, setEstimateStatus } from "../actions";
 import { EstimateEditor } from "./estimate-editor";
@@ -19,13 +21,14 @@ type OptionRow = { id: string; position: number; name: string; tier: DraftOption
 export default async function EstimatePage({ params }: PageProps<"/app/estimates/[id]">) {
   const { id } = await params;
   const { supabase, org } = await requireMoneyAccess();
-  const [{ data: e }, { data: catalog }] = await Promise.all([
+  const [{ data: e }, { data: catalog }, suppliers] = await Promise.all([
     supabase
       .from("estimates")
       .select("*, estimate_items(*), estimate_options!estimate_options_estimate_id_fkey(*), jobs(id, title, state, is_insurance, customers(name, email, state))")
       .eq("id", id)
       .maybeSingle(),
     supabase.from("catalog_items").select("*").order("category").order("calc_key").order("name"),
+    listOrgSuppliers(supabase, org.id).catch(() => []),
   ]);
   if (!e) notFound();
   const items = ((e.estimate_items ?? []) as ItemRow[]).sort((a, b) => a.position - b.position);
@@ -34,20 +37,14 @@ export default async function EstimatePage({ params }: PageProps<"/app/estimates
   const publicUrl = `${siteUrl()}/q/${e.public_token}`;
   const status = e.status as string;
   const word = e.option_label === "alternates" ? "alternate" : "option";
-
-  // Compliance (N4): job state -> customer state -> company state.
-  const resolved = resolveState(job.state, job.customers.state, org.state);
-  const rule = rulesFor(resolved.state);
+  const resolved = resolveJobState(job.state, job.customers.state, org.state);
   const effOption = effectiveOptionId(options, e.selected_option_id);
-  const t = totals(itemsForOption(items, effOption), Number(e.discount), Number(e.tax_rate));
-  const cap = maxDeposit(rule, t.total, job.is_insurance);
-  const dRule = depositRule(rule, job.is_insurance);
-  const sched = scheduledDeposit(org.payment_schedule, t.total);
-  const signedAt = e.accepted_at ? new Date(e.accepted_at) : new Date();
-  const cancel = cancelBy(rule, signedAt, job.is_insurance);
-  const snapshot = (Array.isArray(e.legal_notices) ? e.legal_notices : []) as Notice[];
-  const notices = status === "accepted" && snapshot.length ? snapshot : requiredNotices(rule, { isInsurance: job.is_insurance, total: t.total });
-  const overCap = cap != null && sched.amount > cap;
+  const extra = org as typeof org & { calc_defaults?: unknown };
+  const priceBookIncGst = org.prices_include_gst !== false;
+  // AU price book only: legacy (US-keyed) and certification-gated items stay out of the editor.
+  const offered = allowedCatalog((catalog ?? []) as CatalogRow[], org.certifications ?? [])
+    .filter((c) => !isLegacyItem(c))
+    .map((c) => ({ ...c, price_inc_gst: priceBookIncGst }));
 
   const statusBtn = (s: string, text: string, variant: "primary" | "secondary" | "danger" | "ghost" = "secondary", confirm?: string) => (
     <form action={setEstimateStatus}>
@@ -62,7 +59,7 @@ export default async function EstimatePage({ params }: PageProps<"/app/estimates
   return (
     <>
       <PageHeader
-        title={<span className="flex items-center gap-3">Estimate #{e.number} <Badge tone={STATUS_TONE[status]}>{label(status)}</Badge></span>}
+        title={<span className="flex items-center gap-3">Quote #{e.number} <Badge tone={STATUS_TONE[status]}>{label(status)}</Badge></span>}
         subtitle={
           <>
             <Link href={`/app/jobs/${job.id}`} className="font-medium text-slate-700 hover:text-brand-600">{job.title}</Link> · {job.customers.name} · Created {date(e.created_at)}
@@ -111,54 +108,29 @@ export default async function EstimatePage({ params }: PageProps<"/app/estimates
         <div className="mb-6 flex flex-wrap items-start gap-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800">
           <p className="flex-1">
             Accepted {e.accepted_at ? date(e.accepted_at) : ""}{e.accepted_name ? ` by ${e.accepted_name}` : ""}{selectedName ? ` · chose ${selectedName}` : ""}
-            {e.accepted_ip ? ` · IP ${e.accepted_ip}` : ""}. This estimate is locked; duplicate it to make a change order.
+            {e.accepted_ip ? ` · IP ${e.accepted_ip}` : ""}. This quote is locked; duplicate it to make a variation.
           </p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {e.signature_data && <img src={e.signature_data} alt="Customer signature" className="h-14 rounded bg-white px-2 ring-1 ring-green-200" />}
         </div>
       )}
 
-      <Card className="mb-6" title={<span className="flex items-center gap-2">Compliance <Badge tone={rule.state === "DEFAULT" ? "slate" : "blue"}>{rule.state === "DEFAULT" ? (resolved.state ?? "No state") : rule.name}</Badge></span>}>
-        <div data-testid="compliance-panel" className="grid gap-4 text-sm sm:grid-cols-3">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Deposit at signing</p>
-            <p className="mt-1">
-              Max allowed: <b data-testid="max-deposit">{cap == null ? "No cap in rules table" : money(cap)}</b>
-            </p>
-            <p className={overCap ? "font-medium text-red-700" : "text-slate-600"}>
-              Your schedule asks {sched.pct}% = {money(sched.amount)}{overCap ? " — over the limit. Lower the deposit milestone for this job." : ""}
-            </p>
-            <p className="mt-1 text-xs text-slate-500">{dRule.note}{"citation" in dRule && dRule.citation ? ` (${dRule.citation})` : ""}</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Cancel-by</p>
-            <p className="mt-1"><b data-testid="cancel-by">{date(cancel.date.toISOString(), { weekday: "short", month: "short", day: "numeric", year: "numeric" })}</b> {status === "accepted" ? "" : <span className="text-slate-500">(if signed today)</span>}</p>
-            <p className="text-xs text-slate-500">{rule.cancellation.note} ({rule.cancellation.citation}). Weekends skipped; holidays not counted.</p>
-            {cancel.insuranceNote && <p className="mt-1 text-xs text-slate-600">{cancel.insuranceNote}</p>}
-            {!job.is_insurance && rule.cancellation.insurance && <p className="mt-1 text-xs text-slate-500">Insurance jobs get an extra window: {rule.cancellation.insurance.note}</p>}
-          </div>
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Notices attached to the estimate</p>
-            <ul className="mt-1 space-y-1" data-testid="notice-list">
-              {notices.map((n) => <li key={n.id}><b>{n.title}</b> <span className="text-xs text-slate-500">{n.citation}</span></li>)}
-              {notices.length === 0 && <li className="text-slate-500">None</li>}
-            </ul>
-            {rule.deductibleWaiverBan && <p className="mt-2 text-xs font-medium text-red-700">Deductible discounts/waivers are blocked in {rule.name} ({rule.deductibleCitation}).</p>}
-          </div>
-        </div>
-        <p className="mt-3 text-xs text-slate-500">
-          State from the {resolved.source === "none" ? "— (set the job's state)" : resolved.source}{job.is_insurance ? " · insurance job" : ""}. {VERIFY}
-        </p>
-      </Card>
+      <div className="mb-6 grid gap-4 lg:grid-cols-2">
+        <Card title="Quote header">
+          <QuoteBusiness name={org.name} abn={org.abn} licences={org.licences} state={resolved.state} gstRegistered={org.gst_registered} warnMissing />
+        </Card>
+        <StateCompliancePanel state={resolved.state} source={resolved.source} />
+      </div>
 
       <EstimateEditor
         id={e.id}
         locked={status === "accepted"}
-        catalog={(catalog ?? []) as CatalogRow[]}
-        certifications={org.certifications ?? []}
+        catalog={offered}
+        suppliers={suppliers.map((s) => ({ id: s.id, name: s.name, hasSheet: Boolean(s.active_list) }))}
         defaultWaste={Number(org.default_waste_pct)}
-        bundlesPerSquare={Number(org.bundles_per_square) || 3}
+        calcDefaults={extra.calc_defaults ?? {}}
         minMarginPct={Number(org.min_margin_pct) || 0}
+        gstRegistered={org.gst_registered !== false}
         financing={{ enabled: Boolean(org.financing?.enabled), apr: Number(org.financing?.apr) || 0, term_months: Number(org.financing?.term_months) || 0 }}
         aiEnabled={Boolean(process.env.ANTHROPIC_API_KEY)}
         initial={{
@@ -168,10 +140,12 @@ export default async function EstimatePage({ params }: PageProps<"/app/estimates
           options: options.map((o) => ({ key: o.id, id: o.id, name: o.name, tier: o.tier, description: o.description ?? "", warranty: o.warranty ?? "", recommended: o.recommended })),
           items: items.map((i) => ({
             description: i.description, quantity: Number(i.quantity), unit: i.unit, unit_price: Number(i.unit_price), unit_cost: Number(i.unit_cost ?? 0),
-            category: i.category, calc_key: i.calc_key ?? null, option_key: i.option_id,
+            category: i.category, calc_key: i.calc_key ?? null, option_key: i.option_id, supplier_price_item_id: i.supplier_price_item_id ?? null,
           })),
-          tax_rate: e.tax_rate,
-          discount: e.discount,
+          tax_rate: Number(e.tax_rate),
+          gst_inclusive: Boolean(e.gst_inclusive),
+          org_supplier_id: (e.org_supplier_id as string | null) ?? null,
+          discount: Number(e.discount),
           notes: e.notes,
           terms: e.terms,
         }}
@@ -183,10 +157,10 @@ export default async function EstimatePage({ params }: PageProps<"/app/estimates
             <input type="hidden" name="id" value={e.id} />
             <SubmitButton variant="secondary">Duplicate</SubmitButton>
           </form>
-          {status !== "draft" && statusBtn("draft", "Revert to draft", "ghost", "Move this estimate back to draft? The customer link stops working until you send it again, and any signature is cleared.")}
+          {status !== "draft" && statusBtn("draft", "Revert to draft", "ghost", "Move this quote back to draft? The customer link stops working until you send it again, and any signature is cleared.")}
           <form action={deleteEstimate}>
             <input type="hidden" name="id" value={e.id} />
-            <SubmitButton variant="danger" confirm="Delete this estimate?">Delete</SubmitButton>
+            <SubmitButton variant="danger" confirm="Delete this quote?">Delete</SubmitButton>
           </form>
         </div>
       </Card>

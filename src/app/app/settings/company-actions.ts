@@ -1,8 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { asAuState, AU_STATES, isValidAbn, stateFromPostcode } from "@/lib/au";
+import { cleanLicences } from "@/lib/business";
 import { requireAdmin } from "@/lib/dal";
-import { CERTIFICATIONS } from "@/lib/estimating";
 import { friendly, num, str } from "@/lib/form";
 import type { ActionResult } from "@/components/action-form";
 
@@ -17,15 +18,22 @@ const url = (v: string | null) => {
   }
 };
 
-/** Company profile + estimating defaults (owners/admins). */
+/** Company profile (ABN, GST, licences per state, service states) + estimating defaults (owners/admins). */
 export async function updateCompanySettings(_: ActionResult, fd: FormData): Promise<ActionResult> {
   let ctx;
   try { ctx = await requireAdmin(); } catch (e) { return { error: (e as Error).message }; }
   const { supabase, org } = ctx;
   const name = str(fd, "name");
-  if (!name) return { error: "Company name is required." };
-  const state = str(fd, "state")?.toUpperCase() ?? null;
-  if (state && !/^[A-Z]{2}$/.test(state)) return { error: "State should be a 2-letter code, e.g. TX." };
+  if (!name) return { error: "Business name is required." };
+
+  const postcode = str(fd, "zip");
+  if (postcode && !/^\d{4}$/.test(postcode)) return { error: "Postcode should be 4 digits." };
+  const stateRaw = str(fd, "state");
+  const state = asAuState(stateRaw) ?? (stateRaw ? null : stateFromPostcode(postcode));
+  if (stateRaw && !asAuState(stateRaw)) return { error: "Pick a state or territory." };
+
+  const abnRaw = (str(fd, "abn") ?? "").replace(/\s/g, "");
+  if (abnRaw && !isValidAbn(abnRaw)) return { error: "That ABN isn't valid. Check the 11 digits (it must pass the ATO check)." };
 
   const links: Record<string, string | null> = {};
   for (const [field, labelText] of [["website", "Website"], ["google_review_url", "Google review link"], ["insurance_certificate_url", "Insurance certificate link"]] as const) {
@@ -34,15 +42,12 @@ export async function updateCompanySettings(_: ActionResult, fd: FormData): Prom
     links[field] = v;
   }
 
-  const known = new Set<string>(CERTIFICATIONS);
-  const certs = fd.getAll("certifications").map(String).filter((c) => known.has(c));
-  const otherCert = str(fd, "certification_other");
-  if (otherCert) certs.push(otherCert.slice(0, 80));
+  const licences = cleanLicences(Object.fromEntries(AU_STATES.map((s) => [s, { number: str(fd, `licence_${s}`), classes: str(fd, `licence_classes_${s}`) }])));
+  const serviceStates = AU_STATES.filter((s) => fd.getAll("service_states").map(String).includes(s));
 
+  const gstRegistered = fd.get("gst_registered") === "on";
   const minMargin = num(fd, "min_margin_pct", 25);
-  const bps = num(fd, "bundles_per_square", 3);
   if (minMargin < 0 || minMargin > 90) return { error: "Minimum margin must be between 0 and 90%." };
-  if (bps < 1 || bps > 6) return { error: "Bundles per square is usually 3 (between 1 and 6)." };
 
   const { error } = await supabase
     .from("organizations")
@@ -52,14 +57,18 @@ export async function updateCompanySettings(_: ActionResult, fd: FormData): Prom
       email: str(fd, "email"),
       address: str(fd, "address"),
       state,
-      zip: str(fd, "zip"),
-      license_number: str(fd, "license_number"),
+      zip: postcode,
+      abn: abnRaw || null,
+      gst_registered: gstRegistered,
+      prices_include_gst: fd.get("prices_include_gst") === "on",
+      tax_rate: gstRegistered ? 10 : 0,
+      licences,
+      service_states: serviceStates,
+      // Keep the old single licence field in step for screens not yet moved to per-state licences.
+      license_number: (state && licences[state]?.number) || Object.values(licences)[0]?.number || null,
       ...links,
-      certifications: [...new Set(certs.filter((c) => c !== "Other"))],
-      tax_rate: Math.max(0, num(fd, "tax_rate")),
       default_waste_pct: Math.min(50, Math.max(0, num(fd, "default_waste_pct", 10))),
       min_margin_pct: minMargin,
-      bundles_per_square: bps,
       estimate_terms: str(fd, "estimate_terms") ?? "",
       invoice_terms: str(fd, "invoice_terms") ?? "",
     })
