@@ -1,9 +1,7 @@
 import type { NextConfig } from "next";
 
+// The whole app sits behind auth and is rendered per request, so Cache Components stay off.
 const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
   turbopack: {
     rules: {
       "*.css": {
