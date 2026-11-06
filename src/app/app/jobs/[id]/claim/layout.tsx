@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { SubmitButton } from "@/components/action-form";
 import { KeepForm } from "./_components/keep-form";
-import { Card, Field, Input } from "@/components/ui";
+import { Card, Field, Input, Select } from "@/components/ui";
 import { requireOrg } from "@/lib/dal";
+import { isoDate } from "@/lib/format";
+import { EVENT_LABEL, EVENT_TYPES } from "@/lib/claims";
 import { getClaimForJob } from "@/lib/claims-server";
 import { createClaim, markRetail } from "./actions";
 import { ClaimNav, PolicySelect } from "./_components/client-bits";
@@ -21,23 +23,26 @@ export default async function ClaimLayout({ children, params }: LayoutProps<"/ap
       <div className="max-w-2xl space-y-4">
         {!job.is_insurance && (
           <div className="rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-700">
-            <b>Retail job.</b> The homeowner pays directly; there is no insurance claim. If that changes, start a claim below.
+            <b>Private job.</b> The homeowner pays directly; there is no insurance claim. If that changes, start a claim below.
           </div>
         )}
         {canSeeMoney ? (
           <Card title="Is this an insurance job?">
             <p className="mb-4 text-sm text-slate-600">
-              Start a claim to track the carrier, adjuster, the checks you&apos;re owed and any supplements. You can fill in the rest later.
+              Start a claim to track the insurer, the assessor, the excess, how the insurer settles, and every payment you&apos;re owed. You can fill in the rest later.
             </p>
             <KeepForm action={createClaim} className="space-y-4">
               <input type="hidden" name="job_id" value={job.id} />
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Insurance company"><Input name="carrier" placeholder="State Farm" /></Field>
-                <Field label="Claim #"><Input name="claim_number" /></Field>
-                <Field label="Adjuster"><Input name="adjuster_name" /></Field>
-                <Field label="Adjuster phone"><Input name="adjuster_phone" type="tel" /></Field>
-                <Field label="Date of loss"><Input name="date_of_loss" type="date" /></Field>
-                <Field label="Policy type"><PolicySelect defaultValue="unknown" /></Field>
+                <Field label="Insurer"><Input name="carrier" placeholder="e.g. NRMA, Suncorp, Allianz" /></Field>
+                <Field label="Claim number"><Input name="claim_number" /></Field>
+                <Field label="What happened">
+                  <Select name="event_type" defaultValue="hail">{EVENT_TYPES.map((e) => <option key={e} value={e}>{EVENT_LABEL[e]}</option>)}</Select>
+                </Field>
+                <Field label="Date of the event"><Input name="date_of_loss" type="date" max={isoDate(new Date())} /></Field>
+                <Field label="Claim lodged on"><Input name="lodged_on" type="date" defaultValue={isoDate(new Date())} max={isoDate(new Date())} /></Field>
+                <Field label="Excess" hint="The homeowner's share, from their policy"><Input name="excess" type="number" step="0.01" min="0" inputMode="decimal" placeholder="e.g. 500" /></Field>
+                <Field label="Cover type" className="sm:col-span-2"><PolicySelect defaultValue="unknown" /></Field>
               </div>
               <div className="flex flex-wrap gap-2">
                 <SubmitButton className="min-h-11">Start insurance claim</SubmitButton>
@@ -46,7 +51,7 @@ export default async function ClaimLayout({ children, params }: LayoutProps<"/ap
             {job.is_insurance && (
               <form action={markRetail} className="mt-4 border-t border-slate-100 pt-4">
                 <input type="hidden" name="job_id" value={job.id} />
-                <SubmitButton variant="secondary" className="min-h-11">This is a retail job</SubmitButton>
+                <SubmitButton variant="secondary" className="min-h-11">This is a private job</SubmitButton>
                 <span className="ml-3 text-xs text-slate-500">No insurance involved — the homeowner pays directly.</span>
               </form>
             )}

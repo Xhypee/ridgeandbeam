@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { achFee, cardFee, formEncode, invoiceCheckoutParams, signPayload, verifyStripeSignature } from "./stripe";
+import { becsFee, cardFee, formEncode, invoiceCheckoutParams, signPayload, verifyStripeSignature } from "./stripe";
 
 const secret = "whsec_test_secret";
 const payload = JSON.stringify({ id: "evt_1", type: "checkout.session.completed" });
@@ -43,21 +43,22 @@ describe("verifyStripeSignature", () => {
 });
 
 describe("fees and checkout params", () => {
-  it("computes card and ACH fees", () => {
-    expect(cardFee(1000, 2.9)).toBe(29);
-    expect(achFee(100)).toBe(0.8);
-    expect(achFee(10000)).toBe(5);
+  it("computes indicative card and BECS costs", () => {
+    expect(cardFee(1000, 1.75)).toBe(17.5);
+    expect(becsFee(100)).toBe(1.3);
+    expect(becsFee(10000)).toBe(3.5);
   });
 
   it("encodes nested params like Stripe expects", () => {
     expect(formEncode({ a: { b: 1 }, l: [{ x: "y" }], m: ["p"] })).toBe("a%5Bb%5D=1&l%5B0%5D%5Bx%5D=y&m%5B0%5D=p");
   });
 
-  it("adds a visible fee line only when the fee is passed on", () => {
-    const base = { orgId: "o", invoiceId: "i", invoiceNumber: 1001, accountId: "acct_1", method: "card" as const, amount: 500, fee: 14.5, successUrl: "s", cancelUrl: "c" };
-    expect((invoiceCheckoutParams({ ...base, passFee: true }).line_items as unknown[]).length).toBe(2);
-    const p = invoiceCheckoutParams({ ...base, passFee: false });
+  it("charges AUD with no surcharge line, and BECS instead of ACH", () => {
+    const base = { orgId: "o", invoiceId: "i", invoiceNumber: 1001, accountId: "acct_1", method: "card" as const, amount: 500, fee: 8.75, successUrl: "s", cancelUrl: "c" };
+    const p = invoiceCheckoutParams(base);
     expect((p.line_items as unknown[]).length).toBe(1);
+    expect((p.line_items as { price_data: { currency: string } }[])[0].price_data.currency).toBe("aud");
     expect((p.metadata as Record<string, string>).applied_amount).toBe("500.00");
+    expect(invoiceCheckoutParams({ ...base, method: "becs" }).payment_method_types).toEqual(["au_becs_debit"]);
   });
 });

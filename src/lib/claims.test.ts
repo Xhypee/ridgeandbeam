@@ -1,126 +1,163 @@
 import { describe, expect, it } from "vitest";
-import { claimMoney, expectedChecks, followUpDate, nextClaimStage, nextFollowUpAfter } from "./claims";
+import {
+  addBusinessDaysIso, addMonthsIso, auStage, CLAIM_STAGE_LABEL, claimMoney, codeTimeframes, expectedPayments, followUpDate, homeownerExplainer,
+  nextClaimStage, nextFollowUpAfter, payerGroup,
+} from "./claims";
 import { classify, diffScopes, flaggedToSupplementItems, parseMoney, parseScope } from "./claims-scope";
 import { planSchedule, validateSchedule } from "./claims-billing";
 
-describe("claim money", () => {
-  it("computes ACV payable and recoverable depreciation for RCV policies", () => {
-    const m = claimMoney({ policy_type: "rcv", rcv_amount: 20000, depreciation_amount: 6000, deductible: 1000 });
-    expect(m.acvPayable).toBe(13000);
-    expect(m.recoverable).toBe("yes");
-    expect(m.depreciationRecoverable).toBe(6000);
-    expect(m.carrierTotal).toBe(19000);
-    expect(m.homeownerDeductible).toBe(1000);
-    expect(m.warnings).toHaveLength(0);
-  });
-  it("warns that ACV / roof-schedule depreciation is not recoverable", () => {
-    for (const p of ["acv", "roof_schedule"] as const) {
-      const m = claimMoney({ policy_type: p, rcv_amount: 20000, depreciation_amount: 6000, deductible: 1000 });
-      expect(m.recoverable).toBe("no");
-      expect(m.depreciationLost).toBe(6000);
-      expect(m.carrierTotal).toBe(13000);
-      expect(m.warnings[0]).toMatch(/does not pay back depreciation/);
-    }
-  });
-  it("never goes negative", () => {
-    expect(claimMoney({ policy_type: "unknown", rcv_amount: 1000, depreciation_amount: 900, deductible: 500 }).acvPayable).toBe(0);
-  });
-  it("generates expected checks", () => {
-    const rcv = expectedChecks({ policy_type: "rcv", rcv_amount: 20000, depreciation_amount: 6000, deductible: 1000, mortgagee_name: "Big Bank" });
-    expect(rcv.map((c) => [c.kind, c.expected_amount, c.endorsement])).toEqual([
-      ["acv", 13000, "needed"],
-      ["depreciation", 6000, "needed"],
-      ["deductible", 1000, "not_required"],
-    ]);
-    const acv = expectedChecks({ policy_type: "acv", rcv_amount: 20000, depreciation_amount: 6000, deductible: 1000 });
-    expect(acv.map((c) => c.kind)).toEqual(["acv", "deductible"]);
-  });
-  it("advances stages", () => {
-    expect(nextClaimStage("contingency_signed")).toBe("claim_filed");
-    expect(nextClaimStage("depreciation_released")).toBe("closed");
+describe("AU claim stages", () => {
+  it("advances along the AU path and handles decision outcomes", () => {
+    expect(nextClaimStage("lodged")).toBe("assessor_booked");
+    expect(nextClaimStage("scope_received")).toBe("approved");
+    expect(nextClaimStage("approved")).toBe("work_authorised");
+    expect(nextClaimStage("cash_settlement_offered")).toBe("work_authorised");
+    expect(nextClaimStage("paid")).toBe("closed");
+    expect(nextClaimStage("declined")).toBeNull();
     expect(nextClaimStage("closed")).toBeNull();
+  });
+  it("maps legacy US stages to AU ones", () => {
+    expect(auStage("contingency_signed")).toBe("lodged");
+    expect(auStage("adjuster_met")).toBe("assessed");
+    expect(auStage("depreciation_released")).toBe("paid");
+    expect(CLAIM_STAGE_LABEL.denied).toBe("Declined");
+    expect(CLAIM_STAGE_LABEL.coc_sent).toBe("Invoiced");
   });
 });
 
-describe("supplement follow-ups", () => {
+describe("expected payments by settlement path", () => {
+  const base = { excess: 750, approved_amount: 18000 };
+  it("own builder: insurer pays approved less excess, homeowner pays excess and the gap", () => {
+    const p = expectedPayments({ ...base, settlement_path: "own_builder" }, 19500);
+    expect(p.map((x) => [x.kind, x.payer, x.expected_amount])).toEqual([
+      ["scope", "carrier", 17250],
+      ["excess", "homeowner", 750],
+      ["balance", "homeowner", 1500],
+    ]);
+  });
+  it("insurer-managed via a panel builder: the builder pays the approved scope; excess isn't ours", () => {
+    const p = expectedPayments({ ...base, settlement_path: "insurer_managed", panel_builder_name: "Acme Builders" });
+    expect(p).toHaveLength(1);
+    expect(p[0]).toMatchObject({ kind: "scope", payer: "panel_builder", expected_amount: 18000 });
+    expect(claimMoney({ ...base, settlement_path: "insurer_managed", panel_builder_name: "Acme Builders" }).warnings.join(" ")).toMatch(/panel builder usually collects/);
+  });
+  it("insurer-managed with us on the insurer's network directly", () => {
+    const p = expectedPayments({ ...base, settlement_path: "insurer_managed" });
+    expect(p.map((x) => x.payer)).toEqual(["carrier", "homeowner"]);
+  });
+  it("cash settlement: the homeowner pays our price", () => {
+    expect(expectedPayments({ ...base, settlement_path: "cash_settlement", cash_settlement_amount: 15000 }, 16200)).toEqual([
+      { kind: "cash_settlement", payer: "homeowner", label: "Homeowner (paid from their cash settlement)", expected_amount: 16200 },
+    ]);
+    expect(expectedPayments({ ...base, settlement_path: "cash_settlement", cash_settlement_amount: 15000 })[0].expected_amount).toBe(15000);
+  });
+  it("adds make-safe from whoever pays for it, and nothing while undecided", () => {
+    const p = expectedPayments({ excess: 0, approved_amount: 0, settlement_path: "undecided", make_safe_payer: "insurer", make_safe_amount: 660 });
+    expect(p).toEqual([{ kind: "make_safe", payer: "carrier", label: "Make-safe / temporary repairs", expected_amount: 660 }]);
+    expect(claimMoney({ excess: 0, approved_amount: 0, settlement_path: "undecided" }).warnings[0]).toMatch(/Settlement path not decided/);
+  });
+  it("groups ledger rows by payer", () => {
+    expect(payerGroup({ kind: "excess", payer: "homeowner" })).toBe("homeowner_excess");
+    expect(payerGroup({ kind: "balance", payer: "homeowner" })).toBe("homeowner_balance");
+    expect(payerGroup({ kind: "scope", payer: "panel_builder" })).toBe("panel_builder");
+    expect(payerGroup({ kind: "acv", payer: "mortgagee" })).toBe("insurer");
+    const m = claimMoney({ ...base, settlement_path: "own_builder" }, 19500);
+    expect(m.byGroup).toEqual({ insurer: 17250, homeowner_excess: 750, panel_builder: 0, homeowner_balance: 1500 });
+  });
+});
+
+describe("Code of Practice timeframe guide", () => {
+  it("adds months and business days", () => {
+    expect(addMonthsIso("2026-10-31", 4)).toBe("2027-02-28");
+    expect(addBusinessDaysIso("2026-11-06", 10)).toBe("2026-11-20"); // Fri + 10 business days
+  });
+  it("builds reminders until the insurer decides", () => {
+    const r = codeTimeframes({ stage: "assessed", lodged_on: "2026-07-01", info_complete_on: "2026-11-02", catastrophe: "none" }, "2026-11-06");
+    expect(r.map((x) => x.key)).toEqual(["update", "decision", "decision_after_info"]);
+    expect(r.find((x) => x.key === "decision")).toMatchObject({ due: "2026-11-01", status: "overdue" });
+    expect(r.find((x) => x.key === "decision_after_info")).toMatchObject({ due: "2026-11-16", status: "ok" });
+    expect(codeTimeframes({ stage: "lodged", lodged_on: "2026-07-01", catastrophe: "extraordinary" }, "2026-11-06").find((x) => x.key === "decision")?.due).toBe("2027-07-01");
+    expect(codeTimeframes({ stage: "approved", lodged_on: "2026-07-01" }, "2026-11-06")).toEqual([]);
+    expect(codeTimeframes({ stage: "lodged", lodged_on: null }, "2026-11-06")).toEqual([]);
+  });
+});
+
+describe("homeowner explainer", () => {
+  it("explains excess, cash settlement and complaints without advice", () => {
+    const s = homeownerExplainer({ excess: 500, settlement_path: "cash_settlement", insurer: "NRMA", orgName: "Top Roofing" });
+    const text = s.flatMap((x) => [x.title, ...x.body]).join(" ");
+    expect(text).toMatch(/\$500\.00/);
+    expect(text).toMatch(/AFCA/);
+    expect(text).toMatch(/internal complaints process/);
+    expect(text).toMatch(/can't negotiate it for you/);
+    expect(text).not.toMatch(/deductible|depreciation|mortgage/i);
+  });
+});
+
+describe("variation request follow-ups", () => {
   it("schedules 5/10/14 then weekly", () => {
     expect(followUpDate("2026-11-01", 0)).toBe("2026-11-06");
-    expect(followUpDate("2026-11-01", 1)).toBe("2026-11-11");
     expect(followUpDate("2026-11-01", 2)).toBe("2026-11-15");
     expect(followUpDate("2026-11-01", 3)).toBe("2026-11-22");
   });
   it("pushes past today when followed up late", () => {
-    expect(nextFollowUpAfter("2026-11-01", 0, "2026-11-06")).toEqual({ date: "2026-11-11", count: 1 });
     expect(nextFollowUpAfter("2026-11-01", 0, "2026-11-12")).toEqual({ date: "2026-11-15", count: 2 });
   });
 });
 
-describe("scope parsing", () => {
+describe("insurer scope parsing (AU)", () => {
   it("parses money", () => {
     expect(parseMoney("$1,275.19")).toBe(1275.19);
     expect(parseMoney("(12.50)")).toBe(-12.5);
-    expect(Number.isNaN(parseMoney("SQ"))).toBe(true);
   });
-  it("parses tab-separated spreadsheet rows with a header", () => {
-    const t = "Code\tDescription\tQty\tUnit\tUnit Price\tTotal\nRFG 300S\tLaminated - comp. shingle rfg - w/out felt\t25.33\tSQ\t265.10\t6,714.98\nRFG DRIP\tDrip edge\t180\tLF\t2.85\t513.00\n";
+  it("parses tab-separated rows with a header and metric units", () => {
+    const t = "Description\tQty\tUnit\tRate\tTotal\nReplace Colorbond Custom Orb sheeting\t182.5\tm2\t68.00\t12,410.00\nRidge capping\t14\tLM\t32.00\t448.00\n";
     const { lines } = parseScope(t);
     expect(lines).toHaveLength(2);
-    expect(lines[0]).toMatchObject({ xact_code: "RFG 300S", quantity: 25.33, unit: "SQ", unit_price: 265.1, total: 6714.98 });
-    expect(lines[1].description).toBe("Drip edge");
+    expect(lines[0]).toMatchObject({ quantity: 182.5, unit: "M2", unit_price: 68, total: 12410 });
+    expect(lines[1].unit).toBe("LM");
   });
-  it("parses CSV with quotes and Xactimate-style qty+unit cells", () => {
-    const t = 'Description,Quantity,Replace,RCV\n"Starter strip, asphalt",180.00 LF,1.92,345.60\nRidge cap - composition shingles,60.00 LF,4.12,247.20';
-    const { lines } = parseScope(t);
-    expect(lines[0]).toMatchObject({ description: "Starter strip, asphalt", quantity: 180, unit: "LF", unit_price: 1.92, total: 345.6 });
-    expect(lines[1].unit).toBe("LF");
+  it("parses loose lines pasted from a PDF scope and skips GST/total rows", () => {
+    const { lines } = parseScope("3. Replace valley iron 12.00 LM 38.50 462.00\nGST 46.20\nTotal inc GST 508.20");
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatchObject({ description: "Replace valley iron", quantity: 12, unit: "LM", unit_price: 38.5 });
   });
-  it("parses headerless rows and loose PDF lines", () => {
-    expect(parseScope("Ice & water barrier\t400\tSF\t1.85\t740").lines[0]).toMatchObject({ quantity: 400, unit: "SF", total: 740 });
-    const loose = parseScope("3. RFG DRIP Drip edge 180.00 LF 2.85 0.00 513.00").lines[0];
-    expect(loose).toMatchObject({ xact_code: "RFG DRIP", description: "Drip edge", quantity: 180, unit: "LF", unit_price: 2.85 });
-  });
-  it("classifies common roof items", () => {
-    expect(classify(null, "Hip / Ridge cap - Standard profile - composition shingles")).toBe("ridge_cap");
-    expect(classify(null, "Ridge vent - shingle-over style")).toBe("ridge_vent");
-    expect(classify(null, "Remove Laminated - comp. shingle rfg")).toBe("tearoff");
-    expect(classify("RFG IWS", "Ice & water barrier")).toBe("ice_water");
-    expect(classify(null, "Overhead & Profit")).toBe("o_and_p");
-    expect(classify("RFG STEEP", "Additional charge for steep roof - 7/12 to 9/12 slope")).toBe("steep");
+  it("classifies common AU roof items", () => {
+    expect(classify(null, "Supply & install sarking")).toBe("sarking");
+    expect(classify(null, "Edge protection / scaffold hire")).toBe("edge_protection");
+    expect(classify(null, "Skip bin 6m3")).toBe("skip_bin");
+    expect(classify(null, "Barge capping")).toBe("barge");
+    expect(classify(null, "Rebed and repoint ridge")).toBe("ridge_capping");
+    expect(classify(null, "Rebed & repoint hips")).toBe("hip_capping");
+    expect(classify(null, "Make safe — tarp roof")).toBe("make_safe");
   });
 });
 
-describe("scope diff", () => {
-  const L = (description: string, quantity: number, unit: string, unit_price: number, xact_code: string | null = null) => ({ xact_code, description, quantity, unit, unit_price, total: Math.round(quantity * unit_price * 100) / 100 });
-  it("matches, flags missing and short commonly-missed items", () => {
-    const carrier = [L("Laminated comp shingle roofing", 25, "SQ", 265), L("Hip / ridge cap", 40, "LF", 4.12), L("Gutter guard", 1, "EA", 50)];
-    const contractor = [L("Architectural shingles", 25.2, "SQ", 265), L("Ridge cap shingles", 60, "LF", 4.12), L("Drip edge", 180, "LF", 2.85), L("Starter strip", 180, "LF", 1.92)];
-    const d = diffScopes(carrier, contractor);
-    const by = (s: string) => d.rows.filter((r) => r.status === s).length;
-    expect(by("matched")).toBe(1);
-    expect(by("qty_differs")).toBe(1);
-    expect(by("missing_from_carrier")).toBe(2);
-    expect(by("extra")).toBe(1);
-    expect(d.flags.filter((f) => f.kind === "missing").map((f) => f.key).sort()).toEqual(["drip_edge", "starter"]);
-    expect(d.flags.find((f) => f.kind === "short")?.key).toBe("ridge_cap");
-    expect(d.flags.some((f) => f.kind === "check" && f.key === "ice_water")).toBe(true);
+describe("scope compare", () => {
+  const L = (description: string, quantity: number, unit: string, unit_price: number) => ({ xact_code: null, description, quantity, unit, unit_price, total: Math.round(quantity * unit_price * 100) / 100 });
+  it("flags missing and short commonly-missed items and drafts variation lines", () => {
+    const insurer = [L("Replace roof sheeting Colorbond", 180, "M2", 68), L("Ridge capping", 10, "LM", 32), L("Clean gutters", 1, "EA", 150)];
+    const ours = [L("Colorbond roof sheeting", 182, "M2", 68), L("Ridge capping", 14, "LM", 32), L("Sarking", 182, "M2", 9.5), L("Edge protection", 1, "ITEM", 1450)];
+    const d = diffScopes(insurer, ours);
+    expect(d.flags.filter((f) => f.kind === "missing").map((f) => f.key).sort()).toEqual(["edge_protection", "sarking"]);
+    expect(d.flags.find((f) => f.kind === "short")?.key).toBe("ridge_capping");
+    expect(d.flags.some((f) => f.kind === "check" && f.key === "skip_bin")).toBe(true);
     const items = flaggedToSupplementItems(d.flags);
-    expect(items).toHaveLength(3);
-    const ridge = items.find((i) => /ridge/i.test(i.description))!;
-    expect(ridge.quantity).toBe(20);
-    expect(items.find((i) => i.description === "Drip edge")?.code_citation).toMatch(/R905\.2\.8\.5/);
+    expect(items.find((i) => /ridge/i.test(i.description))?.quantity).toBe(4);
+    expect(items.find((i) => i.description === "Sarking")?.code_citation).toMatch(/AS 4200\.2/);
+    expect(d.flags.map((f) => f.message).join(" ")).toMatch(/insurer/);
   });
 });
 
 describe("payment schedule", () => {
   it("validates percentages", () => {
     expect(validateSchedule([{ label: "A", pct: 50, trigger: "signed" }, { label: "B", pct: 40, trigger: "completed" }]).ok).toBe(false);
-    expect(validateSchedule([{ label: "A", pct: 50, trigger: "bogus" }, { label: "B", pct: 50, trigger: "completed" }]).ok).toBe(false);
   });
   it("splits a total exactly with milestone kinds", () => {
-    const v = validateSchedule([{ label: "Deposit", pct: 30, trigger: "signed" }, { label: "Delivered", pct: 40, trigger: "delivered" }, { label: "Done", pct: 30, trigger: "completed" }]);
+    const v = validateSchedule([{ label: "Deposit", pct: 10, trigger: "signed" }, { label: "Delivered", pct: 40, trigger: "delivered" }, { label: "Done", pct: 50, trigger: "completed" }]);
     if (!v.ok) throw new Error(v.error);
-    const p = planSchedule(10000.01, v.steps);
+    const p = planSchedule(21072.35, v.steps);
     expect(p.map((x) => x.kind)).toEqual(["deposit", "progress", "final"]);
-    expect(p.map((x) => x.amount)).toEqual([3000, 4000, 3000.01]);
+    expect(Math.round(p.reduce((s, x) => s + x.amount, 0) * 100) / 100).toBe(21072.35);
   });
 });

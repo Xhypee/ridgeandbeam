@@ -51,13 +51,18 @@ export async function stripeRequest<T = Record<string, unknown>>(method: "GET" |
   return json as T;
 }
 
-/** Fee the customer pays (or the contractor absorbs) for a card payment, rounded to cents. */
+// Payments are in AUD. Card processing costs are absorbed by the roofer and shown to them only:
+// the RBA's March 2026 conclusions (Review of Retail Payments Regulation) remove surcharging on eftpos,
+// Mastercard and Visa from 1 October 2026, so the checkout never carries a surcharge line.
+// BECS Direct Debit replaces US ACH.
+
+/** Indicative card processing cost the roofer absorbs (percent of the amount), rounded to cents. */
 export function cardFee(amount: number, pct: number) {
   return Math.round(amount * pct) / 100;
 }
-/** ACH via Stripe: 0.8% capped at $5. */
-export function achFee(amount: number) {
-  return Math.min(5, Math.round(amount * 0.8) / 100);
+/** Indicative Stripe AU BECS Direct Debit cost: 1% + $0.30, capped at $3.50. */
+export function becsFee(amount: number) {
+  return Math.min(3.5, Math.round(amount + 30) / 100);
 }
 
 // ---------------------------------------------------------------------------
@@ -66,10 +71,11 @@ export function achFee(amount: number) {
 export async function createExpressAccount(org: { id: string; email: string | null; name: string }) {
   return stripeRequest<{ id: string }>("POST", "/accounts", {
     type: "express",
-    country: "US",
+    country: "AU",
+    default_currency: "aud",
     email: org.email ?? undefined,
     business_profile: { name: org.name, mcc: "1761" }, // roofing, siding, sheet metal
-    capabilities: { card_payments: { requested: true }, transfers: { requested: true }, us_bank_account_ach_payments: { requested: true } },
+    capabilities: { card_payments: { requested: true }, transfers: { requested: true }, au_becs_debit_payments: { requested: true } },
     metadata: { org_id: org.id },
   });
 }
@@ -90,12 +96,11 @@ export type InvoiceCheckout = {
   invoiceId: string;
   invoiceNumber: number;
   accountId: string;
-  method: "card" | "ach";
-  /** Amount applied to the invoice (dollars). */
+  method: "card" | "becs";
+  /** Amount applied to the invoice (AUD). */
   amount: number;
-  /** Processing fee (dollars) — charged on top when passFee, otherwise informational. */
+  /** Indicative processing cost (AUD) absorbed by the roofer — recorded, never charged on top. */
   fee: number;
-  passFee: boolean;
   successUrl: string;
   cancelUrl: string;
   customerEmail?: string | null;
@@ -103,16 +108,14 @@ export type InvoiceCheckout = {
 
 export function invoiceCheckoutParams(c: InvoiceCheckout): Params {
   const cents = (n: number) => Math.round(n * 100);
+  // One line only — never a surcharge line (RBA surcharge ban for eftpos/Mastercard/Visa from 1 Oct 2026).
   const lines: Params[] = [
-    { price_data: { currency: "usd", unit_amount: cents(c.amount), product_data: { name: `Invoice #${c.invoiceNumber}` } }, quantity: 1 },
+    { price_data: { currency: "aud", unit_amount: cents(c.amount), product_data: { name: `Invoice #${c.invoiceNumber}` } }, quantity: 1 },
   ];
-  if (c.passFee && c.fee > 0) {
-    lines.push({ price_data: { currency: "usd", unit_amount: cents(c.fee), product_data: { name: c.method === "card" ? "Card processing fee" : "Bank transfer fee" } }, quantity: 1 });
-  }
   const metadata = { org_id: c.orgId, invoice_id: c.invoiceId, applied_amount: c.amount.toFixed(2), fee_amount: c.fee.toFixed(2), kind: "invoice" };
   return {
     mode: "payment",
-    payment_method_types: [c.method === "card" ? "card" : "us_bank_account"],
+    payment_method_types: [c.method === "card" ? "card" : "au_becs_debit"],
     line_items: lines,
     customer_email: c.customerEmail ?? undefined,
     success_url: c.successUrl,

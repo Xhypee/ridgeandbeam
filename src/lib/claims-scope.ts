@@ -1,6 +1,7 @@
-// Carrier vs contractor scope comparison (paste / CSV import, line-item diff, missed-item flags).
-// Native Xactimate ESX import needs a Verisk partnership; this works from pasted spreadsheet rows or CSV.
-import { CODE_CITATIONS } from "./claims";
+// Insurer vs contractor scope comparison (paste / CSV import, line-item diff, missed-item flags).
+// Australian insurer scopes of works usually arrive as PDFs: copy the line items and paste them,
+// or export a spreadsheet to CSV. Field "xact_code" (DB column name) holds an optional item code.
+import { STANDARD_REFS } from "./claims";
 
 export type ScopeLine = {
   xact_code: string | null;
@@ -14,7 +15,7 @@ export type ScopeLine = {
 // ---------------------------------------------------------------------------
 // Parsing
 // ---------------------------------------------------------------------------
-const UNITS = ["SQ", "LF", "SF", "EA", "SY", "HR", "CY", "BX", "RL", "BNDL", "BUNDLE", "ROLL", "PIECE", "PC", "SHEET", "SH", "DA", "MO", "WK", "LS", "BOX"];
+const UNITS = ["M2", "SQM", "M²", "LM", "LIN", "M", "EA", "NO", "ITEM", "ITM", "HR", "HRS", "DAY", "DAYS", "LS", "ROLL", "ROLLS", "SHEET", "SHEETS", "SH", "BOX", "LOT", "WK", "M3"];
 
 export function parseMoney(v: string | null | undefined): number {
   if (v == null) return NaN;
@@ -50,12 +51,12 @@ function splitCsv(line: string, delim: string): string[] {
 
 type Col = "code" | "description" | "quantity" | "unit" | "unit_price" | "total";
 const HEADER_ALIASES: [Col, RegExp][] = [
-  ["unit_price", /^(unit\s*(price|cost)|price|rate|replace|unit\$|each)$/],
-  ["total", /^(total|rcv|amount|ext(ended)?(\s*(price|amount))?|line\s*total|replacement\s*cost)$/],
+  ["unit_price", /^(unit\s*(price|cost)|price|rate|unit\$|each|rate\s*inc(l)?\.?\s*gst|rate\s*ex\.?\s*gst)$/],
+  ["total", /^(total|amount|ext(ended)?(\s*(price|amount))?|line\s*total|total\s*inc(l)?\.?\s*gst|total\s*ex\.?\s*gst|cost)$/],
   ["quantity", /^(qty|quantity|quan|count)$/],
   ["unit", /^(unit|units|uom|u\/m)$/],
-  ["code", /^(code|xact(imate)?\s*code|cat\s*\/?\s*sel|selector|sel|item\s*code|line\s*code|cat)$/],
-  ["description", /^(description|desc|item|line\s*item|item\s*description|activity)$/],
+  ["code", /^(code|item\s*code|line\s*code|item\s*no|ref)$/],
+  ["description", /^(description|desc|item|line\s*item|item\s*description|activity|scope|works?)$/],
 ];
 
 function headerMap(cells: string[]): Partial<Record<Col, number>> | null {
@@ -69,9 +70,9 @@ function headerMap(cells: string[]): Partial<Record<Col, number>> | null {
   return map.description !== undefined && (map.quantity !== undefined || map.total !== undefined) ? map : null;
 }
 
-/** "22.67 SQ" -> { qty: 22.67, unit: "SQ" } */
+/** "120.5 m2" -> { qty: 120.5, unit: "M2" } */
 function qtyWithUnit(v: string): { qty: number; unit: string | null } {
-  const m = v.trim().match(/^([\d,]*\.?\d+)\s*([A-Za-z]{1,6})?$/);
+  const m = v.trim().match(/^([\d,]*\.?\d+)\s*([A-Za-z²0-9]{1,6})?$/);
   if (!m) return { qty: parseMoney(v), unit: null };
   return { qty: parseMoney(m[1]), unit: m[2] ? m[2].toUpperCase() : null };
 }
@@ -90,18 +91,17 @@ function finish(code: string | null, description: string, qty: number, unit: str
   if (!Number.isFinite(p)) p = 0;
   if (!Number.isFinite(t)) t = q * p;
   const r = (n: number) => Math.round(n * 100) / 100;
-  return { xact_code: code?.trim() ? code.trim().toUpperCase() : null, description: desc.slice(0, 500), quantity: r(q), unit: (unit || "EA").toUpperCase().slice(0, 12), unit_price: r(p), total: r(t) };
+  const u = (unit || "EA").toUpperCase().replace("SQM", "M2").replace("M²", "M2").replace(/^LIN$/, "LM").slice(0, 12);
+  return { xact_code: code?.trim() ? code.trim().toUpperCase() : null, description: desc.slice(0, 500), quantity: r(q), unit: u, unit_price: r(p), total: r(t) };
 }
 
-/** Whitespace-only line, as copied from an Xactimate PDF: "1. Drip edge 180.00 LF 2.85 0.00 513.00" */
+/** Whitespace-only line, as copied from an insurer's PDF scope: "3. Replace valley iron 12.00 LM 38.50 462.00" */
 function parseLoose(line: string): ScopeLine | null {
   const unitRe = UNITS.join("|");
-  const m = line.match(new RegExp(`^(.*?)\\s+([\\d,]*\\.?\\d+)\\s*(${unitRe})\\b\\s*(.*)$`, "i"));
+  const m = line.match(new RegExp(`^(.*?)\\s+([\\d,]*\\.?\\d+)\\s*(${unitRe})(?![A-Za-z0-9])\\s*(.*)$`, "i"));
   if (!m) return null;
-  let desc = m[1];
-  let code: string | null = null;
-  const cm = desc.match(/^\s*(?:\d+\.\s+)?([A-Z]{2,4}\s+[A-Z0-9+&<>-]{2,10})\s+-?\s*(.*)$/);
-  if (cm && cm[2] && /[a-z]/.test(cm[2])) { code = cm[1]; desc = cm[2]; }
+  const desc = m[1];
+  const code: string | null = null;
   const nums = m[4].split(/\s+/).map(parseMoney).filter((n) => Number.isFinite(n));
   const qty = parseMoney(m[2]);
   const price = nums[0] ?? NaN;
@@ -148,90 +148,108 @@ export function parseScope(text: string): { lines: ScopeLine[]; skipped: number 
       const nums = cells.slice(i).map(parseMoney).filter((n) => Number.isFinite(n));
       line = finish(code, desc, qu.qty, unit, nums[0] ?? NaN, nums.length > 1 ? nums[1] : NaN);
     }
-    if (line && !/^(total|subtotal|grand total|line item totals?)/i.test(line.description)) lines.push(line);
+    if (line && !/^(total|sub-?total|grand total|gst\b|total inc|line item totals?)/i.test(line.description)) lines.push(line);
     else skipped++;
   }
   return { lines, skipped };
 }
 
 // ---------------------------------------------------------------------------
-// Classification of common roof items
+// Classification of common Australian roof items
 // ---------------------------------------------------------------------------
 export type ItemKey =
-  | "o_and_p" | "permit" | "code_upgrade" | "ice_water" | "drip_edge" | "starter" | "ridge_vent" | "ridge_cap"
-  | "step_flashing" | "counter_flashing" | "valley" | "pipe_boot" | "steep" | "high" | "decking" | "dumpster"
-  | "tearoff" | "underlayment" | "shingles";
+  | "builders_margin" | "make_safe" | "edge_protection" | "skip_bin" | "asbestos" | "remove"
+  | "sarking" | "safety_mesh" | "battens" | "ridge_capping" | "hip_capping" | "barge" | "valley" | "flashing"
+  | "gutters" | "downpipes" | "fascia" | "rebed_repoint" | "tiles" | "sheeting" | "whirlybird" | "insulation";
 
-const RULES: [ItemKey, RegExp, RegExp?][] = [
-  ["o_and_p", /overhead|\bo\s*&\s*p\b|\bo\s*and\s*p\b|profit/i],
-  ["permit", /permit/i],
-  ["code_upgrade", /code\s*(upgrade|item|requirement)/i],
-  ["ice_water", /ice\s*(&|and)?\s*water|ice\s*barrier|\bi\s*&\s*w\b|self[- ]adher/i, /IWS|I&W/],
-  ["drip_edge", /drip\s*edge|\bdrip\b|gutter\s*apron/i, /DRIP/],
-  ["starter", /starter/i, /STRT|ASTR|STARTER/],
-  ["ridge_vent", /ridge\s*vent/i, /RIDGV|RVNT/],
-  ["ridge_cap", /(hip|ridge)\b[^,;]{0,15}\bcap|ridge\s*cap|hip\s*cap|hip\s*(&|and|\/)\s*ridge/i, /RIDGC|HIPC|RDGC/],
-  ["step_flashing", /step\s*flash/i, /STEP/],
-  ["counter_flashing", /counter\s*-?\s*flash|apron\s*flash|chimney\s*flash|base\s*flash|headwall/i, /CNTR|CHMF/],
-  ["valley", /valley/i, /VMTL|VALL/],
-  ["pipe_boot", /pipe\s*(boot|jack|flash)|vent\s*boot|flashing\s*-\s*pipe|roof\s*jack/i, /PJ|PIPE/],
-  ["steep", /steep/i, /STEEP/],
-  ["high", /high\s*roof|two[- ]?stor|2[- ]?stor|\bhigh\b.*charge|charge.*\bhigh\b/i, /HIGH/],
-  ["decking", /decking|\bdeck\b|sheathing|\bosb\b|plywood/i, /SHTG|DECK|OSB|PLY/],
-  ["dumpster", /dumpster|haul|debris|disposal/i, /DMO|DUMP/],
-  ["tearoff", /tear[- ]?off|^remove\b|removal/i],
-  ["underlayment", /underlay|felt|synthetic/i, /FELT|SYNF/],
-  ["shingles", /shingle|laminated|comp\.?\s*shingle|3[- ]tab/i, /^RFG\s*\d/],
+const RULES: [ItemKey, RegExp][] = [
+  ["builders_margin", /builder'?s?\s*margin|margin\s*(&|and)\s*supervision|supervision|overheads?|profit|\bpreliminar/i],
+  ["make_safe", /make[- ]?safe|tarp|temporary\s*(repair|cover)|emergency\s*repair/i],
+  ["edge_protection", /edge\s*protection|scaffold|safety\s*rail|harness|fall\s*(arrest|protection)|\bewp\b|elevated\s*work\s*platform/i],
+  ["skip_bin", /skip|rubbish|disposal|tip\s*fee|cart(age)?\s*away|waste\s*removal/i],
+  ["asbestos", /asbestos|\bacm\b|fibro\s*removal/i],
+  ["safety_mesh", /safety\s*mesh|roof\s*mesh/i],
+  ["sarking", /sarking|anticon|insulation\s*blanket\s*&\s*sarking|pliable\s*membrane|reflective\s*foil|wall\s*wrap/i],
+  ["insulation", /insulation|anticon|blanket/i],
+  ["battens", /batten/i],
+  ["ridge_capping", /ridge\s*cap|ridge\s*capping|ridge\s*roll|\bridge\b/i],
+  ["hip_capping", /hip\s*cap|hip\s*capping|\bhips?\b/i],
+  ["barge", /barge|verge|gable\s*(trim|cap)/i],
+  ["valley", /valley/i],
+  ["flashing", /flashing|apron|counter\s*flash|wall\s*flash|soaker|dektite|pipe\s*(boot|flash)|penetration/i],
+  ["downpipes", /downpipe|down\s*pipe|\bdp\b|rainwater\s*head|stormwater/i],
+  ["gutters", /gutter|quad|half\s*round|box\s*gutter|spouting/i],
+  ["fascia", /fascia/i],
+  ["rebed_repoint", /re-?bed|re-?point|pointing|bedding|mortar/i],
+  ["whirlybird", /whirly|roof\s*vent|ventilator|exhaust\s*vent/i],
+  ["tiles", /\btiles?\b|terracotta|concrete\s*tile|monier|bristile/i],
+  ["sheeting", /sheet(ing)?|colorbond|zincalume|corrugated|custom\s*orb|trimdek|klip-?lok|metal\s*roof|re-?roof/i],
+  ["remove", /^remove\b|removal|strip\s*(off|existing)|demolish/i],
 ];
 
-export function classify(code: string | null | undefined, description: string): ItemKey | null {
-  for (const [key, re, codeRe] of RULES) {
-    if (re.test(description)) return key;
-    if (codeRe && code && codeRe.test(code.toUpperCase())) return key;
-  }
+export function classify(_code: string | null | undefined, description: string): ItemKey | null {
+  for (const [key, re] of RULES) if (re.test(description)) return key;
   return null;
 }
 
 export const ITEM_LABEL: Record<ItemKey, string> = {
-  o_and_p: "Overhead & profit",
-  permit: "Permit",
-  code_upgrade: "Code upgrade",
-  ice_water: "Ice & water shield",
-  drip_edge: "Drip edge",
-  starter: "Starter course",
-  ridge_vent: "Ridge vent",
-  ridge_cap: "Hip & ridge cap",
-  step_flashing: "Step flashing",
-  counter_flashing: "Counter / apron flashing",
-  valley: "Valley",
-  pipe_boot: "Pipe boots",
-  steep: "Steep charge",
-  high: "High roof charge",
-  decking: "Decking / sheathing",
-  dumpster: "Dumpster / haul-off",
-  tearoff: "Tear-off",
-  underlayment: "Underlayment",
-  shingles: "Shingles",
+  builders_margin: "Builder's margin / supervision",
+  make_safe: "Make-safe / tarp",
+  edge_protection: "Edge protection / scaffold",
+  skip_bin: "Skip bin / disposal",
+  asbestos: "Asbestos removal",
+  remove: "Strip existing roof",
+  sarking: "Sarking",
+  safety_mesh: "Safety mesh",
+  battens: "Battens",
+  ridge_capping: "Ridge capping",
+  hip_capping: "Hip capping",
+  barge: "Barge flashing / capping",
+  valley: "Valley iron",
+  flashing: "Flashings",
+  gutters: "Gutters",
+  downpipes: "Downpipes",
+  fascia: "Fascia",
+  rebed_repoint: "Rebed & repoint",
+  tiles: "Roof tiles",
+  sheeting: "Roof sheeting",
+  whirlybird: "Whirlybird / roof vent",
+  insulation: "Insulation",
 };
 
-/** Items carriers most often leave out of roof scopes. */
-export const COMMONLY_MISSED: ItemKey[] = ["drip_edge", "starter", "ridge_cap", "ice_water", "step_flashing", "counter_flashing", "steep", "high", "o_and_p", "permit", "code_upgrade", "decking"];
+/** Items insurer scopes most often leave out or under-measure on roof claims. */
+export const COMMONLY_MISSED: ItemKey[] = ["edge_protection", "skip_bin", "sarking", "safety_mesh", "ridge_capping", "hip_capping", "barge", "valley", "flashing", "builders_margin", "make_safe"];
 /** Of those, the ones worth asking about even if neither scope lists them. */
-const ALWAYS_ASK: ItemKey[] = ["drip_edge", "starter", "ridge_cap", "ice_water", "o_and_p"];
+const ALWAYS_ASK: ItemKey[] = ["edge_protection", "skip_bin", "sarking", "flashing"];
+
+const REF: Partial<Record<ItemKey, string>> = {
+  sarking: STANDARD_REFS.sarking,
+  safety_mesh: STANDARD_REFS.sheet_roof,
+  ridge_capping: STANDARD_REFS.sheet_roof,
+  hip_capping: STANDARD_REFS.sheet_roof,
+  barge: STANDARD_REFS.sheet_roof,
+  valley: STANDARD_REFS.sheet_roof,
+  flashing: STANDARD_REFS.sheet_roof,
+  gutters: STANDARD_REFS.gutters,
+  downpipes: STANDARD_REFS.gutters,
+  rebed_repoint: STANDARD_REFS.tiles,
+  tiles: STANDARD_REFS.tiles,
+  edge_protection: STANDARD_REFS.edge_protection,
+  asbestos: STANDARD_REFS.asbestos,
+};
 
 const JUSTIFY: Partial<Record<ItemKey, string>> = {
-  drip_edge: "Drip edge is required at eaves and rakes and was not included in the carrier scope.",
-  starter: "A starter course is required by the shingle manufacturer at eaves and rakes; it is not part of the field shingle waste allowance.",
-  ridge_cap: "Hip and ridge cap shingles are a separate item from field shingles and must be installed per manufacturer instructions.",
-  ice_water: "Ice barrier is required at the eaves in this area and was not included.",
-  step_flashing: "Existing step flashing cannot be reused when the shingles are replaced.",
-  counter_flashing: "Counter/apron flashing must be replaced to make the roof watertight.",
-  steep: "Roof slopes 7/12 and steeper need extra labor and safety equipment.",
-  high: "Two-story / high roof work needs extra labor and safety equipment.",
-  o_and_p: "This job needs a general contractor to coordinate multiple trades; overhead and profit (customarily 10% + 10%) applies.",
-  permit: "A building permit is required for this re-roof.",
-  code_upgrade: "Local code requires this item as part of the replacement.",
-  decking: "Damaged or spaced decking must be replaced to provide solid sheathing.",
+  edge_protection: "Edge protection is needed to work safely at the roof edge and was not included in the insurer's scope.",
+  skip_bin: "The stripped roof material has to be removed from site; a skip bin / disposal was not included.",
+  sarking: "Sarking must be replaced where the roof sheets are replaced; it cannot be reused once disturbed.",
+  safety_mesh: "Safety mesh is required under new metal roof sheeting and was not included.",
+  ridge_capping: "Ridge capping is a separate item from the roof sheets/tiles and was not included or was short.",
+  hip_capping: "Hip capping is a separate item from the roof sheets/tiles and was not included or was short.",
+  barge: "Barge flashings/capping must be replaced with the roof cladding to keep the roof weathertight.",
+  valley: "Valley irons must be replaced with the roof cladding to keep the roof weathertight.",
+  flashing: "Existing flashings cannot be reused with the new roof cladding and must be replaced to keep the roof weathertight.",
+  builders_margin: "The work needs supervision and coordination of more than one trade; a builder's margin applies.",
+  make_safe: "Emergency make-safe work (tarping) was carried out to prevent further water damage.",
 };
 
 // ---------------------------------------------------------------------------
@@ -302,8 +320,8 @@ export function diffScopes(carrier: ScopeLine[], contractor: ScopeLine[]): { row
     const lbl = ITEM_LABEL[r.key];
     flags.push(
       r.flag === "missing"
-        ? { key: r.key, label: lbl, kind: "missing", message: `${lbl} is in your scope but not in the carrier's.`, row: r }
-        : { key: r.key, label: lbl, kind: "short", message: `Carrier has ${r.carrier!.quantity} ${r.carrier!.unit} of ${lbl.toLowerCase()}; you measured ${r.contractor!.quantity} ${r.contractor!.unit}.`, row: r },
+        ? { key: r.key, label: lbl, kind: "missing", message: `${lbl} is in your scope but not in the insurer's.`, row: r }
+        : { key: r.key, label: lbl, kind: "short", message: `Insurer has ${r.carrier!.quantity} ${r.carrier!.unit} of ${lbl.toLowerCase()}; you measured ${r.contractor!.quantity} ${r.contractor!.unit}.`, row: r },
     );
   }
   const carrierKeys = new Set(cKeys.filter(Boolean));
@@ -311,7 +329,7 @@ export function diffScopes(carrier: ScopeLine[], contractor: ScopeLine[]): { row
   if (carrier.length) {
     for (const k of ALWAYS_ASK) {
       if (!carrierKeys.has(k) && !contractorKeys.has(k)) {
-        flags.push({ key: k, label: ITEM_LABEL[k], kind: "check", message: `${ITEM_LABEL[k]} is on neither scope. Confirm whether this roof needs it.` });
+        flags.push({ key: k, label: ITEM_LABEL[k], kind: "check", message: `Neither scope includes ${ITEM_LABEL[k].toLowerCase()}. Confirm whether this roof needs it.` });
       }
     }
   }
@@ -330,7 +348,7 @@ export type SupplementDraftItem = {
   justification: string | null;
 };
 
-/** Turn flagged diff rows into supplement line items (missing = full qty, short = the difference). */
+/** Turn flagged diff rows into variation-request line items (missing = full qty, short = the difference). */
 export function flaggedToSupplementItems(flags: ScopeFlag[]): SupplementDraftItem[] {
   const out: SupplementDraftItem[] = [];
   for (const f of flags) {
@@ -345,10 +363,10 @@ export function flaggedToSupplementItems(flags: ScopeFlag[]): SupplementDraftIte
       quantity: qty,
       unit: r.contractor.unit,
       unit_price: price,
-      code_citation: CODE_CITATIONS[f.key] ?? null,
+      code_citation: REF[f.key] ?? null,
       justification:
         f.kind === "short"
-          ? `Carrier scope includes ${r.carrier!.quantity} ${r.carrier!.unit}; measured quantity is ${r.contractor.quantity} ${r.contractor.unit}. Requesting the difference.`
+          ? `Insurer's scope includes ${r.carrier!.quantity} ${r.carrier!.unit}; measured quantity is ${r.contractor.quantity} ${r.contractor.unit}. Requesting the difference.`
           : JUSTIFY[f.key] ?? null,
     });
   }

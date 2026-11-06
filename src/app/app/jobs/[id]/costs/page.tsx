@@ -23,9 +23,9 @@ function CostFields({ c, jobId }: { c?: Cost; jobId: string }) {
             {COST_CATEGORIES.map((k) => <option key={k} value={k}>{label(k)}</option>)}
           </Select>
         </Field>
-        <Field label="Vendor"><Input name="vendor" defaultValue={c?.vendor ?? ""} placeholder="ABC Supply" /></Field>
+        <Field label="Supplier / contractor"><Input name="vendor" defaultValue={c?.vendor ?? ""} placeholder="e.g. Stramit, a crew name" /></Field>
         <Field label="Description" className="sm:col-span-1"><Input name="description" defaultValue={c?.description ?? ""} /></Field>
-        <Field label="Amount" hint="Negative = credit"><Input name="amount" type="number" step="0.01" defaultValue={c?.amount ?? ""} required /></Field>
+        <Field label="Amount ex GST" hint="Negative = credit"><Input name="amount" type="number" step="0.01" defaultValue={c?.amount ?? ""} required /></Field>
         <Field label="Date"><Input name="incurred_on" type="date" defaultValue={c?.incurred_on ?? isoDate(new Date())} /></Field>
       </div>
     </>
@@ -50,7 +50,7 @@ export default async function CostsPage({ params }: PageProps<"/app/jobs/[id]/co
     <div className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-4">
         {[
-          { k: "Contract value", v: money(f.contractValue), sub: f.estimate ? `Estimate #${f.estimate.number} pre-tax${f.changeOrders ? ` + ${money(f.changeOrders)} change orders` : ""}${f.approvedSupplements ? ` + ${money(f.approvedSupplements)} supplements` : ""}` : "No accepted estimate" },
+          { k: "Contract value", v: money(f.contractValue), sub: f.estimate ? `Quote #${f.estimate.number}${f.changeOrders ? ` + ${money(f.changeOrders)} change orders` : ""}${f.approvedSupplements ? ` + ${money(f.approvedSupplements)} variations` : ""}` : "No accepted quote" },
           { k: "Budgeted cost", v: money(totalBudget), sub: `Budget margin ${budgetMargin.pct}%` },
           { k: "Actual cost", v: money(f.actualCost), sub: `${f.costs.length} line${f.costs.length === 1 ? "" : "s"}` },
           { k: "Gross profit", v: money(gp), sub: `${pct}% margin · target ${min}%`, tone: below ? "red" : "green" },
@@ -63,7 +63,7 @@ export default async function CostsPage({ params }: PageProps<"/app/jobs/[id]/co
         ))}
       </div>
       {below && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">Margin is below the company minimum of {min}%.</p>}
-      {f.pendingSupplements > 0 && <p className="rounded-lg bg-violet-50 px-3 py-2 text-sm text-violet-800">{money(f.pendingSupplements)} in submitted supplements is pending with the carrier and not counted yet.</p>}
+      {f.pendingSupplements > 0 && <p className="rounded-lg bg-violet-50 px-3 py-2 text-sm text-violet-800">{money(f.pendingSupplements)} in variation requests is waiting on the insurer and not counted yet.</p>}
 
       <Card title="Budget vs actual">
         <div className="-m-4 overflow-x-auto">
@@ -85,7 +85,7 @@ export default async function CostsPage({ params }: PageProps<"/app/jobs/[id]/co
             </tbody>
           </table>
         </div>
-        <p className="mt-6 text-xs text-slate-500">Budget = accepted estimate unit cost × quantity (plus approved change-order costs). Actual = every cost line below, including negative credits from returns.</p>
+        <p className="mt-6 text-xs text-slate-500">Costs are recorded excluding GST. Budget = accepted quote unit cost × quantity (plus approved change-order costs). Actual = every cost line below, including negative credits from returns. Labour paid to contractors feeds the TPAR report.</p>
       </Card>
 
       <Card title="Add a cost">

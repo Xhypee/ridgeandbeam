@@ -1,7 +1,10 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ClaimStage, Endorsement, PolicyType, SupplementStatus } from "./claims";
+import type { CheckKind, ClaimStage, Payer, SettlementPath, SupplementStatus } from "./claims";
 
+/** A job's insurance claim. US-era columns (rcv_amount, depreciation_amount, deductible, mortgagee_*) stay in
+ * the table for history but are not used by the Australian app. `carrier` = insurer, `adjuster_*` = the
+ * insurer's assessor / loss adjuster, `adjuster_meeting_at` = inspection, `date_of_loss` = date of event. */
 export type Claim = {
   id: string;
   org_id: string;
@@ -9,37 +12,52 @@ export type Claim = {
   carrier: string | null;
   claim_number: string | null;
   policy_number: string | null;
-  policy_type: PolicyType;
+  policy_type: string;
   date_of_loss: string | null;
   cause_of_loss: string | null;
   adjuster_name: string | null;
   adjuster_phone: string | null;
   adjuster_email: string | null;
   adjuster_meeting_at: string | null;
-  rcv_amount: number;
-  depreciation_amount: number;
-  deductible: number;
-  o_and_p_included: boolean;
-  mortgagee_name: string | null;
-  mortgage_loan_number: string | null;
-  loss_draft_contact: string | null;
   stage: ClaimStage;
   stage_changed_at: string;
   notes: string | null;
   created_at: string;
+  lodged_on: string | null;
+  event_type: string | null;
+  catastrophe: "none" | "declared" | "extraordinary";
+  catastrophe_name: string | null;
+  excess: number;
+  sum_insured: number | null;
+  settlement_path: SettlementPath;
+  panel_builder_name: string | null;
+  panel_builder_contact: string | null;
+  panel_job_ref: string | null;
+  scope_received_on: string | null;
+  approved_amount: number;
+  cash_settlement_amount: number;
+  cash_settlement_offered_on: string | null;
+  make_safe_done_on: string | null;
+  make_safe_authorised_by: string | null;
+  make_safe_payer: string | null;
+  make_safe_amount: number;
+  make_safe_notes: string | null;
+  info_complete_on: string | null;
+  last_insurer_update_on: string | null;
+  decision_on: string | null;
 };
 
 export type ClaimCheck = {
   id: string;
   claim_id: string;
-  kind: "acv" | "depreciation" | "supplement" | "deductible" | "other";
-  payer: "carrier" | "homeowner" | "mortgagee";
+  kind: CheckKind;
+  payer: Payer;
   label: string | null;
   expected_amount: number;
   received_amount: number;
   received_on: string | null;
   check_number: string | null;
-  endorsement: Endorsement;
+  endorsement: string;
   supplement_id: string | null;
   payment_id: string | null;
   notes: string | null;

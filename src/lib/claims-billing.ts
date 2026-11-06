@@ -8,7 +8,7 @@ export const INVOICE_KIND_LABEL: Record<InvoiceKind, string> = {
   deposit: "Deposit",
   progress: "Progress",
   final: "Final",
-  supplement: "Supplement",
+  supplement: "Variation",
   change_order: "Change order",
 };
 export const INVOICE_KIND_TONE: Record<InvoiceKind, Tone> = {
@@ -20,12 +20,13 @@ export const INVOICE_KIND_TONE: Record<InvoiceKind, Tone> = {
   change_order: "amber",
 };
 
-export const BILL_TO = ["homeowner", "carrier", "mortgagee", "other"] as const;
-export type BillTo = (typeof BILL_TO)[number];
-export const BILL_TO_LABEL: Record<BillTo, string> = { homeowner: "Homeowner", carrier: "Insurance company", mortgagee: "Mortgage company", other: "Other" };
+/** Who the invoice is addressed to ("carrier" = the insurer; "mortgagee" is a legacy US value). */
+export const BILL_TO = ["homeowner", "carrier", "panel_builder", "other"] as const;
+export type BillTo = (typeof BILL_TO)[number] | "mortgagee";
+export const BILL_TO_LABEL: Record<BillTo, string> = { homeowner: "Homeowner", carrier: "Insurer", panel_builder: "Panel builder", other: "Other", mortgagee: "Other" };
 
 export const MILESTONE_TRIGGERS = ["signed", "delivered", "completed"] as const;
-export const TRIGGER_LABEL: Record<string, string> = { signed: "Due when the contract is signed", delivered: "Due when materials are delivered", completed: "Due at completion walkthrough" };
+export const TRIGGER_LABEL: Record<string, string> = { signed: "Due when the contract is signed", delivered: "Due when materials are delivered", completed: "Due at completion handover" };
 
 export type ScheduleStep = { label: string; pct: number; trigger: string };
 export type PlannedInvoice = { kind: "deposit" | "progress" | "final"; label: string; trigger: string; pct: number; amount: number };

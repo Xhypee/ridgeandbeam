@@ -14,8 +14,8 @@ export const metadata: Metadata = { title: "Scope comparison" };
 const STATUS: Record<DiffStatus, { label: string; tone: "green" | "amber" | "red" | "slate" }> = {
   matched: { label: "Matched", tone: "green" },
   qty_differs: { label: "Quantity differs", tone: "amber" },
-  missing_from_carrier: { label: "Missing from carrier", tone: "red" },
-  extra: { label: "Only on carrier", tone: "slate" },
+  missing_from_carrier: { label: "Missing from insurer", tone: "red" },
+  extra: { label: "Only on insurer", tone: "slate" },
 };
 const ORDER: DiffStatus[] = ["missing_from_carrier", "qty_differs", "extra", "matched"];
 
@@ -35,13 +35,13 @@ export default async function ScopePage({ params }: PageProps<"/app/jobs/[id]/cl
 
   const side = (source: "carrier" | "contractor", lines: ScopeLine[]) => (
     <Card
-      title={<>{source === "carrier" ? "Carrier scope" : "Your scope"} <span className="font-normal text-slate-500">· {lines.length} lines · {money(lines.reduce((s, l) => s + l.total, 0))}</span></>}
+      title={<>{source === "carrier" ? "Insurer's scope of works" : "Your scope"} <span className="font-normal text-slate-500">· {lines.length} lines · {money(lines.reduce((s, l) => s + l.total, 0))}</span></>}
       actions={
         lines.length > 0 ? (
           <form action={clearScope}>
             <input type="hidden" name="claim_id" value={claim.id} />
             <input type="hidden" name="source" value={source} />
-            <SubmitButton variant="ghost" confirm={`Clear the ${source} scope?`}>Clear</SubmitButton>
+            <SubmitButton variant="ghost" confirm={`Clear ${source === "carrier" ? "the insurer's" : "your"} scope?`}>Clear</SubmitButton>
           </form>
         ) : undefined
       }
@@ -50,7 +50,7 @@ export default async function ScopePage({ params }: PageProps<"/app/jobs/[id]/cl
       {source === "contractor" && (
         <ActionForm action={copyEstimateToScope} className="mt-3">
           <input type="hidden" name="claim_id" value={claim.id} />
-          <SubmitButton variant="secondary" className="min-h-11">Use my accepted estimate</SubmitButton>
+          <SubmitButton variant="secondary" className="min-h-11">Use my accepted quote</SubmitButton>
         </ActionForm>
       )}
     </Card>
@@ -59,8 +59,8 @@ export default async function ScopePage({ params }: PageProps<"/app/jobs/[id]/cl
   return (
     <div className="space-y-6">
       <p className="rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-600">
-        Paste or upload line items from the carrier&apos;s estimate and your own. Works with rows copied from Excel/Google Sheets, CSV exports and Xactimate PDF text.
-        Native Xactimate ESX import requires a Verisk partnership, so it isn&apos;t supported — use paste or CSV.
+        Insurer scopes of works usually arrive as a PDF. Open it, select the line items, copy and paste them here — or paste rows from Excel/Google Sheets or a CSV export.
+        Then add your own scope (or use your accepted quote) to see what is missing or short.
       </p>
       <div className="grid gap-6 lg:grid-cols-2">
         {side("carrier", carrier)}
@@ -89,7 +89,7 @@ export default async function ScopePage({ params }: PageProps<"/app/jobs/[id]/cl
             {addable > 0 && (
               <form action={supplementFromFlags} className="mt-4">
                 <input type="hidden" name="claim_id" value={claim.id} />
-                <SubmitButton className="min-h-11 w-full whitespace-normal sm:w-auto">Add flagged items to a new supplement</SubmitButton>
+                <SubmitButton className="min-h-11 w-full whitespace-normal sm:w-auto">Add flagged items to a new variation request</SubmitButton>
               </form>
             )}
           </Card>
@@ -98,7 +98,7 @@ export default async function ScopePage({ params }: PageProps<"/app/jobs/[id]/cl
             <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="text-sm font-semibold text-slate-900">Line-by-line</h2>
               <p className="text-sm text-slate-600">
-                Carrier <b className="tabular-nums">{money(diff!.totals.carrier)}</b> · yours <b className="tabular-nums">{money(diff!.totals.contractor)}</b> · gap{" "}
+                Insurer <b className="tabular-nums">{money(diff!.totals.carrier)}</b> · yours <b className="tabular-nums">{money(diff!.totals.contractor)}</b> · gap{" "}
                 <b className={cx("tabular-nums", diff!.totals.delta > 0 ? "text-red-700" : "text-slate-900")}>{money(diff!.totals.delta)}</b>
               </p>
             </div>
@@ -107,7 +107,7 @@ export default async function ScopePage({ params }: PageProps<"/app/jobs/[id]/cl
                 <tr>
                   <th className={th}>Status</th>
                   <th className={th}>Item</th>
-                  <th className={`${th} text-right`}>Carrier</th>
+                  <th className={`${th} text-right`}>Insurer</th>
                   <th className={`${th} text-right`}>Yours</th>
                   <th className={`${th} text-right`}>Gap</th>
                 </tr>
@@ -120,7 +120,7 @@ export default async function ScopePage({ params }: PageProps<"/app/jobs/[id]/cl
                       <div className="font-medium text-slate-800">{r.contractor?.description ?? r.carrier?.description}</div>
                       <div className="text-xs text-slate-500">
                         {[r.carrier?.xact_code ?? r.contractor?.xact_code, r.key ? ITEM_LABEL[r.key] : null].filter(Boolean).join(" · ")}
-                        {r.carrier && r.contractor && r.carrier.description !== r.contractor.description && <> · carrier: {r.carrier.description}</>}
+                        {r.carrier && r.contractor && r.carrier.description !== r.contractor.description && <> · insurer: {r.carrier.description}</>}
                       </div>
                     </td>
                     <td className={`${td} text-right tabular-nums`}>{r.carrier ? <>{r.carrier.quantity} {r.carrier.unit}<div className="text-xs text-slate-500">{money(r.carrier.total)}</div></> : "—"}</td>

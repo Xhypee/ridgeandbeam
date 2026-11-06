@@ -89,7 +89,7 @@ export default async function ProfitabilityPage({ searchParams }: PageProps<"/ap
           </tbody>
         </Table>
       )}
-      <p className="mt-3 text-xs text-slate-500">Contract = accepted estimate pre-tax + approved change orders + approved supplements. Costs = posted job cost lines (net of credits). Red margin is below your {min}% minimum.</p>
+      <p className="mt-3 text-xs text-slate-500">Contract = accepted quote (as priced by the estimating module) + approved change orders + approved variation requests. Costs = posted job cost lines (net of credits). Red margin is below your {min}% minimum.</p>
     </>
   );
 }

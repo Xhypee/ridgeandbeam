@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useSyncExternalStore, type ComponentProps } from "react";
 import { Input, Select, cx } from "@/components/ui";
-import { POLICY_HINT, POLICY_LABEL, POLICY_TYPES, type PolicyType } from "@/lib/claims";
+import { asPolicyType, POLICY_HINT, POLICY_LABEL, POLICY_TYPES, SETTLEMENT_HINT, SETTLEMENT_LABEL, SETTLEMENT_PATHS, type PolicyType, type SettlementPath } from "@/lib/claims";
 
 const noop = () => () => {};
 const useIsClient = () => useSyncExternalStore(noop, () => true, () => false);
@@ -44,14 +44,28 @@ export function LocalDateTime({ iso }: { iso: string }) {
   );
 }
 
-export function PolicySelect({ defaultValue }: { defaultValue: PolicyType }) {
-  const [v, setV] = useState<PolicyType>(defaultValue);
+/** Cover type with a plain-language explanation under it. */
+export function PolicySelect({ defaultValue }: { defaultValue: string }) {
+  const [v, setV] = useState<PolicyType>(asPolicyType(defaultValue));
   return (
     <>
       <Select name="policy_type" value={v} onChange={(e) => setV(e.target.value as PolicyType)}>
         {POLICY_TYPES.map((p) => <option key={p} value={p}>{POLICY_LABEL[p]}</option>)}
       </Select>
-      <span className={cx("mt-1 block text-xs", v === "rcv" ? "text-slate-500" : "font-medium text-amber-700")}>{POLICY_HINT[v]}</span>
+      <span className={cx("mt-1 block text-xs", v === "unknown" ? "font-medium text-amber-700" : "text-slate-500")}>{POLICY_HINT[v]}</span>
+    </>
+  );
+}
+
+/** How the insurer settles the claim, with what that means for who pays us. */
+export function SettlementSelect({ defaultValue }: { defaultValue: SettlementPath }) {
+  const [v, setV] = useState<SettlementPath>(defaultValue);
+  return (
+    <>
+      <Select name="settlement_path" value={v} onChange={(e) => setV(e.target.value as SettlementPath)} aria-label="Settlement path">
+        {SETTLEMENT_PATHS.map((p) => <option key={p} value={p}>{SETTLEMENT_LABEL[p]}</option>)}
+      </Select>
+      <span className="mt-1 block text-xs text-slate-500">{SETTLEMENT_HINT[v]}</span>
     </>
   );
 }
@@ -61,7 +75,7 @@ export function ClaimNav({ base, counts }: { base: string; counts: { supplements
   const items = [
     { href: base, label: "Overview", exact: true, badge: 0 },
     { href: `${base}/money`, label: "Money & paperwork", badge: counts.openChecks },
-    { href: `${base}/supplements`, label: "Supplements", badge: counts.supplements },
+    { href: `${base}/supplements`, label: "Variation requests", badge: counts.supplements },
     { href: `${base}/scope`, label: "Scope compare", badge: 0 },
   ];
   return (

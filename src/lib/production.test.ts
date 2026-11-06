@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   addWorkingDays, budgetByCategory, computeCommission, crewPay, jobReadiness, netPaid, packLanes, planRainDay, weatherRisk,
 } from "./production";
-import { addMonths, lienDeadline, lienSchedule, LIEN_RULES } from "./liens";
 import { materialLabel } from "./production-i18n";
 
 const readyJob = {
@@ -100,22 +99,6 @@ describe("budget & commissions", () => {
   });
   it("nets chargebacks", () => {
     expect(netPaid([{ kind: "advance", amount: 300 }, { kind: "chargeback", amount: 100 }])).toBe(200);
-  });
-});
-
-describe("liens", () => {
-  it("computes state deadlines", () => {
-    expect(lienDeadline(LIEN_RULES.FL, "2026-01-10")).toBe("2026-04-10");
-    expect(lienDeadline(LIEN_RULES.TX, "2026-01-31")).toBe("2026-04-15");
-    expect(lienDeadline(LIEN_RULES.CO, "2026-10-31")).toBe("2027-02-28");
-    expect(addMonths("2024-01-31", 1)).toBe("2024-02-29");
-  });
-  it("builds notices relative to the deadline", () => {
-    const s = lienSchedule("co", { lastFurnished: "2026-11-01", firstFurnished: "2026-10-28", today: "2026-11-06" })!;
-    expect(s.lienDue).toBe("2027-03-01");
-    expect(s.notices[0].due).toBe("2027-02-19");
-    expect(lienSchedule("AZ", { lastFurnished: null, firstFurnished: "2026-10-01", today: "2026-11-06" })!.notices[0].due).toBe("2026-10-21");
-    expect(lienSchedule("WY", { lastFurnished: null, firstFurnished: null, today: "2026-11-06" })).toBe(null);
   });
 });
 

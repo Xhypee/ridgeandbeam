@@ -1,85 +1,98 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { DocumentView } from "@/components/document-view";
+import { ClaimExplainer } from "@/components/claim-explainer";
 import { PrintButton } from "@/components/print-button";
+import { TaxInvoice } from "@/components/tax-invoice";
+import { formatAbn } from "@/lib/au";
 import { money } from "@/lib/format";
+import { bankReference, FINANCE_HOMEOWNER_NOTE, formatBsb } from "@/lib/payments-au";
 import { anonClient } from "@/lib/public";
-import { cardFee, stripeConfigured } from "@/lib/stripe";
-import type { PublicDocument } from "@/lib/types";
-import { monthlyPayment } from "@/app/app/settings/payments/finance-math";
+import { stripeConfigured } from "@/lib/stripe";
 import { payInvoice } from "./actions";
-import { PayButtons } from "./pay-buttons";
-import type { PayInfo } from "./pay-info";
+import { CopyValue, PayButtons } from "./pay-buttons";
+import type { PublicTaxInvoice } from "./pay-info";
 
 export const metadata: Metadata = { title: "Your invoice", robots: { index: false } };
 
 export default async function PublicInvoice({ params, searchParams }: PageProps<"/i/[token]">) {
   const { token } = await params;
   const sp = await searchParams;
-  const db = anonClient();
-  const [{ data }, { data: payData }] = await Promise.all([
-    db.rpc("get_public_document", { p_kind: "invoice", p_token: token }),
-    db.rpc("get_public_invoice_pay", { p_token: token }),
-  ]);
+  const { data } = await anonClient().rpc("get_public_tax_invoice", { p_token: token });
   if (!data) notFound();
-  const doc = data as PublicDocument;
-  const pay = payData as PayInfo | null;
-  const balance = Number(pay?.balance ?? 0);
-  const online = Boolean(pay?.online_ready) && stripeConfigured() && balance > 0;
-  const fin = pay?.financing;
-  const lenders = fin?.enabled ? (fin.lenders ?? []).filter((l) => l.url?.startsWith("https://")) : [];
-
-  let card = { total: money(balance), note: "" };
-  let ach: { total: string; note: string } | null = null;
-  if (pay && online) {
-    const fee = cardFee(balance, Number(pay.card_fee_pct));
-    card = pay.pass_card_fee
-      ? { total: money(balance + fee), note: `Includes a ${Number(pay.card_fee_pct)}% card processing fee of ${money(fee)}` }
-      : { total: money(balance), note: "No card fee for you" };
-    if (pay.ach_enabled) ach = { total: money(balance), note: `No fee for you · usually clears in 3–5 business days` };
-  }
+  const inv = data as PublicTaxInvoice;
+  const pay = inv.pay;
+  const balance = Number(inv.totals.balance);
+  const online = pay.online_ready && stripeConfigured() && balance > 0;
+  const bank = Boolean(pay.bank_bsb && pay.bank_account_number);
+  const ref = bankReference(inv.number);
+  const lenders = pay.financing.enabled ? (pay.financing.lenders ?? []).filter((l) => l.url?.startsWith("https://")) : [];
+  const payIdText = pay.payid ? (pay.payid_type === "abn" ? formatAbn(pay.payid) : pay.payid) : null;
 
   return (
-    <main className="min-h-screen py-6 sm:py-10">
+    <main className="min-h-screen bg-cream py-6 sm:py-10">
       <div className="no-print mx-auto mb-4 flex max-w-3xl justify-end px-4 sm:px-0"><PrintButton /></div>
-      <DocumentView doc={doc} />
+      <TaxInvoice
+        doc={{
+          number: inv.number, status: inv.status, issue_date: inv.issue_date, due_date: inv.due_date, milestone_label: inv.milestone_label,
+          notes: inv.notes, terms: inv.terms, tax_rate: inv.tax_rate, discount: inv.discount, amounts_include_gst: inv.amounts_include_gst,
+          seller: inv.seller, buyer: inv.buyer, job: inv.job, items: inv.items, paid: inv.totals.paid,
+        }}
+      />
       <section className="no-print mx-auto mt-6 max-w-3xl space-y-4 px-4 sm:px-0" data-pay-section>
-        {doc.status === "paid" || balance <= 0 ? (
-          <p className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800">Paid in full. Thank you for your business!</p>
+        {inv.status === "paid" || balance <= 0 ? (
+          <p className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800">Paid in full. Thank you!</p>
         ) : (
           <>
-            {sp.paid === "1" && <p className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800" role="status">Thank you! Your payment is processing. This page updates once it clears (bank transfers take a few days).</p>}
-            {online ? (
-              <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200 sm:p-6">
-                <h2 className="text-base font-semibold text-slate-900">Pay online</h2>
-                <p className="mb-3 text-sm text-slate-600">Balance due: <b>{money(balance)}</b>. You&apos;ll finish on Stripe&apos;s secure checkout page.</p>
-                <PayButtons token={token} action={payInvoice} card={card} ach={ach} />
-              </div>
-            ) : (
-              <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200 sm:p-6" data-pay-instructions>
-                <h2 className="text-base font-semibold text-slate-900">How to pay</h2>
-                <ul className="mt-2 space-y-2 text-sm text-slate-700">
-                  <li><b>By check:</b> make it payable to <b>{doc.org.name}</b>{doc.org.address ? <> and mail it to {doc.org.address}</> : null}. Write invoice #{doc.number} on the memo line.</li>
-                  <li><b>By bank transfer (ACH):</b> contact {doc.org.name}{doc.org.phone ? ` at ${doc.org.phone}` : ""}{doc.org.email ? ` or ${doc.org.email}` : ""} for transfer details. Always confirm bank details by phone before sending money.</li>
-                </ul>
-              </div>
-            )}
-            {lenders.length > 0 && (
-              <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200 sm:p-6">
-                <h2 className="text-base font-semibold text-slate-900">Prefer monthly payments?</h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  About <b>{money(monthlyPayment(balance, Number(fin!.apr), Number(fin!.term_months)))}/month</b> for {fin!.term_months} months at {Number(fin!.apr)}% APR — an example only; your rate depends on credit approval.
-                  Checking your rate won&apos;t affect your credit score with most lenders.
+            {sp.paid === "1" && <p className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800" role="status">Thank you! Your payment is processing. This page updates once it clears (direct debits take a few business days).</p>}
+            <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200 sm:p-6">
+              <h2 className="font-display text-lg font-semibold text-ink">Pay {money(balance)}</h2>
+              <p className="text-sm text-slate-600">Bank transfer or PayID is quickest and free for you.</p>
+
+              {(bank || payIdText) && (
+                <div className="mt-4 space-y-2" data-pay-instructions>
+                  {payIdText && <CopyValue label="PayID" value={payIdText} testId="payid" />}
+                  {bank && (
+                    <>
+                      {pay.bank_account_name && <CopyValue label="Account name" value={pay.bank_account_name} />}
+                      <CopyValue label="BSB" value={formatBsb(pay.bank_bsb)} testId="bsb" />
+                      <CopyValue label="Account number" value={pay.bank_account_number!} testId="account-number" />
+                    </>
+                  )}
+                  <CopyValue label="Reference (please include)" value={ref} testId="pay-reference" />
+                  <p className="text-xs text-slate-500">Scammers sometimes fake invoices. Before your first transfer, call {inv.seller.name}{inv.seller.phone ? ` on ${inv.seller.phone}` : ""} to check these details.</p>
+                </div>
+              )}
+
+              {online && (
+                <div className="mt-5 border-t border-slate-100 pt-4">
+                  <h3 className="text-sm font-semibold text-slate-900">Or pay online</h3>
+                  <p className="mb-3 text-xs text-slate-500">You&apos;ll finish on Stripe&apos;s secure checkout page. No card surcharge.</p>
+                  <PayButtons token={token} action={payInvoice} total={money(balance)} becs={pay.becs_enabled} />
+                </div>
+              )}
+
+              {!bank && !payIdText && !online && (
+                <p className="mt-3 text-sm text-slate-700" data-pay-instructions>
+                  Contact {inv.seller.name}{inv.seller.phone ? ` on ${inv.seller.phone}` : ""}{inv.seller.email ? ` or ${inv.seller.email}` : ""} for payment details, quoting reference <b>{ref}</b>.
                 </p>
+              )}
+            </div>
+
+            {lenders.length > 0 && (
+              <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200 sm:p-6" data-finance>
+                <h2 className="font-display text-base font-semibold text-ink">Prefer to pay over time?</h2>
+                <p className="mt-1 text-sm text-slate-600">{inv.seller.name} can refer you to these finance providers.</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {lenders.map((l) => (
-                    <a key={l.name} href={l.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-lg bg-white px-4 text-sm font-medium text-slate-800 ring-1 ring-slate-300 hover:bg-slate-50">Check my rate with {l.name} ↗</a>
+                    <a key={l.name} href={l.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-lg bg-white px-4 text-sm font-medium text-slate-800 ring-1 ring-slate-300 hover:bg-slate-50">{l.name} ↗</a>
                   ))}
                 </div>
+                <p className="mt-3 text-xs text-slate-500">{FINANCE_HOMEOWNER_NOTE}</p>
               </div>
             )}
           </>
         )}
+        {inv.claim && <ClaimExplainer excess={inv.claim.excess} settlementPath={inv.claim.settlement_path} insurer={inv.claim.insurer} orgName={inv.seller.name} />}
       </section>
     </main>
   );

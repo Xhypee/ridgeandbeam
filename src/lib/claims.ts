@@ -1,209 +1,409 @@
-// Insurance claim domain: stages, policy types, money math, supplement follow-ups.
+// Australian home insurance claims: stages, cover types, settlement paths, expected payments,
+// General Insurance Code of Practice timeframe guide, homeowner explainer, variation-request follow-ups.
 // Pure functions only (safe in client and server components).
+//
+// Australia has no ACV/RCV depreciation split, no mortgagee-endorsed cheques and no deductible waivers:
+// the homeowner pays an EXCESS, and the insurer either manages the repair (often through its own
+// panel builder), approves the homeowner's own builder, or pays a cash settlement to the homeowner.
 import type { Tone } from "./format";
 
-export const CLAIM_STAGES = [
-  "contingency_signed",
-  "claim_filed",
-  "adjuster_scheduled",
-  "adjuster_met",
-  "scope_received",
-  "supplementing",
-  "approved",
-  "built",
-  "coc_sent",
-  "depreciation_released",
-  "closed",
-  "denied",
+// ---------------------------------------------------------------------------
+// Stages
+// ---------------------------------------------------------------------------
+/** Every value of the claim_stage enum (legacy US values are kept in the DB type only). */
+export const CLAIM_STAGE_VALUES = [
+  "lodged", "assessor_booked", "assessed", "scope_received", "approved", "declined", "cash_settlement_offered",
+  "work_authorised", "built", "invoiced", "paid", "closed",
+  // legacy (US) — mapped to AU stages by the 20261110000301 migration; never offered in the UI
+  "contingency_signed", "claim_filed", "adjuster_scheduled", "adjuster_met", "supplementing", "coc_sent", "depreciation_released", "denied",
 ] as const;
-export type ClaimStage = (typeof CLAIM_STAGES)[number];
+export type ClaimStage = (typeof CLAIM_STAGE_VALUES)[number];
 
-/** The normal path, in order (closed/denied are end states, not steps). */
-export const CLAIM_FLOW: ClaimStage[] = CLAIM_STAGES.filter((s) => s !== "denied" && s !== "closed");
+/** Australian stages, in the order the office works them. */
+export const CLAIM_STAGES = [
+  "lodged", "assessor_booked", "assessed", "scope_received", "approved", "declined", "cash_settlement_offered",
+  "work_authorised", "built", "invoiced", "paid", "closed",
+] as const satisfies readonly ClaimStage[];
+export type AuClaimStage = (typeof CLAIM_STAGES)[number];
 
-export const CLAIM_STAGE_LABEL: Record<ClaimStage, string> = {
-  contingency_signed: "Contingency signed",
-  claim_filed: "Claim filed",
-  adjuster_scheduled: "Adjuster scheduled",
-  adjuster_met: "Adjuster met",
-  scope_received: "Carrier scope in",
-  supplementing: "Supplementing",
+/** The normal path (declined / cash settlement offered are decision outcomes; closed is the end). */
+export const CLAIM_FLOW: AuClaimStage[] = ["lodged", "assessor_booked", "assessed", "scope_received", "approved", "work_authorised", "built", "invoiced", "paid"];
+/** Stages where the insurer has made its decision. */
+export const DECIDED_STAGES: AuClaimStage[] = ["approved", "declined", "cash_settlement_offered", "work_authorised", "built", "invoiced", "paid", "closed"];
+
+const LEGACY: Partial<Record<ClaimStage, AuClaimStage>> = {
+  contingency_signed: "lodged",
+  claim_filed: "lodged",
+  adjuster_scheduled: "assessor_booked",
+  adjuster_met: "assessed",
+  supplementing: "scope_received",
+  coc_sent: "invoiced",
+  depreciation_released: "paid",
+  denied: "declined",
+};
+export function auStage(s: ClaimStage | string): AuClaimStage {
+  return (LEGACY[s as ClaimStage] ?? ((CLAIM_STAGES as readonly string[]).includes(s) ? s : "lodged")) as AuClaimStage;
+}
+
+const AU_LABEL: Record<AuClaimStage, string> = {
+  lodged: "Claim lodged",
+  assessor_booked: "Assessor booked",
+  assessed: "Assessed",
+  scope_received: "Scope received",
   approved: "Approved",
+  declined: "Declined",
+  cash_settlement_offered: "Cash settlement offered",
+  work_authorised: "Work authorised",
   built: "Built",
-  coc_sent: "COC sent",
-  depreciation_released: "Depreciation paid",
+  invoiced: "Invoiced",
+  paid: "Paid",
   closed: "Closed",
-  denied: "Denied",
+};
+/** Label for any stage value (legacy values show their AU equivalent). */
+export const CLAIM_STAGE_LABEL = Object.fromEntries(CLAIM_STAGE_VALUES.map((s) => [s, AU_LABEL[auStage(s)]])) as Record<ClaimStage, string>;
+
+/** Plain-language stage text for the homeowner portal. */
+export const CLAIM_STAGE_PLAIN: Record<AuClaimStage, string> = {
+  lodged: "Your claim is lodged with your insurer",
+  assessor_booked: "The insurer's assessor is booked to inspect",
+  assessed: "The assessor has inspected the roof",
+  scope_received: "The insurer has sent its scope of works",
+  approved: "Your insurer has approved the claim",
+  declined: "Your insurer has declined the claim",
+  cash_settlement_offered: "Your insurer has offered a cash settlement",
+  work_authorised: "The work is authorised",
+  built: "The work is finished",
+  invoiced: "Final invoice sent",
+  paid: "All payments are in",
+  closed: "Claim closed",
 };
 
 /** What the office should be doing in each stage (one line, plain language). */
-export const CLAIM_STAGE_HINT: Record<ClaimStage, string> = {
-  contingency_signed: "Homeowner signed. Next: help them file the claim with their insurance company.",
-  claim_filed: "Claim is filed. Next: get the adjuster inspection on the calendar.",
-  adjuster_scheduled: "Be on the roof with the adjuster. Bring photos and measurements.",
-  adjuster_met: "Waiting for the carrier's written estimate (the scope).",
-  scope_received: "Compare the carrier scope with yours and supplement anything missing.",
-  supplementing: "Supplement sent. Follow up every few days until the carrier answers.",
-  approved: "Money is approved. Schedule the build and collect the deductible.",
-  built: "Roof is done. Send the certificate of completion and final invoice.",
-  coc_sent: "Waiting for the carrier to release the held-back depreciation.",
-  depreciation_released: "Final carrier check released. Deposit it and close out.",
-  closed: "All money in. Nothing left to do.",
-  denied: "Carrier denied the claim. Consider a re-inspection or move to a retail price.",
+export const CLAIM_STAGE_HINT: Record<AuClaimStage, string> = {
+  lodged: "Claim is lodged. Next: find out when the insurer's assessor or loss adjuster will inspect.",
+  assessor_booked: "Meet the assessor on site if you can. Bring dated photos, measurements and the storm details.",
+  assessed: "Waiting for the insurer's scope of works. Check the make-safe is holding.",
+  scope_received: "Compare the insurer's scope with yours and send a variation request for anything missing.",
+  approved: "Approved. Confirm the settlement path and get the work authorised in writing.",
+  declined: "The insurer declined. The homeowner can ask the insurer to review it through its complaints process.",
+  cash_settlement_offered: "Cash settlement offered. If the homeowner engages you, they pay you directly — quote and contract with them.",
+  work_authorised: "Work is authorised. Order materials and book the crew.",
+  built: "Roof is done. Send the completion photos, completion certificate and tax invoice.",
+  invoiced: "Tax invoice sent. Chase the insurer, panel builder or homeowner for payment.",
+  paid: "All expected money is in. Close the claim.",
+  closed: "Nothing left to do.",
 };
 
-export function nextClaimStage(s: ClaimStage): ClaimStage | null {
-  if (s === "closed" || s === "denied") return null;
-  const i = CLAIM_FLOW.indexOf(s);
+export function nextClaimStage(s: ClaimStage | string): AuClaimStage | null {
+  const a = auStage(s);
+  if (a === "closed" || a === "declined") return null;
+  if (a === "cash_settlement_offered") return "work_authorised";
+  const i = CLAIM_FLOW.indexOf(a);
   return i >= 0 && i < CLAIM_FLOW.length - 1 ? CLAIM_FLOW[i + 1] : "closed";
 }
 
-export const POLICY_TYPES = ["rcv", "acv", "roof_schedule", "unknown"] as const;
+// ---------------------------------------------------------------------------
+// Policy cover, event, catastrophe, settlement path, make-safe
+// ---------------------------------------------------------------------------
+export const POLICY_TYPES = ["replacement", "indemnity", "unknown"] as const;
 export type PolicyType = (typeof POLICY_TYPES)[number];
-
-export const POLICY_LABEL: Record<PolicyType, string> = {
-  rcv: "Replacement cost (RCV)",
-  acv: "Actual cash value (ACV)",
-  roof_schedule: "Roof payment schedule",
+export const POLICY_LABEL: Record<string, string> = {
+  replacement: "New for old / replacement (sum insured)",
+  indemnity: "Indemnity (allows for wear and age)",
   unknown: "Not sure yet",
+  rcv: "New for old / replacement (sum insured)",
+  acv: "Indemnity (allows for wear and age)",
+  roof_schedule: "Not sure yet",
 };
 export const POLICY_HINT: Record<PolicyType, string> = {
-  rcv: "Pays to replace the roof. First check is ACV; the held-back depreciation is paid after the work is done.",
-  acv: "Pays only the roof's depreciated value. Held-back depreciation is NOT paid later.",
-  roof_schedule: "Pays a percentage based on the roof's age. Depreciation is usually NOT paid later.",
-  unknown: "Ask the homeowner for the declarations page. Until then, assume depreciation may not come back.",
+  replacement: "Most home policies. The insurer pays to repair or replace with new materials, up to the sum insured on the policy.",
+  indemnity: "Pays the value of what was damaged, allowing for its age and condition — the homeowner may need to top up the cost of new work.",
+  unknown: "Ask the homeowner for their policy schedule or certificate of insurance. It shows the cover type and sum insured.",
+};
+export const asPolicyType = (p: string | null | undefined): PolicyType => (p === "replacement" || p === "rcv" ? "replacement" : p === "indemnity" || p === "acv" ? "indemnity" : "unknown");
+
+export const EVENT_TYPES = ["hail", "storm", "cyclone", "flood", "fire", "other"] as const;
+export type EventType = (typeof EVENT_TYPES)[number];
+export const EVENT_LABEL: Record<EventType, string> = { hail: "Hail", storm: "Storm / wind", cyclone: "Cyclone", flood: "Flood", fire: "Bushfire / fire", other: "Other" };
+
+export const CATASTROPHES = ["none", "declared", "extraordinary"] as const;
+export type Catastrophe = (typeof CATASTROPHES)[number];
+export const CATASTROPHE_LABEL: Record<Catastrophe, string> = {
+  none: "No catastrophe declared",
+  declared: "ICA catastrophe declared",
+  extraordinary: "ICA extraordinary catastrophe declared",
 };
 
+export const SETTLEMENT_PATHS = ["undecided", "insurer_managed", "own_builder", "cash_settlement"] as const;
+export type SettlementPath = (typeof SETTLEMENT_PATHS)[number];
+export const SETTLEMENT_LABEL: Record<SettlementPath, string> = {
+  undecided: "Not decided yet",
+  insurer_managed: "Insurer-managed repair (insurer's builder network)",
+  own_builder: "Homeowner's own builder (us), approved by the insurer",
+  cash_settlement: "Cash settlement paid to the homeowner",
+};
+export const SETTLEMENT_SHORT: Record<SettlementPath, string> = {
+  undecided: "Settlement not decided",
+  insurer_managed: "Insurer-managed repair",
+  own_builder: "Own builder (approved)",
+  cash_settlement: "Cash settlement",
+};
+export const SETTLEMENT_HINT: Record<SettlementPath, string> = {
+  undecided: "The insurer decides how to settle after assessing the claim.",
+  insurer_managed: "The insurer arranges the repair through its builder or repair network. If you work for the insurer's panel builder, they pay you on their terms and usually collect the homeowner's excess.",
+  own_builder: "The insurer approves you to do the work, usually paying you its approved amount less the excess. The homeowner pays the excess and anything outside the insurer's scope.",
+  cash_settlement: "The insurer pays the homeowner. You quote, contract with and are paid by the homeowner like a normal job.",
+};
+
+export const MAKE_SAFE_AUTHORISERS = ["insurer", "homeowner", "panel_builder", "roofer"] as const;
+export const MAKE_SAFE_PAYERS = ["insurer", "homeowner", "panel_builder"] as const;
+export type MakeSafePayer = (typeof MAKE_SAFE_PAYERS)[number];
+export const PARTY_LABEL: Record<string, string> = { insurer: "Insurer", homeowner: "Homeowner", panel_builder: "Panel builder", roofer: "Us (emergency)" };
+
+// ---------------------------------------------------------------------------
+// Ledger: expected vs received by payer
+// ---------------------------------------------------------------------------
+export const CHECK_KINDS = ["scope", "excess", "variation", "make_safe", "balance", "cash_settlement", "other"] as const;
+export type AuCheckKind = (typeof CHECK_KINDS)[number];
+export type CheckKind = AuCheckKind | "acv" | "depreciation" | "supplement" | "deductible";
+export const CHECK_KIND_LABEL: Record<CheckKind, string> = {
+  scope: "Approved scope of works",
+  excess: "Excess",
+  variation: "Variation request",
+  make_safe: "Make-safe / temporary repairs",
+  balance: "Homeowner balance",
+  cash_settlement: "Cash settlement work",
+  other: "Other",
+  acv: "Insurer payment",
+  depreciation: "Insurer payment",
+  supplement: "Variation request",
+  deductible: "Excess",
+};
+export const PAYERS = ["carrier", "homeowner", "panel_builder"] as const;
+export type AuPayer = (typeof PAYERS)[number];
+export type Payer = AuPayer | "mortgagee";
+export const PAYER_LABEL: Record<Payer, string> = { carrier: "Insurer", homeowner: "Homeowner", panel_builder: "Panel builder", mortgagee: "Insurer" };
+
+export const PAYER_GROUPS = ["insurer", "homeowner_excess", "panel_builder", "homeowner_balance"] as const;
+export type PayerGroup = (typeof PAYER_GROUPS)[number];
+export const PAYER_GROUP_LABEL: Record<PayerGroup, string> = {
+  insurer: "Insurer",
+  homeowner_excess: "Homeowner excess",
+  panel_builder: "Panel builder",
+  homeowner_balance: "Homeowner balance",
+};
+export const PAYER_GROUP_TONE: Record<PayerGroup, Tone> = { insurer: "violet", homeowner_excess: "blue", panel_builder: "cyan", homeowner_balance: "amber" };
+
+export function payerGroup(c: { kind: string; payer: string }): PayerGroup {
+  if (c.payer === "panel_builder") return "panel_builder";
+  if (c.payer === "homeowner") return c.kind === "excess" || c.kind === "deductible" ? "homeowner_excess" : "homeowner_balance";
+  return "insurer";
+}
+
 export type ClaimMoneyInput = {
-  policy_type: PolicyType;
-  rcv_amount: number | string | null;
-  depreciation_amount: number | string | null;
-  deductible: number | string | null;
+  settlement_path: SettlementPath | string;
+  excess: number | string | null;
+  approved_amount: number | string | null;
+  cash_settlement_amount?: number | string | null;
+  panel_builder_name?: string | null;
+  make_safe_payer?: string | null;
+  make_safe_amount?: number | string | null;
 };
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 const n0 = (v: number | string | null | undefined) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
-export type ClaimMoney = {
-  rcv: number;
-  depreciation: number;
-  deductible: number;
-  /** First carrier check: RCV - depreciation - deductible (never below zero). */
-  acvPayable: number;
-  /** "yes" = paid after the work is done; "no" = lost; "maybe" = policy type unknown. */
-  recoverable: "yes" | "no" | "maybe";
-  /** Depreciation the carrier is expected to release later (0 unless recoverable). */
-  depreciationRecoverable: number;
-  /** Depreciation the carrier will keep (non-recoverable). */
-  depreciationLost: number;
-  /** Total the carrier is expected to pay (ACV + recoverable depreciation). */
-  carrierTotal: number;
-  /** Homeowner always owes the deductible. */
-  homeownerDeductible: number;
-  warnings: string[];
-};
+export type ExpectedPayment = { kind: AuCheckKind; payer: AuPayer; label: string; expected_amount: number };
 
-export function claimMoney(c: ClaimMoneyInput): ClaimMoney {
-  const rcv = r2(n0(c.rcv_amount));
-  const depreciation = r2(n0(c.depreciation_amount));
-  const deductible = r2(n0(c.deductible));
-  const acvPayable = r2(Math.max(0, rcv - depreciation - deductible));
-  const recoverable = c.policy_type === "rcv" ? "yes" : c.policy_type === "unknown" ? "maybe" : "no";
-  const depreciationRecoverable = recoverable === "yes" ? depreciation : 0;
-  const depreciationLost = recoverable === "no" ? depreciation : 0;
-  const warnings: string[] = [];
-  if (rcv > 0 && depreciation + deductible > rcv) warnings.push("Depreciation plus deductible is more than the RCV. Double-check the carrier numbers.");
-  if (recoverable === "no" && depreciation > 0)
-    warnings.push(`This policy does not pay back depreciation. ${money(depreciation)} will not come from the carrier — the homeowner must cover it or it must be recovered by supplements.`);
-  if (recoverable === "maybe" && depreciation > 0)
-    warnings.push(`Policy type is unknown. ${money(depreciation)} of depreciation may not be paid back. Get the declarations page.`);
-  return {
-    rcv,
-    depreciation,
-    deductible,
-    acvPayable,
-    recoverable,
-    depreciationRecoverable,
-    depreciationLost,
-    carrierTotal: r2(acvPayable + depreciationRecoverable),
-    homeownerDeductible: deductible,
-    warnings,
-  };
-}
-
-const usd = new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" });
-function money(n: number) {
-  return usd.format(n);
-}
-
-/** States where waiving/rebating the insurance deductible is prohibited or restricted. */
-export const DEDUCTIBLE_WAIVER_STATES: Record<string, string> = {
-  TX: "Texas law prohibits waiving or rebating the deductible.",
-  CO: "Colorado law prohibits waiving or rebating the deductible.",
-  FL: "Florida law prohibits waiving or rebating the deductible (can be a felony).",
-  KS: "Kansas restricts waiving or rebating the deductible.",
-  MN: "Minnesota restricts waiving or rebating the deductible.",
-};
-
-// ---------------------------------------------------------------------------
-// Ledger
-// ---------------------------------------------------------------------------
-export const CHECK_KINDS = ["acv", "depreciation", "supplement", "deductible", "other"] as const;
-export type CheckKind = (typeof CHECK_KINDS)[number];
-export const CHECK_KIND_LABEL: Record<CheckKind, string> = {
-  acv: "ACV check",
-  depreciation: "Depreciation check",
-  supplement: "Supplement check",
-  deductible: "Deductible",
-  other: "Other",
-};
-export const PAYERS = ["carrier", "homeowner", "mortgagee"] as const;
-export type Payer = (typeof PAYERS)[number];
-export const PAYER_LABEL: Record<Payer, string> = { carrier: "Insurance company", homeowner: "Homeowner", mortgagee: "Mortgage company" };
-
-export const ENDORSEMENTS = ["not_required", "needed", "sent_to_lender", "endorsed"] as const;
-export type Endorsement = (typeof ENDORSEMENTS)[number];
-export const ENDORSEMENT_LABEL: Record<Endorsement, string> = {
-  not_required: "No endorsement needed",
-  needed: "Needs endorsement",
-  sent_to_lender: "Sent to lender",
-  endorsed: "Endorsed",
-};
-export const ENDORSEMENT_TONE: Record<Endorsement, Tone> = { not_required: "slate", needed: "amber", sent_to_lender: "blue", endorsed: "green" };
-
-export type ExpectedCheck = { kind: CheckKind; payer: Payer; label: string; expected_amount: number; endorsement: Endorsement };
-
-/** The checks a claim should produce, from its numbers. */
-export function expectedChecks(c: ClaimMoneyInput & { mortgagee_name?: string | null }): ExpectedCheck[] {
-  const m = claimMoney(c);
-  const endorsement: Endorsement = c.mortgagee_name?.trim() ? "needed" : "not_required";
-  const out: ExpectedCheck[] = [];
-  if (m.acvPayable > 0) out.push({ kind: "acv", payer: "carrier", label: "First check (ACV)", expected_amount: m.acvPayable, endorsement });
-  if (m.depreciation > 0 && m.recoverable !== "no")
-    out.push({
-      kind: "depreciation",
-      payer: "carrier",
-      label: m.recoverable === "yes" ? "Recoverable depreciation" : "Depreciation (confirm it is recoverable)",
-      expected_amount: m.depreciation,
-      endorsement,
-    });
-  if (m.deductible > 0) out.push({ kind: "deductible", payer: "homeowner", label: "Homeowner deductible", expected_amount: m.deductible, endorsement: "not_required" });
+/**
+ * The payments a claim should produce for us, from its settlement path.
+ * contractTotal = our accepted price to the homeowner (GST-inclusive), when there is one.
+ */
+export function expectedPayments(c: ClaimMoneyInput, contractTotal: number | null = null): ExpectedPayment[] {
+  const excess = r2(Math.max(0, n0(c.excess)));
+  const approved = r2(Math.max(0, n0(c.approved_amount)));
+  const out: ExpectedPayment[] = [];
+  const add = (p: ExpectedPayment) => { if (p.expected_amount > 0.004) out.push({ ...p, expected_amount: r2(p.expected_amount) }); };
+  const panel = c.panel_builder_name?.trim();
+  switch (c.settlement_path) {
+    case "insurer_managed":
+      if (panel) add({ kind: "scope", payer: "panel_builder", label: `Panel builder (${panel}): approved scope`, expected_amount: approved });
+      else {
+        add({ kind: "scope", payer: "carrier", label: "Insurer: approved scope less excess", expected_amount: Math.max(0, approved - excess) });
+        add({ kind: "excess", payer: "homeowner", label: "Homeowner excess", expected_amount: approved > 0 ? excess : 0 });
+      }
+      break;
+    case "own_builder":
+      add({ kind: "scope", payer: "carrier", label: "Insurer: approved scope less excess", expected_amount: Math.max(0, approved - excess) });
+      add({ kind: "excess", payer: "homeowner", label: "Homeowner excess", expected_amount: approved > 0 ? excess : 0 });
+      if (contractTotal != null && approved > 0) add({ kind: "balance", payer: "homeowner", label: "Homeowner: work outside the insurer's scope", expected_amount: contractTotal - approved });
+      break;
+    case "cash_settlement":
+      add({ kind: "cash_settlement", payer: "homeowner", label: "Homeowner (paid from their cash settlement)", expected_amount: contractTotal ?? n0(c.cash_settlement_amount) });
+      break;
+  }
+  const ms = n0(c.make_safe_amount);
+  if (ms > 0 && c.make_safe_payer) {
+    const payer: AuPayer = c.make_safe_payer === "insurer" ? "carrier" : c.make_safe_payer === "panel_builder" ? "panel_builder" : "homeowner";
+    add({ kind: "make_safe", payer, label: "Make-safe / temporary repairs", expected_amount: ms });
+  }
   return out;
 }
 
+export type ClaimMoney = {
+  approved: number;
+  excess: number;
+  /** What each party is expected to pay us. */
+  byGroup: Record<PayerGroup, number>;
+  total: number;
+  /** Our price minus the insurer's approved amount (positive = insurer scope is short). */
+  scopeGap: number | null;
+  warnings: string[];
+};
+
+export function claimMoney(c: ClaimMoneyInput, contractTotal: number | null = null): ClaimMoney {
+  const plan = expectedPayments(c, contractTotal);
+  const byGroup: Record<PayerGroup, number> = { insurer: 0, homeowner_excess: 0, panel_builder: 0, homeowner_balance: 0 };
+  for (const p of plan) byGroup[payerGroup(p)] = r2(byGroup[payerGroup(p)] + p.expected_amount);
+  const approved = r2(n0(c.approved_amount));
+  const excess = r2(n0(c.excess));
+  const warnings: string[] = [];
+  if (c.settlement_path === "undecided") warnings.push("Settlement path not decided yet. Ask the insurer whether it will manage the repair, approve you as the builder, or cash settle.");
+  if (approved > 0 && excess > approved) warnings.push("The excess is more than the insurer's approved amount. Double-check both figures.");
+  if (c.settlement_path === "insurer_managed" && c.panel_builder_name?.trim()) warnings.push("The panel builder usually collects the homeowner's excess, not you.");
+  const scopeGap = contractTotal != null && approved > 0 && c.settlement_path !== "cash_settlement" ? r2(contractTotal - approved) : null;
+  if (scopeGap != null && scopeGap > 0 && c.settlement_path === "insurer_managed")
+    warnings.push(`Your price is ${aud(scopeGap)} more than the insurer's approved amount. Send a variation request or agree the gap before starting.`);
+  return { approved, excess, byGroup, total: r2(plan.reduce((s, p) => s + p.expected_amount, 0)), scopeGap, warnings };
+}
+
+const audFmt = new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" });
+const aud = (n: number) => audFmt.format(n);
+
 // ---------------------------------------------------------------------------
-// Loss-draft paperwork
+// General Insurance Code of Practice timeframe guide
+// Source: research_notes/Australian roofing law by state/insurance_payments_warranties.md §1 (ICA Code page;
+// Feb 2025 Code as reported):
+//  - claim decision within 4 months of lodgement (12 months under an extraordinary catastrophe declaration)
+//  - decision within 10 business days once all information is received and enquiries are complete
+//  - progress updates at least every 20 business days (older summary; indicative)
+// Reminders only — always labelled "Code of Practice guide — check current Code" in the UI.
 // ---------------------------------------------------------------------------
+export const CODE_GUIDE_LABEL = "Code of Practice guide — check current Code";
+
+export function addDays(iso: string, days: number): string {
+  const d = new Date(iso + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+export function addMonthsIso(iso: string, months: number): string {
+  const d = new Date(iso + "T12:00:00Z");
+  const day = d.getUTCDate();
+  d.setUTCDate(1);
+  d.setUTCMonth(d.getUTCMonth() + months);
+  const last = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+  d.setUTCDate(Math.min(day, last));
+  return d.toISOString().slice(0, 10);
+}
+/** Mon–Fri business days (public holidays are not counted). */
+export function addBusinessDaysIso(iso: string, days: number): string {
+  const d = new Date(iso + "T12:00:00Z");
+  let added = 0;
+  while (added < days) {
+    d.setUTCDate(d.getUTCDate() + 1);
+    const w = d.getUTCDay();
+    if (w !== 0 && w !== 6) added++;
+  }
+  return d.toISOString().slice(0, 10);
+}
+export function daysBetween(fromIso: string, toIso: string) {
+  return Math.round((new Date(toIso + "T12:00:00Z").getTime() - new Date(fromIso + "T12:00:00Z").getTime()) / 86400000);
+}
+
+export type CodeReminder = { key: "decision" | "decision_after_info" | "update"; label: string; due: string; daysLeft: number; status: "overdue" | "soon" | "ok"; detail: string };
+
+export function codeTimeframes(
+  c: { stage: string; lodged_on: string | null; info_complete_on?: string | null; last_insurer_update_on?: string | null; decision_on?: string | null; catastrophe?: string | null },
+  today: string,
+): CodeReminder[] {
+  if (!c.lodged_on || c.decision_on || DECIDED_STAGES.includes(auStage(c.stage))) return [];
+  const mk = (key: CodeReminder["key"], label: string, due: string, detail: string): CodeReminder => {
+    const daysLeft = daysBetween(today, due);
+    return { key, label, due, daysLeft, status: daysLeft < 0 ? "overdue" : daysLeft <= 5 ? "soon" : "ok", detail };
+  };
+  const extraordinary = c.catastrophe === "extraordinary";
+  const out: CodeReminder[] = [
+    mk("decision", "Insurer's claim decision", addMonthsIso(c.lodged_on, extraordinary ? 12 : 4),
+      extraordinary
+        ? "About 12 months from lodgement under an extraordinary catastrophe declaration."
+        : "About 4 months from lodgement (longer in some circumstances). If the insurer can't decide in time it should tell the homeowner about its complaints process."),
+  ];
+  if (c.info_complete_on) out.push(mk("decision_after_info", "Decision once information is complete", addBusinessDaysIso(c.info_complete_on, 10), "About 10 business days after the insurer has everything it asked for."));
+  out.push(mk("update", "Next progress update from the insurer", addBusinessDaysIso(c.last_insurer_update_on ?? c.lodged_on, 20), "Updates at least every 20 business days (indicative)."));
+  return out.sort((a, b) => a.due.localeCompare(b.due));
+}
+
+// ---------------------------------------------------------------------------
+// Homeowner explainer: excess, cash settlement, complaints (general information only)
+// ---------------------------------------------------------------------------
+export type ExplainerSection = { title: string; body: string[] };
+
+export function homeownerExplainer(c: { excess?: number | string | null; settlement_path?: string | null; insurer?: string | null; orgName: string }): ExplainerSection[] {
+  const insurer = c.insurer?.trim() || "your insurer";
+  const excess = n0(c.excess);
+  const excessLine =
+    excess > 0
+      ? c.settlement_path === "cash_settlement"
+        ? `Your excess on this claim is ${aud(excess)}. With a cash settlement, ${insurer} usually takes the excess off the amount it pays you.`
+        : c.settlement_path === "insurer_managed"
+          ? `Your excess on this claim is ${aud(excess)}. You pay it to whoever ${insurer} tells you — often the insurer's builder.`
+          : `Your excess on this claim is ${aud(excess)}. ${insurer === "your insurer" ? "Your insurer" : insurer} will confirm who you pay it to.`
+      : "Your policy schedule shows your excess. Your insurer will confirm the amount for this claim.";
+  return [
+    {
+      title: "What is the excess?",
+      body: ["The excess is the amount you agreed to pay towards each claim when you took out your policy. It is set by your policy, not by us.", excessLine],
+    },
+    {
+      title: "Repair or cash settlement",
+      body: [
+        `After the assessment, ${insurer} decides how to settle: it can arrange the repair through its own builders, approve a builder you choose, or offer you a cash settlement instead.`,
+        "With a cash settlement you arrange and pay for the repair yourself, and the insurer no longer manages or stands behind that work. You can ask the insurer how it worked out the amount, and whether it can be reviewed, before you accept.",
+      ],
+    },
+    {
+      title: "If you're unhappy with a decision",
+      body: [
+        `Contact ${insurer} first and say you want to make a complaint. Every insurer has an internal complaints process.`,
+        "If it isn't sorted out, you can take it to the Australian Financial Complaints Authority (AFCA), a free, independent service — afca.org.au or 1800 931 678.",
+      ],
+    },
+    {
+      title: `How ${c.orgName} fits in`,
+      body: [
+        "We inspect the roof, take dated photos and give you and your insurer a quote for the work. We can talk to the insurer's assessor about the roof.",
+        "We don't decide your claim and we can't negotiate it for you — that is between you and your insurer.",
+      ],
+    },
+  ];
+}
+export const EXPLAINER_FOOTNOTE = "General information only. Your policy wording (PDS) and your insurer have the final say on your claim.";
+
+// ---------------------------------------------------------------------------
+// Claim paperwork (Australian checklist)
+// ---------------------------------------------------------------------------
+export const AU_DOC_TYPES = ["insurer_scope", "work_order", "make_safe_report", "storm_evidence", "photos", "licence_insurance", "hwi_certificate", "completion_certificate", "tax_invoice"] as const;
 export const DOC_LABEL: Record<string, string> = {
-  w9: "W-9 (your company)",
+  insurer_scope: "Insurer's scope of works",
+  work_order: "Work order / authority to proceed",
   contract: "Signed contract",
-  scope: "Carrier scope / estimate",
-  coc: "Certificate of completion",
-  final_invoice: "Final invoice",
-  lien_waiver: "Lien waiver",
-  license_coi: "License & insurance certificate",
+  make_safe_report: "Make-safe report & photos",
+  storm_evidence: "Storm evidence (dated photos, BOM event)",
   photos: "Completion photos",
-  endorsed_check: "Endorsed check copy",
+  licence_insurance: "Licence & public liability certificate",
+  hwi_certificate: "Home warranty insurance certificate (where required)",
+  completion_certificate: "Completion certificate / sign-off",
+  tax_invoice: "Tax invoice",
   other: "Other",
 };
 export const DOC_STATUSES = ["missing", "ready", "sent", "accepted"] as const;
@@ -211,38 +411,28 @@ export type DocStatus = (typeof DOC_STATUSES)[number];
 export const DOC_STATUS_TONE: Record<DocStatus, Tone> = { missing: "red", ready: "amber", sent: "blue", accepted: "green" };
 
 // ---------------------------------------------------------------------------
-// Supplements
+// Variation requests (DB table: supplements) — rounds, follow-ups
 // ---------------------------------------------------------------------------
 export const SUPPLEMENT_STATUSES = ["draft", "submitted", "approved", "partial", "denied"] as const;
 export type SupplementStatus = (typeof SUPPLEMENT_STATUSES)[number];
 export const SUPPLEMENT_STATUS_TONE: Record<SupplementStatus, Tone> = { draft: "slate", submitted: "amber", approved: "green", partial: "blue", denied: "red" };
 export const SUPPLEMENT_STATUS_LABEL: Record<SupplementStatus, string> = {
   draft: "Draft",
-  submitted: "Submitted",
+  submitted: "Sent to insurer",
   approved: "Approved",
   partial: "Partly approved",
-  denied: "Denied",
+  denied: "Not approved",
 };
 
-/** Follow-up reminders after submission: day 5, 10 and 14, then weekly. */
+/** Follow-up reminders after sending: day 5, 10 and 14, then weekly. */
 export const FOLLOW_UP_DAYS = [5, 10, 14] as const;
 
-export function addDays(iso: string, days: number): string {
-  const d = new Date(iso + "T12:00:00Z");
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-/** Follow-up date number `count` (0-based) after a submission date. */
 export function followUpDate(submittedOn: string, count: number): string {
   if (count < FOLLOW_UP_DAYS.length) return addDays(submittedOn, FOLLOW_UP_DAYS[count]);
   return addDays(submittedOn, FOLLOW_UP_DAYS[FOLLOW_UP_DAYS.length - 1] + 7 * (count - FOLLOW_UP_DAYS.length + 1));
 }
 
-/**
- * After the office follows up on `today`, the next reminder is the first scheduled
- * date that is after today (so a late follow-up doesn't leave a reminder in the past).
- */
+/** After a follow-up on `today`, the next reminder is the first scheduled date after today. */
 export function nextFollowUpAfter(submittedOn: string, followUpCount: number, today: string): { date: string; count: number } {
   let count = followUpCount + 1;
   let d = followUpDate(submittedOn, count);
@@ -253,23 +443,17 @@ export function nextFollowUpAfter(submittedOn: string, followUpCount: number, to
   return { date: d, count };
 }
 
-/** Common code citations for supplement lines (verify against the locally adopted code edition). */
-export const CODE_CITATIONS: Record<string, string> = {
-  drip_edge: "IRC R905.2.8.5 (drip edge at eaves and rakes)",
-  ice_water: "IRC R905.1.2 (ice barrier at eaves)",
-  step_flashing: "IRC R905.2.8.3 (sidewall step flashing)",
-  counter_flashing: "IRC R905.2.8.1 (base and cap flashing)",
-  valley: "IRC R905.2.8.2 (valley lining)",
-  starter: "IRC R905.1 / manufacturer installation instructions (starter course)",
-  ridge_cap: "IRC R905.1 / manufacturer installation instructions (hip & ridge)",
-  decking: "IRC R905.2.1 (solid sheathing required)",
-  underlayment: "IRC R905.2.3 (underlayment)",
-  permit: "Local building department permit requirement",
+/** Technical references for variation lines (Australian Standards / NCC — check the current edition). */
+export const STANDARD_REFS: Record<string, string> = {
+  sheet_roof: "AS 1562.1 — metal sheet roof cladding (fixing, laps, flashings)",
+  tiles: "AS 2050 — installation of roof tiles (bedding, pointing, fixing)",
+  sarking: "AS 4200.2 — installation of pliable membranes (sarking)",
+  gutters: "AS/NZS 3500.3 — stormwater drainage (gutters, downpipes)",
+  ncc: "NCC Housing Provisions — roof cladding",
+  manufacturer: "Manufacturer's installation guide",
+  edge_protection: "WHS: edge protection / fall prevention for roof work",
+  asbestos: "Licensed asbestos removal",
 };
-
-export function daysBetween(fromIso: string, toIso: string) {
-  return Math.round((new Date(toIso + "T12:00:00Z").getTime() - new Date(fromIso + "T12:00:00Z").getTime()) / 86400000);
-}
 
 /** Aging tone for days in a stage: amber after a week, red after two. */
 export function agingTone(days: number): Tone {
