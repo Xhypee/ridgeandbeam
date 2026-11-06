@@ -10,26 +10,29 @@ import { createInvoice } from "../../invoices/actions";
 
 export default async function JobLayout({ children, params }: LayoutProps<"/app/jobs/[id]">) {
   const { id } = await params;
-  const { supabase, canSeeMoney } = await requireOrg();
+  const { supabase, canSeeMoney, isCrewLead, crewId } = await requireOrg();
   const { data: job } = await supabase
     .from("jobs")
-    .select("id, title, stage, site_address, is_insurance, customers(id, name), claims(id, stage)")
+    .select("id, title, stage, site_address, is_insurance, crew_id, customers(id, name), claims(id, stage)")
     .eq("id", id)
     .maybeSingle();
   if (!job) notFound();
+  // Crew leads only ever see jobs assigned to their own crew.
+  if (isCrewLead && job.crew_id !== crewId) notFound();
   const customer = job.customers as unknown as { id: string; name: string };
   const claim = (Array.isArray(job.claims) ? job.claims[0] : job.claims) as { id: string; stage: string } | null;
   const base = `/app/jobs/${job.id}`;
 
-  const tabs = [
+  const allTabs = [
     { href: base, label: "Overview", exact: true },
     { href: `${base}/claim`, label: claim ? "Claim" : "Insurance" },
     { href: `${base}/field`, label: "Field" },
     { href: `${base}/production`, label: "Production" },
-    { href: `${base}/change-orders`, label: "Change orders" },
+    ...(canSeeMoney ? [{ href: `${base}/change-orders`, label: "Change orders" }] : []),
     ...(canSeeMoney ? [{ href: `${base}/billing`, label: "Billing" }, { href: `${base}/costs`, label: "Job cost" }] : []),
     { href: `${base}/closeout`, label: "Close-out" },
   ];
+  const tabs = isCrewLead ? allTabs.filter((t) => t.href.endsWith("/field") || t.href.endsWith("/production")) : allTabs;
 
   return (
     <>

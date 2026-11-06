@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
-import { Nav } from "@/components/nav";
+import { Nav, SectionTabs } from "@/components/nav";
 import { requireOrg, ROLE_LABEL } from "@/lib/dal";
 import { switchOrg } from "./actions";
 
 export default async function AppLayout({ children }: LayoutProps<"/app">) {
-  const { org, user, memberships, role, canSeeMoney, supabase } = await requireOrg();
+  const { org, user, memberships, role, canSeeMoney, isCrewLead, supabase } = await requireOrg();
   const { count: unread } = await supabase.from("notifications").select("id", { count: "exact", head: true }).eq("org_id", org.id).is("read_at", null);
   const me = memberships.find((m) => m.org_id === org.id);
 
@@ -34,7 +34,7 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
           </Link>
         </div>
         <div className="mb-6 px-2">{orgSwitcher}</div>
-        <Nav canSeeMoney={canSeeMoney} />
+        <Nav canSeeMoney={canSeeMoney} crewLead={isCrewLead} />
         <div className="mt-auto border-t border-slate-100 px-2 pt-4">
           <p className="truncate text-sm font-medium text-slate-800">{me?.full_name || user.fullName || user.email}</p>
           <p className="truncate text-xs text-slate-500">{ROLE_LABEL[role] ?? role} · {user.email}</p>
@@ -58,9 +58,12 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
             </div>
           </div>
           <div className="px-4 pb-2">{orgSwitcher}</div>
-          <Nav mobile canSeeMoney={canSeeMoney} />
+          <Nav mobile canSeeMoney={canSeeMoney} crewLead={isCrewLead} />
         </header>
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:py-8">{children}</main>
+        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-8 lg:py-8">
+          <SectionTabs canSeeMoney={canSeeMoney} />
+          {children}
+        </main>
       </div>
     </div>
   );
