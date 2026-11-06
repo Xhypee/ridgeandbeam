@@ -1,5 +1,9 @@
 // "What should happen next on this job?" (contract 3). Pure functions only: safe in client and server
 // components and unit-tested. The server loader for the context lives in next-step-server.ts.
+import { auStage, CLAIM_STAGE_VALUES } from "./claims";
+
+/** Australian stage for known values; unknown values pass through so they fall back to a neutral task. */
+const knownAuStage = (s: string) => ((CLAIM_STAGE_VALUES as readonly string[]).includes(s) ? auStage(s) : s);
 import { jobReadiness, type Readiness, type ReadinessJob } from "./production";
 
 export type Phase = "lead" | "inspect" | "quote" | "claim" | "build" | "close" | "paid";
@@ -109,24 +113,24 @@ export function lastName(name: string | null | undefined) {
 // to a readable label and are treated as "still with the insurer" unless they look settled.
 // ---------------------------------------------------------------------------
 export const CLAIM_STAGE_AU: Record<string, string> = {
-  contingency_signed: "Signed up",
-  claim_filed: "Lodged",
-  adjuster_scheduled: "Assessor booked",
-  adjuster_met: "Assessed",
+  lodged: "Lodged",
+  assessor_booked: "Assessor booked",
+  assessed: "Assessed",
   scope_received: "Scope in",
-  supplementing: "Variation sent",
   approved: "Approved",
+  declined: "Declined",
+  cash_settlement_offered: "Cash settlement offered",
+  work_authorised: "Work authorised",
   built: "Built",
-  coc_sent: "Completion sent",
-  depreciation_released: "Final payment",
+  invoiced: "Invoiced",
+  paid: "Paid",
   closed: "Closed",
-  denied: "Declined",
 };
-const SETTLED = new Set(["approved", "built", "coc_sent", "depreciation_released", "closed"]);
-export const claimStageLabel = (s: string) => CLAIM_STAGE_AU[s] ?? s.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+const SETTLED = new Set(["approved", "work_authorised", "built", "invoiced", "paid", "closed"]);
+export const claimStageLabel = (s: string) => CLAIM_STAGE_AU[knownAuStage(s)] ?? s.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
 export function claimSettled(s: string | null | undefined) {
   if (!s) return false;
-  return SETTLED.has(s) || /approv|settl|closed|built|paid/.test(s);
+  return SETTLED.has(knownAuStage(s));
 }
 const claimDeclined = (s: string) => s === "denied" || /declin|denied/.test(s);
 
@@ -273,15 +277,15 @@ export function nextStep(job: NextStepJob, ctx: NextStepCtx): NextStep {
       return mk({ key: "claim_declined", title: "Claim declined", listTitle: `${last || "Claim"}: claim declined`, detail: `${insurer} declined it. Ask for an internal review, or offer ${who} a private price.`, actionLabel: "Open claim", href: `${base}/claim`, tag: "Insurance", waiting: true });
     }
     const stageTask: Record<string, [string, string, boolean]> = {
-      contingency_signed: ["Help lodge the claim", `${who} has signed up. Help them lodge the claim with ${insurer}.`, true],
-      claim_filed: ["Book the assessor", `Claim lodged with ${insurer} ${daysAgo(days)}. Get the assessor's visit booked.`, true],
-      adjuster_scheduled: ["Meet the assessor on site", "Bring the photos and measurements so nothing gets missed.", true],
-      adjuster_met: ["Chase the insurer's decision", `Assessed ${daysAgo(days)}. Waiting on ${insurer}'s scope of works.`, days >= 5],
+      lodged: ["Book the assessor", `Claim lodged with ${insurer} ${daysAgo(days)}. Get the assessor's visit booked.`, true],
+      assessor_booked: ["Meet the assessor on site", "Bring the photos and measurements so nothing gets missed.", true],
+      assessed: ["Chase the insurer's decision", `Assessed ${daysAgo(days)}. Waiting on ${insurer}'s scope of works.`, days >= 5],
       scope_received: ["Check the insurer's scope", "Compare it with your quote and request a variation for anything missing.", true],
-      supplementing: ["Waiting on the variation decision", `Variation request is with ${insurer}. It shows up here when a follow-up is due.`, false],
+      cash_settlement_offered: ["Talk to the homeowner about the cash settlement", `${insurer} offered a cash settlement. ${who} decides; if they go ahead, quote them directly.`, true],
     };
-    const [title, detail, waiting] = stageTask[claim.stage] ?? ["Check the claim", `Claim is at "${claimStageLabel(claim.stage)}" with ${insurer}.`, true];
-    return mk({ key: `claim_${claim.stage}`, title, listTitle: last ? `${title} (${last})` : title, detail, actionLabel: "Open claim", href: `${base}/claim`, tag: "Insurance", waiting });
+    const st = knownAuStage(claim.stage);
+    const [title, detail, waiting] = stageTask[st] ?? ["Check the claim", `Claim is at "${claimStageLabel(claim.stage)}" with ${insurer}.`, true];
+    return mk({ key: `claim_${st}`, title, listTitle: last ? `${title} (${last})` : title, detail, actionLabel: "Open claim", href: `${base}/claim`, tag: "Insurance", waiting });
   }
 
   // Build: getting ready, then on the roof

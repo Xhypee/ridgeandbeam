@@ -52,7 +52,7 @@ export default async function Certificate({ params }: PageProps<"/app/jobs/[id]/
         <p className="mt-6 text-sm leading-relaxed">
           {o.name} certifies that the roofing work described above at {address || "the property"} has been completed in accordance with the
           contract{cl ? " and the insurance scope of loss" : ""}, and that the work area has been cleaned up. The property owner has inspected the
-          completed work and accepts it as complete{cl ? ", and requests that the insurance carrier release any recoverable depreciation and remaining claim funds" : ""}.
+          completed work and accepts it as complete{cl ? ", and asks the insurer to finalise the claim and pay any remaining approved amount" : ""}.
         </p>
         <div className="mt-10 grid gap-10 sm:grid-cols-2">
           <div>

@@ -61,7 +61,8 @@ export type JobType = (typeof JOB_TYPES)[number];
 
 export const CUSTOMER_SOURCES = ["referral", "website", "door_knock", "storm", "repeat", "ads", "other"] as const;
 
-export const PAYMENT_METHODS = ["check", "cash", "card", "ach", "insurance", "financing", "other"] as const;
+/** Australian payment methods (see src/lib/payments-au.ts for labels). */
+export { AU_PAYMENT_METHODS as PAYMENT_METHODS } from "@/lib/payments-au";
 
 export type Customer = {
   id: string;

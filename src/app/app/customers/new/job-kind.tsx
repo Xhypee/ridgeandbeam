@@ -25,10 +25,10 @@ export function JobKind() {
       </div>
       <fieldset className={cx("grid gap-3 rounded-lg p-3 sm:grid-cols-2", kind === "insurance" ? "bg-violet-50" : "bg-transparent")}>
         <legend className="px-1 text-xs font-medium text-slate-600">Insurance claim details {kind === "retail" && <span className="font-normal text-slate-400">(only for insurance jobs)</span>}</legend>
-        <Field label="Insurance company"><Input name="insurance_company" onInput={auto} placeholder="State Farm" /></Field>
+        <Field label="Insurer"><Input name="insurance_company" onInput={auto} placeholder="e.g. NRMA, Suncorp, Allianz" /></Field>
         <Field label="Claim #"><Input name="claim_number" onInput={auto} /></Field>
-        <Field label="Adjuster"><Input name="adjuster_name" onInput={auto} /></Field>
-        <Field label="Adjuster phone"><Input name="adjuster_phone" type="tel" onInput={auto} /></Field>
+        <Field label="Assessor / loss adjuster"><Input name="adjuster_name" onInput={auto} /></Field>
+        <Field label="Assessor phone"><Input name="adjuster_phone" type="tel" onInput={auto} /></Field>
       </fieldset>
     </div>
   );
