@@ -4,6 +4,7 @@ import { Card, Field, Input, Select, Textarea } from "@/components/ui";
 import { AU_STATE_NAME, AU_STATES, formatAbn } from "@/lib/au";
 import { licenceFor } from "@/lib/business";
 import { requireOrg } from "@/lib/dal";
+import { AbnInput } from "./abn-input";
 import { updateCompanySettings } from "./company-actions";
 
 export const metadata: Metadata = { title: "Company settings" };
@@ -22,7 +23,7 @@ export default async function Page() {
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Business name" hint="Shown on quotes and invoices"><Input name="name" defaultValue={org.name} required /></Field>
               <Field label="ABN" hint={org.abn ? `On file: ${formatAbn(org.abn)}` : "11 digits, e.g. 51 824 753 556"}>
-                <Input name="abn" inputMode="numeric" defaultValue={org.abn ? formatAbn(org.abn) : ""} placeholder="51 824 753 556" aria-label="ABN" />
+                <AbnInput defaultValue={org.abn ? formatAbn(org.abn) : ""} />
               </Field>
               <Field label="Phone"><Input name="phone" type="tel" defaultValue={org.phone ?? ""} placeholder="0412 345 678" /></Field>
               <Field label="Email"><Input name="email" type="email" defaultValue={org.email ?? ""} /></Field>

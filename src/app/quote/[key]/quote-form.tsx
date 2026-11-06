@@ -44,6 +44,13 @@ export function QuoteForm({ intakeKey, orgName, rates, phone, defaultState }: { 
   const [auState, setAuState] = useState<string>(asAuState(defaultState) ?? "");
   const [stateTouched, setStateTouched] = useState(false);
   const [mobile, setMobile] = useState("");
+  // Controlled so nothing is lost when the server sends the form back with an error (React resets uncontrolled fields).
+  const [street, setStreet] = useState("");
+  const [suburb, setSuburb] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [current, setCurrent] = useState("tile");
+  const [insurance, setInsurance] = useState<"yes" | "no">("no");
 
   const rate = rates[roofType];
   const priced = rate.high > 0;
@@ -80,9 +87,9 @@ export function QuoteForm({ intakeKey, orgName, rates, phone, defaultState }: { 
 
       <section className="space-y-2">
         <h2 className="text-base font-semibold text-slate-900">1. Where is the home?</h2>
-        <input name="address" required autoComplete="address-line1" placeholder="Street address" className={input} aria-label="Street address" />
+        <input name="address" required autoComplete="address-line1" placeholder="Street address" className={input} aria-label="Street address" value={street} onChange={(e) => setStreet(e.target.value)} />
         <div className="grid grid-cols-[1fr_5.5rem] gap-2 sm:grid-cols-[1fr_6rem_6rem]">
-          <input name="city" required autoComplete="address-level2" placeholder="Suburb" className={`${input} col-span-2 sm:col-span-1`} aria-label="Suburb" />
+          <input name="city" required autoComplete="address-level2" placeholder="Suburb" className={`${input} col-span-2 sm:col-span-1`} aria-label="Suburb" value={suburb} onChange={(e) => setSuburb(e.target.value)} />
           <select name="state" value={auState} onChange={(e) => { setAuState(e.target.value); setStateTouched(true); }} className={input} aria-label="State" required>
             <option value="">State</option>
             {AU_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -143,7 +150,7 @@ export function QuoteForm({ intakeKey, orgName, rates, phone, defaultState }: { 
       <section className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <h2 className="text-base font-semibold text-slate-900">5. Roof on the house now</h2>
-          <select name="current" defaultValue="tile" className={input} aria-label="Current roof">
+          <select name="current" value={current} onChange={(e) => setCurrent(e.target.value)} className={input} aria-label="Current roof">
             <option value="tile">Tiles</option>
             <option value="metal">Metal</option>
             <option value="fibro">Fibro / cement sheet</option>
@@ -153,8 +160,8 @@ export function QuoteForm({ intakeKey, orgName, rates, phone, defaultState }: { 
         <div className="space-y-2">
           <h2 className="text-base font-semibold text-slate-900">6. Insurance claim?</h2>
           <div className="grid grid-cols-2 gap-2">
-            <label className={chip}><input type="radio" name="insurance" value="yes" className="sr-only" />Yes, storm damage</label>
-            <label className={chip}><input type="radio" name="insurance" value="no" className="sr-only" defaultChecked />No</label>
+            <label className={chip}><input type="radio" name="insurance" value="yes" className="sr-only" checked={insurance === "yes"} onChange={() => setInsurance("yes")} />Yes, storm damage</label>
+            <label className={chip}><input type="radio" name="insurance" value="no" className="sr-only" checked={insurance === "no"} onChange={() => setInsurance("no")} />No</label>
           </div>
         </div>
       </section>
@@ -175,13 +182,13 @@ export function QuoteForm({ intakeKey, orgName, rates, phone, defaultState }: { 
 
       <section className="space-y-2">
         <h2 className="text-base font-semibold text-slate-900">7. Where should we send it?</h2>
-        <input name="name" required autoComplete="name" placeholder="Your name" className={input} aria-label="Your name" />
+        <input name="name" required autoComplete="name" placeholder="Your name" className={input} aria-label="Your name" value={name} onChange={(e) => setName(e.target.value)} />
         <div className="grid gap-2 sm:grid-cols-2">
           <div>
             <input name="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="Mobile, e.g. 0412 345 678" className={input} aria-label="Mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} aria-invalid={phoneBad || undefined} />
             {phoneBad && <p className="mt-1 text-xs text-red-700">Enter an Australian number, e.g. 0412 345 678.</p>}
           </div>
-          <input name="email" type="email" autoComplete="email" placeholder="Email" className={input} aria-label="Email" />
+          <input name="email" type="email" autoComplete="email" placeholder="Email" className={input} aria-label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
       </section>
 

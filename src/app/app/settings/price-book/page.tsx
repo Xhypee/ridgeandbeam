@@ -64,7 +64,7 @@ export default async function Page({ searchParams }: PageProps<"/app/settings/pr
         <div className="flex items-start gap-2">
           <ActionForm action={savePriceBookItem} className="min-w-0 flex-1">
             <input type="hidden" name="id" value={c.id} />
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-[1fr_6.5rem_4.5rem_6.5rem_6.5rem_4rem_7rem_auto]">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-[1fr_7.5rem_4.5rem_6.5rem_6.5rem_4rem_8rem_auto]">
               <Input name="name" defaultValue={c.name} aria-label="Name" className="col-span-2 sm:col-span-4 lg:col-span-1" />
               <Select name="tier" defaultValue={c.tier ?? ""} aria-label="Tier">
                 <option value="">Any option</option>
@@ -140,7 +140,7 @@ export default async function Page({ searchParams }: PageProps<"/app/settings/pr
         {keys.map((k) => (
           <Card key={k} title={k === "__custom" ? "Other items (not from the calculator)" : <span className="flex flex-wrap items-center gap-2">{calcKeyLabel(k)} <Badge tone="slate">per {unitLabel(calcKeyUnit(k))}</Badge></span>}>
             <div className="space-y-3">
-              <div className="hidden grid-cols-[1fr_6.5rem_4.5rem_6.5rem_6.5rem_4rem_7rem_auto] gap-2 px-1 text-xs font-medium text-slate-500 lg:grid">
+              <div className="hidden grid-cols-[1fr_7.5rem_4.5rem_6.5rem_6.5rem_4rem_8rem_auto] gap-2 px-1 text-xs font-medium text-slate-500 lg:grid">
                 <span>Item</span><span>Option</span><span>Unit</span><span>{priceLabel}</span><span>Cost ex GST</span><span className="text-right">Margin</span><span>Category</span><span />
               </div>
               {rowsFor(k).map((c) => <ItemRow key={c.id} c={c} />)}

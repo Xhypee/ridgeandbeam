@@ -11,7 +11,7 @@ import {
 import { money } from "@/lib/format";
 import {
   calcKeyLabel, coverWidthMm, cutList, EXISTING_ROOF_LABEL, EXISTING_ROOFS, JOB_TYPE_LABEL, JOB_TYPES, MEASUREMENT_SOURCE_LABEL, mergeMeasurements,
-  METAL_PROFILE_INFO, METAL_PROFILES, monthlyPayment, normalizeMeasurements, pitchFromRiseRun, round2, ROOF_SYSTEM_LABEL, ROOF_SYSTEMS, sectionSystem,
+  METAL_PROFILE_INFO, METAL_PROFILES, monthlyPayment, normalizeMeasurements, pitchFromRiseRun, round2, ROOF_SYSTEM_LABEL, ROOF_SYSTEM_SHORT, ROOF_SYSTEMS, sectionSystem,
   summarize, takeoff, takeoffWarnings, trueArea, type CalcSettings, type ExistingRoof, type JobType, type Measurements, type MetalProfile, type RoofSection, type RoofSystem,
 } from "@/lib/roof";
 import { loadSupplierPrices, saveEstimate } from "../actions";
@@ -344,7 +344,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
                       </Cell>
                       <Cell label="Roof type">
                         <Select value={sys} onChange={(e) => setSection(i, { system: e.target.value as RoofSystem })} aria-label="Roof type">
-                          {ROOF_SYSTEMS.map((r) => <option key={r} value={r}>{ROOF_SYSTEM_LABEL[r]}</option>)}
+                          {ROOF_SYSTEMS.map((r) => <option key={r} value={r} title={ROOF_SYSTEM_LABEL[r]}>{ROOF_SYSTEM_SHORT[r]}</option>)}
                         </Select>
                       </Cell>
                       <Cell label="Sheet profile">

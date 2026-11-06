@@ -15,6 +15,8 @@ export const ROOF_SYSTEM_LABEL: Record<RoofSystem, string> = {
   terracotta_tile: "Terracotta tile",
   membrane: "Membrane / low-slope",
 };
+/** Short names for narrow pickers. */
+export const ROOF_SYSTEM_SHORT: Record<RoofSystem, string> = { metal: "Metal", concrete_tile: "Concrete tile", terracotta_tile: "Terracotta tile", membrane: "Membrane" };
 export const isTile = (s: RoofSystem) => s === "concrete_tile" || s === "terracotta_tile";
 
 export type MetalProfile = "custom_orb" | "trimdek" | "klip_lok" | "spandek";
