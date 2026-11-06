@@ -18,12 +18,14 @@ type Row = ReadinessJob & {
 };
 const JOB_COLS = "id, title, stage, site_address, crew_id, scheduled_start, scheduled_end, schedule_locked, permit_status, hoa_status, colors_confirmed, shingle_color, materials_status, dumpster_status, customers(name), crews(name, color)";
 
+const kmh = (mph: number | null | undefined) => Math.round((mph ?? 0) * 1.609);
+
 function Weather({ f }: { f?: DayForecast }) {
   if (!f) return null;
   const risk = weatherRisk(f);
   return (
-    <span className={cx("block text-[11px] leading-tight", risk ? "font-semibold text-red-700" : "text-slate-500")} title={`Rain ${f.precipProb ?? "?"}% · wind ${f.windMph ?? "?"} mph`}>
-      {risk === "rain" ? "🌧" : risk === "wind" ? "💨" : (f.precipProb ?? 0) >= 25 ? "🌦" : "☀"} {f.precipProb ?? "–"}% · {Math.round(f.windMph ?? 0)}mph
+    <span className={cx("mt-0.5 block text-[11px] leading-tight", risk ? "font-semibold text-red-700" : "text-slate-500")} title={`Rain ${f.precipProb ?? "?"}% · wind ${kmh(f.windMph)} km/h`}>
+      {risk === "rain" ? "🌧" : risk === "wind" ? "💨" : (f.precipProb ?? 0) >= 25 ? "🌦" : "☀"} {f.precipProb ?? "–"}% · {kmh(f.windMph)} km/h
     </span>
   );
 }
@@ -36,14 +38,14 @@ function JobChip({ j, r, compact }: { j: Row; r: Readiness; compact?: boolean })
       data-testid="schedule-job"
       data-locked={j.schedule_locked ? "true" : "false"}
       className={cx(
-        "block min-w-0 rounded-md px-2 py-1 text-xs hover:brightness-95",
-        j.schedule_locked ? "border-l-4 bg-white shadow-sm ring-1 ring-slate-200" : "border-2 border-dashed bg-slate-50/80",
+        "block min-w-0 rounded-lg px-2.5 py-1.5 text-xs transition hover:brightness-95",
+        j.schedule_locked ? "border-l-4 bg-white shadow-sm ring-1 ring-slate-200" : "border-2 border-dashed bg-white/80",
       )}
       style={j.schedule_locked ? { borderLeftColor: color } : { borderColor: color }}
     >
       <span className="flex items-center justify-between gap-1">
-        <span className="truncate font-semibold text-slate-900">{j.customers?.name}</span>
-        <span className="shrink-0 text-[10px] font-medium uppercase text-slate-500">{j.schedule_locked ? "🔒" : "Tentative"}</span>
+        <span className="truncate text-[13px] font-semibold text-ink">{j.customers?.name}</span>
+        <span className={cx("shrink-0 rounded-full px-1.5 text-[10px] font-semibold", j.schedule_locked ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-800")}>{j.schedule_locked ? "Locked" : "Tentative"}</span>
       </span>
       <span className="block truncate text-slate-600">{j.title}</span>
       <span className="mt-0.5 flex items-center justify-between gap-1">
@@ -94,9 +96,11 @@ export default async function SchedulePage({ searchParams }: PageProps<"/app/sch
         subtitle={`${date(from, { month: "short", day: "numeric" })} – ${date(to, { month: "short", day: "numeric", year: "numeric" })} · ${jobs.length} job${jobs.length === 1 ? "" : "s"}, ${tentative} tentative`}
         actions={
           <>
-            <div className="flex rounded-lg bg-slate-100 p-0.5 text-sm" role="group" aria-label="View">
-              <Link href={href(from, "2w")} className={cx("rounded-md px-3 py-1.5", view === "2w" ? "bg-white font-medium shadow-sm" : "text-slate-600")}>2 weeks</Link>
-              <Link href={href(from, "week")} className={cx("rounded-md px-3 py-1.5", view === "week" ? "bg-white font-medium shadow-sm" : "text-slate-600")}>Week</Link>
+            <div className="flex gap-1.5 text-[15px]" role="group" aria-label="View">
+              {([["2w", "2 weeks"], ["week", "Week"]] as const).map(([v, l]) => (
+                <Link key={v} href={href(from, v)} aria-current={view === v ? "true" : undefined}
+                  className={cx("inline-flex min-h-11 items-center rounded-full px-4 font-semibold ring-1 ring-inset", view === v ? "bg-ink text-white ring-ink" : "bg-white text-slate-700 ring-slate-300 hover:ring-slate-400")}>{l}</Link>
+              ))}
             </div>
             <LinkButton variant="secondary" href={href(addDaysIso(from, -spanDays))} aria-label="Previous">←</LinkButton>
             <LinkButton variant="secondary" href={`/app/schedule?view=${view}`}>Today</LinkButton>
@@ -105,29 +109,29 @@ export default async function SchedulePage({ searchParams }: PageProps<"/app/sch
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-slate-600">
           <span className="flex items-center gap-1"><span className="inline-block h-3 w-5 rounded border-l-4 border-slate-500 bg-white ring-1 ring-slate-200" /> Locked</span>
           <span className="flex items-center gap-1"><span className="inline-block h-3 w-5 rounded border-2 border-dashed border-slate-400" /> Tentative</span>
-          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500" /><span className="h-2 w-2 rounded-full bg-red-400" /> Permit · HOA · Colors · Materials · Dumpster · Deposit</span>
+          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500" /><span className="h-2 w-2 rounded-full bg-red-400" /> Permit · Strata · Colours · Materials · Skip bin · Deposit</span>
           {forecast ? (
             riskyDates.length > 0 && <span className="font-medium text-red-700">⚠ Weather risk: {riskyDates.map((d) => date(d, { weekday: "short", month: "numeric", day: "numeric" })).join(", ")}</span>
           ) : (
-            <span className="text-slate-400">Forecast unavailable{org.zip ? "" : " — add your ZIP in company settings"}</span>
+            <span className="text-slate-400">Forecast unavailable{org.zip ? "" : " — add your postcode in company settings"}</span>
           )}
         </div>
         {!isCrewLead && <RainDay crews={crews} defaultDate={riskyDates[0] ?? today} riskyDates={riskyDates} />}
       </div>
 
       {/* Desktop: crew swimlanes */}
-      <div className="hidden overflow-hidden rounded-xl bg-white ring-1 ring-slate-200 md:block" data-testid="swimlanes">
-        <div className="grid border-b border-slate-200 bg-slate-50" style={{ gridTemplateColumns: gridCols }}>
-          <div className="px-3 py-2 text-xs font-medium text-slate-500">Crew</div>
+      <div className="hidden overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200 md:block" data-testid="swimlanes">
+        <div className="grid border-b border-slate-200 bg-cream" style={{ gridTemplateColumns: gridCols }}>
+          <div className="px-4 py-2.5 text-[13px] font-semibold text-slate-500">Crew</div>
           {days.map((d) => {
             const risk = weatherRisk(fc.get(d));
             return (
-              <div key={d} className={cx("border-l border-slate-200 px-1.5 py-1.5 text-xs", d === today && "bg-brand-50", risk && "bg-red-50", isWeekend(d) && !risk && "bg-slate-100")}>
-                <span className={cx("block font-medium", d === today ? "text-brand-700" : "text-slate-700")}>{new Date(d + "T12:00:00").toLocaleDateString("en-AU", { weekday: "short" })} {Number(d.slice(8))}</span>
+              <div key={d} className={cx("border-l border-slate-200 px-2 py-2 text-xs", d === today && "bg-brand-50", risk && "bg-red-50", isWeekend(d) && !risk && "bg-slate-100/70")}>
+                <span className={cx("block text-[13px] font-semibold", d === today ? "text-brand-700" : "text-slate-700")}>{new Date(d + "T12:00:00").toLocaleDateString("en-AU", { weekday: "short" })} {Number(d.slice(8))}</span>
                 <Weather f={fc.get(d)} />
               </div>
             );
@@ -140,8 +144,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/app/sch
           const nLanes = Math.max(1, ...laneJobs.map((x) => x.lane + 1));
           return (
             <div key={lane.id ?? "none"} className="grid border-b border-slate-100 last:border-0" style={{ gridTemplateColumns: gridCols, gridTemplateRows: `repeat(${nLanes}, minmax(3.75rem, auto))` }} data-testid="crew-lane">
-              <div className="flex items-start gap-2 px-3 py-2 text-sm font-medium text-slate-800" style={{ gridRow: `1 / span ${nLanes}`, gridColumn: 1 }}>
-                <span className="mt-1 h-3 w-3 shrink-0 rounded-full" style={{ background: lane.color }} />
+              <div className="flex items-start gap-2.5 px-4 py-3 text-[15px] font-semibold text-ink" style={{ gridRow: `1 / span ${nLanes}`, gridColumn: 1 }}>
+                <span className="mt-1 h-3.5 w-1.5 shrink-0 rounded-full" style={{ background: lane.color }} />
                 <span className="min-w-0 break-words">{lane.name}</span>
               </div>
               {days.map((d, i) => (
@@ -165,9 +169,9 @@ export default async function SchedulePage({ searchParams }: PageProps<"/app/sch
           if (isWeekend(d) && dayJobs.length === 0) return null;
           const risk = weatherRisk(fc.get(d));
           return (
-            <li key={d} className={cx("rounded-xl bg-white p-3 ring-1", d === today ? "ring-2 ring-brand-500" : risk ? "ring-red-300" : "ring-slate-200")}>
+            <li key={d} className={cx("rounded-2xl bg-white p-4 ring-1", d === today ? "ring-2 ring-brand-500" : risk ? "ring-red-300" : "ring-slate-200")}>
               <div className="mb-2 flex items-center justify-between gap-2">
-                <p className={cx("text-sm font-semibold", d === today ? "text-brand-700" : "text-slate-800")}>{date(d, { weekday: "long", month: "short", day: "numeric" })}</p>
+                <p className={cx("font-display text-[15px] font-bold", d === today ? "text-brand-700" : "text-ink")}>{date(d, { weekday: "long", month: "short", day: "numeric" })}</p>
                 <Weather f={fc.get(d)} />
               </div>
               {dayJobs.length === 0 ? <p className="text-xs text-slate-400">Nothing scheduled</p> : (
@@ -188,8 +192,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/app/sch
                 const r = ready(j);
                 return (
                   <li key={j.id}>
-                    <Link href={`/app/jobs/${j.id}/production`} className="flex items-center justify-between gap-3 py-2 hover:text-brand-600">
-                      <span className="min-w-0"><span className="block truncate text-sm font-medium">{j.customers?.name}: {j.title}</span><span className="block truncate text-xs text-slate-500">{r.ready ? "Ready to lock" : `Waiting on ${r.blockers.map((b) => b.label.toLowerCase()).join(", ")}`}</span></span>
+                    <Link href={`/app/jobs/${j.id}/production`} className="flex min-h-14 items-center justify-between gap-3 py-2.5 hover:text-brand-600">
+                      <span className="min-w-0"><span className="block truncate text-[15px] font-semibold">{j.customers?.name}: {j.title}</span><span className="block truncate text-xs text-slate-500">{r.ready ? "Ready to lock" : `Waiting on ${r.blockers.map((b) => b.label.toLowerCase()).join(", ")}`}</span></span>
                       <span className="flex shrink-0 items-center gap-2"><ReadinessDots r={r} /><Badge tone={STAGE_TONE[j.stage]}>{STAGE_LABEL[j.stage]}</Badge></span>
                     </Link>
                   </li>

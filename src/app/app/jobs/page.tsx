@@ -1,118 +1,163 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { Badge, Empty, LinkButton, PageHeader, cx } from "@/components/ui";
+import { LinkButton, cx } from "@/components/ui";
+import { WaitTimer } from "@/components/wait-timer";
 import { requireOrg } from "@/lib/dal";
-import { date, daysSince, label, STAGE_LABEL, STAGE_TONE } from "@/lib/format";
-import { JOB_STAGES, type Job } from "@/lib/types";
-import { LeadTimer } from "./lead-timer";
-import { displayName, initials, mineFilter, orgPeople } from "./people";
+import { ageTone, dollars, nextStep, pipelineColumn, type NextStepJob, type PipelineColumn } from "@/lib/next-step";
+import { asNextStepJob, loadNextStepCtx, NEXT_STEP_JOB_COLS } from "@/lib/next-step-server";
+import { isoDate } from "@/lib/format";
+import { displayName, initials, orgPeople } from "./people";
 
 export const metadata: Metadata = { title: "Jobs" };
 
-type Row = Job & {
-  customers: { name: string } | null;
-  crews: { name: string; color: string } | null;
-  assigned_to: string | null;
-  sales_rep_id: string | null;
-  setter_id: string | null;
-  lead_source: string | null;
-  lead_received_at: string;
-  first_contacted_at: string | null;
-  stage_changed_at: string;
+type Row = NextStepJob & {
+  title: string; site_address: string | null; lead_source: string | null;
+  assigned_to: string | null; sales_rep_id: string | null; setter_id: string | null;
+  customers: { name: string; phone: string | null } | null;
 };
+
+const COLUMNS: { key: PipelineColumn; name: string; hint: string }[] = [
+  { key: "new", name: "New leads", hint: "Call within 5 minutes" },
+  { key: "quoting", name: "Quoting", hint: "Inspect, measure, send options" },
+  { key: "sold", name: "Sold", hint: "Get it ready to build" },
+  { key: "building", name: "Building", hint: "Crew on the roof" },
+  { key: "wrapping", name: "Wrapping up", hint: "Close out and get paid" },
+];
+const FILTERS = [
+  { key: "all", label: "All" },
+  { key: "mine", label: "My jobs" },
+  { key: "insurance", label: "Insurance" },
+  { key: "retail", label: "Retail" },
+] as const;
+type Filter = (typeof FILTERS)[number]["key"];
+
+const AGE_CLS = { ok: "bg-slate-100 text-slate-600", amber: "bg-amber-50 text-amber-800", red: "bg-red-50 text-red-700" };
+const DAY = 86400000;
+// "77 Banksia St, Paddington QLD 4064" → "77 Banksia St, Paddington" (the state is the same on almost every card).
+const STATE_TAIL = /,?\s+(NSW|VIC|QLD|WA|SA|TAS|ACT|NT)(\s+\d{4})?\s*$/;
 
 export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">) {
   const { supabase, org, user, isSalesRep } = await requireOrg();
-  const { view, mine: mineParam } = await searchParams;
-  const showClosed = view === "all";
-  const mine = mineParam === "1" || (mineParam === undefined && isSalesRep);
-  let q = supabase.from("jobs").select("*, customers(name), crews(name, color)").order("updated_at", { ascending: false }).limit(500);
-  if (!showClosed) q = q.not("stage", "in", "(paid,lost)");
-  if (mine) q = q.or(mineFilter(user.id));
+  const sp = await searchParams;
+  // ?mine=1 / ?mine=0 still work (older links).
+  const raw = typeof sp.filter === "string" ? sp.filter : sp.mine === "1" ? "mine" : sp.mine === "0" ? "all" : undefined;
+  const filter: Filter = FILTERS.some((f) => f.key === raw) ? (raw as Filter) : isSalesRep ? "mine" : "all";
+  const now = new Date();
+  const since30 = isoDate(new Date(now.getTime() - 30 * DAY));
+
+  let q = supabase.from("jobs")
+    .select(`${NEXT_STEP_JOB_COLS}, title, site_address, lead_source, assigned_to, sales_rep_id, setter_id, customers(name, phone)`)
+    .neq("stage", "lost").or(`stage.neq.paid,stage_changed_at.gte.${since30}`)
+    .order("stage_changed_at").limit(500);
+  if (filter === "insurance") q = q.eq("is_insurance", true);
+  if (filter === "retail") q = q.eq("is_insurance", false);
   const [{ data, error }, people] = await Promise.all([q, orgPeople(supabase, org.id)]);
   if (error) throw new Error(error.message);
-  const jobs = (data ?? []) as Row[];
-  const stages = JOB_STAGES.filter((s) => showClosed || (s !== "paid" && s !== "lost"));
-  const waiting = jobs.filter((j) => j.stage === "lead" && !j.first_contacted_at).length;
+  let jobs = ((data ?? []) as unknown as Row[]).map((j) => ({ ...j, ...asNextStepJob(j) }) as Row);
+  // "My jobs" = any lead role on the job (assigned, sales rep or setter).
+  if (filter === "mine") jobs = jobs.filter((j) => [j.assigned_to, j.sales_rep_id, j.setter_id].includes(user.id));
+  const ctx = await loadNextStepCtx(supabase, jobs, { now });
 
-  const href = (over: { view?: string; mine?: string }) => {
-    const p = new URLSearchParams();
-    const v = over.view ?? (showClosed ? "all" : undefined);
-    if (v) p.set("view", v);
-    p.set("mine", over.mine ?? (mine ? "1" : "0"));
-    return `/app/jobs?${p}`;
-  };
+  const cards = jobs
+    .map((j) => {
+      const c = ctx.get(j.id)!;
+      const est = c.estimate;
+      return { j, col: pipelineColumn(j, now), value: est && ["accepted", "sent"].includes(est.status) ? est.total : null, next: nextStep(j, c) };
+    })
+    .filter((x) => x.col !== null);
+  const shownValue = cards.reduce((s, c) => s + (c.value ?? 0), 0);
+  const waiting = cards.filter((c) => c.j.stage === "lead" && !c.j.first_contacted_at).length;
 
   return (
     <>
-      <PageHeader
-        title="Jobs"
-        subtitle={waiting > 0 ? <span className="font-medium text-red-700">{waiting} new lead{waiting === 1 ? "" : "s"} waiting for a first call</span> : "Your pipeline, from first call to final payment."}
-        actions={
-          <>
-            <div className="inline-flex rounded-lg bg-slate-100 p-0.5 text-sm" role="group" aria-label="Whose jobs">
-              <Link href={href({ mine: "1" })} aria-pressed={mine} className={cx("rounded-md px-3 py-1.5 font-medium", mine ? "bg-white text-slate-900 shadow-sm" : "text-slate-600")}>My jobs</Link>
-              <Link href={href({ mine: "0" })} aria-pressed={!mine} className={cx("rounded-md px-3 py-1.5 font-medium", !mine ? "bg-white text-slate-900 shadow-sm" : "text-slate-600")}>Everyone</Link>
-            </div>
-            <LinkButton variant="secondary" href={href({ view: showClosed ? "" : "all" })}>{showClosed ? "Hide paid & lost" : "Show paid & lost"}</LinkButton>
-            <LinkButton href="/app/jobs/new">New job</LinkButton>
-          </>
-        }
-      />
-      {jobs.length === 0 && !showClosed ? (
-        <Empty title={mine ? "No open jobs assigned to you" : "No open jobs"}>
-          {mine ? <Link className="text-brand-600 underline" href={href({ mine: "0" })}>See everyone&apos;s jobs</Link> : "Create a job from a customer, or start a new one."}
-        </Empty>
-      ) : (
-        <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:px-6">
-          {stages.map((stage) => {
-            const col = jobs
-              .filter((j) => j.stage === stage)
-              // uncontacted leads first, oldest first: they're the ones losing money
-              .sort((a, b) => (stage === "lead" ? Number(!!a.first_contacted_at) - Number(!!b.first_contacted_at) || a.lead_received_at.localeCompare(b.lead_received_at) : 0));
+      <header className="mb-6 flex flex-wrap items-center gap-4">
+        <div className="min-w-0 flex-1 basis-56">
+          <h1 className="text-[32px] font-bold leading-tight tracking-tight text-ink">Jobs</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            {cards.length} job{cards.length === 1 ? "" : "s"} · {dollars(shownValue)} in play
+            {waiting > 0 && <span className="font-semibold text-red-700"> · {waiting} new lead{waiting === 1 ? "" : "s"} waiting for a first call</span>}
+          </p>
+        </div>
+        <nav aria-label="Filter jobs" className="flex flex-wrap gap-1.5">
+          {FILTERS.map((f) => (
+            <Link key={f.key} href={`/app/jobs?filter=${f.key}`} aria-current={filter === f.key ? "true" : undefined}
+              className={cx("inline-flex min-h-11 items-center rounded-full px-4 text-[15px] font-semibold ring-1 ring-inset transition",
+                filter === f.key ? "bg-ink text-white ring-ink" : "bg-white text-slate-700 ring-slate-300 hover:ring-slate-400")}>
+              {f.label}
+            </Link>
+          ))}
+        </nav>
+        <LinkButton href="/app/customers/new" className="h-11 px-5 text-[15px]">+ New lead</LinkButton>
+      </header>
+
+      {/* All five columns fit from 1280px; below that the board scrolls inside itself, never the page. */}
+      <div data-pipeline-scroll className="-mx-4 overflow-x-auto px-4 pb-4 sm:-mx-8 sm:px-8 xl:mx-0 xl:px-0">
+        <div className="grid min-w-[940px] grid-cols-[repeat(5,minmax(0,1fr))] gap-3">
+          {COLUMNS.map((col) => {
+            const list = cards
+              .filter((c) => c.col === col.key)
+              .sort((a, b) =>
+                col.key === "new"
+                  ? Number(!!a.j.first_contacted_at) - Number(!!b.j.first_contacted_at) || (a.j.lead_received_at ?? "").localeCompare(b.j.lead_received_at ?? "")
+                  : (a.j.stage_changed_at ?? "").localeCompare(b.j.stage_changed_at ?? ""),
+              );
+            const total = list.reduce((s, c) => s + (c.value ?? 0), 0);
             return (
-              <div key={stage} className="w-64 shrink-0 snap-start">
-                <div className="mb-2 flex items-center justify-between px-1">
-                  <Badge tone={STAGE_TONE[stage]}>{STAGE_LABEL[stage]}</Badge>
-                  <span className="text-xs text-slate-500">{col.length}</span>
-                </div>
-                <div className="space-y-2">
-                  {col.map((j) => {
-                    const owner = people.byId.get(j.assigned_to ?? j.sales_rep_id ?? "");
-                    const inStage = daysSince(j.stage_changed_at);
-                    return (
-                      <Link key={j.id} href={`/app/jobs/${j.id}`} data-job-card={j.id} className="block rounded-lg bg-white p-3 ring-1 ring-slate-200 hover:ring-brand-500">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="min-w-0 truncate text-sm font-medium text-slate-900">{j.title}</p>
-                          {owner && (
-                            <span title={`Assigned to ${displayName(owner)}`} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-800 text-[10px] font-semibold text-white">{initials(owner)}</span>
-                          )}
-                        </div>
-                        <p className="truncate text-xs text-slate-500">{j.customers?.name}</p>
-                        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
-                          {j.stage === "lead" && !j.first_contacted_at && <LeadTimer since={j.lead_received_at} compact />}
-                          <span className={cx("rounded px-1.5 py-0.5", inStage >= 14 ? "bg-red-50 text-red-700" : inStage >= 7 ? "bg-amber-50 text-amber-800" : "bg-slate-100 text-slate-600")} title="Days in this stage">
-                            {inStage}d in stage
+              <section key={col.key} aria-label={col.name} data-pipeline-col={col.key} className="flex min-w-0 flex-col gap-2.5">
+                <header className="px-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <h2 className="truncate text-[15px] font-bold text-ink">{col.name} <span className="font-medium text-slate-500">{list.length}</span></h2>
+                    {total > 0 && <span className="shrink-0 text-[13px] text-slate-500">{dollars(total)}</span>}
+                  </div>
+                  <p className="mt-0.5 truncate text-xs text-slate-500">{col.hint}</p>
+                </header>
+                {list.map(({ j, value, next }) => {
+                  const owner = people.byId.get(j.assigned_to ?? j.sales_rep_id ?? "");
+                  const uncontacted = j.stage === "lead" && !j.first_contacted_at;
+                  const days = Math.max(0, Math.floor((now.getTime() - new Date(j.stage_changed_at ?? now).getTime()) / DAY));
+                  const buildDay = j.stage === "in_progress" && j.scheduled_start
+                    ? Math.max(1, Math.floor((now.getTime() - new Date(j.scheduled_start + "T00:00:00").getTime()) / DAY) + 1)
+                    : null;
+                  const tone = buildDay ? "ok" : ageTone(col.key, { days });
+                  return (
+                    <Link key={j.id} href={`/app/jobs/${j.id}`} data-job-card={j.id}
+                      className="flex min-w-0 flex-col gap-1.5 rounded-2xl bg-white p-3.5 ring-1 ring-slate-200 transition hover:ring-brand-400">
+                      <span className="flex items-start gap-2">
+                        <span className="font-display min-w-0 flex-1 truncate text-[15px] font-bold leading-snug text-ink">{j.customer_name ?? j.title}</span>
+                        {uncontacted && j.lead_received_at ? (
+                          <WaitTimer since={j.lead_received_at} className="px-2 py-0.5 text-xs" />
+                        ) : (
+                          <span data-age data-tone={tone} title={buildDay ? "Day of the build" : "Days in this stage"}
+                            className={cx("shrink-0 rounded-full px-2 py-0.5 text-xs font-bold tabular-nums", AGE_CLS[tone])}>
+                            {buildDay ? `Day ${buildDay}` : `${days} d`}
                           </span>
-                          {j.lead_source && j.stage === "lead" && <span className="rounded bg-slate-50 px-1.5 py-0.5">{label(j.lead_source)}</span>}
-                          {j.is_insurance && <span className="rounded bg-violet-50 px-1.5 py-0.5 text-violet-700">Insurance</span>}
-                          {j.scheduled_start && <span>{date(j.scheduled_start, { month: "short", day: "numeric" })}</span>}
-                          {j.crews && (
-                            <span className="inline-flex items-center gap-1">
-                              <span className="h-2 w-2 rounded-full" style={{ background: j.crews.color }} />
-                              {j.crews.name}
-                            </span>
-                          )}
-                        </div>
-                      </Link>
-                    );
-                  })}
-                  {col.length === 0 && <div className="rounded-lg border border-dashed border-slate-200 p-3 text-center text-xs text-slate-400">Empty</div>}
-                </div>
-              </div>
+                        )}
+                      </span>
+                      <span className="truncate text-[13px] text-slate-500">{(j.site_address ?? j.title).replace(STATE_TAIL, "")}</span>
+                      <span className="flex flex-wrap items-center gap-1.5">
+                        <span className="font-display text-[15px] font-bold text-ink">{value !== null ? dollars(value) : "Not quoted"}</span>
+                        {j.is_insurance && <span className="rounded-full bg-violet-50 px-2 py-0.5 text-xs font-semibold text-violet-700">Insurance</span>}
+                        {owner && (
+                          <span title={`Assigned to ${displayName(owner)}`} className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-50 text-[10px] font-bold text-brand-700 ring-1 ring-brand-100">{initials(owner)}</span>
+                        )}
+                      </span>
+                      <span data-next-step className={cx("mt-1 flex items-start gap-1.5 border-t border-slate-100 pt-2 text-[13px] leading-snug", next.waiting ? "text-slate-700" : "text-slate-500")}>
+                        <svg viewBox="0 0 24 24" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-500" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                        <span className="min-w-0">{next.title}</span>
+                      </span>
+                    </Link>
+                  );
+                })}
+                {list.length === 0 && <div className="rounded-2xl border border-dashed border-slate-200 px-3 py-6 text-center text-xs text-slate-400">Nothing here</div>}
+              </section>
             );
           })}
         </div>
+      </div>
+      {cards.length === 0 && (
+        <p className="mt-2 text-sm text-slate-500">
+          {filter === "mine" ? <>No open jobs assigned to you. <Link className="font-semibold text-brand-600" href="/app/jobs?filter=all">See everyone&apos;s jobs</Link></> : "No open jobs yet. Add a new lead to get started."}
+        </p>
       )}
     </>
   );
