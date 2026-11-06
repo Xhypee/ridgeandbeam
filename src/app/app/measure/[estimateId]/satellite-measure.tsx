@@ -226,7 +226,7 @@ export function SatelliteMeasure({ estimateId, address, initialCenter, initialZo
                       {p}/12
                     </button>
                   ))}
-                  <Input aria-label="Custom pitch" type="number" min={0} max={24} step={0.5} value={f.pitch} disabled={locked} onChange={(e) => update((fs) => fs.map((x) => (x.id === f.id ? { ...x, pitch: Math.max(0, Math.min(24, Number(e.target.value) || 0)) } : x)))} className="w-20" />
+                  <span className="w-20"><Input aria-label="Custom pitch" type="number" min={0} max={24} step={0.5} value={f.pitch} disabled={locked} onChange={(e) => update((fs) => fs.map((x) => (x.id === f.id ? { ...x, pitch: Math.max(0, Math.min(24, Number(e.target.value) || 0)) } : x)))} /></span>
                 </div>
               </li>
             ))}

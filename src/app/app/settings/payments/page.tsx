@@ -33,7 +33,7 @@ export default async function PaymentsSettings({ searchParams }: PageProps<"/app
   return (
     <div className="space-y-6">
       {notice && <p className="rounded-lg bg-slate-100 px-4 py-3 text-sm text-slate-700">{notice}</p>}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
         <Card
           title="Online payments (Stripe)"
           actions={<Badge tone={status === "ready" ? "green" : status === "incomplete" ? "amber" : "slate"}>{{ not_configured: "Not configured", not_connected: "Not connected", incomplete: "Finish setup", ready: "Taking payments" }[status]}</Badge>}

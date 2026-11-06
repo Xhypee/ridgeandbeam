@@ -33,7 +33,7 @@ export default async function LeadIntakePage() {
        "message":"Hail last night, possible leak","source":"angi"}'`;
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <Card title="How leads get in">
         <p className="text-sm text-slate-600">
           Every lead from your website, instant quote, Zapier, Angi or Facebook lead ads lands on the <b>Jobs</b> board as a new lead with a timer,
@@ -48,7 +48,7 @@ export default async function LeadIntakePage() {
         </dl>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
         <Card title="Embed the lead form on your website">
           <p className="mb-3 text-sm text-slate-600">Paste this where you want the form. It works on Wix, Squarespace, WordPress and plain HTML.</p>
           <CodeSnippet code={iframeForm} label="Copy embed code" />
@@ -67,7 +67,7 @@ export default async function LeadIntakePage() {
         <CodeSnippet code={curl} label="Copy curl example" />
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
         <Card title="Instant quote">
           <ActionForm action={saveInstantQuote} className="space-y-4">
             <label className="flex items-center gap-2 text-sm text-slate-700">

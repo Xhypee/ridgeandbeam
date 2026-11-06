@@ -100,7 +100,7 @@ export function CanvassApp({ knocks, territories, people, center, hasData }: { k
     if (!ready || fitOnce.current || !hasData || !api.current) return;
     fitOnce.current = true;
     const { L, map } = api.current;
-    map.fitBounds(L.latLngBounds(knocks.map((k) => [k.lat, k.lng] as LatLng)).pad(0.2), { maxZoom: 18 });
+    map.fitBounds(L.latLngBounds(knocks.map((k) => [k.lat, k.lng] as LatLng)).pad(0.2), { maxZoom: 18, animate: false });
   }, [ready, hasData, knocks]);
 
   const knockHere = () => {
