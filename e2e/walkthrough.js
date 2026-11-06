@@ -92,8 +92,13 @@ function check(cond, msg) {
   check(await cpage.getByText("Jane Homeowner").first().isVisible(), "public estimate shows customer");
   await cpage.screenshot({ path: `${SHOTS}/03-public-estimate.png`, fullPage: true });
   await cpage.fill('input[name="name"]', "Jane Homeowner");
+  const sig = await cpage.locator('canvas[aria-label^="Signature"]').boundingBox();
+  await cpage.mouse.move(sig.x + 20, sig.y + sig.height / 2);
+  await cpage.mouse.down();
+  for (let i = 1; i <= 12; i++) await cpage.mouse.move(sig.x + 20 + i * 18, sig.y + sig.height / 2 + (i % 2 ? -25 : 25));
+  await cpage.mouse.up();
   await cpage.check('input[name="agree"]');
-  await cpage.click('button:has-text("Accept & sign")');
+  await cpage.click('button:has-text("Accept")');
   await cpage.getByText("Your acceptance has been recorded").waitFor();
   await cpage.screenshot({ path: `${SHOTS}/03b-public-accepted.png`, fullPage: false });
   check(true, "customer accepted estimate");
