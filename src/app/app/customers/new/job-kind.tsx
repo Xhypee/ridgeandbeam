@@ -21,7 +21,7 @@ export function JobKind() {
     <div className="mt-4 space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row">
         {opt("retail", "Retail", "Homeowner pays us directly.")}
-        {opt("insurance", "Insurance claim", "Storm or damage claim; the carrier pays most of it.")}
+        {opt("insurance", "Insurance claim", "Storm or damage claim; the insurer pays most of it.")}
       </div>
       <fieldset className={cx("grid gap-3 rounded-lg p-3 sm:grid-cols-2", kind === "insurance" ? "bg-violet-50" : "bg-transparent")}>
         <legend className="px-1 text-xs font-medium text-slate-600">Insurance claim details {kind === "retail" && <span className="font-normal text-slate-400">(only for insurance jobs)</span>}</legend>

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOrg } from "@/lib/dal";
 import { friendly } from "@/lib/form";
+import { asAuState, stateFromPostcode } from "@/lib/au";
 import { geojsonRings, pointInPolygon, ringsToGeojson, type LatLng } from "@/lib/geo";
 import { KNOCK_STATUSES, mapImportedStatus } from "./statuses";
 
@@ -59,7 +60,7 @@ const Convert = z.object({
   id: z.string().uuid(),
   name: z.string().trim().min(2, "Homeowner name is required").max(200),
   phone: text(50), email: z.string().trim().email("That email doesn't look right").max(200).optional().or(z.literal("")).transform((s) => s || null),
-  address: text(300), city: text(100), state: text(2), zip: text(20), notes: text(2000),
+  address: text(300), city: text(100), state: text(3), zip: text(20), notes: text(2000),
 });
 
 /** Door knock -> customer + lead job (normal inserts), attributed to the setter. */
@@ -67,7 +68,7 @@ export async function convertKnock(input: unknown): Promise<Result> {
   const { supabase, org, user, role, memberships } = await requireOrg();
   const p = Convert.safeParse(input);
   if (!p.success) return { error: p.error.issues[0]?.message ?? "Check the fields." };
-  const d = p.data;
+  const d = { ...p.data, state: asAuState(p.data.state) ?? stateFromPostcode(p.data.zip) };
   if (!d.phone && !d.email) return { error: "Add a phone number or email so someone can follow up." };
   const { data: knock } = await supabase.from("door_knocks").select("id, status, lat, lng, customer_id, notes").eq("id", d.id).maybeSingle();
   if (!knock) return { error: "Knock not found." };
@@ -75,7 +76,7 @@ export async function convertKnock(input: unknown): Promise<Result> {
 
   const { data: cust, error: cErr } = await supabase
     .from("customers")
-    .insert({ org_id: org.id, name: d.name, phone: d.phone, email: d.email, address: d.address, city: d.city, state: d.state?.toUpperCase() ?? null, zip: d.zip, source: "door_knock", notes: d.notes ?? knock.notes, created_by: user.id })
+    .insert({ org_id: org.id, name: d.name, phone: d.phone, email: d.email, address: d.address, city: d.city, state: d.state, zip: d.zip, source: "door_knock", notes: d.notes ?? knock.notes, created_by: user.id })
     .select("id")
     .single();
   if (cErr) return { error: friendly(cErr) };
@@ -86,7 +87,7 @@ export async function convertKnock(input: unknown): Promise<Result> {
     .from("jobs")
     .insert({
       org_id: org.id, customer_id: cust.id, title: booked ? "Inspection (door knock)" : "Door knock lead",
-      site_address: [d.address, d.city, d.state?.toUpperCase(), d.zip].filter(Boolean).join(", ") || null, state: d.state?.toUpperCase() ?? null, zip: d.zip,
+      site_address: [d.address, [d.city, d.state, d.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ") || null, state: d.state, zip: d.zip,
       lat: knock.lat, lng: knock.lng, stage: booked ? "inspection" : "lead", lead_source: "door_knock", setter_id: user.id,
       assigned_to: role === "sales_rep" ? user.id : null, lead_received_at: now, first_contacted_at: now, created_by: user.id,
       notes: d.notes ?? knock.notes,

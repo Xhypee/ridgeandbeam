@@ -37,7 +37,6 @@ export default async function CloseoutPage({ params }: PageProps<"/app/jobs/[id]
     { label: "Punch list complete", done: openPunch === 0, detail: openPunch ? `${openPunch} open item${openPunch > 1 ? "s" : ""}` : (punch ?? []).length ? "All items done" : "No punch items" },
     { label: "Walkthrough signed", done: Boolean(job.walkthrough_signed_at), detail: job.walkthrough_signed_at ? `${job.walkthrough_name} · ${date(job.walkthrough_signed_at)}` : "Have the homeowner sign below", href: job.walkthrough_signed_at ? `/app/jobs/${id}/closeout/certificate` : undefined },
     { label: "Final invoice paid", done: paidInFull, detail: !hasInvoices ? "No invoice yet" : paidInFull ? "Paid in full" : canSeeMoney ? `${money(blockers.balance)} due` : "Balance due" },
-    { label: "Lien waiver", done: paidInFull, detail: paidInFull ? "Ready to give the homeowner" : "Available once paid in full", href: canSeeMoney && paidInFull ? `/app/jobs/${id}/closeout/lien-waiver` : undefined },
     { label: "Warranty registered", done: Boolean(job.warranty_registered_at), detail: job.warranty_registered_at ? `${job.warranty_product ?? "Registered"} · ${date(job.warranty_registered_at)}` : daysLeft === null ? "Starts when the job is completed" : daysLeft >= 0 ? `${daysLeft} days left to register` : `${-daysLeft} days overdue` },
     { label: "Review requested", done: Boolean(job.review_requested_at), detail: job.review_requested_at ? date(job.review_requested_at) : "After payment and punch list" },
   ];
@@ -127,20 +126,14 @@ export default async function CloseoutPage({ params }: PageProps<"/app/jobs/[id]
               ))}
             </ul>
           )}
-          {canSeeMoney && (
-            <p className="mt-3 text-sm">
-              {paidInFull ? <Link href={`/app/jobs/${id}/closeout/lien-waiver`} className="font-medium text-brand-700 underline">Print unconditional lien waiver</Link>
-                : <span className="text-slate-500">The unconditional lien waiver unlocks once the job is paid in full (give a conditional waiver before then).</span>}
-            </p>
-          )}
         </Card>
 
         <Card title="Warranty registration">
           <p className={cx("mb-3 rounded-lg px-3 py-2 text-sm font-medium", job.warranty_registered_at ? "bg-green-50 text-green-800" : daysLeft !== null && daysLeft < 10 ? "bg-red-50 text-red-800" : "bg-amber-50 text-amber-900")} data-testid="warranty-countdown">
             {job.warranty_registered_at ? `Registered ${date(job.warranty_registered_at)}${job.warranty_registration_number ? ` · #${job.warranty_registration_number}` : ""}`
-              : daysLeft === null ? `Register within ${WARRANTY_REGISTRATION_DAYS} days of install (GAF). The countdown starts when the job is completed.`
+              : daysLeft === null ? `Lodge the manufacturer's warranty within ${WARRANTY_REGISTRATION_DAYS} days of install (our reminder; check the manufacturer's terms). The countdown starts when the job is completed.`
                 : daysLeft >= 0 ? `${daysLeft} days left to register (${WARRANTY_REGISTRATION_DAYS}-day window from ${date(job.completed_at)}).`
-                  : `Registration window passed ${-daysLeft} days ago — call the manufacturer.`}
+                  : `${-daysLeft} days past our reminder — lodge it with the manufacturer now.`}
           </p>
           <ActionForm action={saveWarranty} className="space-y-3">
             <input type="hidden" name="job_id" value={id} />
@@ -152,7 +145,7 @@ export default async function CloseoutPage({ params }: PageProps<"/app/jobs/[id]
               </Field>
             ) : null}
             <Field label={products.length ? "…or type another product" : "Product / warranty"}>
-              <Input name="warranty_product_custom" defaultValue={products.length ? "" : job.warranty_product ?? ""} placeholder="e.g. GAF System Plus" />
+              <Input name="warranty_product_custom" defaultValue={products.length ? "" : job.warranty_product ?? ""} placeholder="e.g. BlueScope COLORBOND steel warranty" />
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Registration #"><Input name="warranty_registration_number" defaultValue={job.warranty_registration_number ?? ""} /></Field>

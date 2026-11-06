@@ -174,7 +174,7 @@ export async function jobFinancials(supabase: SupabaseClient, jobIds: string[]):
 
 // ---------------------------------------------------------------------------
 // Weather (Open-Meteo, free, no key). Cached 1h by Next's fetch cache.
-// Any failure (network blocked, bad zip) returns null and the UI shows "forecast unavailable".
+// Any failure (network blocked, unknown postcode) returns null and the UI shows "forecast unavailable".
 // ---------------------------------------------------------------------------
 export async function getForecast(place: { zip: string | null; lat: number | null; lng: number | null }): Promise<DayForecast[] | null> {
   try {
@@ -189,7 +189,7 @@ export async function getForecast(place: { zip: string | null; lat: number | nul
       lng = gj.results?.[0]?.longitude ?? null;
     }
     if (lat == null || lng == null) return null;
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=precipitation_probability_max,wind_speed_10m_max,temperature_2m_max,weather_code&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=auto&forecast_days=16`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=precipitation_probability_max,wind_speed_10m_max,temperature_2m_max,weather_code&wind_speed_unit=kmh&temperature_unit=celsius&timezone=auto&forecast_days=16`;
     const r = await fetch(url, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(2500) });
     if (!r.ok) return null;
     const j = (await r.json()) as { daily?: { time: string[]; precipitation_probability_max?: (number | null)[]; wind_speed_10m_max?: (number | null)[]; temperature_2m_max?: (number | null)[]; weather_code?: (number | null)[] } };
@@ -198,8 +198,8 @@ export async function getForecast(place: { zip: string | null; lat: number | nul
     return d.time.map((date, i) => ({
       date,
       precipProb: d.precipitation_probability_max?.[i] ?? null,
-      windMph: d.wind_speed_10m_max?.[i] ?? null,
-      tempMaxF: d.temperature_2m_max?.[i] ?? null,
+      windKmh: d.wind_speed_10m_max?.[i] ?? null,
+      tempMaxC: d.temperature_2m_max?.[i] ?? null,
       code: d.weather_code?.[i] ?? null,
     }));
   } catch {

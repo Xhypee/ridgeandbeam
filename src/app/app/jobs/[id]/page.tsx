@@ -23,7 +23,7 @@ type LeadCols = {
 };
 type FinApp = { id: string; lender: string; amount: number; status: string; dealer_fee_pct: number; notes: string | null; created_at: string; funded_on: string | null };
 const FIN_STATUSES = ["link_sent", "prequalified", "approved", "declined", "funded", "cancelled"];
-const SOURCE_SUGGESTIONS = ["website", "instant_quote", "google_ads", "facebook", "hipages", "angi", "referral", "door_knock", "storm", "repeat", "yard_sign", "other"];
+const SOURCE_SUGGESTIONS = ["website", "instant_quote", "google_ads", "facebook", "hipages", "oneflare", "serviceseeking", "referral", "door_knock", "storm", "repeat", "site_sign", "other"];
 /** Readiness gates in Australian wording (HOA → strata / body corporate, dumpster → skip bin). */
 const READY_AU: Record<string, string> = { permit: "Building permit", hoa: "Strata / body corporate", colors: "Colours confirmed", materials: "Materials", dumpster: "Skip bin", deposit: "Deposit" };
 const human = (s: string) => s.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());

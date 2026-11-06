@@ -4,7 +4,7 @@ import { ActionForm, SubmitButton } from "@/components/action-form";
 import { Badge, Card, Field, Input, Select, Table, cx, td, th } from "@/components/ui";
 import { requireMoneyAccess } from "@/lib/dal";
 import { date, isoDate, label, money } from "@/lib/format";
-import { actualByCategory, budgetByCategory, COST_CATEGORIES, margin } from "@/lib/production";
+import { actualByCategory, budgetByCategory, COST_CATEGORIES, COST_CATEGORY_LABEL, margin, type CostCategory } from "@/lib/production";
 import { jobFinancials } from "@/lib/production-data";
 import { deleteCost, saveCost } from "./actions";
 
@@ -20,7 +20,7 @@ function CostFields({ c, jobId }: { c?: Cost; jobId: string }) {
       <div className="grid gap-3 sm:grid-cols-5">
         <Field label="Category">
           <Select name="category" defaultValue={c?.category ?? "materials"}>
-            {COST_CATEGORIES.map((k) => <option key={k} value={k}>{label(k)}</option>)}
+            {COST_CATEGORIES.map((k) => <option key={k} value={k}>{COST_CATEGORY_LABEL[k]}</option>)}
           </Select>
         </Field>
         <Field label="Supplier / contractor"><Input name="vendor" defaultValue={c?.vendor ?? ""} placeholder="e.g. Stramit, a crew name" /></Field>
@@ -74,7 +74,7 @@ export default async function CostsPage({ params }: PageProps<"/app/jobs/[id]/co
                 const v = Math.round((actual[c] - budget[c]) * 100) / 100;
                 return (
                   <tr key={c}>
-                    <td className={td}>{label(c)}</td>
+                    <td className={td}>{COST_CATEGORY_LABEL[c]}</td>
                     <td className={cx(td, "text-right")}>{money(budget[c])}</td>
                     <td className={cx(td, "text-right")}>{money(actual[c])}</td>
                     <td className={cx(td, "text-right", v > 0 ? "text-red-700" : "text-green-700")}>{v > 0 ? "+" : ""}{money(v)}</td>
@@ -104,7 +104,7 @@ export default async function CostsPage({ params }: PageProps<"/app/jobs/[id]/co
               {f.costs.map((c) => (
                 <tr key={c.id} className="align-top">
                   <td className={cx(td, "whitespace-nowrap")}>{date(c.incurred_on, { month: "short", day: "numeric" })}</td>
-                  <td className={td}>{label(c.category)}{c.source !== "manual" && <span className="ml-1"><Badge tone="blue">{label(c.source)}</Badge></span>}</td>
+                  <td className={td}>{COST_CATEGORY_LABEL[c.category as CostCategory] ?? label(c.category)}{c.source !== "manual" && <span className="ml-1"><Badge tone="blue">{label(c.source)}</Badge></span>}</td>
                   <td className={td}><span className="font-medium">{c.vendor}</span> <span className="text-slate-500">{c.description}</span>
                     <details className="mt-1">
                       <summary className="cursor-pointer text-xs text-brand-600">Edit</summary>

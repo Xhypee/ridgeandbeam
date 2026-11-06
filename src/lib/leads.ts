@@ -18,7 +18,7 @@ export function leadState(state: string | undefined, postcode: string | undefine
 
 
 /** Lead sources a report can group by. Free text is allowed too (e.g. "hipages", "facebook"). */
-export const LEAD_SOURCE_SUGGESTIONS = ["website", "instant_quote", "google_ads", "facebook", "angi", "referral", "door_knock", "storm", "repeat", "yard_sign", "other"];
+export const LEAD_SOURCE_SUGGESTIONS = ["website", "instant_quote", "google_ads", "facebook", "hipages", "oneflare", "serviceseeking", "referral", "door_knock", "storm", "repeat", "site_sign", "other"];
 
 export type LeadPayload = {
   name: string; phone?: string; email?: string; address?: string; city?: string; state?: string; zip?: string;
@@ -35,7 +35,7 @@ const pick = (o: Record<string, unknown>, ...keys: string[]) => {
 };
 
 /**
- * Accepts the field names website forms, Zapier, Angi and Facebook lead ads typically send
+ * Accepts the field names website forms, Zapier, hipages and Facebook lead ads typically send
  * and maps them to submit_public_lead's payload.
  */
 export function normalizeLead(raw: Record<string, unknown>): LeadPayload {
@@ -56,7 +56,7 @@ export function normalizeLead(raw: Record<string, unknown>): LeadPayload {
     zip: pick(raw, "postcode", "post_code", "zip", "zipcode", "zip_code", "postal_code")?.slice(0, 20),
     message: pick(raw, "message", "comments", "comment", "notes", "details", "description")?.slice(0, 4000),
     // customers.source enum gets the coarse bucket; jobs.lead_source keeps the detail
-    source: src && KNOWN.includes(src) ? src : src ? (/(ad|google|facebook|fb|hipages|oneflare|serviceseeking|airtasker|angi)/.test(src) ? "ads" : "website") : "website",
+    source: src && KNOWN.includes(src) ? src : src ? (/(ad|google|facebook|fb|hipages|oneflare|serviceseeking|airtasker)/.test(src) ? "ads" : "website") : "website",
     source_detail: (src ?? "website").slice(0, 100),
     title: pick(raw, "title", "service", "service_type")?.slice(0, 200),
     insurance: ins ? /^(1|true|yes|on|y)$/i.test(ins) : undefined,

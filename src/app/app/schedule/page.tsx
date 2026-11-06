@@ -18,14 +18,14 @@ type Row = ReadinessJob & {
 };
 const JOB_COLS = "id, title, stage, site_address, crew_id, scheduled_start, scheduled_end, schedule_locked, permit_status, hoa_status, colors_confirmed, shingle_color, materials_status, dumpster_status, customers(name), crews(name, color)";
 
-const kmh = (mph: number | null | undefined) => Math.round((mph ?? 0) * 1.609);
+const kmh = (v: number | null | undefined) => Math.round(v ?? 0);
 
 function Weather({ f }: { f?: DayForecast }) {
   if (!f) return null;
   const risk = weatherRisk(f);
   return (
-    <span className={cx("mt-0.5 block text-[11px] leading-tight", risk ? "font-semibold text-red-700" : "text-slate-500")} title={`Rain ${f.precipProb ?? "?"}% · wind ${kmh(f.windMph)} km/h`}>
-      {risk === "rain" ? "🌧" : risk === "wind" ? "💨" : (f.precipProb ?? 0) >= 25 ? "🌦" : "☀"} {f.precipProb ?? "–"}% · {kmh(f.windMph)} km/h
+    <span className={cx("mt-0.5 block text-[11px] leading-tight", risk ? "font-semibold text-red-700" : "text-slate-500")} title={`Rain ${f.precipProb ?? "?"}% · wind ${kmh(f.windKmh)} km/h`}>
+      {risk === "rain" ? "🌧" : risk === "wind" ? "💨" : (f.precipProb ?? 0) >= 25 ? "🌦" : "☀"} {f.precipProb ?? "–"}% · {kmh(f.windKmh)} km/h
     </span>
   );
 }

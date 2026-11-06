@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { requireOrg } from "@/lib/dal";
 import { friendly, oneOf, str } from "@/lib/form";
 import { loadReadiness } from "@/lib/production-server";
-import { JOB_STAGES, JOB_TYPES } from "@/lib/types";
+import { AU_JOB_TYPES } from "@/lib/job-types";
+import { JOB_STAGES } from "@/lib/types";
 import type { ActionResult } from "@/components/action-form";
 
 export async function createJob(_: ActionResult, fd: FormData): Promise<ActionResult> {
@@ -20,7 +21,7 @@ export async function createJob(_: ActionResult, fd: FormData): Promise<ActionRe
       org_id: org.id,
       customer_id: customerId,
       title,
-      job_type: oneOf(fd, "job_type", JOB_TYPES, "replacement"),
+      job_type: oneOf(fd, "job_type", AU_JOB_TYPES, "replacement"),
       site_address: str(fd, "site_address"),
       roof_material: str(fd, "roof_material"),
       is_insurance: fd.get("is_insurance") === "on",
@@ -42,7 +43,7 @@ export async function updateJob(_: ActionResult, fd: FormData): Promise<ActionRe
     .from("jobs")
     .update({
       title,
-      job_type: oneOf(fd, "job_type", JOB_TYPES, "replacement"),
+      job_type: oneOf(fd, "job_type", AU_JOB_TYPES, "replacement"),
       site_address: str(fd, "site_address"),
       roof_material: str(fd, "roof_material"),
       is_insurance: fd.get("is_insurance") === "on",

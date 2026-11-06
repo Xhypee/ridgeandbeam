@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
-import { CATEGORY_LABEL, EVENT_LABEL, PHOTO_CATEGORIES, SLOPES, SLOPE_LABEL, STATUS_ACTIONS } from "@/lib/field";
+import { CATEGORY_HINT, CATEGORY_LABEL, COUNT_CATEGORY, DAMAGE_CATEGORIES, EVENT_LABEL, PHOTO_CATEGORIES, SLOPES, SLOPE_LABEL, STATUS_ACTIONS } from "@/lib/field";
 import { preparePhoto } from "@/lib/field-image";
 import { extFor, newClientId, type QueueItem, type Shape } from "@/lib/field-queue";
 import { deleteFile, setNotifyHomeowner, textPortalLink, updateFile } from "@/app/app/jobs/[id]/field/actions";
@@ -41,20 +41,24 @@ function fmtTime(iso: string | null | undefined) {
   return new Date(iso).toLocaleString("en-AU", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
-function useHits(jobId: string) {
-  const key = `rb-hits-${jobId}`;
-  const [hits, setHits] = useState<Record<string, number>>({});
+/** Photo categories that aren't storm damage (overview, build progress). */
+const JOB_CATEGORIES = PHOTO_CATEGORIES.filter((c) => !(DAMAGE_CATEGORIES as readonly string[]).includes(c));
+
+/** Broken-tile tally per slope, kept on the phone until it is saved to a photo. */
+function useTileCounts(jobId: string) {
+  const key = `rb-broken-tiles-${jobId}`;
+  const [counts, setCountsState] = useState<Record<string, number>>({});
   useEffect(() => {
     try {
       const v = JSON.parse(localStorage.getItem(key) ?? "{}");
       // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate from localStorage after mount
-      setHits(v);
+      setCountsState(v);
     } catch {
       /* ignore */
     }
   }, [key]);
   const set = (slope: string, n: number) =>
-    setHits((h) => {
+    setCountsState((h) => {
       const next = { ...h, [slope]: Math.max(0, n) };
       try {
         localStorage.setItem(key, JSON.stringify(next));
@@ -63,7 +67,7 @@ function useHits(jobId: string) {
       }
       return next;
     });
-  return [hits, set] as const;
+  return [counts, set] as const;
 }
 
 export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, files, events }: Props) {
@@ -71,7 +75,7 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
   const [slope, setSlope] = useState<string>("front");
   const [category, setCategory] = useState<string>("overview");
   const [caption, setCaption] = useState("");
-  const [hits, setHits] = useHits(jobId);
+  const [counts, setCounts] = useTileCounts(jobId);
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [fSlope, setFSlope] = useState<string>("all");
@@ -118,7 +122,7 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
         const p = await preparePhoto(f);
         await q.enqueue({
           op: "file", kind: "photo", blob: p.blob, mime: p.mime, ext: extFor(p.mime), takenAt: p.takenAt,
-          slope, category, caption: caption.trim() || null, hits: category === "test_square" ? (hits[slope] ?? 0) : null,
+          slope, category, caption: caption.trim() || null, hits: category === COUNT_CATEGORY ? (counts[slope] ?? 0) : null,
         });
         n++;
       }
@@ -130,17 +134,17 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
     }
   }
 
-  const latestTestSquare = tiles.find((t) => tCat(t) === "test_square" && tSlope(t) === slope);
+  const latestTilePhoto = tiles.find((t) => tCat(t) === COUNT_CATEGORY && tSlope(t) === slope);
 
-  async function applyHits() {
-    const n = hits[slope] ?? 0;
-    if (!latestTestSquare) return say("Take a test-square photo on this slope first.");
-    if (latestTestSquare.src === "queue") await q.patch(latestTestSquare.item.id, { hits: n });
+  async function applyCount() {
+    const n = counts[slope] ?? 0;
+    if (!latestTilePhoto) return say("Take a broken-tile photo on this slope first.");
+    if (latestTilePhoto.src === "queue") await q.patch(latestTilePhoto.item.id, { hits: n });
     else {
-      const r = await updateFile({ id: latestTestSquare.file.id, test_square_hits: n });
+      const r = await updateFile({ id: latestTilePhoto.file.id, test_square_hits: n });
       if (r.error) return say(r.error);
     }
-    say(`${n} hits saved to the ${SLOPE_LABEL[slope].toLowerCase()} test square.`);
+    say(`${n} broken tile${n === 1 ? "" : "s"} saved to the ${SLOPE_LABEL[slope].toLowerCase()} slope photo.`);
   }
 
   return (
@@ -186,28 +190,35 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
             <button key={s} type="button" aria-pressed={slope === s} onClick={() => setSlope(s)} className={cx(chip, slope === s ? chipOn : chipOff)}>{SLOPE_LABEL[s]}</button>
           ))}
         </div>
-        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Category</p>
-        <div className="mb-3 flex flex-wrap gap-2">
-          {PHOTO_CATEGORIES.map((c) => (
+        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Storm damage — for the insurer&apos;s assessor</p>
+        <div className="mb-3 flex flex-wrap gap-2" data-testid="damage-categories">
+          {DAMAGE_CATEGORIES.map((c) => (
             <button key={c} type="button" aria-pressed={category === c} onClick={() => setCategory(c)} className={cx(chip, category === c ? chipOn : chipOff)}>{CATEGORY_LABEL[c]}</button>
           ))}
         </div>
+        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Job photos</p>
+        <div className="mb-3 flex flex-wrap gap-2">
+          {JOB_CATEGORIES.map((c) => (
+            <button key={c} type="button" aria-pressed={category === c} onClick={() => setCategory(c)} className={cx(chip, category === c ? chipOn : chipOff)}>{CATEGORY_LABEL[c]}</button>
+          ))}
+        </div>
+        {CATEGORY_HINT[category] && <p className="mb-3 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700" data-testid="category-hint">{CATEGORY_HINT[category]}</p>}
 
-        {category === "test_square" && (
-          <div className="mb-3 rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200">
-            <p className="text-sm font-semibold text-amber-900">Test square hits — {SLOPE_LABEL[slope]} slope (10×10 ft)</p>
+        {category === COUNT_CATEGORY && (
+          <div className="mb-3 rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200" data-testid="tile-counter">
+            <p className="text-sm font-semibold text-amber-900">Broken / cracked tiles — {SLOPE_LABEL[slope]} slope</p>
             <div className="mt-2 flex items-center gap-3">
-              <button type="button" aria-label="Remove a hit" onClick={() => setHits(slope, (hits[slope] ?? 0) - 1)}
+              <button type="button" aria-label="One less broken tile" onClick={() => setCounts(slope, (counts[slope] ?? 0) - 1)}
                 className="h-16 w-16 rounded-2xl bg-white text-4xl font-bold ring-2 ring-slate-900">−</button>
-              <output aria-label="Hit count" className="min-w-16 text-center text-5xl font-black tabular-nums">{hits[slope] ?? 0}</output>
-              <button type="button" aria-label="Add a hit" onClick={() => setHits(slope, (hits[slope] ?? 0) + 1)}
+              <output aria-label="Broken tile count" className="min-w-16 text-center text-5xl font-black tabular-nums">{counts[slope] ?? 0}</output>
+              <button type="button" aria-label="One more broken tile" onClick={() => setCounts(slope, (counts[slope] ?? 0) + 1)}
                 className="h-16 flex-1 rounded-2xl bg-brand-500 text-4xl font-bold text-white">+</button>
             </div>
             <div className="mt-2 flex flex-wrap gap-2">
-              <button type="button" onClick={applyHits} className="min-h-11 rounded-xl bg-slate-900 px-3 text-sm font-semibold text-white">Save count to last test-square photo</button>
-              <button type="button" onClick={() => setHits(slope, 0)} className="min-h-11 rounded-xl px-3 text-sm font-semibold ring-1 ring-slate-300">Reset</button>
+              <button type="button" onClick={applyCount} className="min-h-11 rounded-xl bg-slate-900 px-3 text-sm font-semibold text-white">Save count to last tile photo on this slope</button>
+              <button type="button" onClick={() => setCounts(slope, 0)} className="min-h-11 rounded-xl px-3 text-sm font-semibold ring-1 ring-slate-300">Reset</button>
             </div>
-            {(hits[slope] ?? 0) >= 8 && <p className="mt-2 text-xs text-amber-900">8+ hits per square often supports replacement — but carrier rules vary.</p>}
+            <p className="mt-2 text-xs text-amber-900">New photos on this slope carry the count. The photo report totals it per slope for the assessor.</p>
           </div>
         )}
 
@@ -258,8 +269,8 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
                 </button>
                 <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-wrap gap-1 p-1">
                   <span className="rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-semibold text-white">{SLOPE_LABEL[tSlope(t)] ?? tSlope(t)} · {CATEGORY_LABEL[tCat(t)]}</span>
-                  {(t.src === "queue" ? t.item.category === "test_square" && t.item.hits != null : t.file.hits != null) && (
-                    <span className="rounded bg-amber-400 px-1.5 py-0.5 text-[11px] font-bold text-black">{t.src === "queue" ? t.item.hits : t.file.hits} hits</span>
+                  {tCat(t) === COUNT_CATEGORY && (t.src === "queue" ? t.item.hits : t.file.hits) != null && (
+                    <span className="rounded bg-amber-400 px-1.5 py-0.5 text-[11px] font-bold text-black">{t.src === "queue" ? t.item.hits : t.file.hits} broken</span>
                   )}
                 </div>
                 <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 p-1">
@@ -501,12 +512,12 @@ function PhotoSheet({ tile, onClose, onMarkup, onQueuePatch, onDiscard, onServer
 
   const save = () => start(async () => {
     if (tile.src === "queue") {
-      await onQueuePatch({ caption: v.caption || null, slope: v.slope, category: v.category, hits: v.category === "test_square" ? v.hits : null });
+      await onQueuePatch({ caption: v.caption || null, slope: v.slope, category: v.category, hits: v.category === COUNT_CATEGORY ? v.hits : null });
       return;
     }
     const r = await updateFile({
       id: tile.file.id, caption: v.caption || null, slope: v.slope as (typeof SLOPES)[number],
-      category: v.category as (typeof PHOTO_CATEGORIES)[number], test_square_hits: v.category === "test_square" ? v.hits : null, shared_with_homeowner: v.shared,
+      category: v.category as (typeof PHOTO_CATEGORIES)[number], test_square_hits: v.category === COUNT_CATEGORY ? v.hits : null, shared_with_homeowner: v.shared,
     });
     if (r.error) setErr(r.error); else onServerSaved("Photo saved.");
   });
@@ -526,12 +537,12 @@ function PhotoSheet({ tile, onClose, onMarkup, onQueuePatch, onDiscard, onServer
         <div className="mb-3 flex flex-wrap gap-2">
           {PHOTO_CATEGORIES.map((c) => <button key={c} type="button" onClick={() => setV({ ...v, category: c })} className={cx(chip, v.category === c ? chipOn : chipOff)}>{CATEGORY_LABEL[c]}</button>)}
         </div>
-        {v.category === "test_square" && (
+        {v.category === COUNT_CATEGORY && (
           <div className="mb-3 flex items-center gap-3">
-            <button type="button" aria-label="Fewer hits" onClick={() => setV({ ...v, hits: Math.max(0, v.hits - 1) })} className="h-14 w-14 rounded-xl text-3xl font-bold ring-2 ring-slate-900">−</button>
+            <button type="button" aria-label="Fewer broken tiles" onClick={() => setV({ ...v, hits: Math.max(0, v.hits - 1) })} className="h-14 w-14 rounded-xl text-3xl font-bold ring-2 ring-slate-900">−</button>
             <span className="text-3xl font-black tabular-nums">{v.hits}</span>
-            <button type="button" aria-label="More hits" onClick={() => setV({ ...v, hits: v.hits + 1 })} className="h-14 w-14 rounded-xl bg-brand-500 text-3xl font-bold text-white">+</button>
-            <span className="text-sm text-slate-600">hits</span>
+            <button type="button" aria-label="More broken tiles" onClick={() => setV({ ...v, hits: v.hits + 1 })} className="h-14 w-14 rounded-xl bg-brand-500 text-3xl font-bold text-white">+</button>
+            <span className="text-sm text-slate-600">broken tiles</span>
           </div>
         )}
         {tile.src === "server" && (

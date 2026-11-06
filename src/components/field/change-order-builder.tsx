@@ -10,29 +10,30 @@ import { createClient } from "@/lib/supabase/client";
 
 type Line = { description: string; quantity: number; unit: string; unit_price: number; unit_cost: number; category: "material" | "labor" | "other" };
 type Photo = { id: string; url: string | null; caption: string | null };
-const usd = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD" });
+const aud = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD" });
 
-export function ChangeOrderBuilder({ jobId, orgId, decking, photos }: {
+export function ChangeOrderBuilder({ jobId, orgId, battens, photos }: {
   jobId: string;
   orgId: string;
-  decking: { name: string; unit: string; unit_price: number; unit_cost: number } | null;
+  /** The price-book item for tile battens (calc key tile_battens), priced per lineal metre. */
+  battens: { name: string; unit: string; unit_price: number; unit_cost: number } | null;
   photos: Photo[];
 }) {
   const router = useRouter();
-  const [mode, setMode] = useState<"decking" | "custom">("decking");
-  const [sheets, setSheets] = useState(4);
-  const [price, setPrice] = useState(decking?.unit_price ?? 72);
-  const [cost, setCost] = useState(decking?.unit_cost ?? 38);
-  const [title, setTitle] = useState("Replace rotten decking");
-  const [desc, setDesc] = useState("We found soft / rotted roof decking (plywood) after tear-off. It must be replaced so the new roof is nailed to solid wood and the warranty holds.");
+  const [mode, setMode] = useState<"battens" | "custom">("battens");
+  const [metres, setMetres] = useState(20);
+  const [price, setPrice] = useState(battens?.unit_price ?? 14);
+  const [cost, setCost] = useState(battens?.unit_cost ?? 7);
+  const [title, setTitle] = useState("Replace rotten battens");
+  const [desc, setDesc] = useState("Once the old roof was off we found rotten or split roof battens. They need replacing so the new roof is fixed to sound timber, as the manufacturer's fixing instructions require.");
   const [lines, setLines] = useState<Line[]>([{ description: "", quantity: 1, unit: "ea", unit_price: 0, unit_cost: 0, category: "material" }]);
   const [picked, setPicked] = useState<string[]>([]);
   const [extra, setExtra] = useState<Photo[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  const items: Line[] = mode === "decking"
-    ? [{ description: `${decking?.name ?? "Decking replacement (per 4x8 sheet)"}`, quantity: sheets, unit: decking?.unit ?? "sheet", unit_price: price, unit_cost: cost, category: "material" }]
+  const items: Line[] = mode === "battens"
+    ? [{ description: `${battens?.name ?? "Replace roof battens (supply & fix)"}`, quantity: metres, unit: battens?.unit ?? "lm", unit_price: price, unit_cost: cost, category: "material" }]
     : lines;
   const total = items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
   const allPhotos = [...extra, ...photos];
@@ -51,10 +52,10 @@ export function ChangeOrderBuilder({ jobId, orgId, decking, photos }: {
       const { data: sess } = await sb.auth.getSession();
       const { data, error } = await sb.from("job_files").insert({
         org_id: orgId, job_id: jobId, client_id: cid, kind: "photo", storage_path: path, mime_type: p.mime, size_bytes: p.blob.size,
-        category: "decking", caption: "Rotten decking", taken_at: p.takenAt, uploaded_by: sess.session?.user.id ?? null,
+        category: "decking", caption: "Rotten battens", taken_at: p.takenAt, uploaded_by: sess.session?.user.id ?? null,
       }).select("id").single();
       if (error) throw new Error(error.message);
-      setExtra((x) => [{ id: data.id, url: URL.createObjectURL(p.blob), caption: "Rotten decking" }, ...x]);
+      setExtra((x) => [{ id: data.id, url: URL.createObjectURL(p.blob), caption: "Rotten battens" }, ...x]);
       setPicked((x) => [...x, data.id]);
     } catch (e) {
       setErr(`Couldn't upload the photo (${(e as Error).message}). No signal? Take it on the Field tab — it will queue — then attach it here.`);
@@ -73,28 +74,28 @@ export function ChangeOrderBuilder({ jobId, orgId, decking, photos }: {
   }
 
   const tab = (m: typeof mode, label: string) => (
-    <button type="button" onClick={() => { setMode(m); if (m === "custom" && title === "Replace rotten decking") setTitle(""); }}
+    <button type="button" onClick={() => { setMode(m); if (m === "custom" && title === "Replace rotten battens") setTitle(""); }}
       className={cx("min-h-12 flex-1 rounded-xl text-base font-bold", mode === m ? "bg-slate-900 text-white" : "bg-white ring-1 ring-slate-300")}>{label}</button>
   );
 
   return (
     <div className="space-y-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-      <div className="flex gap-2">{tab("decking", "Found rotten decking")}{tab("custom", "Custom lines")}</div>
+      <div className="flex gap-2">{tab("battens", "Found rotten battens")}{tab("custom", "Custom lines")}</div>
 
-      {mode === "decking" ? (
+      {mode === "battens" ? (
         <div className="rounded-xl bg-slate-50 p-3">
-          <p className="text-sm font-semibold">How many 4×8 sheets?</p>
+          <p className="text-sm font-semibold">How many lineal metres of batten?</p>
           <div className="mt-2 flex items-center gap-3">
-            <button type="button" aria-label="One less sheet" onClick={() => setSheets((s) => Math.max(1, s - 1))} className="h-16 w-16 rounded-2xl bg-white text-4xl font-bold ring-2 ring-slate-900">−</button>
-            <input aria-label="Sheets" type="number" min={1} value={sheets} onChange={(e) => setSheets(Math.max(1, Math.round(Number(e.target.value) || 1)))}
+            <button type="button" aria-label="One metre less" onClick={() => setMetres((s) => Math.max(1, s - 1))} className="h-16 w-16 rounded-2xl bg-white text-4xl font-bold ring-2 ring-slate-900">−</button>
+            <input aria-label="Lineal metres" type="number" min={1} value={metres} onChange={(e) => setMetres(Math.max(1, Math.round(Number(e.target.value) || 1)))}
               className="h-16 w-24 rounded-2xl text-center text-4xl font-black tabular-nums ring-1 ring-slate-300" />
-            <button type="button" aria-label="One more sheet" onClick={() => setSheets((s) => s + 1)} className="h-16 flex-1 rounded-2xl bg-brand-500 text-4xl font-bold text-white">+</button>
+            <button type="button" aria-label="One metre more" onClick={() => setMetres((s) => s + 1)} className="h-16 flex-1 rounded-2xl bg-brand-500 text-4xl font-bold text-white">+</button>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-            <label>Price per sheet<input type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(Number(e.target.value) || 0)} className="mt-1 block min-h-11 w-full rounded-lg px-2 ring-1 ring-slate-300" /></label>
-            <label>Our cost per sheet<input type="number" min={0} step="0.01" value={cost} onChange={(e) => setCost(Number(e.target.value) || 0)} className="mt-1 block min-h-11 w-full rounded-lg px-2 ring-1 ring-slate-300" /></label>
+            <label>Price per lm<input type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(Number(e.target.value) || 0)} className="mt-1 block min-h-11 w-full rounded-lg px-2 ring-1 ring-slate-300" /></label>
+            <label>Our cost per lm<input type="number" min={0} step="0.01" value={cost} onChange={(e) => setCost(Number(e.target.value) || 0)} className="mt-1 block min-h-11 w-full rounded-lg px-2 ring-1 ring-slate-300" /></label>
           </div>
-          <p className="mt-2 text-xs text-slate-500">{decking ? "Prices from your price book (decking)." : "No decking item in your price book — using a typical rate."}</p>
+          <p className="mt-2 text-xs text-slate-500">{battens ? "Prices from your price book (tile battens)." : "No tile batten item in your price book — using a typical rate. Check it before sending."}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -106,7 +107,7 @@ export function ChangeOrderBuilder({ jobId, orgId, decking, photos }: {
               <input aria-label="Unit price" type="number" min={0} step="0.01" value={l.unit_price} onChange={(e) => setLines(lines.map((x, j) => j === i ? { ...x, unit_price: Number(e.target.value) || 0 } : x))} className="col-span-3 min-h-11 rounded-lg px-2 ring-1 ring-slate-300" />
               <input aria-label="Unit cost" type="number" min={0} step="0.01" value={l.unit_cost} onChange={(e) => setLines(lines.map((x, j) => j === i ? { ...x, unit_cost: Number(e.target.value) || 0 } : x))} className="col-span-3 min-h-11 rounded-lg px-2 ring-1 ring-slate-300" placeholder="Our cost" />
               <select aria-label="Category" value={l.category} onChange={(e) => setLines(lines.map((x, j) => j === i ? { ...x, category: e.target.value as Line["category"] } : x))} className="col-span-2 min-h-11 rounded-lg px-2 ring-1 ring-slate-300">
-                <option value="material">Material</option><option value="labor">Labor</option><option value="other">Other</option>
+                <option value="material">Material</option><option value="labor">Labour</option><option value="other">Other</option>
               </select>
               <button type="button" onClick={() => setLines(lines.filter((_, j) => j !== i))} disabled={lines.length === 1} className="col-span-1 min-h-11 rounded-lg text-red-700 ring-1 ring-red-200 disabled:opacity-40" aria-label="Remove line">×</button>
             </div>
@@ -137,14 +138,14 @@ export function ChangeOrderBuilder({ jobId, orgId, decking, photos }: {
       </div>
 
       <div className="flex items-center justify-between rounded-xl bg-slate-900 px-4 py-3 text-white">
-        <span className="font-semibold">Change order total</span><span className="text-2xl font-black tabular-nums" data-testid="co-total">{usd(total)}</span>
+        <span className="font-semibold">Variation total</span><span className="text-2xl font-black tabular-nums" data-testid="co-total">{aud(total)}</span>
       </div>
       {err && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{err}</p>}
       <div className="grid grid-cols-2 gap-2">
         <button type="button" disabled={Boolean(busy)} onClick={() => save("none")} className="min-h-14 rounded-xl text-base font-bold ring-1 ring-slate-300">Save draft</button>
         <button type="button" disabled={Boolean(busy)} onClick={() => save("both")} className="min-h-14 rounded-xl bg-brand-500 text-base font-black text-white">{busy ?? "Send for approval"}</button>
       </div>
-      <p className="text-xs text-slate-500">Sending texts and emails the homeowner a link to review photos and sign. Or save a draft and have them sign on your phone.</p>
+      <p className="text-xs text-slate-500">Sending texts and emails the homeowner a link to review the photos and sign the variation. Or save a draft and have them sign on your phone.</p>
     </div>
   );
 }

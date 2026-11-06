@@ -40,7 +40,7 @@ export default async function Page() {
       <Card title="How commissions are calculated">
         <ul className="list-disc space-y-1.5 pl-5 text-sm text-slate-700">
           <li><b>Contract value</b> = the accepted estimate&apos;s pre-tax price + approved change orders + approved insurance supplements. Pending (submitted) supplements are shown but not paid on.</li>
-          <li><b>Gross profit</b> = contract value − every cost line on the job (materials net of return credits, crew pay, dumpster, permit, dealer fees…). Until any cost is posted, the estimate&apos;s budgeted cost is used.</li>
+          <li><b>Gross profit</b> = contract value − every cost line on the job (materials net of return credits, crew pay, skip bins, council fees, finance fees…). Until any cost is posted, the estimate&apos;s budgeted cost is used.</li>
           <li><b>% of contract</b>: rate × contract value, earned when the job is marked completed.</li>
           <li><b>% of gross profit</b>: rate × gross profit, earned at completion.</li>
           <li><b>10/50/50 split</b>: total commission = rate × gross profit, paid in three parts — <b>10%</b> of it as an advance when the contract is signed, <b>50% of the remaining 90%</b> when the job is completed, and the last <b>50%</b> when the customer has paid in full.</li>

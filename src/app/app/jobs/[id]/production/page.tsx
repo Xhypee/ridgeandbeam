@@ -7,8 +7,10 @@ import { Badge, Button, Card, Field, Input, LinkButton, Select, Textarea, cx } f
 import { requireOrg } from "@/lib/dal";
 import { date, isoDate, label, money, siteUrl } from "@/lib/format";
 import { SecurityOfPaymentPanel } from "@/components/security-of-payment-panel";
+import { AU_STATE_NAME, asAuState } from "@/lib/au";
 import {
-  crewPay, daysUntil, DUMPSTER_STATUSES, HOA_STATUSES, jobReadiness, MATERIALS_STATUSES, PERMIT_STATUSES, type ReadinessJob,
+  crewPay, type CrewPaySheet, daysUntil, DUMPSTER_STATUSES, HOA_STATUSES, jobReadiness, MATERIALS_STATUSES, PERMIT_STATUSES, READINESS_LABEL,
+  READINESS_STATUS_LABEL, type ReadinessJob,
 } from "@/lib/production";
 import { acceptedEstimate, readinessContexts } from "@/lib/production-data";
 import { orderTotal } from "@/lib/production-orders";
@@ -19,11 +21,11 @@ import { postCrewPay, saveBidDue, saveDelivery, saveReadinessDetails, setReadine
 
 export const metadata: Metadata = { title: "Production" };
 
-type CrewRow = { id: string; name: string; color: string; phone: string | null; language: string; public_token: string; rate_per_square: number; steep_adder: number; high_steep_adder: number; layer_adder: number; low_slope_rate: number };
+type CrewRow = CrewPaySheet & { id: string; name: string; color: string; phone: string | null; public_token: string };
 
 const ORDER_TONE: Record<string, "slate" | "amber" | "blue" | "green" | "red"> = { draft: "slate", sent: "amber", confirmed: "blue", delivered: "green", cancelled: "red" };
 
-function StatusButtons({ jobId, field, value, options, disabled }: { jobId: string; field: string; value: string; options: readonly string[]; disabled: boolean }) {
+function StatusButtons({ jobId, field, value, options, labels, disabled }: { jobId: string; field: string; value: string; options: readonly string[]; labels?: Record<string, string>; disabled: boolean }) {
   return (
     <form action={setReadiness} className="flex flex-wrap gap-1.5">
       <input type="hidden" name="job_id" value={jobId} />
@@ -40,7 +42,7 @@ function StatusButtons({ jobId, field, value, options, disabled }: { jobId: stri
             o === value ? "bg-slate-900 text-white ring-slate-900" : "bg-white text-slate-700 ring-slate-300 hover:ring-brand-500",
           )}
         >
-          {label(o)}
+          {labels?.[o] ?? label(o)}
         </button>
       ))}
     </form>
@@ -86,6 +88,7 @@ export default async function ProductionPage({ params }: PageProps<"/app/jobs/[i
   const crew = job.crews;
   const pay = crew && est ? crewPay(est.measurements, crew) : null;
   const lienState = job.state ?? job.customers?.state ?? org.state;
+  const jobState = asAuState(job.state ?? job.customers?.state);
   const bidDays = daysUntil(job.bid_due_on, today);
 
   return (
@@ -108,30 +111,33 @@ export default async function ProductionPage({ params }: PageProps<"/app/jobs/[i
         <div className="space-y-6 lg:col-span-2">
           <Card title="Readiness checklist">
             <ul className="divide-y divide-slate-100">
-              <Row ok={byKey.permit.ok} title="Permit" detail={byKey.permit.detail + (job.permit_number ? ` · #${job.permit_number}` : "")}>
-                <StatusButtons jobId={id} field="permit_status" value={job.permit_status} options={PERMIT_STATUSES} disabled={readOnly} />
+              <Row ok={byKey.permit.ok} title={READINESS_LABEL.permit} detail={byKey.permit.detail + (job.permit_number ? ` · #${job.permit_number}` : "")}>
+                <StatusButtons jobId={id} field="permit_status" value={job.permit_status} options={PERMIT_STATUSES} labels={READINESS_STATUS_LABEL.permit} disabled={readOnly} />
+                <p className="mt-1.5 text-xs text-slate-500" data-testid="approval-state-slot">
+                  {jobState ? `Whether ${AU_STATE_NAME[jobState]} needs a council or building approval for this work appears with the state rules.` : "Set the job's state to see whether this work needs a council or building approval."}
+                </p>
               </Row>
-              <Row ok={byKey.hoa.ok} title="HOA approval" detail={byKey.hoa.detail}>
-                <StatusButtons jobId={id} field="hoa_status" value={job.hoa_status} options={HOA_STATUSES} disabled={readOnly} />
+              <Row ok={byKey.hoa.ok} title={`${READINESS_LABEL.hoa} approval`} detail={byKey.hoa.detail}>
+                <StatusButtons jobId={id} field="hoa_status" value={job.hoa_status} options={HOA_STATUSES} labels={READINESS_STATUS_LABEL.hoa} disabled={readOnly} />
               </Row>
-              <Row ok={byKey.colors.ok} title="Colors confirmed with homeowner" detail={byKey.colors.detail}>
-                <StatusButtons jobId={id} field="colors_confirmed" value={String(job.colors_confirmed)} options={["true", "false"]} disabled={readOnly} />
+              <Row ok={byKey.colors.ok} title="Colour & profile confirmed with the homeowner" detail={byKey.colors.detail}>
+                <StatusButtons jobId={id} field="colors_confirmed" value={String(job.colors_confirmed)} options={["true", "false"]} labels={{ true: "Confirmed", false: "Not yet" }} disabled={readOnly} />
               </Row>
-              <Row ok={byKey.materials.ok} title="Materials" detail={byKey.materials.detail}>
-                <StatusButtons jobId={id} field="materials_status" value={job.materials_status} options={MATERIALS_STATUSES} disabled={readOnly} />
+              <Row ok={byKey.materials.ok} title={READINESS_LABEL.materials} detail={byKey.materials.detail}>
+                <StatusButtons jobId={id} field="materials_status" value={job.materials_status} options={MATERIALS_STATUSES} labels={READINESS_STATUS_LABEL.materials} disabled={readOnly} />
               </Row>
-              <Row ok={byKey.dumpster.ok} title="Dumpster" detail={byKey.dumpster.detail}>
-                <StatusButtons jobId={id} field="dumpster_status" value={job.dumpster_status} options={DUMPSTER_STATUSES} disabled={readOnly} />
+              <Row ok={byKey.dumpster.ok} title={READINESS_LABEL.dumpster} detail={byKey.dumpster.detail}>
+                <StatusButtons jobId={id} field="dumpster_status" value={job.dumpster_status} options={DUMPSTER_STATUSES} labels={READINESS_STATUS_LABEL.dumpster} disabled={readOnly} />
               </Row>
-              <Row ok={byKey.deposit.ok} title="Deposit" detail={byKey.deposit.detail}>
+              <Row ok={byKey.deposit.ok} title={READINESS_LABEL.deposit} detail={byKey.deposit.detail}>
                 {canSeeMoney && <p className="text-sm text-slate-500">Computed from invoices and payments. <Link className="text-brand-600 underline" href={`/app/jobs/${id}/billing`}>Billing</Link></p>}
               </Row>
             </ul>
             {!readOnly && (
-              <ActionForm action={saveReadinessDetails} className="mt-2 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-3">
+              <ActionForm action={saveReadinessDetails} className="mt-2 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_auto]">
                 <input type="hidden" name="job_id" value={id} />
-                <Field label="Permit number"><Input name="permit_number" defaultValue={job.permit_number ?? ""} /></Field>
-                <Field label="Shingle color"><Input name="shingle_color" defaultValue={job.shingle_color ?? ""} placeholder="e.g. GAF Timberline HDZ Charcoal" /></Field>
+                <Field label="Approval / permit number"><Input name="permit_number" defaultValue={job.permit_number ?? ""} /></Field>
+                <Field label="Colour / profile"><Input name="shingle_color" defaultValue={job.shingle_color ?? ""} placeholder="e.g. COLORBOND Monument, Trimdek" /></Field>
                 <div className="flex items-end"><SubmitButton variant="secondary">Save details</SubmitButton></div>
               </ActionForm>
             )}
@@ -160,7 +166,7 @@ export default async function ProductionPage({ params }: PageProps<"/app/jobs/[i
                   ) : (
                     <Button type="button" disabled title={`Blocked: ${r.blockers.map((b) => b.label).join(", ")}`}>🔒 Lock schedule</Button>
                   )}
-                  {!r.ready && <span className="text-xs text-slate-500">Lock unlocks when all six checks are green.</span>}
+                  {!r.ready && <span className="text-xs text-slate-500">You can lock once all six checks are green.</span>}
                 </div>
               </ActionForm>
             )}
@@ -175,7 +181,7 @@ export default async function ProductionPage({ params }: PageProps<"/app/jobs/[i
           {canSeeMoney && (
             <Card title="Material orders" actions={<Link href="/app/orders" className="text-sm text-brand-600 hover:underline">All orders</Link>}>
               {(orders ?? []).length === 0 ? (
-                <p className="mb-3 text-sm text-slate-500">No orders yet. Build one from the accepted estimate&apos;s takeoff so quantities and colors match what was sold.</p>
+                <p className="mb-3 text-sm text-slate-500">No orders yet. Build one from the accepted estimate&apos;s takeoff so quantities, colours and profiles match what was sold.</p>
               ) : (
                 <ul className="mb-3 divide-y divide-slate-100">
                   {(orders ?? []).map((o) => (
@@ -206,24 +212,25 @@ export default async function ProductionPage({ params }: PageProps<"/app/jobs/[i
           {canSeeMoney && (
             <Card title="Crew pay">
               {!crew ? (
-                <p className="text-sm text-slate-500">Assign a crew to compute sub pay.</p>
+                <p className="text-sm text-slate-500">Assign a crew to work out their pay.</p>
               ) : !est ? (
                 <p className="text-sm text-slate-500">Crew pay is computed from the accepted estimate&apos;s measurements. No accepted estimate yet.</p>
               ) : (
                 <>
-                  <p className="mb-2 text-sm text-slate-500">{crew.name} pay sheet × {pay!.squares} installed squares (sloped area, no waste).</p>
+                  <p className="mb-2 text-sm text-slate-500" data-testid="crew-pay-basis">{crew.name}&apos;s pay sheet × {pay!.area} m² of true roof area (sloped, no waste). Rates are ex GST.</p>
                   {pay!.lines.length === 0 ? (
                     <p className="text-sm text-slate-500">This crew&apos;s pay sheet is empty. <Link className="text-brand-600 underline" href="/app/settings/crews">Set rates</Link>.</p>
                   ) : (
                     <table className="w-full text-sm">
                       <tbody className="divide-y divide-slate-100">
                         {pay!.lines.map((l) => (
-                          <tr key={l.label}><td className="py-1.5">{l.label}</td><td className="py-1.5 text-right text-slate-500">{l.squares} sq × {money(l.rate)}</td><td className="py-1.5 text-right font-medium">{money(l.amount)}</td></tr>
+                          <tr key={l.key}><td className="py-1.5">{l.label}</td><td className="py-1.5 text-right text-slate-500 tabular-nums">{l.qty} {l.unit} × {money(l.rate)}/{l.unit}</td><td className="py-1.5 text-right font-medium tabular-nums">{money(l.amount)}</td></tr>
                         ))}
                         <tr><td className="py-1.5 font-semibold" colSpan={2}>Total</td><td className="py-1.5 text-right font-semibold" data-testid="crew-pay-total">{money(pay!.total)}</td></tr>
                       </tbody>
                     </table>
                   )}
+                  {pay!.notes.map((n) => <p key={n} className="mt-2 text-xs text-slate-500">{n}</p>)}
                   <ActionForm action={postCrewPay} className="mt-3 flex flex-wrap items-center gap-3">
                     <input type="hidden" name="job_id" value={id} />
                     <SubmitButton variant="secondary">{crewCost ? "Update crew pay on job cost" : "Post crew pay to job cost"}</SubmitButton>
@@ -253,9 +260,9 @@ export default async function ProductionPage({ params }: PageProps<"/app/jobs/[i
                     <option value="ground_drop">Ground drop</option>
                   </Select>
                 </Field>
-                <Field label="Delivery notes"><Textarea name="delivery_notes" defaultValue={job.delivery_notes ?? ""} placeholder="Drop on left side of driveway, avoid sprinkler heads…" /></Field>
+                <Field label="Delivery notes"><Textarea name="delivery_notes" defaultValue={job.delivery_notes ?? ""} placeholder="Sheets on the nature strip left of the driveway, crane truck access from the side lane…" /></Field>
                 <Field label="Gate code"><Input name="gate_code" defaultValue={job.gate_code ?? ""} /></Field>
-                <Field label="Site hazards"><Textarea name="site_hazards" defaultValue={job.site_hazards ?? ""} placeholder="Power line over garage, dog in yard, skylights…" /></Field>
+                <Field label="Site hazards" hint="Goes on the crew's work order next to the SWMS reminder."><Textarea name="site_hazards" defaultValue={job.site_hazards ?? ""} placeholder="Power line over the garage, fragile skylights, asbestos eaves, dog in the yard…" /></Field>
                 <SubmitButton variant="secondary">Save delivery details</SubmitButton>
               </ActionForm>
             )}
@@ -266,17 +273,17 @@ export default async function ProductionPage({ params }: PageProps<"/app/jobs/[i
               <LinkButton variant="secondary" href={`/app/jobs/${id}/production/work-order`}>Printable work order</LinkButton>
               {crew && !readOnly && <CopyLink url={`${siteUrl()}/w/${crew.public_token}/${id}`} label="Copy crew link" />}
             </div>
-            {crew && <p className="mt-2 text-xs text-slate-500">Crew portal shows this job in {crew.language === "es" ? "Spanish" : "English"} with materials (no prices), delivery notes and a problem button.</p>}
+            {crew && <p className="mt-2 text-xs text-slate-500">The crew link shows this job in plain English: roof size in m², pitch, materials (no prices), delivery notes, hazards and a problem button.</p>}
           </Card>
 
           <SecurityOfPaymentPanel state={lienState} />
 
-          <Card title="Bid due (commercial)">
+          <Card title="Tender due (commercial)">
             {job.bid_due_on && <p className={cx("mb-2 text-sm font-medium", (bidDays ?? 0) < 0 ? "text-red-700" : (bidDays ?? 0) <= 3 ? "text-amber-700" : "text-slate-700")}>Due {date(job.bid_due_on)} · {(bidDays ?? 0) >= 0 ? `${bidDays} days left` : "past due"}</p>}
             {!readOnly ? (
               <ActionForm action={saveBidDue} className="flex items-end gap-2">
                 <input type="hidden" name="job_id" value={id} />
-                <Field label="Bid due date" className="flex-1"><Input type="date" name="bid_due_on" defaultValue={job.bid_due_on ?? ""} /></Field>
+                <Field label="Tender due date" className="flex-1"><Input type="date" name="bid_due_on" defaultValue={job.bid_due_on ?? ""} /></Field>
                 <SubmitButton variant="secondary">Save</SubmitButton>
               </ActionForm>
             ) : !job.bid_due_on && <p className="text-sm text-slate-500">—</p>}

@@ -1,43 +1,45 @@
-// Crew work-order strings (English / Spanish). Spanish uses common US roofing-crew terms
-// (teja/shingle, techo, tablero/decking, contenedor/dumpster) and the informal imperative.
-export type Lang = "en" | "es";
+// Crew work-order wording: plain Australian English for the crew portal and the printed work order.
+// (The earlier English/Spanish switch was a US assumption and has been removed.)
+import { EXISTING_ROOF_LABEL, JOB_TYPE_LABEL, METAL_PROFILE_INFO, normalizeMeasurements, ROOF_SYSTEM_SHORT, round2, sectionProfile, sectionSystem, summarize, type JobType } from "./roof";
 
-const en = {
+export const CREW_STRINGS = {
   upcoming: "Upcoming jobs",
-  noJobs: "No jobs scheduled for this crew right now.",
-  tentative: "Tentative",
+  noJobs: "No jobs booked for this crew right now.",
+  tentative: "Pencilled in",
   locked: "Confirmed",
   start: "Start",
-  end: "End",
+  end: "Finish",
   address: "Address",
   openMap: "Open in Maps",
   homeowner: "Homeowner",
   call: "Call",
   roof: "Roof",
-  squares: "squares",
-  pitch: "pitch",
-  layers: "layers to tear off",
+  area: "Roof area (sloped)",
+  dates: "Dates",
+  pitch: "Pitch",
+  oldRoof: "Old roof to strip",
+  roofType: "New roof",
   materials: "Materials",
   qty: "Qty",
   item: "Item",
   noMaterials: "No material list yet — ask the office.",
-  color: "Shingle color",
+  color: "Colour / profile",
   delivery: "Delivery",
   roof_load: "Roof load",
   ground_drop: "Ground drop",
   deliveryNotes: "Delivery notes",
   gateCode: "Gate code",
   hazards: "Site hazards",
-  permit: "Permit #",
-  dumpster: "Dumpster",
+  permit: "Approval / permit #",
+  skipBin: "Skip bin",
   photos: "Photos",
   noPhotos: "No photos shared yet.",
   problem: "Problem / missing material",
-  problemHelp: "Tell the office what's wrong. They get it right away.",
+  problemHelp: "Tell the office what's wrong. They get it straight away.",
   kind: "What happened?",
   missing_material: "Missing material",
-  wrong_material: "Wrong material or color",
-  damage_found: "Damage found (decking, etc.)",
+  wrong_material: "Wrong material or colour",
+  damage_found: "Damage found (battens, sarking, etc.)",
   safety: "Safety issue",
   homeowner_issue: "Homeowner issue",
   other: "Other",
@@ -45,9 +47,10 @@ const en = {
   yourName: "Your name",
   photo: "Photo (optional)",
   send: "Send to office",
-  sent: "Sent. The office has been notified.",
+  sent: "Sent. The office has been told.",
   back: "← All jobs",
-  safetyReminder: "Fall protection required. Check for power lines before loading the roof.",
+  safetyTitle: "Safety",
+  safetyReminder: "Work to the SWMS for this job. Edge protection or a harness system before anyone works at height. Check for power lines before loading the roof. Stop and call the office if you find suspected asbestos.",
   workOrder: "Work order",
   officePhone: "Office",
   status_delivered: "Delivered",
@@ -55,97 +58,22 @@ const en = {
   status_not_ordered: "Not ordered",
   orderedFrom: "From",
   deliveryDate: "Delivery date",
+  skip_needed: "Needed — not booked yet",
+  skip_ordered: "Booked",
+  skip_delivered: "On site",
+  skip_removed: "Collected",
+  skip_not_needed: "Not needed",
 };
-export type CrewStrings = typeof en;
+export type CrewStrings = typeof CREW_STRINGS;
 
-const es: CrewStrings = {
-  upcoming: "Próximos trabajos",
-  noJobs: "No hay trabajos programados para esta cuadrilla por ahora.",
-  tentative: "Tentativo",
-  locked: "Confirmado",
-  start: "Inicio",
-  end: "Fin",
-  address: "Dirección",
-  openMap: "Abrir en Mapas",
-  homeowner: "Dueño de la casa",
-  call: "Llamar",
-  roof: "Techo",
-  squares: "cuadros",
-  pitch: "inclinación",
-  layers: "capas para quitar",
-  materials: "Materiales",
-  qty: "Cant.",
-  item: "Material",
-  noMaterials: "Todavía no hay lista de materiales — pregunta a la oficina.",
-  color: "Color de teja",
-  delivery: "Entrega",
-  roof_load: "Carga en el techo",
-  ground_drop: "Descarga en el suelo",
-  deliveryNotes: "Notas de entrega",
-  gateCode: "Código del portón",
-  hazards: "Peligros en el sitio",
-  permit: "Permiso #",
-  dumpster: "Contenedor de basura",
-  photos: "Fotos",
-  noPhotos: "Todavía no hay fotos compartidas.",
-  problem: "Problema / falta material",
-  problemHelp: "Dile a la oficina qué pasa. Les llega de inmediato.",
-  kind: "¿Qué pasó?",
-  missing_material: "Falta material",
-  wrong_material: "Material o color equivocado",
-  damage_found: "Daño encontrado (tablero/madera, etc.)",
-  safety: "Problema de seguridad",
-  homeowner_issue: "Problema con el dueño",
-  other: "Otro",
-  message: "Detalles",
-  yourName: "Tu nombre",
-  photo: "Foto (opcional)",
-  send: "Enviar a la oficina",
-  sent: "Enviado. La oficina ya fue avisada.",
-  back: "← Todos los trabajos",
-  safetyReminder: "Protección contra caídas obligatoria. Revisa los cables eléctricos antes de subir material al techo.",
-  workOrder: "Orden de trabajo",
-  officePhone: "Oficina",
-  status_delivered: "Entregado",
-  status_ordered: "Pedido",
-  status_not_ordered: "No pedido",
-  orderedFrom: "De",
-  deliveryDate: "Fecha de entrega",
+/** Short plain-English unit names for the crew (calc-key units and older free-text units). */
+const UNIT: Record<string, string> = {
+  m2: "m²", "m²": "m²", lm: "lm", ea: "each", job: "job", roll: "roll", box: "box", bag: "bag", pail: "pail", sheet: "sheet", length: "length", pack: "pack", m3: "m³",
 };
+export const unitLabel = (u: string) => UNIT[u.toLowerCase()] ?? u;
 
-export const CREW_STRINGS: Record<Lang, CrewStrings> = { en, es };
-export const crewStrings = (lang: string | null | undefined): CrewStrings => CREW_STRINGS[lang === "es" ? "es" : "en"];
-
-/** Common material descriptions → Spanish, for the work order (falls back to the original text). */
-const MATERIAL_ES: [RegExp, string][] = [
-  [/tear-?off/i, "Quitar techo viejo (por capa)"],
-  [/installation labor/i, "Mano de obra de instalación"],
-  [/very steep|10\/12/i, "Cargo por techo muy inclinado (10/12+)"],
-  [/steep/i, "Cargo por techo inclinado (8/12–9/12)"],
-  [/class 4|impact/i, "Tejas resistentes a impacto (Clase 4)"],
-  [/designer shingles/i, "Tejas de diseño"],
-  [/shingles/i, "Tejas arquitectónicas"],
-  [/underlayment/i, "Membrana sintética (rollo de 10 cuadros)"],
-  [/ice (&|and) water/i, "Membrana de hielo y agua (rollo de 2 cuadros)"],
-  [/starter/i, "Teja de arranque"],
-  [/hip (&|and) ridge|ridge cap/i, "Caballete (hip & ridge)"],
-  [/drip edge/i, "Gotero / drip edge (10 pies)"],
-  [/ridge vent/i, "Ventilación de cumbrera (4 pies)"],
-  [/nails/i, "Clavos de rollo para techo"],
-  [/pipe boot/i, "Bota para tubo (pipe boot)"],
-  [/decking|plywood|osb/i, "Tablero / madera (hoja 4x8)"],
-  [/low-?slope|membrane/i, "Membrana para techo de baja pendiente"],
-  [/dumpster/i, "Contenedor de basura"],
-  [/permit/i, "Permiso"],
-];
-export function materialLabel(desc: string, lang: Lang) {
-  if (lang !== "es") return desc;
-  for (const [re, es] of MATERIAL_ES) if (re.test(desc)) return es;
-  return desc;
-}
-
-const UNIT_ES: Record<string, string> = { bundle: "paquete", roll: "rollo", piece: "pieza", box: "caja", sq: "cuadro", ea: "c/u", sheet: "hoja", lf: "pie lineal" };
-export const unitLabel = (u: string, lang: Lang) => (lang === "es" ? UNIT_ES[u.toLowerCase()] ?? u : u);
+/** Skip bin status for the crew. */
+export const skipBinLabel = (status: string) => (CREW_STRINGS as Record<string, string>)[`skip_${status}`] ?? status.replace(/_/g, " ");
 
 export type WorkOrderMaterial = { description: string; quantity: number; unit: string };
 
@@ -159,4 +87,52 @@ export function workOrderMaterials(
   const est = estimateItems.filter((i) => i.category === "material" && Number(i.quantity) > 0);
   if (est.length) return { source: "estimate", items: est.map(({ description, quantity, unit }) => ({ description, quantity: Number(quantity), unit })) };
   return { source: "none", items: [] };
+}
+
+export type CrewRoofFacts = {
+  hasMeasurements: boolean;
+  jobType: string;
+  /** True (sloped) area, m², no waste. */
+  area: number;
+  /** "22.5°" or "15–30°". */
+  pitch: string;
+  /** What comes off ("Tiles", "Metal sheets"…), or null when nothing is stripped. */
+  oldRoof: string | null;
+  /** What goes on ("Metal — Trimdek", "Concrete tile"). */
+  newRoof: string;
+  asbestos: boolean;
+  /** Site checklist: sarking, safety mesh, edge protection, skip bin, gutters. */
+  includes: string[];
+};
+
+const STRIPS: JobType[] = ["reroof", "tile_to_metal", "asbestos"];
+
+/** The roof in crew terms, from the accepted estimate's measurements (metric). */
+export function crewRoofFacts(raw: unknown): CrewRoofFacts {
+  const m = normalizeMeasurements(raw);
+  const s = summarize(m);
+  const pitches = m.sections.filter((x) => x.area > 0).map((x) => round2(Number(x.pitch) || 0));
+  const lo = pitches.length ? Math.min(...pitches) : 0;
+  const hi = pitches.length ? Math.max(...pitches) : 0;
+  const systems = [...new Set(m.sections.filter((x) => x.area > 0).map((x) => {
+    const sys = sectionSystem(x);
+    return sys === "metal" ? `Metal — ${METAL_PROFILE_INFO[sectionProfile(x)].label}` : ROOF_SYSTEM_SHORT[sys];
+  }))];
+  const includes = [
+    m.includeSarking && "Sarking",
+    m.includeSafetyMesh && systems.some((x) => x.startsWith("Metal")) && "Safety mesh",
+    m.includeEdgeProtection && "Edge protection",
+    m.includeSkip && "Skip bin",
+    (m.includeGutters || m.jobType === "gutters") && "New gutters & downpipes",
+  ].filter((x): x is string => Boolean(x));
+  return {
+    hasMeasurements: s.trueArea > 0,
+    jobType: JOB_TYPE_LABEL[m.jobType],
+    area: s.trueArea,
+    pitch: !pitches.length ? "—" : lo === hi ? `${hi}°` : `${lo}–${hi}°`,
+    oldRoof: STRIPS.includes(m.jobType) && m.existingRoof !== "none" ? EXISTING_ROOF_LABEL[m.existingRoof] : null,
+    newRoof: systems.join(", ") || "—",
+    asbestos: m.asbestosSuspected || m.jobType === "asbestos",
+    includes,
+  };
 }
