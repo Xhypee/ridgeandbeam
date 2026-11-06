@@ -3,15 +3,16 @@ import { notFound } from "next/navigation";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { CopyLink } from "@/components/copy-link";
 import { Badge, Card, Field, Input, LinkButton, PageHeader, Select } from "@/components/ui";
-import { requireOrg } from "@/lib/dal";
+import { requireMoneyAccess } from "@/lib/dal";
 import { date, isoDate, label, money, siteUrl, STATUS_TONE } from "@/lib/format";
 import { PAYMENT_METHODS, type CatalogItem, type Item } from "@/lib/types";
-import { addPayment, deleteInvoice, deletePayment, setInvoiceStatus } from "../actions";
+import { BILL_TO, BILL_TO_LABEL, INVOICE_KIND_LABEL, INVOICE_KIND_TONE, INVOICE_KINDS, TRIGGER_LABEL, type BillTo, type InvoiceKind } from "@/lib/claims-billing";
+import { addPayment, deleteInvoice, deletePayment, setInvoiceStatus, updateInvoiceBilling } from "../actions";
 import { InvoiceEditor } from "./invoice-editor";
 
 export default async function InvoicePage({ params }: PageProps<"/app/invoices/[id]">) {
   const { id } = await params;
-  const { supabase } = await requireOrg();
+  const { supabase } = await requireMoneyAccess();
   const [{ data: v }, { data: catalog }, { data: tot }] = await Promise.all([
     supabase.from("invoices").select("*, invoice_items(*), payments(*), jobs(id, title, customers(name, email))").eq("id", id).maybeSingle(),
     supabase.from("catalog_items").select("*").order("category").order("name"),
@@ -24,6 +25,8 @@ export default async function InvoicePage({ params }: PageProps<"/app/invoices/[
   const job = v.jobs as { id: string; title: string; customers: { name: string; email: string | null } };
   const publicUrl = `${siteUrl()}/i/${v.public_token}`;
   const balance = Number(tot?.balance ?? 0);
+  const kind = (v.kind ?? "standard") as InvoiceKind;
+  const billTo = (v.bill_to ?? "homeowner") as BillTo;
   const overdue = v.due_date && v.due_date < isoDate(new Date()) && ["sent", "partial"].includes(status);
 
   const statusBtn = (s: string, text: string, variant: "primary" | "secondary" | "danger" | "ghost" = "secondary", confirm?: string) => (
@@ -43,7 +46,13 @@ export default async function InvoicePage({ params }: PageProps<"/app/invoices/[
             {overdue && <Badge tone="red">Overdue</Badge>}
           </span>
         }
-        subtitle={<><Link href={`/app/jobs/${job.id}`} className="font-medium text-slate-700 hover:text-brand-600">{job.title}</Link> · {job.customers.name}</>}
+        subtitle={
+          <span className="flex flex-wrap items-center gap-2">
+            <Link href={`/app/jobs/${job.id}`} className="font-medium text-slate-700 hover:text-brand-600">{job.title}</Link> · {job.customers.name}
+            <Badge tone={INVOICE_KIND_TONE[kind]}>{v.milestone_label || INVOICE_KIND_LABEL[kind]}</Badge>
+            <span>Bill to {BILL_TO_LABEL[billTo]}</span>
+          </span>
+        }
         actions={
           <>
             {status === "draft" && statusBtn("sent", "Mark as sent", "primary")}
@@ -101,6 +110,22 @@ export default async function InvoicePage({ params }: PageProps<"/app/invoices/[
                 <SubmitButton variant="secondary" className="w-full">Record payment</SubmitButton>
               </ActionForm>
             )}
+          </Card>
+          <Card title="Billing details">
+            <ActionForm action={updateInvoiceBilling} className="space-y-3">
+              <input type="hidden" name="id" value={v.id} />
+              <Field label="Bill to">
+                <Select name="bill_to" defaultValue={billTo}>{BILL_TO.map((b) => <option key={b} value={b}>{BILL_TO_LABEL[b]}</option>)}</Select>
+              </Field>
+              <div className="grid grid-cols-2 gap-2">
+                <Field label="Kind">
+                  <Select name="kind" defaultValue={kind}>{INVOICE_KINDS.map((k) => <option key={k} value={k}>{INVOICE_KIND_LABEL[k]}</option>)}</Select>
+                </Field>
+                <Field label="Milestone"><Input name="milestone_label" defaultValue={v.milestone_label ?? ""} placeholder="e.g. Deposit" /></Field>
+              </div>
+              {v.milestone_trigger && <p className="text-xs text-slate-500">{TRIGGER_LABEL[v.milestone_trigger] ?? v.milestone_trigger}</p>}
+              <SubmitButton variant="secondary" className="w-full">Save billing details</SubmitButton>
+            </ActionForm>
           </Card>
           <Card title="More">
             <div className="flex flex-wrap gap-2">

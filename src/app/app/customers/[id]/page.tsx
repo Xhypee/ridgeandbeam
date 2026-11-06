@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { Badge, Card, LinkButton, PageHeader } from "@/components/ui";
 import { requireOrg } from "@/lib/dal";
-import { date, STAGE_LABEL, STAGE_TONE } from "@/lib/format";
+import { date, daysSince, money, STAGE_LABEL, STAGE_TONE } from "@/lib/format";
+import { agingTone, CLAIM_STAGE_LABEL, type ClaimStage } from "@/lib/claims";
 import type { Customer, Job } from "@/lib/types";
 import { deleteCustomer, updateCustomer } from "../actions";
 import { CustomerFields } from "../customer-fields";
@@ -13,10 +14,16 @@ export default async function CustomerPage({ params }: PageProps<"/app/customers
   const { supabase, isAdmin } = await requireOrg();
   const [{ data: c }, { data: jobs }] = await Promise.all([
     supabase.from("customers").select("*").eq("id", id).maybeSingle(),
-    supabase.from("jobs").select("*").eq("customer_id", id).order("created_at", { ascending: false }),
+    supabase.from("jobs").select("*, claims(id, carrier, claim_number, stage, stage_changed_at, claim_balances(outstanding))").eq("customer_id", id).order("created_at", { ascending: false }),
   ]);
   if (!c) notFound();
   const customer = c as Customer;
+  type ClaimRow = { id: string; carrier: string | null; claim_number: string | null; stage: ClaimStage; stage_changed_at: string; claim_balances: { outstanding: number } | { outstanding: number }[] | null };
+  const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
+  const claims = ((jobs ?? []) as (Job & { claims: ClaimRow | ClaimRow[] | null })[])
+    .map((j) => ({ job: j, claim: one(j.claims) }))
+    .filter((x): x is { job: Job & { claims: ClaimRow | ClaimRow[] | null }; claim: ClaimRow } => x.claim !== null);
+  const legacy = claims.length === 0 && (customer.insurance_company || customer.claim_number);
 
   return (
     <>
@@ -49,6 +56,32 @@ export default async function CustomerPage({ params }: PageProps<"/app/customers
                   </li>
                 ))}
               </ul>
+            )}
+          </Card>
+          <Card title="Insurance claims">
+            {claims.length === 0 ? (
+              <p className="text-sm text-slate-500">No insurance claims. Start one from a job&apos;s Claim tab.</p>
+            ) : (
+              <ul className="divide-y divide-slate-100" data-testid="customer-claims">
+                {claims.map(({ job, claim }) => {
+                  const days = daysSince(claim.stage_changed_at);
+                  const owed = Number(one(claim.claim_balances)?.outstanding ?? 0);
+                  return (
+                    <li key={claim.id} className="py-2">
+                      <Link href={`/app/jobs/${job.id}/claim`} className="flex items-center justify-between gap-2 hover:text-brand-600">
+                        <span className="truncate text-sm font-medium">{claim.carrier ?? "Carrier not set"}{claim.claim_number ? ` · #${claim.claim_number}` : ""}</span>
+                        <Badge tone={agingTone(days)}>{CLAIM_STAGE_LABEL[claim.stage]}</Badge>
+                      </Link>
+                      <p className="text-xs text-slate-500">{job.title} · {days}d in stage{owed > 0 ? ` · ${money(owed)} owed` : ""}</p>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {legacy && (
+              <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                Older record: {[customer.insurance_company, customer.claim_number && `claim ${customer.claim_number}`, customer.adjuster_name, customer.adjuster_phone].filter(Boolean).join(" · ")}
+              </p>
             )}
           </Card>
           {isAdmin && (

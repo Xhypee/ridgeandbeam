@@ -1,20 +1,21 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Badge, Empty, PageHeader, Table, td, th, cx } from "@/components/ui";
-import { requireOrg } from "@/lib/dal";
+import { requireMoneyAccess } from "@/lib/dal";
 import { date, isoDate, label, money, STATUS_TONE } from "@/lib/format";
+import { BILL_TO_LABEL, INVOICE_KIND_LABEL, INVOICE_KIND_TONE, type BillTo, type InvoiceKind } from "@/lib/claims-billing";
 
 export const metadata: Metadata = { title: "Invoices" };
 
 const FILTERS = ["all", "unpaid", "draft", "paid", "void"] as const;
 
 export default async function InvoicesPage({ searchParams }: PageProps<"/app/invoices">) {
-  const { supabase } = await requireOrg();
+  const { supabase } = await requireMoneyAccess();
   const { status } = await searchParams;
   const f = FILTERS.includes(status as (typeof FILTERS)[number]) ? (status as string) : "all";
   let q = supabase
     .from("invoices")
-    .select("id, number, status, issue_date, due_date, invoice_totals(total, balance), jobs(title, customers(name))")
+    .select("id, number, status, kind, milestone_label, bill_to, issue_date, due_date, invoice_totals(total, balance), jobs(title, customers(name))")
     .order("created_at", { ascending: false })
     .limit(300);
   if (f === "unpaid") q = q.in("status", ["sent", "partial"]);
@@ -23,7 +24,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/app/inv
   if (error) throw new Error(error.message);
   type T = { total: number; balance: number };
   const rows = (data ?? []) as unknown as {
-    id: string; number: number; status: string; issue_date: string; due_date: string | null;
+    id: string; number: number; status: string; kind: InvoiceKind; milestone_label: string | null; bill_to: BillTo; issue_date: string; due_date: string | null;
     invoice_totals: T[] | T | null; jobs: { title: string; customers: { name: string } };
   }[];
   const tot = (r: (typeof rows)[number]) => (Array.isArray(r.invoice_totals) ? r.invoice_totals[0] : r.invoice_totals);
@@ -51,7 +52,11 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/app/inv
               const overdue = r.due_date && r.due_date < today && ["sent", "partial"].includes(r.status);
               return (
                 <tr key={r.id} className="hover:bg-slate-50">
-                  <td className={td}><Link href={`/app/invoices/${r.id}`} className="font-medium text-slate-900 hover:text-brand-600">#{r.number}</Link></td>
+                  <td className={td}>
+                    <Link href={`/app/invoices/${r.id}`} className="font-medium text-slate-900 hover:text-brand-600">#{r.number}</Link>
+                    {r.kind !== "standard" && <div className="mt-0.5"><Badge tone={INVOICE_KIND_TONE[r.kind]}>{r.milestone_label || INVOICE_KIND_LABEL[r.kind]}</Badge></div>}
+                    {r.bill_to !== "homeowner" && <div className="text-xs text-slate-500">Bill to {BILL_TO_LABEL[r.bill_to]}</div>}
+                  </td>
                   <td className={td}><div className="font-medium text-slate-800">{r.jobs.customers.name}</div><div className="text-xs text-slate-500">{r.jobs.title}</div></td>
                   <td className={td}>{date(r.issue_date)}</td>
                   <td className={cx(td, overdue && "font-medium text-red-600")}>{date(r.due_date)}</td>
