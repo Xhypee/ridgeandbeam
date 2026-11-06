@@ -37,6 +37,7 @@ function check(cond, msg) {
   await page.fill('input[name="phone"]', "02 9555 0100");
   await page.selectOption('select[name="state"]', "NSW");
   await page.fill('input[name="abn"]', "51 824 753 556");
+  await shot("01b-onboarding");
   await page.click('button[type="submit"]');
   await page.waitForURL(BASE + "/app");
   check(await page.getByText("Summit Roofing").first().isVisible(), "dashboard shows company");
