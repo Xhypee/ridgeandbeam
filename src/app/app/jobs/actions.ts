@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOrg } from "@/lib/dal";
 import { friendly, oneOf, str } from "@/lib/form";
+import { loadReadiness } from "@/lib/production-server";
 import { JOB_STAGES, JOB_TYPES } from "@/lib/types";
 import type { ActionResult } from "@/components/action-form";
 
@@ -61,20 +62,41 @@ export async function setStage(fd: FormData) {
   revalidatePath("/app", "layout");
 }
 
+/**
+ * Save dates + crew. Jobs are "tentative" until locked; changing the dates or crew of a locked job
+ * unlocks it again. With `lock=1` the job is also locked, but only when readiness is all green
+ * (see jobReadiness in src/lib/production.ts).
+ */
 export async function scheduleJob(_: ActionResult, fd: FormData): Promise<ActionResult> {
-  const { supabase } = await requireOrg();
+  const { supabase, isCrewLead } = await requireOrg();
+  if (isCrewLead) return { error: "Ask the office to change the schedule." };
   const start = str(fd, "scheduled_start");
   const end = str(fd, "scheduled_end") ?? start;
   if (start && end && end < start) return { error: "End date can't be before the start date." };
-  const update: Record<string, unknown> = { scheduled_start: start, scheduled_end: start ? end : null, crew_id: str(fd, "crew_id") };
-  // Scheduling a sold job moves it forward in the pipeline.
+  const crewId = str(fd, "crew_id");
+  const wantLock = fd.get("lock") === "1";
   const id = String(fd.get("id"));
-  const { data: job } = await supabase.from("jobs").select("stage").eq("id", id).single();
-  if (start && job && ["lead", "inspection", "estimate_sent", "sold"].includes(job.stage)) update.stage = "scheduled";
+  const { data: job } = await supabase.from("jobs").select("stage, scheduled_start, scheduled_end, crew_id, schedule_locked").eq("id", id).single();
+  if (!job) return { error: "Job not found." };
+  const update: Record<string, unknown> = { scheduled_start: start, scheduled_end: start ? end : null, crew_id: crewId };
+  // Scheduling a sold job moves it forward in the pipeline.
+  if (start && ["lead", "inspection", "estimate_sent", "sold"].includes(job.stage)) update.stage = "scheduled";
+  const changed = job.scheduled_start !== start || (job.scheduled_end ?? null) !== (start ? end : null) || (job.crew_id ?? null) !== crewId;
+  let note = "";
+  if (!start) update.schedule_locked = false;
+  else if (changed && job.schedule_locked) { update.schedule_locked = false; note = " Dates changed, so the lock was removed."; }
+  if (wantLock) {
+    if (!start || !crewId) return { error: "Pick start date and crew before locking the schedule." };
+    const r = await loadReadiness(supabase, id, { scheduled_start: start });
+    if (!r?.ready) return { error: `Not ready to lock: ${r?.blockers.map((b) => b.label).join(", ") ?? "unknown job"}.` };
+    update.schedule_locked = true;
+    note = "";
+  }
   const { error } = await supabase.from("jobs").update(update).eq("id", id);
   if (error) return { error: friendly(error) };
   revalidatePath("/app", "layout");
-  return { ok: start ? "Scheduled." : "Removed from the schedule." };
+  if (!start) return { ok: "Removed from the schedule." };
+  return { ok: (update.schedule_locked === true ? "Schedule locked." : "Scheduled. Tentative until you lock it on the Production tab.") + note };
 }
 
 export async function addNote(_: ActionResult, fd: FormData): Promise<ActionResult> {

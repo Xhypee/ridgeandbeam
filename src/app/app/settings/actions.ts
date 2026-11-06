@@ -1,5 +1,6 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { requireAdmin, requireOrg } from "@/lib/dal";
 import { friendly, num, oneOf, str } from "@/lib/form";
@@ -54,7 +55,8 @@ export async function deleteCatalogItem(fd: FormData) {
 }
 
 export async function addCrew(_: ActionResult, fd: FormData): Promise<ActionResult> {
-  const { supabase, org } = await requireOrg();
+  const { supabase, org, isCrewLead } = await requireOrg();
+  if (isCrewLead) return { error: "You don't have permission to do that." };
   const name = str(fd, "name");
   if (!name) return { error: "Crew name is required." };
   const color = /^#[0-9a-f]{6}$/i.test(String(fd.get("color"))) ? String(fd.get("color")) : "#2563eb";
@@ -64,7 +66,8 @@ export async function addCrew(_: ActionResult, fd: FormData): Promise<ActionResu
 }
 
 export async function deleteCrew(fd: FormData) {
-  const { supabase } = await requireOrg();
+  const { supabase, isCrewLead } = await requireOrg();
+  if (isCrewLead) throw new Error("You don't have permission to do that.");
   const { error } = await supabase.from("crews").delete().eq("id", String(fd.get("id")));
   if (error) throw new Error(friendly(error));
   revalidatePath("/app", "layout");
@@ -92,4 +95,84 @@ export async function removeMember(fd: FormData) {
   const { error } = await supabase.from("memberships").delete().eq("org_id", org.id).eq("user_id", String(fd.get("user_id")));
   if (error) throw new Error(friendly(error));
   revalidatePath("/app/settings");
+}
+
+// ---------------------------------------------------------------------------
+// Production (builder D): crew pay sheets, member settings, commission plans
+// ---------------------------------------------------------------------------
+const money2 = (fd: FormData, k: string) => Math.max(0, Math.round(num(fd, k) * 100) / 100);
+
+export async function updateCrew(_: ActionResult, fd: FormData): Promise<ActionResult> {
+  const { supabase, canSeeMoney } = await requireOrg();
+  if (!canSeeMoney) return { error: "You don't have permission to do that." };
+  const name = str(fd, "name");
+  if (!name) return { error: "Crew name is required." };
+  const color = /^#[0-9a-f]{6}$/i.test(String(fd.get("color"))) ? String(fd.get("color")) : "#2563eb";
+  const { error } = await supabase.from("crews").update({
+    name, color,
+    phone: str(fd, "phone"),
+    language: oneOf(fd, "language", ["en", "es"] as const, "en"),
+    is_subcontractor: fd.get("is_subcontractor") === "on",
+    rate_per_square: money2(fd, "rate_per_square"),
+    steep_adder: money2(fd, "steep_adder"),
+    high_steep_adder: money2(fd, "high_steep_adder"),
+    layer_adder: money2(fd, "layer_adder"),
+    low_slope_rate: money2(fd, "low_slope_rate"),
+  }).eq("id", String(fd.get("id")));
+  if (error) return { error: friendly(error) };
+  return done("Crew saved.");
+}
+
+/** New portal link for a crew (the old link stops working). */
+export async function resetCrewLink(fd: FormData) {
+  const { supabase } = await requireAdmin();
+  await supabase.from("crews").update({ public_token: randomBytes(18).toString("hex") }).eq("id", String(fd.get("id")));
+  revalidatePath("/app/settings/crews");
+}
+
+const ROLES = ["member", "admin", "sales_rep", "crew_lead"] as const;
+
+export async function updateMember(_: ActionResult, fd: FormData): Promise<ActionResult> {
+  let ctx;
+  try { ctx = await requireAdmin(); } catch (e) { return { error: (e as Error).message }; }
+  const { supabase, org, user } = ctx;
+  const userId = String(fd.get("user_id"));
+  const { data: m } = await supabase.from("memberships").select("role").eq("org_id", org.id).eq("user_id", userId).maybeSingle();
+  if (!m) return { error: "Member not found." };
+  const role = fd.has("role") ? oneOf(fd, "role", ROLES, "member") : null;
+  if (role && m.role !== "owner" && role !== m.role) {
+    if (userId === user.id) return { error: "You can't change your own role." };
+    const { error } = await supabase.from("memberships").update({ role }).eq("org_id", org.id).eq("user_id", userId);
+    if (error) return { error: friendly(error) };
+  }
+  const { error } = await supabase.rpc("set_member_settings", {
+    p_org: org.id, p_user: userId, p_crew: str(fd, "crew_id"), p_plan: str(fd, "commission_plan_id"), p_phone: str(fd, "phone"),
+  });
+  if (error) return { error: friendly(error) };
+  return done("Member updated.");
+}
+
+const PLAN_KINDS = ["pct_contract", "pct_gross_profit", "split_10_50_50"] as const;
+
+export async function saveCommissionPlan(_: ActionResult, fd: FormData): Promise<ActionResult> {
+  let ctx;
+  try { ctx = await requireAdmin(); } catch (e) { return { error: (e as Error).message }; }
+  const id = str(fd, "id");
+  const name = str(fd, "name");
+  if (!name) return { error: "Name the plan." };
+  const rate = num(fd, "rate", NaN);
+  if (!Number.isFinite(rate) || rate < 0 || rate > 100) return { error: "Rate must be between 0 and 100%." };
+  const row = { name, kind: oneOf(fd, "kind", PLAN_KINDS, "pct_contract"), rate, draw_amount: money2(fd, "draw_amount") };
+  const { error } = id
+    ? await ctx.supabase.from("commission_plans").update(row).eq("id", id)
+    : await ctx.supabase.from("commission_plans").insert({ ...row, org_id: ctx.org.id });
+  if (error) return { error: friendly(error) };
+  return done(id ? "Plan saved." : "Plan added.");
+}
+
+export async function deleteCommissionPlan(fd: FormData) {
+  const { supabase } = await requireAdmin();
+  const { error } = await supabase.from("commission_plans").delete().eq("id", String(fd.get("id")));
+  if (error) throw new Error(friendly(error));
+  revalidatePath("/app/settings", "layout");
 }
