@@ -73,14 +73,6 @@ export default async function ScopePage({ params }: PageProps<"/app/jobs/[id]/cl
         <>
           <Card
             title={<>Commonly missed items <span className="font-normal text-slate-500">· {diff!.flags.length} flag{diff!.flags.length === 1 ? "" : "s"}</span></>}
-            actions={
-              addable > 0 ? (
-                <form action={supplementFromFlags}>
-                  <input type="hidden" name="claim_id" value={claim.id} />
-                  <SubmitButton className="min-h-11">Add flagged items to a new supplement</SubmitButton>
-                </form>
-              ) : undefined
-            }
           >
             {diff!.flags.length === 0 ? (
               <p className="text-sm text-green-700">Nothing commonly missed was found. Nice scope.</p>
@@ -93,6 +85,12 @@ export default async function ScopePage({ params }: PageProps<"/app/jobs/[id]/cl
                   </li>
                 ))}
               </ul>
+            )}
+            {addable > 0 && (
+              <form action={supplementFromFlags} className="mt-4">
+                <input type="hidden" name="claim_id" value={claim.id} />
+                <SubmitButton className="min-h-11 w-full whitespace-normal sm:w-auto">Add flagged items to a new supplement</SubmitButton>
+              </form>
             )}
           </Card>
 

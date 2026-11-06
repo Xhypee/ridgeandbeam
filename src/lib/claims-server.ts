@@ -104,3 +104,23 @@ export async function jobFilesWithUrls(supabase: SupabaseClient, jobId: string, 
   return files.map((f) => ({ ...f, url: urls.get(f.storage_path) ?? null }));
 }
 export type JobFileWithUrl = Awaited<ReturnType<typeof jobFilesWithUrls>>[number];
+
+// PostgREST can't embed the totals views from their base tables in this setup, so they are read separately.
+export type InvoiceTotal = { total: number; paid: number; balance: number };
+export async function invoiceTotalsFor(supabase: SupabaseClient, invoiceIds: string[]): Promise<Map<string, InvoiceTotal>> {
+  const out = new Map<string, InvoiceTotal>();
+  if (!invoiceIds.length) return out;
+  const { data } = await supabase.from("invoice_totals").select("invoice_id, total, paid, balance").in("invoice_id", invoiceIds);
+  for (const r of data ?? []) out.set(r.invoice_id, { total: Number(r.total), paid: Number(r.paid), balance: Number(r.balance) });
+  return out;
+}
+
+export type ClaimBalance = { expected: number; received: number; outstanding: number; awaiting_endorsement: number };
+export async function claimBalancesFor(supabase: SupabaseClient, claimIds: string[]): Promise<Map<string, ClaimBalance>> {
+  const out = new Map<string, ClaimBalance>();
+  if (!claimIds.length) return out;
+  const { data } = await supabase.from("claim_balances").select("claim_id, expected, received, outstanding, awaiting_endorsement").in("claim_id", claimIds);
+  for (const r of data ?? [])
+    out.set(r.claim_id, { expected: Number(r.expected), received: Number(r.received), outstanding: Number(r.outstanding), awaiting_endorsement: Number(r.awaiting_endorsement) });
+  return out;
+}

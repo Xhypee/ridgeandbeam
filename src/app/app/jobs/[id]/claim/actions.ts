@@ -37,6 +37,7 @@ function refresh(jobId?: string | null) {
   revalidatePath("/app/customers", "layout");
 }
 
+const usd = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 const money = (fd: FormData, k: string) => Math.max(0, Math.round(num(fd, k) * 100) / 100);
 
 function claimFields(fd: FormData) {
@@ -199,6 +200,10 @@ export async function recordCheck(_: ActionResult, fd: FormData): Promise<Action
     const { data: inv } = await supabase.from("invoices").select("id, status, job_id").eq("id", invoiceId).maybeSingle();
     if (!inv || inv.job_id !== jobId) return { error: "Pick an invoice on this job." };
     if (inv.status === "void") return { error: "That invoice is void." };
+    const { data: t } = await supabase.from("invoice_totals").select("balance").eq("invoice_id", inv.id).maybeSingle();
+    const balance = Number(t?.balance ?? 0);
+    if (received > balance + 0.005)
+      return { error: `This check (${usd(received)}) is more than the invoice's balance (${usd(balance)}). Pick an invoice with enough balance, or save the check without applying it.` };
     if (inv.status === "draft") await supabase.from("invoices").update({ status: "sent" }).eq("id", inv.id);
     const { data: pay, error: payErr } = await supabase
       .from("payments")
@@ -338,11 +343,9 @@ export async function setSupplementStatus(_: ActionResult, fd: FormData): Promis
     patch.submitted_on = submitted;
     // Fresh submission (or a re-submission date change) restarts the 5/10/14-day reminders.
     if (sup.status !== "submitted" || submitted !== sup.submitted_on) {
-      let count = 0;
-      let next = followUpDate(submitted, 0);
-      while (next < today) next = followUpDate(submitted, ++count);
-      patch.next_follow_up_on = next;
-      patch.follow_up_count = count;
+      // A past first reminder (late data entry) simply shows as due now.
+      patch.next_follow_up_on = followUpDate(submitted, 0);
+      patch.follow_up_count = 0;
     }
   } else if (status === "approved" || status === "partial" || status === "denied") {
     const approved = status === "denied" ? 0 : money(fd, "approved_amount") || (status === "approved" ? Number(sup.requested_amount) : 0);

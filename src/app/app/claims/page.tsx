@@ -4,6 +4,7 @@ import { Badge, Empty, PageHeader, cx } from "@/components/ui";
 import { requireMoneyAccess } from "@/lib/dal";
 import { date, daysSince, isoDate, money } from "@/lib/format";
 import { notifyUser } from "@/lib/notify";
+import { claimBalancesFor } from "@/lib/claims-server";
 import { agingTone, CLAIM_STAGE_LABEL, CLAIM_STAGES, type ClaimStage } from "@/lib/claims";
 
 export const metadata: Metadata = { title: "Claims" };
@@ -16,7 +17,6 @@ type Row = {
   claim_number: string | null;
   adjuster_meeting_at: string | null;
   jobs: { id: string; title: string; customers: { name: string } | null };
-  claim_balances: { outstanding: number; awaiting_endorsement: number } | { outstanding: number; awaiting_endorsement: number }[] | null;
   supplements: { id: string; round: number; status: string; next_follow_up_on: string | null }[];
 };
 
@@ -28,7 +28,7 @@ export default async function ClaimsPage({ searchParams }: PageProps<"/app/claim
 
   const { data, error } = await supabase
     .from("claims")
-    .select("id, stage, stage_changed_at, carrier, claim_number, adjuster_meeting_at, jobs!inner(id, title, customers(name)), claim_balances(outstanding, awaiting_endorsement), supplements(id, round, status, next_follow_up_on)")
+    .select("id, stage, stage_changed_at, carrier, claim_number, adjuster_meeting_at, jobs!inner(id, title, customers(name)), supplements(id, round, status, next_follow_up_on)")
     .eq("org_id", org.id)
     .order("stage_changed_at", { ascending: true })
     .limit(500);
@@ -66,8 +66,9 @@ export default async function ClaimsPage({ searchParams }: PageProps<"/app/claim
     }
   }
 
+  const balances = await claimBalancesFor(supabase, all.map((c) => c.id));
   const info = all.map((c) => {
-    const bal = Array.isArray(c.claim_balances) ? c.claim_balances[0] : c.claim_balances;
+    const bal = balances.get(c.id);
     const days = daysSince(c.stage_changed_at);
     const followUps = c.supplements.filter((s) => s.status === "submitted" && s.next_follow_up_on).map((s) => s.next_follow_up_on!).sort();
     const nextFollowUp = followUps[0] ?? null;

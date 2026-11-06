@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ActionForm, SubmitButton } from "@/components/action-form";
+import { SubmitButton } from "@/components/action-form";
+import { KeepForm } from "../../_components/keep-form";
 import { Badge, Card, Field, Input, LinkButton, Select, Textarea } from "@/components/ui";
 import { requireMoneyAccess } from "@/lib/dal";
 import { date, isoDate, money } from "@/lib/format";
@@ -72,7 +73,7 @@ export default async function SupplementPage({ params }: PageProps<"/app/jobs/[i
                 </form>
               </div>
             )}
-            <ActionForm action={setSupplementStatus} className="space-y-3">
+            <KeepForm action={setSupplementStatus} className="space-y-3">
               <input type="hidden" name="id" value={s.id} />
               <Field label="Status">
                 <Select name="status" defaultValue={s.status} aria-label="Supplement status">
@@ -88,7 +89,7 @@ export default async function SupplementPage({ params }: PageProps<"/app/jobs/[i
               </Field>
               <Field label="Carrier response"><Textarea name="carrier_response" defaultValue={s.carrier_response ?? ""} rows={2} /></Field>
               <SubmitButton className="min-h-11 w-full">Update status</SubmitButton>
-            </ActionForm>
+            </KeepForm>
             <p className="mt-3 text-xs text-slate-500">When a round is approved, an expected supplement check is added to the insurance ledger automatically.</p>
           </Card>
           {s.status === "draft" && (

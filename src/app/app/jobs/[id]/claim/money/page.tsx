@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ActionForm, SubmitButton } from "@/components/action-form";
+import { SubmitButton } from "@/components/action-form";
+import { KeepForm } from "../_components/keep-form";
 import { Badge, Card, Field, Input, Select, cx } from "@/components/ui";
 import { requireMoneyAccess } from "@/lib/dal";
 import { date, isoDate, label, money } from "@/lib/format";
@@ -19,7 +20,7 @@ import {
   type Endorsement,
 } from "@/lib/claims";
 import { INVOICE_KIND_LABEL, type InvoiceKind } from "@/lib/claims-billing";
-import { getClaimForJob, type ClaimCheck, type ClaimDocument } from "@/lib/claims-server";
+import { getClaimForJob, invoiceTotalsFor, type ClaimCheck, type ClaimDocument } from "@/lib/claims-server";
 import { addCheck, deleteCheck, generateExpectedChecks, recordCheck, setEndorsement, updateDocument } from "../actions";
 
 export const metadata: Metadata = { title: "Claim money" };
@@ -35,14 +36,15 @@ export default async function ClaimMoneyPage({ params }: PageProps<"/app/jobs/[i
   const [{ data: checkRows }, { data: docRows }, { data: invRows }, { data: fileRows }] = await Promise.all([
     supabase.from("claim_checks").select("*").eq("claim_id", claim.id).order("created_at"),
     supabase.from("claim_documents").select("*").eq("claim_id", claim.id),
-    supabase.from("invoices").select("id, number, kind, status, milestone_label, bill_to, invoice_totals(balance)").eq("job_id", id).neq("status", "void").order("number"),
+    supabase.from("invoices").select("id, number, kind, status, milestone_label, bill_to").eq("job_id", id).neq("status", "void").order("number"),
     supabase.from("job_files").select("id, kind, caption, category, created_at").eq("job_id", id).order("created_at", { ascending: false }).limit(200),
   ]);
   const checks = (checkRows ?? []) as ClaimCheck[];
   const docs = ((docRows ?? []) as ClaimDocument[]).sort((a, b) => DOC_ORDER.indexOf(a.doc_type) - DOC_ORDER.indexOf(b.doc_type));
-  type Inv = { id: string; number: number; kind: InvoiceKind; status: string; milestone_label: string | null; bill_to: string; invoice_totals: { balance: number } | { balance: number }[] | null };
+  type Inv = { id: string; number: number; kind: InvoiceKind; status: string; milestone_label: string | null; bill_to: string };
   const invoices = (invRows ?? []) as unknown as Inv[];
-  const invBalance = (i: Inv) => Number((Array.isArray(i.invoice_totals) ? i.invoice_totals[0] : i.invoice_totals)?.balance ?? 0);
+  const invTotals = await invoiceTotalsFor(supabase, invoices.map((i) => i.id));
+  const invBalance = (i: Inv) => invTotals.get(i.id)?.balance ?? 0;
   const invNumber = new Map<string, number>();
   if (checks.some((c) => c.payment_id)) {
     const { data: pays } = await supabase.from("payments").select("id, invoices(number)").in("id", checks.filter((c) => c.payment_id).map((c) => c.payment_id!));
@@ -62,10 +64,10 @@ export default async function ClaimMoneyPage({ params }: PageProps<"/app/jobs/[i
       <Card
         title="Insurance ledger"
         actions={
-          <ActionForm action={generateExpectedChecks}>
+          <KeepForm action={generateExpectedChecks}>
             <input type="hidden" name="claim_id" value={claim.id} />
             <SubmitButton variant="secondary">Generate expected checks</SubmitButton>
-          </ActionForm>
+          </KeepForm>
         }
       >
         <p className="mb-4 text-sm text-slate-600">
@@ -114,7 +116,7 @@ export default async function ClaimMoneyPage({ params }: PageProps<"/app/jobs/[i
                   </div>
                   <details className="mt-2 group">
                     <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-medium text-brand-700">{Number(c.received_amount) > 0 ? "Edit received check" : "Record check received"}</summary>
-                    <ActionForm action={recordCheck} className="mt-2 grid gap-3 rounded-lg bg-slate-50 p-3 sm:grid-cols-2">
+                    <KeepForm action={recordCheck} className="mt-2 grid gap-3 rounded-lg bg-slate-50 p-3 sm:grid-cols-2">
                       <input type="hidden" name="id" value={c.id} />
                       <Field label="Amount received"><Input name="received_amount" type="number" step="0.01" min="0" inputMode="decimal" defaultValue={Number(c.received_amount) || Number(c.expected_amount) || ""} /></Field>
                       <Field label="Date received"><Input name="received_on" type="date" defaultValue={c.received_on ?? isoDate(new Date())} /></Field>
@@ -140,7 +142,7 @@ export default async function ClaimMoneyPage({ params }: PageProps<"/app/jobs/[i
                       <div className="flex flex-wrap gap-2 sm:col-span-2">
                         <SubmitButton className="min-h-11">Save check</SubmitButton>
                       </div>
-                    </ActionForm>
+                    </KeepForm>
                     {!c.payment_id && (
                       <form action={deleteCheck} className="mt-2">
                         <input type="hidden" name="id" value={c.id} />
@@ -155,14 +157,14 @@ export default async function ClaimMoneyPage({ params }: PageProps<"/app/jobs/[i
         )}
         <details className="mt-4">
           <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-medium text-brand-700">+ Add another expected check</summary>
-          <ActionForm action={addCheck} className="mt-2 grid gap-3 rounded-lg bg-slate-50 p-3 sm:grid-cols-2">
+          <KeepForm action={addCheck} className="mt-2 grid gap-3 rounded-lg bg-slate-50 p-3 sm:grid-cols-2">
             <input type="hidden" name="claim_id" value={claim.id} />
             <Field label="Kind"><Select name="kind" defaultValue="other">{CHECK_KINDS.map((k) => <option key={k} value={k}>{CHECK_KIND_LABEL[k]}</option>)}</Select></Field>
             <Field label="From"><Select name="payer" defaultValue="carrier">{PAYERS.map((p) => <option key={p} value={p}>{PAYER_LABEL[p]}</option>)}</Select></Field>
             <Field label="Label"><Input name="label" placeholder="e.g. Gutters (separate check)" /></Field>
             <Field label="Expected amount"><Input name="expected_amount" type="number" step="0.01" min="0.01" inputMode="decimal" required /></Field>
             <div className="sm:col-span-2"><SubmitButton variant="secondary" className="min-h-11">Add check</SubmitButton></div>
-          </ActionForm>
+          </KeepForm>
         </details>
       </Card>
 
@@ -174,7 +176,7 @@ export default async function ClaimMoneyPage({ params }: PageProps<"/app/jobs/[i
         <ul className="divide-y divide-slate-100 rounded-lg ring-1 ring-slate-200">
           {docs.map((d) => (
             <li key={d.id} className="p-3" data-doc={d.doc_type}>
-              <ActionForm action={updateDocument} className="grid items-end gap-2 sm:grid-cols-[minmax(0,1.3fr)_8rem_minmax(0,1.3fr)_9rem_auto]">
+              <KeepForm action={updateDocument} className="grid items-end gap-2 sm:grid-cols-[minmax(0,1.3fr)_8rem_minmax(0,1.3fr)_9rem_auto]">
                 <input type="hidden" name="id" value={d.id} />
                 <input type="hidden" name="notes" value={d.notes ?? ""} />
                 <div className="min-w-0 self-center">
@@ -192,7 +194,7 @@ export default async function ClaimMoneyPage({ params }: PageProps<"/app/jobs/[i
                 </Field>
                 <Field label="Sent on"><Input name="sent_on" type="date" defaultValue={d.sent_on ?? ""} /></Field>
                 <SubmitButton variant="secondary" className="min-h-11">Save</SubmitButton>
-              </ActionForm>
+              </KeepForm>
             </li>
           ))}
         </ul>

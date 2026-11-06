@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Badge, Empty, PageHeader, Table, td, th, cx } from "@/components/ui";
 import { requireMoneyAccess } from "@/lib/dal";
+import { invoiceTotalsFor } from "@/lib/claims-server";
 import { date, isoDate, label, money, STATUS_TONE } from "@/lib/format";
 import { BILL_TO_LABEL, INVOICE_KIND_LABEL, INVOICE_KIND_TONE, type BillTo, type InvoiceKind } from "@/lib/claims-billing";
 
@@ -15,7 +16,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/app/inv
   const f = FILTERS.includes(status as (typeof FILTERS)[number]) ? (status as string) : "all";
   let q = supabase
     .from("invoices")
-    .select("id, number, status, kind, milestone_label, bill_to, issue_date, due_date, invoice_totals(total, balance), jobs(title, customers(name))")
+    .select("id, number, status, kind, milestone_label, bill_to, issue_date, due_date, jobs(title, customers(name))")
     .order("created_at", { ascending: false })
     .limit(300);
   if (f === "unpaid") q = q.in("status", ["sent", "partial"]);
@@ -25,9 +26,10 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/app/inv
   type T = { total: number; balance: number };
   const rows = (data ?? []) as unknown as {
     id: string; number: number; status: string; kind: InvoiceKind; milestone_label: string | null; bill_to: BillTo; issue_date: string; due_date: string | null;
-    invoice_totals: T[] | T | null; jobs: { title: string; customers: { name: string } };
+    jobs: { title: string; customers: { name: string } };
   }[];
-  const tot = (r: (typeof rows)[number]) => (Array.isArray(r.invoice_totals) ? r.invoice_totals[0] : r.invoice_totals);
+  const totals = await invoiceTotalsFor(supabase, rows.map((r) => r.id));
+  const tot = (r: (typeof rows)[number]): T | undefined => totals.get(r.id);
   const today = isoDate(new Date());
   const outstanding = rows.filter((r) => ["sent", "partial"].includes(r.status)).reduce((s, r) => s + Number(tot(r)?.balance ?? 0), 0);
 

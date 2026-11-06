@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { ActionForm, SubmitButton } from "@/components/action-form";
+import { SubmitButton } from "@/components/action-form";
+import { KeepForm } from "./_components/keep-form";
 import { Card, Field, Input } from "@/components/ui";
 import { requireOrg } from "@/lib/dal";
 import { getClaimForJob } from "@/lib/claims-server";
@@ -28,7 +29,7 @@ export default async function ClaimLayout({ children, params }: LayoutProps<"/ap
             <p className="mb-4 text-sm text-slate-600">
               Start a claim to track the carrier, adjuster, the checks you&apos;re owed and any supplements. You can fill in the rest later.
             </p>
-            <ActionForm action={createClaim} className="space-y-4">
+            <KeepForm action={createClaim} className="space-y-4">
               <input type="hidden" name="job_id" value={job.id} />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Insurance company"><Input name="carrier" placeholder="State Farm" /></Field>
@@ -41,7 +42,7 @@ export default async function ClaimLayout({ children, params }: LayoutProps<"/ap
               <div className="flex flex-wrap gap-2">
                 <SubmitButton className="min-h-11">Start insurance claim</SubmitButton>
               </div>
-            </ActionForm>
+            </KeepForm>
             {job.is_insurance && (
               <form action={markRetail} className="mt-4 border-t border-slate-100 pt-4">
                 <input type="hidden" name="job_id" value={job.id} />

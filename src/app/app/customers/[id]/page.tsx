@@ -4,6 +4,7 @@ import { ActionForm, SubmitButton } from "@/components/action-form";
 import { Badge, Card, LinkButton, PageHeader } from "@/components/ui";
 import { requireOrg } from "@/lib/dal";
 import { date, daysSince, money, STAGE_LABEL, STAGE_TONE } from "@/lib/format";
+import { claimBalancesFor } from "@/lib/claims-server";
 import { agingTone, CLAIM_STAGE_LABEL, type ClaimStage } from "@/lib/claims";
 import type { Customer, Job } from "@/lib/types";
 import { deleteCustomer, updateCustomer } from "../actions";
@@ -14,15 +15,16 @@ export default async function CustomerPage({ params }: PageProps<"/app/customers
   const { supabase, isAdmin } = await requireOrg();
   const [{ data: c }, { data: jobs }] = await Promise.all([
     supabase.from("customers").select("*").eq("id", id).maybeSingle(),
-    supabase.from("jobs").select("*, claims(id, carrier, claim_number, stage, stage_changed_at, claim_balances(outstanding))").eq("customer_id", id).order("created_at", { ascending: false }),
+    supabase.from("jobs").select("*, claims(id, carrier, claim_number, stage, stage_changed_at)").eq("customer_id", id).order("created_at", { ascending: false }),
   ]);
   if (!c) notFound();
   const customer = c as Customer;
-  type ClaimRow = { id: string; carrier: string | null; claim_number: string | null; stage: ClaimStage; stage_changed_at: string; claim_balances: { outstanding: number } | { outstanding: number }[] | null };
+  type ClaimRow = { id: string; carrier: string | null; claim_number: string | null; stage: ClaimStage; stage_changed_at: string };
   const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
   const claims = ((jobs ?? []) as (Job & { claims: ClaimRow | ClaimRow[] | null })[])
     .map((j) => ({ job: j, claim: one(j.claims) }))
     .filter((x): x is { job: Job & { claims: ClaimRow | ClaimRow[] | null }; claim: ClaimRow } => x.claim !== null);
+  const balances = await claimBalancesFor(supabase, claims.map((x) => x.claim.id));
   const legacy = claims.length === 0 && (customer.insurance_company || customer.claim_number);
 
   return (
@@ -65,7 +67,7 @@ export default async function CustomerPage({ params }: PageProps<"/app/customers
               <ul className="divide-y divide-slate-100" data-testid="customer-claims">
                 {claims.map(({ job, claim }) => {
                   const days = daysSince(claim.stage_changed_at);
-                  const owed = Number(one(claim.claim_balances)?.outstanding ?? 0);
+                  const owed = balances.get(claim.id)?.outstanding ?? 0;
                   return (
                     <li key={claim.id} className="py-2">
                       <Link href={`/app/jobs/${job.id}/claim`} className="flex items-center justify-between gap-2 hover:text-brand-600">

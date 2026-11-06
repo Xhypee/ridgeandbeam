@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ActionForm, SubmitButton } from "@/components/action-form";
+import { SubmitButton } from "@/components/action-form";
+import { KeepForm } from "./_components/keep-form";
 import { Badge, Card, Field, Input, Select, Textarea, cx } from "@/components/ui";
 import { requireOrg } from "@/lib/dal";
 import { daysSince } from "@/lib/format";
@@ -66,7 +67,7 @@ export default async function ClaimPage({ params }: PageProps<"/app/jobs/[id]/cl
                   <SubmitButton className="min-h-11">Advance to: {CLAIM_STAGE_LABEL[next]} →</SubmitButton>
                 </form>
               )}
-              <form action={setClaimStage} className="flex gap-1">
+              <form key={claim.stage} action={setClaimStage} className="flex gap-1">
                 <input type="hidden" name="id" value={claim.id} />
                 <Select name="stage" defaultValue={claim.stage} aria-label="Move claim to stage" className="min-h-11 w-44">
                   {CLAIM_STAGES.map((s) => <option key={s} value={s}>{CLAIM_STAGE_LABEL[s]}</option>)}
@@ -83,7 +84,7 @@ export default async function ClaimPage({ params }: PageProps<"/app/jobs/[id]/cl
         <div className="space-y-6 lg:col-span-2">
           {canSeeMoney ? (
             <Card title="Claim details">
-              <ActionForm action={updateClaim} className="space-y-6">
+              <KeepForm action={updateClaim} className="space-y-6">
                 <input type="hidden" name="id" value={claim.id} />
                 <fieldset className="grid gap-4 sm:grid-cols-2">
                   <legend className="mb-2 text-sm font-semibold text-slate-800">Policy</legend>
@@ -121,7 +122,7 @@ export default async function ClaimPage({ params }: PageProps<"/app/jobs/[id]/cl
                 </fieldset>
                 <Field label="Notes"><Textarea name="notes" defaultValue={claim.notes ?? ""} /></Field>
                 <SubmitButton className="min-h-11">Save claim</SubmitButton>
-              </ActionForm>
+              </KeepForm>
             </Card>
           ) : (
             <Card title="Claim">

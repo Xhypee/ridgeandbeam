@@ -59,25 +59,25 @@ export function SupplementEditor({ id, locked, initial, notes: initialNotes, pho
       <ol className="space-y-4">
         {items.map((it, i) => (
           <li key={i} className="rounded-lg p-3 ring-1 ring-slate-200" data-testid="supp-line">
-            <div className="grid gap-3 sm:grid-cols-6">
-              <Field label="Description" className="sm:col-span-4"><Input aria-label="Description" value={it.description} disabled={locked} onChange={(e) => set(i, { description: e.target.value })} /></Field>
-              <Field label="Xactimate code" className="sm:col-span-2"><Input aria-label="Xactimate code" value={it.xact_code ?? ""} disabled={locked} placeholder="RFG DRIP" onChange={(e) => set(i, { xact_code: e.target.value || null })} /></Field>
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+              <Field label="Description" className="col-span-3 sm:col-span-4"><Input aria-label="Description" value={it.description} disabled={locked} onChange={(e) => set(i, { description: e.target.value })} /></Field>
+              <Field label="Xactimate code" className="col-span-3 sm:col-span-2"><Input aria-label="Xactimate code" value={it.xact_code ?? ""} disabled={locked} placeholder="RFG DRIP" onChange={(e) => set(i, { xact_code: e.target.value || null })} /></Field>
               <Field label="Qty"><Input aria-label="Quantity" type="number" step="0.01" inputMode="decimal" value={it.quantity} disabled={locked} onChange={(e) => set(i, { quantity: Number(e.target.value) })} /></Field>
               <Field label="Unit"><Input aria-label="Unit" value={it.unit} disabled={locked} onChange={(e) => set(i, { unit: e.target.value.toUpperCase() })} /></Field>
               <Field label="Unit price"><Input aria-label="Unit price" type="number" step="0.01" min="0" inputMode="decimal" value={it.unit_price} disabled={locked} onChange={(e) => set(i, { unit_price: Number(e.target.value) })} /></Field>
-              <div className="flex items-end justify-between gap-2 sm:col-span-3">
+              <div className="col-span-3 flex items-end justify-between gap-2">
                 <span className="pb-2 text-sm font-medium tabular-nums">{money(Math.round(it.quantity * it.unit_price * 100) / 100)}</span>
                 {!locked && <Button type="button" variant="ghost" onClick={() => { setItems((p) => p.filter((_, j) => j !== i)); touch(); }} aria-label="Remove line">Remove</Button>}
               </div>
-              <Field label="Code citation" className="sm:col-span-3">
+              <Field label="Code citation" className="col-span-3">
                 <Input aria-label="Code citation" list="citations" value={it.code_citation ?? ""} disabled={locked} placeholder="IRC R905.2.8.5" onChange={(e) => set(i, { code_citation: e.target.value || null })} />
               </Field>
-              <Field label="Line status" className="sm:col-span-3">
+              <Field label="Line status" className="col-span-3">
                 <Select aria-label="Line status" value={it.status} disabled={locked} onChange={(e) => set(i, { status: e.target.value as EditorItem["status"] })}>
                   <option value="requested">Requested</option><option value="approved">Approved</option><option value="denied">Denied</option>
                 </Select>
               </Field>
-              <Field label="Why the carrier owes this" className="sm:col-span-6">
+              <Field label="Why the carrier owes this" className="col-span-3 sm:col-span-6">
                 <Textarea aria-label="Justification" value={it.justification ?? ""} disabled={locked} rows={2} onChange={(e) => set(i, { justification: e.target.value || null })} />
               </Field>
             </div>

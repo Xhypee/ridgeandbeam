@@ -7,7 +7,7 @@ import { date, label, money, STATUS_TONE } from "@/lib/format";
 import { CHECK_KIND_LABEL, ENDORSEMENT_LABEL, PAYER_LABEL } from "@/lib/claims";
 import { BILL_TO_LABEL, INVOICE_KIND_LABEL, INVOICE_KIND_TONE, planSchedule, TRIGGER_LABEL, validateSchedule, type BillTo, type InvoiceKind } from "@/lib/claims-billing";
 import { acceptedEstimateTotal } from "@/lib/claims-estimate";
-import type { ClaimCheck } from "@/lib/claims-server";
+import { invoiceTotalsFor, type ClaimCheck } from "@/lib/claims-server";
 import { createPaymentScheduleAction } from "../../../invoices/actions";
 
 export const metadata: Metadata = { title: "Billing" };
@@ -22,7 +22,6 @@ type Inv = {
   bill_to: BillTo;
   issue_date: string;
   due_date: string | null;
-  invoice_totals: { total: number; paid: number; balance: number } | { total: number; paid: number; balance: number }[] | null;
 };
 
 const KIND_ORDER: InvoiceKind[] = ["deposit", "progress", "final", "standard", "supplement", "change_order"];
@@ -31,13 +30,14 @@ export default async function BillingPage({ params }: PageProps<"/app/jobs/[id]/
   const { id } = await params;
   const { supabase, org } = await requireMoneyAccess();
   const [{ data: invRows }, { data: claim }, est, { data: orgRow }] = await Promise.all([
-    supabase.from("invoices").select("id, number, status, kind, milestone_label, milestone_trigger, bill_to, issue_date, due_date, invoice_totals(total, paid, balance)").eq("job_id", id).order("number"),
+    supabase.from("invoices").select("id, number, status, kind, milestone_label, milestone_trigger, bill_to, issue_date, due_date").eq("job_id", id).order("number"),
     supabase.from("claims").select("id, carrier, claim_checks(*)").eq("job_id", id).maybeSingle(),
     acceptedEstimateTotal(supabase, id),
     supabase.from("organizations").select("payment_schedule").eq("id", org.id).single(),
   ]);
   const invoices = ((invRows ?? []) as unknown as Inv[]).sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) || a.number - b.number);
-  const tot = (i: Inv) => (Array.isArray(i.invoice_totals) ? i.invoice_totals[0] : i.invoice_totals) ?? { total: 0, paid: 0, balance: 0 };
+  const totalsById = await invoiceTotalsFor(supabase, invoices.map((i) => i.id));
+  const tot = (i: Inv) => totalsById.get(i.id) ?? { total: 0, paid: 0, balance: 0 };
   const live = invoices.filter((i) => i.status !== "void");
   const checks = ((claim?.claim_checks ?? []) as ClaimCheck[]).sort((a, b) => a.created_at.localeCompare(b.created_at));
   const hasSchedule = live.some((i) => ["deposit", "progress", "final"].includes(i.kind));
