@@ -7,6 +7,9 @@ import { requireOrg } from "@/lib/dal";
 import { friendly, num, oneOf, str } from "@/lib/form";
 import { PAYMENT_METHODS } from "@/lib/types";
 import type { ActionResult } from "@/components/action-form";
+import { BILL_TO, INVOICE_KINDS, INVOICE_KIND_LABEL, planSchedule, TRIGGER_LABEL, validateSchedule } from "@/lib/claims-billing";
+// Fallback until estimating's src/lib/estimate-totals.ts lands (same signature, contract 5).
+import { acceptedEstimateTotal } from "@/lib/claims-estimate";
 
 function dueIn(days: number) {
   const d = new Date();
@@ -166,4 +169,86 @@ export async function deleteInvoice(fd: FormData) {
   if (error) throw new Error(friendly(error));
   revalidatePath("/app", "layout");
   redirect(inv ? `/app/jobs/${inv.job_id}` : "/app/invoices");
+}
+
+// ---------------------------------------------------------------------------
+// Milestone invoices (contract 4): deposit / progress / final from organizations.payment_schedule
+// ---------------------------------------------------------------------------
+export async function createPaymentSchedule(jobId: string): Promise<{ error?: string; ok?: string; invoiceIds?: string[] }> {
+  const { supabase, org, user, canSeeMoney } = await requireOrg();
+  if (!canSeeMoney) return { error: "You don't have access to invoices." };
+  if (!z.uuid().safeParse(jobId).success) return { error: "Unknown job." };
+  const { data: job } = await supabase.from("jobs").select("id").eq("id", jobId).maybeSingle();
+  if (!job) return { error: "Job not found." };
+
+  const { data: orgRow } = await supabase.from("organizations").select("payment_schedule, invoice_terms").eq("id", org.id).single();
+  const sched = validateSchedule(orgRow?.payment_schedule);
+  if (!sched.ok) return { error: sched.error };
+
+  const { data: existing } = await supabase.from("invoices").select("id").eq("job_id", jobId).in("kind", ["deposit", "progress", "final"]).neq("status", "void").limit(1);
+  if (existing?.length) return { error: "This job already has milestone invoices. Void them first to start over." };
+
+  const est = await acceptedEstimateTotal(supabase, jobId);
+  if (!est) return { error: "This job needs an accepted estimate before a payment schedule can be created." };
+  if (!(est.total > 0)) return { error: "The accepted estimate total is $0." };
+
+  const plan = planSchedule(est.total, sched.steps);
+  const ids: string[] = [];
+  for (const [i, p] of plan.entries()) {
+    const { data: inv, error } = await supabase
+      .from("invoices")
+      .insert({
+        org_id: org.id,
+        job_id: jobId,
+        estimate_id: est.estimateId,
+        kind: p.kind,
+        milestone_label: p.label,
+        milestone_trigger: p.trigger,
+        tax_rate: 0, // the accepted estimate total already includes tax
+        terms: orgRow?.invoice_terms ?? org.invoice_terms,
+        due_date: i === 0 && p.trigger === "signed" ? dueIn(0) : null,
+        notes: `${p.label}: ${p.pct}% of the contract total per accepted estimate #${est.estimateNumber}. ${TRIGGER_LABEL[p.trigger] ?? ""}`.trim(),
+        created_by: user.id,
+      })
+      .select("id")
+      .single();
+    if (error) return { error: friendly(error) };
+    const item = await supabase.from("invoice_items").insert({
+      org_id: org.id,
+      invoice_id: inv.id,
+      position: 0,
+      description: `${p.label} (${p.pct}% of ${est.total.toLocaleString("en-US", { style: "currency", currency: "USD" })} contract)`,
+      quantity: 1,
+      unit: "ea",
+      unit_price: p.amount,
+      category: "other",
+    });
+    if (item.error) return { error: friendly(item.error) };
+    ids.push(inv.id);
+  }
+  revalidatePath("/app", "layout");
+  return { ok: `Created ${plan.length} milestone invoices: ${plan.map((p) => `${INVOICE_KIND_LABEL[p.kind]} ${p.pct}%`).join(", ")}.`, invoiceIds: ids };
+}
+
+/** Form wrapper for createPaymentSchedule (job Billing tab). */
+export async function createPaymentScheduleAction(_: ActionResult, fd: FormData): Promise<ActionResult> {
+  const r = await createPaymentSchedule(String(fd.get("job_id")));
+  return { error: r.error, ok: r.ok };
+}
+
+export async function updateInvoiceBilling(_: ActionResult, fd: FormData): Promise<ActionResult> {
+  const { supabase, canSeeMoney } = await requireOrg();
+  if (!canSeeMoney) return { error: "You don't have access to invoices." };
+  const id = String(fd.get("id"));
+  const { error } = await supabase
+    .from("invoices")
+    .update({
+      bill_to: oneOf(fd, "bill_to", BILL_TO, "homeowner"),
+      kind: oneOf(fd, "kind", INVOICE_KINDS, "standard"),
+      milestone_label: str(fd, "milestone_label"),
+    })
+    .eq("id", id);
+  if (error) return { error: friendly(error) };
+  revalidatePath("/app", "layout");
+  return { ok: "Saved." };
 }

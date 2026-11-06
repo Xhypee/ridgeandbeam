@@ -12,14 +12,14 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cu
   const { q } = await searchParams;
   const query = typeof q === "string" ? q.trim() : "";
 
-  let req = supabase.from("customers").select("*, jobs(count)").order("created_at", { ascending: false }).limit(200);
+  let req = supabase.from("customers").select("*, jobs(id, is_insurance, claims(id))").order("created_at", { ascending: false }).limit(200);
   if (query) {
     const safe = query.replace(/[%,()]/g, " ");
     req = req.or(`name.ilike.%${safe}%,email.ilike.%${safe}%,phone.ilike.%${safe}%,address.ilike.%${safe}%,city.ilike.%${safe}%`);
   }
   const { data, error } = await req;
   if (error) throw new Error(error.message);
-  const customers = (data ?? []) as (Customer & { jobs: { count: number }[] })[];
+  const customers = (data ?? []) as (Customer & { jobs: { id: string; is_insurance: boolean; claims: { id: string } | { id: string }[] | null }[] })[];
   const today = isoDate(new Date());
 
   return (
@@ -42,12 +42,12 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cu
               <tr key={c.id} className="hover:bg-slate-50">
                 <td className={td}>
                   <Link href={`/app/customers/${c.id}`} className="font-medium text-slate-900 hover:text-brand-600">{c.name}</Link>
-                  {c.claim_number && <span className="ml-2 text-xs text-violet-700">Insurance</span>}
+                  {c.jobs?.some((j) => j.is_insurance || (Array.isArray(j.claims) ? j.claims.length > 0 : Boolean(j.claims))) && <span className="ml-2 text-xs text-violet-700">Insurance</span>}
                 </td>
                 <td className={td}><div>{c.phone}</div><div className="text-xs text-slate-500">{c.email}</div></td>
                 <td className={td}>{[c.city, c.state].filter(Boolean).join(", ")}</td>
                 <td className={td}>{label(c.source)}</td>
-                <td className={td}>{c.jobs?.[0]?.count ?? 0}</td>
+                <td className={td}>{c.jobs?.length ?? 0}</td>
                 <td className={td}>
                   {c.follow_up_on && (
                     <span className={c.follow_up_on <= today ? "font-medium text-red-600" : ""}>{date(c.follow_up_on, { month: "short", day: "numeric" })}</span>
