@@ -16,6 +16,7 @@ function check(cond, msg) {
   const page = await ctx.newPage();
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
+  page.on("response", (r) => { if (r.status() === 404) errors.push("404 " + r.url()); });
   const shot = (name) => page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true });
 
   console.log("1. Landing + sign up");
@@ -191,6 +192,7 @@ function check(cond, msg) {
   const overflow = await mp.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   check(!overflow, "no horizontal page scroll on phone");
 
+  if (process.env.STORAGE_STATE) await ctx.storageState({ path: process.env.STORAGE_STATE });
   const real = errors.filter((e) => !/favicon/.test(e));
   check(real.length === 0, "no browser console errors" + (real.length ? `: ${real.join(" | ")}` : ""));
   console.log("\nE2E PASSED");
