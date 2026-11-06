@@ -12,7 +12,7 @@ export default async function OrderSheet({ params }: PageProps<"/app/orders/[id]
   const { supabase, org } = await requireMoneyAccess();
   const { data: o } = await supabase
     .from("material_orders")
-    .select("*, material_order_items(*), jobs(title, site_address, gate_code, customers(name, phone))")
+    .select("*, material_order_items(*), org_suppliers(account_number), jobs(title, site_address, gate_code, customers(name, phone))")
     .eq("id", id)
     .maybeSingle();
   if (!o) notFound();
@@ -31,23 +31,24 @@ export default async function OrderSheet({ params }: PageProps<"/app/orders/[id]
             <p className="text-lg font-semibold uppercase text-brand-600">Material order</p>
             <p className="text-sm">PO {o.po_number ?? "—"}</p>
             <p className="text-sm text-slate-500">{o.supplier}{o.branch ? ` · ${o.branch}` : ""}</p>
+            {(o.org_suppliers as { account_number: string | null } | null)?.account_number && <p className="text-sm text-slate-500">Account {(o.org_suppliers as { account_number: string }).account_number}</p>}
           </div>
         </header>
         <section className="grid gap-4 text-sm sm:grid-cols-2">
           <div><p className="text-xs uppercase text-slate-500">Ship to</p><p className="font-medium">{job.site_address ?? "—"}</p><p>{job.customers?.name} · {job.title}</p></div>
-          <div><p className="text-xs uppercase text-slate-500">Delivery</p><p className="font-medium">{date(o.delivery_date) || "TBD"} · {o.delivery_type === "ground_drop" ? "GROUND DROP" : "ROOF LOAD"}</p>{job.gate_code && <p>Gate code: {job.gate_code}</p>}</div>
-          <div><p className="text-xs uppercase text-slate-500">Color</p><p className="font-medium">{o.color ?? "—"}</p></div>
+          <div><p className="text-xs uppercase text-slate-500">Delivery</p><p className="font-medium">{date(o.delivery_date, { day: "2-digit", month: "2-digit", year: "numeric" }) || "TBC"} · {o.delivery_type === "ground_drop" ? "GROUND DROP" : "ROOF LOAD"}</p>{job.gate_code && <p>Gate code: {job.gate_code}</p>}</div>
+          <div><p className="text-xs uppercase text-slate-500">Colour</p><p className="font-medium">{o.color ?? "—"}</p></div>
           {o.notes && <div><p className="text-xs uppercase text-slate-500">Notes</p><p className="whitespace-pre-wrap">{o.notes}</p></div>}
         </section>
         <table className="w-full text-sm">
-          <thead><tr className="border-b border-slate-300 text-left text-xs uppercase text-slate-500"><th className="py-1.5">#</th><th className="py-1.5">Qty</th><th className="py-1.5">Unit</th><th className="py-1.5">Description</th><th className="py-1.5">SKU</th></tr></thead>
+          <thead><tr className="border-b border-slate-300 text-left text-xs uppercase text-slate-500"><th className="py-1.5">#</th><th className="py-1.5">Product code</th><th className="py-1.5">Qty</th><th className="py-1.5">Unit</th><th className="py-1.5">Description</th></tr></thead>
           <tbody className="divide-y divide-slate-100">
             {items.map((i, n) => (
-              <tr key={n}><td className="py-1.5">{n + 1}</td><td className="py-1.5 font-semibold">{i.quantity}</td><td className="py-1.5">{i.unit}</td><td className="py-1.5">{i.description}</td><td className="py-1.5">{i.sku}</td></tr>
+              <tr key={n}><td className="py-1.5">{n + 1}</td><td className="py-1.5">{i.sku}</td><td className="py-1.5 font-semibold">{i.quantity}</td><td className="py-1.5">{i.unit}</td><td className="py-1.5">{i.description}</td></tr>
             ))}
           </tbody>
         </table>
-        <p className="text-xs text-slate-400">Please confirm quantities, color and delivery date. Leftover returns: please note restocking terms on the confirmation.</p>
+        <p className="text-xs text-slate-400">Please confirm quantities, colour and delivery date. Leftover returns: please note restocking terms on the confirmation.</p>
       </article>
     </div>
   );
