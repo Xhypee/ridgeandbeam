@@ -54,6 +54,9 @@ export const CALC_KEYS: CalcKeyDef[] = [
 
 export const CALC_KEY_MAP: Record<string, CalcKeyDef> = Object.fromEntries(CALC_KEYS.map((k) => [k.key, k]));
 
+/** Words that appear in many product names; they only win when nothing more specific matches. */
+const GENERIC_HINTS = new Set(["sheet", "roofing", "capping", "tile", "mesh", "bin", "paint", "remove", "removal", "install", "labour", "labor", "vent", "clean", "membrane"]);
+
 /** Best-guess calc key for a supplier price-sheet description (null when unsure). */
 export function suggestCalcKey(description: string): string | null {
   const d = ` ${description.toLowerCase()} `;
@@ -61,7 +64,8 @@ export function suggestCalcKey(description: string): string | null {
   for (const k of CALC_KEYS) {
     for (const h of k.hints) {
       if (d.includes(h)) {
-        const score = h.length; // longer, more specific hints win ("ridge tile" over "tile")
+        // Longer, more specific hints win ("ridge tile" over "tile"); generic words rank last.
+        const score = h.length - (GENERIC_HINTS.has(h) ? 100 : 0);
         if (!best || score > best.score) best = { key: k.key, score };
       }
     }
