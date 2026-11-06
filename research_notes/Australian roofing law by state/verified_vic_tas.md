@@ -1,8 +1,8 @@
 # VERIFIED RULES — VIC and TAS (round 2, primary-source verification)
 
-> Status: IN PROGRESS (started 2026-11-06). VIC legislation group done; VIC regulator pages and TAS pending.
+> Status: COMPLETE (2026-11-06). Summary of changes vs round 1 at the end of this file.
 >
-> **Method.** WebFetch could not resolve any of the brief's hosts (ENOTFOUND). `curl` through the session's agent proxy (default curl user agent, no spoofing) could reach www.legislation.vic.gov.au, www.consumer.vic.gov.au and www.legislation.tas.gov.au. Authorised consolidated versions were downloaded as DOCX from www.legislation.vic.gov.au/sites/default/files/... (the same files the site links on content.legislation.vic.gov.au, which the proxy blocks) and converted to text with pandoc. **Blocked:** www.bpc.vic.gov.au (Cloudflare "Just a moment..." JS challenge, HTTP 403, not bypassed); bpc.vic.gov.au, cbos.tas.gov.au and austlii (proxy CONNECT 403); www.cbos.tas.gov.au (connection reset).
+> **Method.** WebFetch could not resolve any of the brief's hosts (ENOTFOUND). `curl` through the session's agent proxy (default curl user agent, no spoofing) could reach www.legislation.vic.gov.au, www.consumer.vic.gov.au and www.legislation.tas.gov.au. Authorised consolidated versions were downloaded as DOCX from www.legislation.vic.gov.au/sites/default/files/... (the same files the site links on content.legislation.vic.gov.au, which the proxy blocks) and converted to text with pandoc. **Blocked:** www.bpc.vic.gov.au (Cloudflare "Just a moment..." JS challenge, HTTP 403, not bypassed); bpc.vic.gov.au, cbos.tas.gov.au and austlii (proxy CONNECT 403); www.cbos.tas.gov.au (connection reset at first, then a Cloudflare JS challenge with HTTP 403; not bypassed).
 > Date checked for every VIC legislation item: **2026-11-06**.
 
 ## VIC — VERIFIED RULES (legislation group)
@@ -17,7 +17,6 @@ Versions read:
 - Building and Construction Industry Security of Payment Act 2002, **Version 015, as at 24 June 2026** — https://www.legislation.vic.gov.au/in-force/acts/building-and-construction-industry-security-payment-act-2002/015
 - Occupational Health and Safety Regulations 2017, **Version 018, as at 20 Oct 2026** — https://www.legislation.vic.gov.au/in-force/statutory-rules/occupational-health-and-safety-regulations-2017/018
 
-(Item-by-item block written below once regulator pages are checked.)
 
 ### VIC item block (all dates checked 2026-11-06)
 
@@ -162,7 +161,7 @@ Versions read:
 
 ---
 
-## TAS — VERIFIED RULES (in progress)
+## TAS — VERIFIED RULES
 
 Sources read (via curl through the agent proxy, 2026-11-06; the TAS site's internal date showed 2026-11-07):
 - Residential Building Work Contracts and Dispute Resolution Act 2016 (RBWCDR Act), in-force version from **16 Jul 2024** — https://www.legislation.tas.gov.au/view/whole/html/inforce/current/act-2016-032
@@ -170,3 +169,354 @@ Sources read (via curl through the agent proxy, 2026-11-06; the TAS site's inter
   - These replace the 2016 Regulations (SR 2016-089), which the site now marks *"(Expired)"*.
 - Residential Building (Home Warranty Insurance Amendments) Act 2023 (as made, assent 16 Oct 2023, commences on proclamation) — https://www.legislation.tas.gov.au/view/whole/html/asmade/act-2023-025
 - www.cbos.tas.gov.au: connection reset by the proxy, so it could not be read. cbos.tas.gov.au (non-www): proxy 403.
+- Occupational Licensing Act 2005 (in-force version from 2025-07-02) — https://www.legislation.tas.gov.au/view/whole/html/inforce/current/act-2005-047
+- Occupational Licensing (Building Services Work) Regulations 2016 (SR 2016-112; secondary sources say they expire Dec 2026) — https://www.legislation.tas.gov.au/view/whole/html/inforce/current/sr-2016-112
+- Occupational Licensing (Plumbing Work) Regulations 2021 (SR 2021-114) — https://www.legislation.tas.gov.au/view/whole/html/inforce/current/sr-2021-114
+- Building Act 2016 (in-force version from 2026-06-11) — https://www.legislation.tas.gov.au/view/whole/html/inforce/current/act-2016-025
+- Building Regulations 2016 (SR 2016-110) — https://www.legislation.tas.gov.au/view/whole/html/inforce/current/sr-2016-110
+- Building and Construction Industry Security of Payment Act 2009 (in-force version from 2025-07-14) — https://www.legislation.tas.gov.au/view/whole/html/inforce/current/act-2009-086
+- Work Health and Safety Regulations 2022 (SR 2022-109, in-force version from 2025-07-02) — https://www.legislation.tas.gov.au/view/whole/html/inforce/current/sr-2022-109
+
+### TAS item block (all checked 2026-11-06)
+
+**1. Governing Act and regulator — VERIFIED (partly)**
+- Act: RBWCDR Act 2016. Its long title says it is an Act *"to repeal the Housing Indemnity Act 1992"*.
+- Regulator: the **Director of Building Control**. Section 4: *"Director means the Director of Building Control appointed under section 15 of the Building Act 2016"*.
+- Licensing is under the Occupational Licensing Act 2005; the "Administrator" is the Administrator of Occupational Licensing.
+- Consumer, Building and Occupational Services (CBOS, Department of Justice) is the office that runs these roles. The Building Regs say *"These regulations are administered in the Department of Justice."* The CBOS website itself could not be read (Cloudflare challenge).
+- Disputes go to Director mediation (Part 9), then TASCAT (Part 10, *"Tasmanian Civil and Administrative Tribunal"*).
+
+**2. Is roofing-only work covered? — VERIFIED: yes, at $20,000 or more, with no single-trade exemption**
+- Section 6(2): residential building work includes *"(c) the restoration, maintenance, renovation, alteration, extension, improvement or repair of a residential building"*.
+- Associated work includes *"(iii) the cleaning, painting and decorating of the inside and outside surfaces"*. The definition of "plumbing system" in s 6(1) includes *"a system of storm water drainage or roof drainage"*.
+- Section 9: *"This Act does not apply to … residential building work that – (a) is performed, or is to be performed, for a contract price that is less than $20 000 or another greater amount, if any, that is prescribed by the regulations; … (c) consists solely of demolition work; or (d) is exempted … in accordance with section 10."*
+- The 2026 Regulations prescribe **no** greater amount and **no** s 10 exemptions. Their only content is regs 4–7: non-residential buildings, deemed fixtures, deposit set amount, infringement notices.
+- So re-roofs, restorations, repairs and gutters with a contract price of **$20,000 or more** are covered. Below $20,000 the Act does not apply.
+- Residential building = NCC class 1a, 2, or 10 associated with them (s 5). Excluded by reg 4: *"a building comprised of at least 3 residences situated directly one above the other"*.
+- Contracts with an owner builder are excluded (s 4, definition of residential building work contract).
+- Deemed part of the building (reg 5): *"solar panels"*, *"rooftop wind turbines"*, *"satellite dishes"*, EV chargers, home batteries.
+
+**3. Licensing — PARTLY VERIFIED**
+- Building work: OL Act s 22A(1): *"A person must not manage, carry out, or enter into a contract to manage or carry out, any building services work unless the person holds – (a) a building services licence of the occupation and class relevant to the building services work"*.
+  - Building services work includes *"Building work … carried out on, or as part of, the construction, … installation, replacement, repair, … alteration, addition, maintenance … of any premises, building"* (BSW Regs Sch 1 Pt 1 item 1).
+  - It **excludes** work that *"(a) is low-risk work within the meaning of the Building Act 2016"* and *"(c) is not required under that Act to be performed by a licensed builder"* (Sch 1 Pt 2 item 1).
+  - There is **no dollar threshold in the legislation**. Whether a given re-roof is low-risk is set by the Director of Building Control's determination (Building Act s 20, s 91), which sits on CBOS and was **not read**.
+  - Unlicensed contractors cannot recover payment (OL Act s 35).
+- Roof plumbing: *"roof (stormwater)"* installations or systems are prescribed plumbing work (Plumbing Work Regs reg 4(1)(a)(iv)).
+  - A practitioner's licence is needed to do it (OL Act s 22).
+  - A contractor's licence is needed to *"carry on business as a contractor"* (s 21).
+  - The regs recognise "plumber practitioner (restricted)" licences. The exact "restricted to roof plumbing" scope is in the plumbing work determination (CBOS), not read. Round 1's AMR-list citation was not re-checked.
+- Licence number: RBWCDR s 14(1)(d) requires the contract to *"if the building contractor holds a licence under the Occupational Licensing Act 2005, specif[y] the number of the licence"*.
+  - **No** statutory duty to show the licence number in advertising or quotes was found in the OL Act text (searched for "advertis": no hits).
+- Unverified: whether metal roof **cladding** (as opposed to drainage) is plumbing or building services work in TAS.
+
+**4. Written contract — VERIFIED**
+- One tier only: every residential building work contract of **$20,000 or more** must be in writing, or be *"put into written form – (i) as soon as practicable (but in any case within 5 business days) after it is entered into; and (ii) before residential building work begins"* (s 13).
+- It *"has effect only if it is signed by the building contractor and the owner"* (s 15).
+- Contents (s 14(1)): English, all terms, parties, licence number, description and plans, price (or method plus estimate), date of practical completion, *"(h) sets out the warranties that are part of the contract under Part 6"*, any Director-determined provisions (s 11A), *"(j) includes the required checklist"*, and *"(k) has attached to it a copy of a residential building consumer guide"*.
+- Under $20,000: the Act does not apply.
+- Contract price includes labour and materials (s 4). GST is not mentioned, so treat it as GST-inclusive (inference).
+
+**5. Maximum deposit — VERIFIED (round-1 template value CONFIRMED; now primary)**
+- Section 41(2): before starting work a contractor must not demand or receive a deposit of more than *"(a) if the contract price is equal to or more than the set amount … –5% of the contract price; or (b) if the contract price is less than the set amount … – 10% of the contract price; or (c) … where the value of the off-site work is more than 50% of the contract price – 20%"*.
+- 2026 Regs reg 6: *"the set amount of $50 000 is prescribed"*. So: **10% if under $50,000; 5% if $50,000 or more; 20% if off-site work is over 50%.**
+- "Deposit" includes *"any payment … demanded or received … before the residential building work begins to be performed"* (s 4).
+- Note: SR 2016-089 (which also set $50,000) has **expired**. SR 2026-085 re-made the $50,000 from **2 Nov 2026**. If the regs had lapsed, the default would be $20,000 (s 41(1)). Check the dates of any contract signed in the gap, if one existed.
+
+**6. Cooling-off — VERIFIED**
+- Section 33: the owner *"may withdraw from the contract within 5 business days after the receipt day"*. The receipt day is the day the owner has received both *"(i) a copy of the signed contract; (ii) a copy of the residential building consumer guide"* (the later day if different).
+- Business day excludes Saturday, Sunday, *"a statutory holiday as defined in the Statutory Holidays Act 2000 or a public holiday throughout the State"*.
+- Exceptions (s 34):
+  - a previous substantially-same contract for the same building or land;
+  - the owner *"received formal legal advice"* (paid, independent) before entering, or tells the contractor so.
+- If the guide is not given, the owner may withdraw *"within 7 days of becoming aware"* (s 35), and the contractor then gets only a reasonable amount for work done (s 38).
+- Withdrawal notice (s 36): written, signed, stating *"(a) that the owner withdraws from the contract; and (b) the section of this Act under which the withdrawal is made"*.
+- Retainable amount (s 37): *"$100"* plus reasonably incurred out-of-pocket expenses. If nothing was paid, the owner owes it.
+- **Prescribed notice wording: none in the Act or Regs.** The warning is the consumer guide. The cooling-off clause text is UNVERIFIED (any s 11A Director determination on contract provisions sits on CBOS, which is blocked).
+- Round 1's conflicting "10-day/14-day" claims are confirmed **wrong**.
+
+**7. Home warranty insurance — VERIFIED: none currently in force (round-1 belief confirmed and sharpened)**
+- The RBWCDR Act repealed the Housing Indemnity Act 1992 (long title).
+- The **Residential Building (Home Warranty Insurance Amendments) Act 2023** (assent 16 Oct 2023) would insert Part 10A, including s 16A: *"the relevant building contractor must give the owner a copy of the certificate of insurance … no later than … 5 business days after entering into the residential building work contract"*, with minimum cover of *"$200 000 or such other amount as is prescribed"*.
+- That Act *"commence[s] on a day or days to be proclaimed"*. The current consolidated RBWCDR Act (from 16 Jul 2024) contains no Part 10A or s 16A, so it is **not commenced** as at that consolidation. The insurable-work threshold could not be extracted.
+- App rule: no TAS home warranty requirement. Add a watch flag for proclamation of the 2023 Act.
+- Separately, OL Act ss 27–28 require **licence holders to hold insurance** (not read in detail).
+
+**8. Documents, progress payments and variations — VERIFIED**
+- **Residential building consumer guide** (Director-approved, s 81): give it before entering the contract (s 39(1)) and attach it to the contract (s 14(1)(k)).
+- Signed copy of the contract plus guide *"within 5 business days"* (s 16).
+- **Commencement notice** *"within 10 business days after residential building work … begins"*, stating the start day and estimated practical completion (s 40).
+- **Notice of practical completion** *"within 10 business days after the date of practical completion"* (s 43).
+- **Defects document** for agreed minor defects, then rectify *"within 6 months"* (s 44).
+- Progress payments (s 42(2)): *"must not demand or receive an amount, other than a deposit, … unless the amount is directly related to the progress of the performance at the building site"*.
+- Variations (ss 17–20):
+  - Must be in writing *"within the shortest practicable time"*. Additions must be in writing before the work starts.
+  - Owner-sought or added work must not start until both parties sign (s 17(5)). There is an urgent-work exception (s 17(2)).
+  - Variation document contents are in s 18(2).
+  - A copy goes to the owner *"within 5 business days"* (s 20).
+- Statutory warranty statement: the contract must set out Part 6 warranties (s 14(1)(h)).
+- The "required checklist" is a *"summary of the provisions of the residential building work contract"* (s 14(3)).
+
+**9. Statutory warranties — VERIFIED (round 1's "about 6 years, unverified" CONFIRMED)**
+- Implied warranties: materials good, suitable and new (s 23); compliance with laws (s 24); *"appropriate and skilful way"* with *"reasonable care and skill"* (s 25); plans (s 27); fit for occupation (s 28); *"reasonable diligence"* (s 29); provisional sums (s 30).
+- They pass to successors in title (s 31) and cannot be excluded (s 78).
+- Duration (s 32(1)): *"Proceedings for a breach of a statutory warranty are to be commenced within 6 years after the date of practical completion"*.
+
+**10. Plumbing compliance and notice of work — PARTLY VERIFIED**
+- All plumbing work is **permit plumbing work** unless it is low-risk or notifiable plumbing work as determined by the Director (Building Act s 154, ss 91, 105).
+- **Notifiable plumbing work:**
+  - Before starting: *"a notice of work has been given under section 108 to a permit authority"* and the authority has issued a *"certificate of likely compliance (notifiable plumbing work)"* (s 107).
+  - On completion: *"must notify the relevant permit authority … when the work is completed"* (s 113).
+  - *"Within the prescribed period"*: give a *"standard of work certificate (notifiable plumbing work)"* to the permit authority and *"a copy … to the owner"* (s 114).
+- **Low-risk building work** flagged by the Director must be notified to the permit authority *"within a specified period"* after completion, with the licensed builder's licence number (Building Regs reg 24A).
+- **UNVERIFIED:** which category roof (stormwater) work falls into, the "prescribed period" for the standard of work certificate (not found in Building Regs 2016), and any value threshold. All of these are in the Director's determination on CBOS (blocked).
+
+**11. Permit for re-roofing — UNVERIFIED (framework only)**
+- Building work is *"permit building work unless the work is – (a) low-risk building work … (b) notifiable building work … or (c) emergency work"* (Building Act s 128). The categories come from the Director's determination (s 20(1)(a): *"types of building work, plumbing work or demolition work that is low-risk work, notifiable work or permit work"*). The determination was not read.
+- Notifiable building work needs a licensed builder and a building surveyor (ss 94–95).
+
+**12. Security of payment — VERIFIED (round 1 confirmed, with nuance)**
+- SOP Act 2009 s 7: it applies to *"any building or construction contract"*. There is **no** residential or owner-occupier exclusion.
+- Payment schedule deadline (s 19(3)): *"the day 20 business days after the payment claim is served … if – (i) the claim relates to a residential structure to be built on land; and (ii) the respondent is the owner of the land; and (iii) the respondent is not a building practitioner; or (b) is, in any other case, the day 10 business days"*. The deadline is the earlier of this and the contract time (s 19(2)).
+- Nuance: the 20-day period is worded for a structure *"to be built"*. For re-roofing an existing house, 10 business days may apply. Treat it as **unclear** and default to telling the homeowner 20 business days (conservative for the claimant).
+
+**13. Other TAS prompts — VERIFIED (WHS Regs 2022)**
+- HRCW includes work that *"involves a risk of a person falling more than 2 metres"* (reg 291). A SWMS is required (reg 299).
+- Asbestos:
+  - Licensed removalist required unless *"10 square metres or less of non-friable asbestos"* (reg 458(2)). There is **no** VIC-style 1-hour cap.
+  - Notify the regulator *"at least 5 days before"* licensed removal (reg 466(1)).
+  - *"Refurbishment of residential premises"*: all asbestos likely to be disturbed must be identified and, so far as reasonably practicable, removed before the work starts (reg 457).
+- Keep records of building services work *"for at least 10 years"* (BSW Regs reg 6).
+- Note: the BSW Regs 2016 are reported (secondary) to expire Dec 2026. Watch for replacement regs, as happened with the RBWCDR Regs.
+
+---
+
+## JSON — VIC (contracts signed 1 Jul 2026 – 30 Mar 2027; see `status_notes` for 31 Mar 2027 changes)
+
+```json
+{
+  "state": "VIC",
+  "regulator": "Building and Plumbing Commission (BPC) — legal entity still the Victorian Building Authority under Building Act 1993 s 3 until the Building and Plumbing Administration and Enforcement Act 2026 commences (latest 1 Dec 2027); contract forms currently approved by the Director of Consumer Affairs Victoria",
+  "act": "Domestic Building Contracts Act 1995 (v094, 1 Jul 2026) + Domestic Building Contracts Regulations 2017; Building Act 1993 Pt 9A, Pt 11, Pt 12A; Plumbing Regulations 2018",
+  "licence": {
+    "threshold_aud": 10000,
+    "classes": ["Domestic builder (limited to roof tiling)", "Domestic builder (unlimited)", "Plumber — Roofing (stormwater) class, licensed (required to issue compliance certificates) or registered"],
+    "show_on": ["contract", "ads", "quote"],
+    "source": "DBC Act s 29(1), s 31(1)(f); Building Act s 169H, s 221D, s 221E; Building Regs 2018 reg 262, Sch 1 cl 6(z); DBC Regs reg 6 ($10,000; becomes $20,000 on 31 Mar 2027 per S.R. 175/2026 reg 7). Builder threshold is 'more than' the amount. 'quote' is an inference from s 169H 'written statement offering to carry out domestic building work'. No statutory ad/licence-number rule found for plumbers."
+  },
+  "written_contract": {
+    "threshold_aud": 10000,
+    "tiers": ["<= $10,000: no statutory writing requirement (Part 2 only: deposit cap, warranties, copy of documents s 25(b))", "> $10,000: major domestic building contract — written, s 31 contents, signed by both or no effect"],
+    "source": "DBC Act s 3(1), s 25, s 31; DBC Regs reg 6. From 31 Mar 2027: all contracts written (new s 7A), major threshold > $20,000."
+  },
+  "deposit": {
+    "rules": [
+      {"max_contract_aud": 19999.99, "pct": 10, "cap_aud": null},
+      {"max_contract_aud": null, "pct": 5, "cap_aud": null}
+    ],
+    "source": "DBC Act s 11(1): 5% if contract price $20,000 or more; 10% if less than $20,000; applies to all domestic building contracts. From 31 Mar 2027: flat 10% for non-modern-methods contracts (DBC Regs reg 9A inserted by S.R. 175/2026)."
+  },
+  "cooling_off": {
+    "applies_over_aud": 10000,
+    "length": "5",
+    "unit": "business_days",
+    "starts": "after the building owner receives a copy of the signed (major) contract; 'clear' business days; excludes Sat, Sun and Victoria-wide public holidays",
+    "notice_text": "Notice to Building Owner: You may end this contract within five clear business days after receipt by you of a signed copy of the contract by filling in the notice below and giving it to the Builder in one of the following ways: (1) Personally (2) Leaving it at his or her address set out in the contract with a person who appears to be at least 16 years old (3) Sending it by pre-paid certified mail to the address set out in this contract (4) Sending it by facsimile to the facsimile number (if any) set out in this contract.",
+    "source": "DBC Act s 31(1)(n), s 34, s 35; Director of CAV approved notice reproduced in CAV model contract https://www.consumer.vic.gov.au/library/forms/housing-and-accommodation/building-and-renovating/building-contract-for-new-homes.docx. Exceptions: prior substantially-same contract; independent legal advice (legal-advice exception removed from 31 Mar 2027). Builder may keep $100 + approved out-of-pocket expenses."
+  },
+  "insurance": {
+    "scheme": "First Resort Home Warranty Scheme (statutory insurance scheme, Building Act Pt 9A) — contracts signed on/after 1 Jul 2026; Domestic Building Insurance (> $16,000) for contracts signed before 1 Jul 2026",
+    "threshold_aud": 20000,
+    "before": "Builder pays premium to the Authority before the earlier of 10 business days after the contract is entered into or work starting (s 137O); the Authority issues the notice of cover to the owner (s 137T); no builder-issued certificate",
+    "roofing_only_covered": "depends",
+    "source": "Building Act s 3(1) 'insurable domestic building contract' (> $20,000), ss 137I, 137J, 137O, 137R, 137T; Building (Statutory Insurance Scheme) Regulations 2026 regs 6, 8, 21, 50. Covered: tile re-roof / mixed contracts by registered builder > $20,000. Not covered: plumbing-only (metal roof/gutters) and paint-only contracts (not domestic building work, DBC Regs reg 7(f),(h))."
+  },
+  "documents": [
+    {"name": "Domestic Building Consumer Guide (contract information statement, s 29A)", "when": "before the owner signs a major domestic building contract", "source": "DBC Act s 29A; https://www.consumer.vic.gov.au/housing/building-and-renovating/plan-and-manage-your-building-project/domestic-building-consumer-guide"},
+    {"name": "Approved checklist (in contract)", "when": "in the major contract", "source": "DBC Act s 31(1)(r)"},
+    {"name": "Cooling-off notice (approved form)", "when": "in the major contract", "source": "DBC Act s 31(1)(n)"},
+    {"name": "Implied warranties ss 8 and 20 set out in contract (statutory warranty statement)", "when": "in the major contract", "source": "DBC Act s 31(1)(q)"},
+    {"name": "Price-may-change warning (approved form) next to price", "when": "if price can vary", "source": "DBC Act s 33"},
+    {"name": "Signed copy of contract", "when": "within 5 clear business days of entering contract", "source": "DBC Act s 25"},
+    {"name": "Statutory insurance scheme information (reg 12A)", "when": "in major contracts from 31 Mar 2027", "source": "DBC Regs reg 12A inserted by S.R. 175/2026"},
+    {"name": "Variation notice + signed owner consent (builder variations); owner variation notice / builder response", "when": "before giving effect to a variation", "source": "DBC Act ss 37–38 (single variation agreement from 31 Mar 2027)"},
+    {"name": "Progress claims must relate directly to work progress (non-table contracts)", "when": "each claim", "source": "DBC Act s 40(3)"},
+    {"name": "Occupancy permit or certificate of final inspection (where permit work)", "when": "before demanding final payment", "source": "DBC Act s 42"},
+    {"name": "Plumbing compliance certificate", "when": "within 5 days of completion, total value >= $750", "source": "Building Act s 221ZH; Plumbing Regs reg 47"}
+  ],
+  "statutory_warranty": [
+    {"type": "Implied warranties s 8 (no fixed period) — building action limitation 10 years from occupancy permit or certificate of final inspection", "years": 10, "source": "DBC Act s 8, endnote [5] citing Building Act s 134"},
+    {"type": "Home Warranty cover — major defects (structural, waterproofing/weatherproofing incl. roof)", "years": 6, "source": "SIS Regs reg 8(1)(a), reg 4"},
+    {"type": "Home Warranty cover — other defects", "years": 2, "source": "SIS Regs reg 8(1)(b)"}
+  ],
+  "compliance_certificate": {
+    "name": "Plumbing compliance certificate (roofing (stormwater) work)",
+    "threshold_aud": 750,
+    "deadline": "within 5 days of completion: give signed certificate to the customer AND lodge electronically with the Authority (same 5-day window)",
+    "source": "Building Act s 221ZH(1)(a),(2); Plumbing Regs 2018 regs 14A, 47. Threshold is '$750 or more' (total value incl. materials, labour)."
+  },
+  "permit": {
+    "summary": "No building permit for repair/renewal/maintenance of part of an existing building if it does not adversely affect structural soundness, does not remove/alter supporting elements, and uses 'materials commonly used for the same purpose as the material being replaced' (Sch 3 item 3). No roof-specific item. Batten/structural replacement or material change → treat as needing building-surveyor check (council guidance, secondary). Heritage/planning overlay not verified.",
+    "source": "Building Regulations 2018 (v032) Sch 3 item 3, reg 23"
+  },
+  "security_of_payment": {
+    "applies_to_owner_occupier": "no",
+    "schedule_days": 10,
+    "source": "SOP Act 2002 (v015) s 7(2)(b),(ba) (domestic building contracts with owners excluded unless owner in business of building residences); s 15(4) 10 business days or contract time, whichever earlier. Plumbing-only roofing contracts with homeowners: unclear under s 7(2)(ba)."
+  },
+  "other_prompts": [
+    {"text": "Job type routing: metal roof/flashing/gutter/downpipe-only = plumbing (roofing (stormwater)) → DBC Act does not apply; tile/slate/concrete/terracotta roof work = domestic building work (roof tiling class); cleaning/painting stormwater items excluded from plumbing; mixed contracts = DBC Act applies.", "source": "Plumbing Regs 2018 reg 25; DBC Regs reg 7"},
+    {"text": "SWMS required before work with risk of fall > 2 m; fall-control hierarchy (passive fall prevention first); documented rescue/emergency procedures before using any reg 44(2)-(5) control.", "source": "OHS Regs 2017 regs 44, 49, 322, 327, 329"},
+    {"text": "Asbestos: unlicensed removal only if non-friable <= 10 m2 AND no more than 1 hour of removal per 7 days; licensed removalist notifies WorkSafe >= 24 h before (<= 10 m2 non-friable) or >= 5 days before (other); give copy of notice to the commissioning person.", "source": "OHS Regs 2017 regs 250, 298"},
+    {"text": "Show builder registration name and number clearly legible in every advertisement or written statement offering domestic building work.", "source": "Building Act s 169H; Building Regs reg 262"},
+    {"text": "Date-switch rules on 31 Mar 2027: major threshold $20,000; deposit flat 10%; all contracts in writing (s 7A); legal-advice cooling-off exception removed; new variation process; cost escalation clauses only >= $1,000,000.", "source": "Domestic Building Contracts Amendment Act 2025 (as amended by Consumer Legislation Amendment Act 2026 Pt 12B); S.R. 175/2026"}
+  ],
+  "status_notes": "All values from authorised consolidated legislation downloaded from www.legislation.vic.gov.au on 2026-11-06 plus CAV pages. BPC website blocked (Cloudflare challenge) so no BPC page was quoted. GST treatment of $10,000/$20,000 thresholds not stated in the Acts (permit forms say costs include GST; BPC summary snippet says HW value includes GST) — treat as GST-inclusive. Not verified: Government Gazette proclamations bringing the 2025 Amendment Act into force before 31 Mar 2027; heritage/planning permits; whether paint/coat-only restoration of tiles is 'painting' (inference); start of 10-year limitation for un-permitted work; ACL unsolicited-agreement rules (not re-verified)."
+}
+```
+
+## JSON — TAS
+
+```json
+{
+  "state": "TAS",
+  "regulator": "Director of Building Control (RBWCDR Act; Building Act 2016) and Administrator of Occupational Licensing (OL Act 2005), via Consumer, Building and Occupational Services (CBOS), Department of Justice; disputes: Director mediation then TASCAT",
+  "act": "Residential Building Work Contracts and Dispute Resolution Act 2016 + Residential Building Work Contracts and Dispute Resolution Regulations 2026 (SR 2026-085, from 2 Nov 2026); Occupational Licensing Act 2005; Building Act 2016",
+  "licence": {
+    "threshold_aud": null,
+    "classes": ["Building services licence (builder class per Building Services Work Determination) — not read", "Plumber practitioner licence incl. (restricted) — roof (stormwater) prescribed plumbing work", "Plumbing contractor licence (to carry on business)"],
+    "show_on": ["contract"],
+    "source": "OL Act ss 21, 22, 22A, 35; OL (Building Services Work) Regs 2016 Sch 1 (excludes low-risk work not requiring a licensed builder); OL (Plumbing Work) Regs 2021 reg 4(1)(a)(iv); RBWCDR Act s 14(1)(d). No statutory dollar threshold; low-risk categories are in the Director's determination (CBOS, not read). No advertising licence-number rule found."
+  },
+  "written_contract": {
+    "threshold_aud": 20000,
+    "tiers": ["< $20,000: Act does not apply", ">= $20,000: written (or reduced to writing within 5 business days and before work), signed by both, s 14 contents, consumer guide attached"],
+    "source": "RBWCDR Act ss 9(a), 13, 14, 15; no greater amount prescribed in 2026 Regs"
+  },
+  "deposit": {
+    "rules": [
+      {"max_contract_aud": 49999.99, "pct": 10, "cap_aud": null},
+      {"max_contract_aud": null, "pct": 5, "cap_aud": null},
+      {"max_contract_aud": null, "pct": 20, "cap_aud": null}
+    ],
+    "source": "RBWCDR Act s 41(2) (10% below set amount; 5% at or above; 20% where off-site work > 50% of price); 2026 Regs reg 6 set amount $50,000. Only for contracts >= $20,000 (s 9)."
+  },
+  "cooling_off": {
+    "applies_over_aud": 20000,
+    "length": "5",
+    "unit": "business_days",
+    "starts": "after the 'receipt day' = day the owner has received BOTH a signed copy of the contract and the residential building consumer guide (later of the two)",
+    "notice_text": "",
+    "source": "RBWCDR Act ss 33–38. No prescribed wording. Withdrawal notice must be written, signed, state that the owner withdraws and the section relied on (s 36). Exceptions: prior substantially-same contract; paid formal legal advice (s 34). If guide not given: withdraw within 7 days of becoming aware (s 35). Contractor may retain $100 + reasonable out-of-pocket expenses (s 37). applies_over_aud = applies at $20,000 or more."
+  },
+  "insurance": {
+    "scheme": "None in force (Housing Indemnity Act 1992 repealed; Residential Building (Home Warranty Insurance Amendments) Act 2023 passed but not commenced as at current consolidation)",
+    "threshold_aud": null,
+    "before": "",
+    "roofing_only_covered": "no",
+    "source": "RBWCDR Act long title; https://www.legislation.tas.gov.au/view/whole/html/asmade/act-2023-025 (commences on proclamation; would require certificate copy to owner within 5 business days of contract)"
+  },
+  "documents": [
+    {"name": "Residential building consumer guide (Director-approved)", "when": "before entering the contract, and attached to the contract", "source": "RBWCDR Act ss 39(1), 14(1)(k), 81"},
+    {"name": "Required checklist (summary of contract provisions)", "when": "in the contract", "source": "RBWCDR Act s 14(1)(j), (3)"},
+    {"name": "Part 6 statutory warranties set out in contract", "when": "in the contract", "source": "RBWCDR Act s 14(1)(h)"},
+    {"name": "Signed copy of contract + consumer guide", "when": "within 5 business days of entering contract", "source": "RBWCDR Act s 16"},
+    {"name": "Commencement notice (start date + estimated practical completion)", "when": "within 10 business days after work begins", "source": "RBWCDR Act s 40"},
+    {"name": "Written, signed variation document (s 18(2) contents); copy to owner", "when": "before added/owner-requested work starts; copy within 5 business days", "source": "RBWCDR Act ss 17–20"},
+    {"name": "Progress payments only directly related to progress on site", "when": "each claim", "source": "RBWCDR Act s 42"},
+    {"name": "Notice of practical completion", "when": "within 10 business days after practical completion", "source": "RBWCDR Act s 43"},
+    {"name": "Defects document; rectify agreed minor defects", "when": "as soon as practicable; rectify within 6 months", "source": "RBWCDR Act s 44"},
+    {"name": "Standard of work certificate (notifiable plumbing work) to permit authority + copy to owner", "when": "within the prescribed period after completion (period not verified)", "source": "Building Act 2016 s 114"}
+  ],
+  "statutory_warranty": [
+    {"type": "Implied statutory warranties (Part 6) — proceedings limitation from date of practical completion", "years": 6, "source": "RBWCDR Act ss 22–32"}
+  ],
+  "compliance_certificate": {
+    "name": "Notifiable plumbing work: notice of work + certificate of likely compliance before start; completion notification; standard of work certificate (category of roof stormwater work not verified)",
+    "threshold_aud": null,
+    "deadline": "",
+    "source": "Building Act 2016 ss 105–115, 154; categories in Director of Building Control determination (not read)"
+  },
+  "permit": {
+    "summary": "All building work is permit work unless the Director's determination makes it low-risk or notifiable (or it is emergency work). Re-roofing category not verified.",
+    "source": "Building Act 2016 ss 20, 91, 93, 128"
+  },
+  "security_of_payment": {
+    "applies_to_owner_occupier": "yes",
+    "schedule_days": 10,
+    "source": "SOP Act 2009 s 7 (no residential exclusion); s 19(3): 20 business days if claim relates to a residential structure to be built on land and respondent is the (non-practitioner) owner, otherwise 10 business days; earlier contract time prevails (s 19(2))"
+  },
+  "other_prompts": [
+    {"text": "SWMS required for HRCW with fall risk > 2 m.", "source": "WHS Regs 2022 (Tas) regs 291, 299"},
+    {"text": "Asbestos: licensed removalist unless <= 10 m2 non-friable (then competent trained person); licensed removalist notifies regulator >= 5 days before; identify (and where practicable remove) asbestos before refurbishing residential premises.", "source": "WHS Regs 2022 (Tas) regs 457, 458, 466"},
+    {"text": "Keep records of building services work for at least 10 years.", "source": "OL (Building Services Work) Regs 2016 reg 6"},
+    {"text": "Watch flags: proclamation of Home Warranty Insurance Amendments Act 2023; replacement of OL (Building Services Work) Regs 2016 (reported expiry Dec 2026).", "source": "act-2023-025; secondary (Australian Institute of Architects submission)"}
+  ],
+  "status_notes": "Legislation read on www.legislation.tas.gov.au 2026-11-06. CBOS website blocked (Cloudflare challenge), so the consumer guide, Director determinations (building/plumbing categories, s 11A contract provisions), Building Services Work Determination (licence classes, low-risk thresholds) and plumbing work determination were NOT read — licence threshold, roof-plumbing restricted scope, permit/plumbing categories for re-roofing and the standard-of-work-certificate period remain null/unverified. GST treatment of the $20,000/$50,000 amounts not stated (treat as GST-inclusive). licence.show_on lists only what the statute requires (contract)."
+}
+```
+
+---
+
+## What changed vs round-1 notes (VIC, TAS)
+
+**VIC**
+- **NEW / critical:** the rules change on **31 Mar 2027**. The 2025 Amendment Act's forced commencement moved from 1 Dec 2026 to 31 Mar 2027 (Consumer Legislation Amendment Act 2026). The Amendment Regulations S.R. 175/2026 commence 31 Mar 2027 and set:
+  - major contract threshold **$20,000**;
+  - deposit **flat 10%**;
+  - every contract in writing;
+  - no legal-advice exception to cooling-off.
+  - Round 1's "proposal, not law, by March 2027 (secondary)" is now **made law with a fixed date**.
+- **RESOLVED:** the roofing single-trade exemption. Plumbing-only roofing (metal roofs, flashings, gutters, downpipes) is exempt from the DBC Act (Regs reg 7(h) plus Plumbing Regs reg 25). Tile, slate and concrete roofing is not plumbing, so it is covered. Round 1's "conservative default: treat all roofing over $10k as major contracts" can now be refined by job type.
+- **CORRECTED (nuance):** "BPC replaced the VBA". In force, the legal entity is still the VBA. The statutory BPC is created by the Building and Plumbing Administration and Enforcement Act 2026, commencing on proclamation, latest 1 Dec 2027.
+- **CORRECTED:** compliance certificate trigger is **$750 or more** (not "exceeds $750"). It is **one** 5-day window to give the certificate to the customer **and** lodge it with the Authority (not two steps).
+- **CORRECTED:** the cooling-off section is **s 34** (and s 35 for a missing notice). The contents section is s 31. This contradicts the brief's "ss 32–33".
+- **VERIFIED:**
+  - deposit s 11 (5% at $20,000 or more, 10% below), for all domestic contracts;
+  - Home Warranty threshold "more than $20,000" for contracts from 1 Jul 2026 (DBI over $16,000 before);
+  - 10-year limitation;
+  - SOP excludes homeowners, with a 10-business-day schedule;
+  - fall SWMS over 2 m;
+  - asbestos 24 h / 5 days.
+- **NEW:**
+  - scheme name "First Resort Home Warranty Scheme";
+  - premium deadline (10 business days or start of work, whichever is earlier); the Authority (not the builder) issues the notice of cover;
+  - $400,000 cap;
+  - roof leaks are 6-year "major defects";
+  - approved cooling-off notice wording;
+  - s 169H registration number in ads;
+  - Building Regs Sch 3 item 3 permit-exemption text;
+  - VIC 1-hour-per-7-days cap on unlicensed asbestos removal.
+
+**TAS**
+- **NEW / critical:** the RBWCDR Regulations 2016 **expired**. They were replaced by the **RBWCDR Regulations 2026 (SR 2026-085), in effect 2 Nov 2026**. The set amount stays $50,000.
+- **VERIFIED (upgraded from template-only):** deposit 10% under $50,000, 5% at $50,000 or more, plus a new item: **20% where off-site work is over 50%**.
+- **VERIFIED (previously unverified):**
+  - Act applies at **$20,000 or more** (s 9);
+  - no single-trade exemption, so roofing is covered;
+  - written-contract duty;
+  - 6-year warranty limitation from practical completion;
+  - cooling-off 5 business days from the later of receiving the signed contract **and** the consumer guide;
+  - exceptions (prior contract; paid formal legal advice);
+  - $100 retainable amount.
+- **CORRECTED:** the 10-day / 14-day cooling-off claims are wrong.
+- **VERIFIED with nuance:** there is no home warranty in force. The 2023 HWI Amendments Act passed but is uncommenced. SOP covers owner-occupiers. The 20-business-day schedule period is worded for a structure *"to be built"*, so re-roofs may be 10 days.
+- **NEW:**
+  - commencement notice within 10 business days of starting;
+  - notice of practical completion within 10 business days;
+  - defects document and 6-month rectification;
+  - variation document rules;
+  - licence number in the contract (s 14(1)(d));
+  - unlicensed contractors cannot recover payment (OL Act s 35);
+  - WHS regs 291, 299, 457, 458, 466.
+
+## Still unverified (with reason)
+- **All CBOS (TAS) and BPC (VIC) web pages:** blocked by a Cloudflare JS challenge, not bypassed. This leaves unread:
+  - TAS Director determinations (building and plumbing categories for re-roofing and roof plumbing, low-risk thresholds, s 11A contract provisions);
+  - the Building Services Work Determination (licence classes) and the restricted roof-plumbing scope;
+  - the TAS consumer guide text;
+  - the "prescribed period" for the TAS standard of work certificate;
+  - BPC guidance pages.
+- **VIC:** Government Gazette proclamations (any early commencement of the 2025 Act); heritage and planning permits; GST treatment of thresholds (treated as GST-inclusive by inference); whether coating a tile roof is "painting"; the start date of the 10-year limitation for un-permitted work.
+- **TAS:** GST treatment; whether metal roof cladding (as opposed to drainage) is plumbing; the BSW Regs 2016 expiry and replacement status.
+- **Not re-verified this round:** the ACL unsolicited-consumer-agreement rules, which apply nationally.

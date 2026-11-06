@@ -175,6 +175,8 @@ Primary texts read (all authorised republications from www.legislation.act.gov.a
 
 ## NSW — VERIFIED RULES
 
+> **ROUND 3 IN PROGRESS (2026-11-06)** — www.nsw.gov.au now reachable via curl. Verified so far from Building Commission NSW pages on nsw.gov.au: licence > $5,000 incl GST labour+materials (roof plumbing, roof tiling, roof slating are TRADE work, not specialist); written contract > $5,000 incl GST; small job $5k–$20k; large > $20k; deposit max 10% for both small and large; 5 clear business days cooling-off > $20k; HBC cover > $20k incl GST before any payment and before work starts; Consumer Building Guide > $5,000 before signing; warranties 6 yrs major / 2 yrs other; variations in writing signed by both. Full block below is being rewritten.
+
 > **No NSW primary text could be read in this round.** legislation.nsw.gov.au returns a Cloudflare bot challenge (HTTP 403) on every path; this was not bypassed. Fair Trading URLs redirect to www.nsw.gov.au, which the session proxy blocks, as it does SafeWork NSW, Service NSW, icare, NSW Planning, AustLII and the NSW Parliament file server. WebFetch cannot resolve any NSW host.
 > So **every NSW item below is UNVERIFIED** in the brief's sense. What this round adds is **search-index corroboration**: web-search results restricted to `legislation.nsw.gov.au` / `nsw.gov.au`, where the search engine summarised the primary page. Those summaries are paraphrases, not quotes I read, and several came from **older consolidations** (2014–2024). Each item carries a "corroboration" grade:
 > - **C1** = search summary of the primary page states the value and matches round 1;
