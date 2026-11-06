@@ -3,8 +3,21 @@ import { adminClient, hasAdminKey } from "@/lib/admin";
 import { addBusinessDays, siteUrl } from "@/lib/format";
 import { normalizePhone, sendEmail, sendSms, smsConfigured } from "@/lib/notify";
 import { aiEnabled, draftText, RESPONDER_TASK } from "@/lib/ai";
+import { asAuState, stateFromPostcode, type AuState } from "@/lib/au";
 
-/** Lead sources a report can group by. Free text is allowed too (e.g. "angi", "facebook"). */
+const STATE_NAMES: Record<string, AuState> = {
+  "new south wales": "NSW", victoria: "VIC", queensland: "QLD", "western australia": "WA",
+  "south australia": "SA", tasmania: "TAS", "australian capital territory": "ACT", "northern territory": "NT",
+};
+
+/** "NSW", "nsw", "New South Wales" or just a postcode → an Australian state code. */
+export function leadState(state: string | undefined, postcode: string | undefined): AuState | undefined {
+  const s = (state ?? "").trim();
+  return asAuState(s) ?? STATE_NAMES[s.toLowerCase()] ?? stateFromPostcode(postcode) ?? undefined;
+}
+
+
+/** Lead sources a report can group by. Free text is allowed too (e.g. "hipages", "facebook"). */
 export const LEAD_SOURCE_SUGGESTIONS = ["website", "instant_quote", "google_ads", "facebook", "angi", "referral", "door_knock", "storm", "repeat", "yard_sign", "other"];
 
 export type LeadPayload = {
@@ -38,12 +51,12 @@ export function normalizeLead(raw: Record<string, unknown>): LeadPayload {
     phone: pick(raw, "phone", "phone_number", "phoneNumber", "mobile", "tel")?.slice(0, 50),
     email: pick(raw, "email", "email_address", "emailAddress")?.slice(0, 200),
     address: pick(raw, "address", "street", "street_address", "address1", "address_line_1")?.slice(0, 300),
-    city: pick(raw, "city", "town")?.slice(0, 100),
-    state: pick(raw, "state", "region", "province")?.slice(0, 2).toUpperCase(),
-    zip: pick(raw, "zip", "zipcode", "zip_code", "postal_code", "postcode")?.slice(0, 20),
+    city: pick(raw, "suburb", "city", "town", "locality")?.slice(0, 100),
+    state: leadState(pick(raw, "state", "region", "province"), pick(raw, "postcode", "post_code", "zip", "zipcode", "zip_code", "postal_code")),
+    zip: pick(raw, "postcode", "post_code", "zip", "zipcode", "zip_code", "postal_code")?.slice(0, 20),
     message: pick(raw, "message", "comments", "comment", "notes", "details", "description")?.slice(0, 4000),
     // customers.source enum gets the coarse bucket; jobs.lead_source keeps the detail
-    source: src && KNOWN.includes(src) ? src : src ? (/(ad|google|facebook|fb|angi|homeadvisor|thumbtack)/.test(src) ? "ads" : "website") : "website",
+    source: src && KNOWN.includes(src) ? src : src ? (/(ad|google|facebook|fb|hipages|oneflare|serviceseeking|airtasker|angi)/.test(src) ? "ads" : "website") : "website",
     source_detail: (src ?? "website").slice(0, 100),
     title: pick(raw, "title", "service", "service_type")?.slice(0, 200),
     insurance: ins ? /^(1|true|yes|on|y)$/i.test(ins) : undefined,

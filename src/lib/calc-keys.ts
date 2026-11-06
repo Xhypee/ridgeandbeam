@@ -31,6 +31,7 @@ export const CALC_KEYS: CalcKeyDef[] = [
   { key: "ridge_tile", label: "Ridge / hip tiles", unit: "ea", category: "material", systems: ["concrete_tile", "terracotta_tile"], hints: ["ridge tile", "hip tile", "capping tile"] },
   { key: "tile_battens", label: "Tile battens", unit: "lm", category: "material", systems: ["concrete_tile", "terracotta_tile"], hints: ["batten"] },
   { key: "pointing", label: "Flexible pointing / bedding", unit: "bag", category: "material", systems: ["concrete_tile", "terracotta_tile"], hints: ["pointing", "bedding", "mortar"] },
+  { key: "membrane_roof", label: "Membrane roofing system", unit: "m2", category: "material", systems: ["membrane"], hints: ["membrane roof", "torch on", "torch-on", "bitumen membrane"] },
   // Under-roof
   { key: "sarking", label: "Sarking / roof blanket", unit: "roll", category: "material", hints: ["sarking", "anticon", "blanket", "thermoseal", "foil"] },
   { key: "safety_mesh", label: "Safety mesh", unit: "roll", category: "material", systems: ["metal"], hints: ["safety mesh", "mesh"] },

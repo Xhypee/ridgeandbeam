@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ActionForm, SubmitButton } from "@/components/action-form";
-import { Badge, Card, Field, Input } from "@/components/ui";
+import { Badge, Card } from "@/components/ui";
 import { requireOrg } from "@/lib/dal";
 import { siteUrl } from "@/lib/format";
 import { smsConfigured } from "@/lib/notify";
@@ -28,15 +28,15 @@ export default async function LeadIntakePage() {
   const iframeQuote = `<iframe src="${quoteUrl}" title="Instant roof quote" style="width:100%;max-width:560px;height:820px;border:0"></iframe>`;
   const curl = `curl -X POST ${endpoint} \\
   -H "Content-Type: application/json" \\
-  -d '{"name":"Jane Homeowner","phone":"555-0142","email":"jane@example.com",
-       "address":"42 Shingle Ln","city":"Denver","state":"CO","zip":"80202",
-       "message":"Hail last night, possible leak","source":"angi"}'`;
+  -d '{"name":"Jane Homeowner","phone":"0412 345 678","email":"jane@example.com",
+       "address":"42 Banksia St","suburb":"Penrith","state":"NSW","postcode":"2750",
+       "message":"Hail last night, possible leak","source":"hipages"}'`;
 
   return (
     <div className="min-w-0 space-y-6">
       <Card title="How leads get in">
         <p className="text-sm text-slate-600">
-          Every lead from your website, instant quote, Zapier, Angi or Facebook lead ads lands on the <b>Jobs</b> board as a new lead with a timer,
+          Every lead from your website, instant quote, Zapier, hipages, Oneflare or Facebook lead ads lands on the <b>Jobs</b> board as a new lead with a timer,
           is assigned round-robin to a sales rep, and that rep gets a text and an email right away.
         </p>
         <dl className="mt-4 space-y-3 text-sm">
@@ -59,10 +59,10 @@ export default async function LeadIntakePage() {
         </Card>
       </div>
 
-      <Card title="Webhooks (Zapier, Angi, Facebook lead ads)">
+      <Card title="Webhooks (Zapier, hipages, Facebook lead ads)">
         <p className="mb-3 text-sm text-slate-600">
           In Zapier, use <b>Webhooks by Zapier → POST</b> to the intake URL. Send <code>name</code> (or <code>first_name</code> + <code>last_name</code>), <code>phone</code> and/or <code>email</code>,
-          plus optional <code>address</code>, <code>city</code>, <code>state</code>, <code>zip</code>, <code>message</code> and <code>source</code> (e.g. <code>angi</code>, <code>facebook</code>, <code>google_ads</code>) so the Lead sources report can track cost per job.
+          plus optional <code>address</code>, <code>suburb</code>, <code>state</code> (NSW, VIC…), <code>postcode</code>, <code>message</code> and <code>source</code> (e.g. <code>hipages</code>, <code>facebook</code>, <code>google_ads</code>) so the Lead sources report can track cost per job.
         </p>
         <CodeSnippet code={curl} label="Copy curl example" />
       </Card>
@@ -73,11 +73,10 @@ export default async function LeadIntakePage() {
             <label className="flex items-center gap-2 text-sm text-slate-700">
               <input type="checkbox" name="enabled" defaultChecked={iq.enabled} disabled={!isAdmin} className="h-5 w-5 accent-brand-500" /> Show the instant quote widget
             </label>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Low price per square ($)"><Input name="price_per_square_low" type="number" min={1} step="1" defaultValue={iq.price_per_square_low} disabled={!isAdmin} /></Field>
-              <Field label="High price per square ($)"><Input name="price_per_square_high" type="number" min={1} step="1" defaultValue={iq.price_per_square_high} disabled={!isAdmin} /></Field>
-            </div>
-            <p className="text-xs text-slate-500">A square is 100 sq ft of roof. Homeowners see a range, never a firm price.</p>
+            <p className="text-sm text-slate-600">
+              Homeowners pick metal or tile, draw their roof on the map and see a price range per m², GST inclusive — never a firm price.
+              Set the $/m² rates in <a href="/app/settings/price-book" className="font-medium text-brand-600 underline">Price book → Instant quote rates</a>.
+            </p>
             {isAdmin && <SubmitButton variant="secondary">Save instant quote</SubmitButton>}
           </ActionForm>
         </Card>

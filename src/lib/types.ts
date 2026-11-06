@@ -30,7 +30,10 @@ export type Organization = {
   plan: string;
   subscription_status: "trialing" | "active" | "cancelled";
   cancel_at: string | null;
-  instant_quote: { enabled: boolean; price_per_square_low: number; price_per_square_high: number };
+  /** Instant-quote rates per m² of roof, GST inclusive. */
+  instant_quote: { enabled: boolean; metal_m2_low?: number; metal_m2_high?: number; tile_m2_low?: number; tile_m2_high?: number };
+  /** Calculator defaults (waste %, sheet cover, etc.) set in Settings → Price book. */
+  calc_defaults: Record<string, unknown>;
   abn: string | null;
   gst_registered: boolean;
   prices_include_gst: boolean;
