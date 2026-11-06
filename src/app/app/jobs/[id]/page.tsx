@@ -1,12 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionForm, SubmitButton } from "@/components/action-form";
-import { Badge, Card, Field, Input, PageHeader, Select, Textarea, cx } from "@/components/ui";
+import { Badge, Card, Field, Input, Select, Textarea, cx } from "@/components/ui";
 import { requireOrg } from "@/lib/dal";
-import { date, money, STAGE_LABEL, STAGE_TONE, STATUS_TONE, label } from "@/lib/format";
+import { date, money, STAGE_LABEL, STATUS_TONE, label } from "@/lib/format";
 import { JOB_STAGES, type Crew, type Customer, type Job } from "@/lib/types";
-import { createEstimate } from "../../estimates/actions";
-import { createInvoice } from "../../invoices/actions";
 import { addNote, deleteJob, scheduleJob, setStage, updateJob } from "../actions";
 import { JobFields } from "../job-fields";
 
@@ -26,29 +24,6 @@ export default async function JobPage({ params }: PageProps<"/app/jobs/[id]">) {
 
   return (
     <>
-      <PageHeader
-        title={job.title}
-        subtitle={
-          <span className="flex flex-wrap items-center gap-2">
-            <Link href={`/app/customers/${c.id}`} className="font-medium text-slate-700 hover:text-brand-600">{c.name}</Link>
-            {job.site_address && <span>· {job.site_address}</span>}
-            <Badge tone={STAGE_TONE[job.stage]}>{STAGE_LABEL[job.stage]}</Badge>
-            {job.is_insurance && <Badge tone="violet">Insurance</Badge>}
-          </span>
-        }
-        actions={
-          <>
-            <form action={createEstimate}>
-              <input type="hidden" name="job_id" value={job.id} />
-              <SubmitButton>New estimate</SubmitButton>
-            </form>
-            <form action={createInvoice}>
-              <input type="hidden" name="job_id" value={job.id} />
-              <SubmitButton variant="secondary">New invoice</SubmitButton>
-            </form>
-          </>
-        }
-      />
 
       <Card className="mb-6" title="Pipeline stage">
         <form action={setStage} className="flex flex-wrap gap-1.5">

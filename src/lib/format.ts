@@ -57,3 +57,20 @@ export function isoDate(d: Date) {
 export function siteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
 }
+
+/** Add N business days (Mon-Fri; holidays not considered) to a date. */
+export function addBusinessDays(from: Date, days: number) {
+  const d = new Date(from);
+  let added = 0;
+  while (added < days) {
+    d.setDate(d.getDate() + 1);
+    const dow = d.getDay();
+    if (dow !== 0 && dow !== 6) added++;
+  }
+  return d;
+}
+
+export function daysSince(iso: string | null | undefined, now = new Date()) {
+  if (!iso) return 0;
+  return Math.max(0, Math.floor((now.getTime() - new Date(iso).getTime()) / 86400000));
+}

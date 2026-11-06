@@ -128,7 +128,7 @@ function check(cond, msg) {
   check(await page.locator("h1 + div").getByText("Paid").isVisible(), "job stage moved to Paid");
 
   console.log("7. Crew + schedule");
-  await page.goto(BASE + "/app/settings");
+  await page.goto(BASE + "/app/settings/crews");
   await page.fill('input[placeholder^="Crew name"]', "Miguel's crew");
   await page.click('form:has(input[placeholder^="Crew name"]) button:has-text("Add")');
   await page.getByText("Crew added.").waitFor();
@@ -154,7 +154,7 @@ function check(cond, msg) {
   await shot("07-dashboard");
 
   console.log("8. Invite a teammate; second company is isolated");
-  await page.goto(BASE + "/app/settings");
+  await page.goto(BASE + "/app/settings/team");
   await page.fill('input[placeholder="teammate@company.com"]', `carol${stamp}@example.com`);
   await page.click('button:has-text("Invite")');
   await page.getByText("Invite created").waitFor();

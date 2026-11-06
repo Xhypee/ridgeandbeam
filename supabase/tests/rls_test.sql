@@ -32,7 +32,7 @@ insert into estimate_items (org_id, estimate_id, description, quantity, unit_pri
 insert into estimates (org_id, job_id) select (select v from ids where k='acme'), :'acme_job_id' returning number \gset est2_
 
 do $$ begin
-  if (select count(*) from catalog_items) <> 14 then raise exception 'expected seeded catalog of 14, got %', (select count(*) from catalog_items); end if;
+  if (select count(*) from catalog_items) <> 23 then raise exception 'expected seeded catalog of 23, got %', (select count(*) from catalog_items); end if;
 end $$;
 
 select :est_number = 1001 as ok1, :est2_number = 1002 as ok2 \gset
@@ -50,7 +50,7 @@ do $$ begin
   if (select count(*) from customers) <> 0 then raise exception 'bob sees acme customers'; end if;
   if (select count(*) from estimates) <> 0 then raise exception 'bob sees acme estimates'; end if;
   if (select count(*) from organizations) <> 1 then raise exception 'bob sees other orgs'; end if;
-  if (select count(*) from catalog_items) <> 14 then raise exception 'bob catalog isolation wrong'; end if;
+  if (select count(*) from catalog_items) <> 23 then raise exception 'bob catalog isolation wrong'; end if;
 end $$;
 update customers set name = 'hacked';  -- silently affects 0 rows under RLS
 do $$ begin
@@ -143,6 +143,61 @@ update memberships set role = 'owner' where user_id = auth.uid();
 do $$ begin
   if exists (select 1 from organizations where name = 'Carol Co') then raise exception 'member edited org'; end if;
   if (select role from memberships where user_id = auth.uid()) <> 'member' then raise exception 'member escalated role'; end if;
+end $$;
+
+
+-- ---------------------------------------------------------------------------
+-- v2 platform tables
+-- ---------------------------------------------------------------------------
+select null from set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', true);
+insert into claims (org_id, job_id, carrier, rcv_amount, depreciation_amount, deductible)
+  select (select v from ids where k='acme'), :'acme_job_id', 'State Farm', 20000, 5000, 1000 returning id \gset claim_
+do $$ begin
+  if (select count(*) from claim_documents) <> 8 then raise exception 'claim paperwork checklist not seeded'; end if;
+end $$;
+insert into commission_plans (org_id, name, kind, rate) select v, '10% GP', 'pct_gross_profit', 10 from ids where k='acme' returning id \gset plan_
+insert into commission_payouts (org_id, user_id, job_id, kind, amount)
+  select (select v from ids where k='acme'), '00000000-0000-0000-0000-00000000000a', :'acme_job_id', 'advance', 250;
+
+-- Bob: cannot see Acme claims or attach his own claim rows to Acme's job
+select null from set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000b', true);
+do $$ begin
+  if (select count(*) from claims) <> 0 then raise exception 'bob sees acme claims'; end if;
+  if (select count(*) from commission_payouts) <> 0 then raise exception 'bob sees acme payouts'; end if;
+  begin
+    insert into claims (org_id, job_id) select (select v from ids where k='bobs'), (select id from jobs limit 1);
+  exception when others then null; end;
+end $$;
+
+-- Carol (member of Acme): sees claims, cannot see Alice's payouts, cannot write commission plans, cannot read tokens
+select null from set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000c', true);
+do $$ begin
+  if (select count(*) from claims) <> 1 then raise exception 'member cannot see org claims'; end if;
+  if (select count(*) from commission_payouts) <> 0 then raise exception 'member sees other rep payouts'; end if;
+  begin
+    insert into commission_plans (org_id, name, kind) select v, 'x', 'pct_contract' from ids where k='acme';
+    raise exception 'member wrote commission plan';
+  exception when insufficient_privilege then null; end;
+  if (select count(*) from integration_secrets) <> 0 then raise exception 'tokens readable'; end if;
+end $$;
+
+-- Anonymous web lead intake creates customer + job + notification in the right org
+select null from set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', true);
+select intake_key from organizations where id = (select v from ids where k='acme') \gset
+set local role anon;
+select null from set_config('request.jwt.claim.sub', '', true);
+select (public.submit_public_lead(:'intake_key',
+  '{"name":"Web Lead","phone":"555-0199","zip":"80202","state":"co"}'::jsonb)->>'job_id') is not null as lead_ok \gset
+\if :lead_ok \else \echo 'FAIL public lead intake' \quit \endif
+do $$ begin
+  begin perform public.submit_public_lead('nope', '{"name":"x","phone":"1"}'::jsonb); raise exception 'bad key accepted';
+  exception when raise_exception then if sqlerrm = 'bad key accepted' then raise; end if; end;
+end $$;
+set local role authenticated;
+select null from set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', true);
+do $$ begin
+  if not exists (select 1 from customers where name = 'Web Lead' and state = 'CO') then raise exception 'lead customer missing'; end if;
+  if not exists (select 1 from notifications where kind = 'new_lead') then raise exception 'lead notification missing'; end if;
 end $$;
 
 \echo 'ALL RLS TESTS PASSED'

@@ -75,7 +75,7 @@ export async function inviteMember(_: ActionResult, fd: FormData): Promise<Actio
   try { ctx = await requireAdmin(); } catch (e) { return { error: (e as Error).message }; }
   const email = str(fd, "email")?.toLowerCase();
   if (!email || !email.includes("@")) return { error: "Enter a valid email." };
-  const role = oneOf(fd, "role", ["member", "admin"] as const, "member");
+  const role = oneOf(fd, "role", ["member", "admin", "sales_rep", "crew_lead"] as const, "member");
   const { error } = await ctx.supabase.from("invites").insert({ org_id: ctx.org.id, email, role, invited_by: ctx.user.id });
   if (error) return { error: friendly(error) };
   return done("Invite created. Copy the link below and send it to them.");

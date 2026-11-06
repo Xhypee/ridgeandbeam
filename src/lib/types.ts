@@ -1,4 +1,4 @@
-export type Role = "owner" | "admin" | "member";
+export type Role = "owner" | "admin" | "member" | "sales_rep" | "crew_lead";
 
 export type Organization = {
   id: string;
@@ -11,9 +11,29 @@ export type Organization = {
   default_waste_pct: number;
   estimate_terms: string;
   invoice_terms: string;
+  state: string | null;
+  zip: string | null;
+  lat: number | null;
+  lng: number | null;
+  website: string | null;
+  google_review_url: string | null;
+  insurance_certificate_url: string | null;
+  certifications: string[];
+  intake_key: string;
+  payment_schedule: { label: string; pct: number; trigger: string }[];
+  financing: { enabled: boolean; apr: number; term_months: number; lenders: { name: string; url: string; dealer_fee_pct?: number }[] };
+  min_margin_pct: number;
+  bundles_per_square: number;
+  card_fee_pct: number;
+  pass_card_fee: boolean;
+  stripe_account_id: string | null;
+  plan: string;
+  subscription_status: "trialing" | "active" | "cancelled";
+  cancel_at: string | null;
+  instant_quote: { enabled: boolean; price_per_square_low: number; price_per_square_high: number };
 };
 
-export type Membership = { org_id: string; role: Role; full_name: string | null; email: string | null };
+export type Membership = { org_id: string; role: Role; full_name: string | null; email: string | null; crew_id?: string | null; phone?: string | null };
 
 export const JOB_STAGES = [
   "lead",

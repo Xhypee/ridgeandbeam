@@ -25,7 +25,7 @@ export const getMemberships = cache(async () => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("memberships")
-    .select("org_id, role, full_name, email, organizations(*)")
+    .select("org_id, role, full_name, email, crew_id, phone, organizations(*)")
     .eq("user_id", user.id)
     .order("created_at");
   if (error) throw new Error(error.message);
@@ -49,6 +49,11 @@ export const requireOrg = cache(async () => {
     org: m.organizations,
     role: m.role,
     isAdmin: m.role === "owner" || m.role === "admin",
+    /** Sees prices, costs, margins and other reps' money. */
+    canSeeMoney: m.role !== "crew_lead",
+    isCrewLead: m.role === "crew_lead",
+    isSalesRep: m.role === "sales_rep",
+    crewId: m.crew_id ?? null,
     memberships,
   };
 });
@@ -58,3 +63,18 @@ export async function requireAdmin() {
   if (!ctx.isAdmin) throw new Error("Only owners and admins can do that.");
   return ctx;
 }
+
+/** Blocks crew leads from money pages (prices, invoices, costs, commissions of others). */
+export async function requireMoneyAccess() {
+  const ctx = await requireOrg();
+  if (!ctx.canSeeMoney) redirect("/app/schedule");
+  return ctx;
+}
+
+export const ROLE_LABEL: Record<string, string> = {
+  owner: "Owner",
+  admin: "Admin",
+  member: "Office",
+  sales_rep: "Sales rep",
+  crew_lead: "Crew lead",
+};
