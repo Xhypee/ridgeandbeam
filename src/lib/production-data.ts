@@ -180,7 +180,7 @@ export async function getForecast(place: { zip: string | null; lat: number | nul
   try {
     let lat = place.lat, lng = place.lng;
     if ((lat == null || lng == null) && place.zip) {
-      const g = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(place.zip)}&count=1&countryCode=US&language=en&format=json`, {
+      const g = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(place.zip)}&count=1&countryCode=AU&language=en&format=json`, {
         next: { revalidate: 86400 }, signal: AbortSignal.timeout(2500),
       });
       if (!g.ok) return null;

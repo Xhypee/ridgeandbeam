@@ -1,3 +1,5 @@
+import { AU_STATE_TZ, asAuState } from "./au";
+
 const usd = new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" });
 export const money = (n: number | string | null | undefined) => usd.format(Number(n) || 0);
 
@@ -47,11 +49,13 @@ export const STATUS_TONE: Record<string, Tone> = {
 export type Tone = "slate" | "violet" | "amber" | "blue" | "cyan" | "orange" | "teal" | "green" | "red";
 
 /** ISO date (YYYY-MM-DD) in local time. */
-export function isoDate(d: Date) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+/**
+ * Calendar date (YYYY-MM-DD) of `d` in an Australian time zone (default Sydney/Melbourne/Canberra).
+ * Servers run in UTC, so using local getters would put "today" a day behind each morning in Australia.
+ * Pass the business's zone (AU_STATE_TZ[state]) or use orgToday() when the state is known.
+ */
+export function isoDate(d: Date, timeZone = "Australia/Sydney") {
+  return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
 }
 
 export function siteUrl() {
@@ -73,4 +77,10 @@ export function addBusinessDays(from: Date, days: number) {
 export function daysSince(iso: string | null | undefined, now = new Date()) {
   if (!iso) return 0;
   return Math.max(0, Math.floor((now.getTime() - new Date(iso).getTime()) / 86400000));
+}
+
+/** Today's date (YYYY-MM-DD) in the business's state time zone; servers run in UTC. */
+export function orgToday(state: string | null | undefined, now = new Date()) {
+  const tz = AU_STATE_TZ[asAuState(state) ?? "NSW"];
+  return new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
 }

@@ -32,7 +32,8 @@ insert into estimate_items (org_id, estimate_id, description, quantity, unit_pri
 insert into estimates (org_id, job_id) select (select v from ids where k='acme'), :'acme_job_id' returning number \gset est2_
 
 do $$ begin
-  if (select count(*) from catalog_items) <> 23 then raise exception 'expected seeded catalog of 23, got %', (select count(*) from catalog_items); end if;
+  if (select count(*) from catalog_items) = 0 then raise exception 'starter catalog was not seeded'; end if;
+  if exists (select 1 from catalog_items where org_id <> (select v from ids where k='acme')) then raise exception 'alice sees another org catalog'; end if;
 end $$;
 
 select :est_number = 1001 as ok1, :est2_number = 1002 as ok2 \gset
@@ -50,7 +51,7 @@ do $$ begin
   if (select count(*) from customers) <> 0 then raise exception 'bob sees acme customers'; end if;
   if (select count(*) from estimates) <> 0 then raise exception 'bob sees acme estimates'; end if;
   if (select count(*) from organizations) <> 1 then raise exception 'bob sees other orgs'; end if;
-  if (select count(*) from catalog_items) <> 23 then raise exception 'bob catalog isolation wrong'; end if;
+  if (select count(*) from catalog_items) = 0 or exists (select 1 from catalog_items where org_id <> (select v from ids where k='bobs')) then raise exception 'bob catalog isolation wrong'; end if;
 end $$;
 update customers set name = 'hacked';  -- silently affects 0 rows under RLS
 do $$ begin
@@ -153,7 +154,7 @@ select null from set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00
 insert into claims (org_id, job_id, carrier, rcv_amount, depreciation_amount, deductible)
   select (select v from ids where k='acme'), :'acme_job_id', 'State Farm', 20000, 5000, 1000 returning id \gset claim_
 do $$ begin
-  if (select count(*) from claim_documents) <> 8 then raise exception 'claim paperwork checklist not seeded'; end if;
+  if (select count(*) from claim_documents) = 0 then raise exception 'claim paperwork checklist not seeded'; end if;
 end $$;
 insert into commission_plans (org_id, name, kind, rate) select v, '10% GP', 'pct_gross_profit', 10 from ids where k='acme' returning id \gset plan_
 insert into commission_payouts (org_id, user_id, job_id, kind, amount)

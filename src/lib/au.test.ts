@@ -27,3 +27,13 @@ describe("au helpers", () => {
     expect(auPhoneE164("555-0142")).toBeNull();
   });
 });
+
+import { isoDate, orgToday } from "./format";
+describe("Australian dates", () => {
+  it("uses Australian time, not the UTC server clock", () => {
+    const utcEvening = new Date("2026-11-09T20:30:00Z"); // 7:30am Tue 10 Nov in Sydney (AEDT)
+    expect(isoDate(utcEvening)).toBe("2026-11-10");
+    expect(orgToday("QLD", utcEvening)).toBe("2026-11-10"); // 6:30am Brisbane
+    expect(orgToday("WA", new Date("2026-11-09T15:30:00Z"))).toBe("2026-11-09"); // 11:30pm Perth
+  });
+});

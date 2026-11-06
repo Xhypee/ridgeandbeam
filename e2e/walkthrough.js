@@ -57,7 +57,7 @@ function check(cond, msg) {
   check(await page.getByRole("heading", { name: "Hail damage full replacement" }).isVisible(), "job created from new-customer form");
 
   console.log("4. Estimate with roof calculator");
-  await page.click('button:has-text("New estimate")');
+  await page.click('button:has-text("New quote")');
   await page.waitForURL(/\/app\/estimates\/[0-9a-f-]+$/);
   const estUrl = page.url();
   await page.fill('input[aria-label="Plan area"]', "2000");
