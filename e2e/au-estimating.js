@@ -121,7 +121,7 @@ async function noHorizontalScroll(page, what) {
   const estUrl = page.url();
   const estId = estUrl.split("/").pop();
   check(sql(`select gst_inclusive || '|' || tax_rate from estimates where id = '${estId}'`) === "true|10.000", "new quote is GST-inclusive at 10%");
-  check(await page.getByText("State rules for New South Wales will appear here.").isVisible(), "state compliance placeholder shows the job's state");
+  check((await page.locator('[data-testid="compliance-state"]').innerText()).includes("New South Wales"), "state compliance panel shows the job's state");
   check(await page.locator('[data-testid="quote-business"]').getByText("ABN 51 824 753 556").isVisible(), "quote header shows ABN");
   check(await page.locator('[data-testid="quote-licence"]').innerText().then((t) => t.includes("NSW licence 123456C")), "quote header shows the NSW licence");
   await page.fill('input[aria-label="Section name"]', "Front");

@@ -3,11 +3,13 @@ import { notFound } from "next/navigation";
 import { SubmitButton } from "@/components/action-form";
 import { CopyLink } from "@/components/copy-link";
 import { QuoteBusiness } from "@/components/quote-business";
+import { DoorKnockSaleBanner } from "@/components/door-knock-banner";
 import { StateCompliancePanel } from "@/components/state-compliance-panel";
 import { Badge, Card, LinkButton, PageHeader, Select } from "@/components/ui";
 import { requireMoneyAccess } from "@/lib/dal";
 import { resolveJobState } from "@/lib/estimate-notices";
-import { effectiveOptionId } from "@/lib/estimate-totals";
+import { effectiveOptionId, estimateTotals, itemsForOption } from "@/lib/estimate-totals";
+import { isDoorKnockSource } from "@/lib/au-rules";
 import { allowedCatalog, isLegacyItem, type CatalogRow, type DraftItem, type DraftOption } from "@/lib/estimating";
 import { date, label, siteUrl, STATUS_TONE } from "@/lib/format";
 import { listOrgSuppliers } from "@/lib/suppliers";
@@ -24,21 +26,25 @@ export default async function EstimatePage({ params }: PageProps<"/app/estimates
   const [{ data: e }, { data: catalog }, suppliers] = await Promise.all([
     supabase
       .from("estimates")
-      .select("*, estimate_items(*), estimate_options!estimate_options_estimate_id_fkey(*), jobs(id, title, state, is_insurance, customers(name, email, state))")
+      .select("*, estimate_items(*), estimate_options!estimate_options_estimate_id_fkey(*), jobs(id, title, state, is_insurance, roof_material, job_type, lead_source, customers(name, email, state))")
       .eq("id", id)
       .maybeSingle(),
     supabase.from("catalog_items").select("*").order("category").order("calc_key").order("name"),
     listOrgSuppliers(supabase, org.id).catch(() => []),
   ]);
+  const { data: profile } = e ? await supabase.from("job_compliance_profiles").select("*").eq("job_id", e.job_id).maybeSingle() : { data: null };
   if (!e) notFound();
   const items = ((e.estimate_items ?? []) as ItemRow[]).sort((a, b) => a.position - b.position);
   const options = ((e.estimate_options ?? []) as OptionRow[]).sort((a, b) => a.position - b.position);
-  const job = e.jobs as { id: string; title: string; state: string | null; is_insurance: boolean; customers: { name: string; email: string | null; state: string | null } };
+  const job = e.jobs as { id: string; title: string; state: string | null; is_insurance: boolean; roof_material: string | null; job_type: string | null; lead_source: string | null; customers: { name: string; email: string | null; state: string | null } };
   const publicUrl = `${siteUrl()}/q/${e.public_token}`;
   const status = e.status as string;
   const word = e.option_label === "alternates" ? "alternate" : "option";
   const resolved = resolveJobState(job.state, job.customers.state, org.state);
   const effOption = effectiveOptionId(options, e.selected_option_id);
+  // Contract value for the state rules: the chosen option once accepted, else the dearest option (worst case for thresholds).
+  const totalFor = (optionId: string | null) => estimateTotals(itemsForOption(items, optionId), Number(e.discount), Number(e.tax_rate), Boolean(e.gst_inclusive)).total;
+  const contractValue = status === "accepted" || !options.length ? totalFor(effOption) : Math.max(...options.map((o) => totalFor(o.id)));
   const extra = org as typeof org & { calc_defaults?: unknown };
   const priceBookIncGst = org.prices_include_gst !== false;
   // AU price book only: legacy (US-keyed) and certification-gated items stay out of the editor.
@@ -115,11 +121,32 @@ export default async function EstimatePage({ params }: PageProps<"/app/estimates
         </div>
       )}
 
-      <div className="mb-6 grid gap-4 lg:grid-cols-2">
+      <DoorKnockSaleBanner
+        className="mb-6"
+        state={resolved.state}
+        leadSource={job.lead_source}
+        doorKnockSale={profile?.door_knock_sale ?? undefined}
+        disasterEmergencyRepair={profile?.disaster_emergency_repair ?? undefined}
+        signedAt={e.accepted_at}
+        contractValueIncGst={contractValue}
+      />
+
+      <div className="mb-6 grid items-start gap-4 lg:grid-cols-2">
         <Card title="Quote header">
           <QuoteBusiness name={org.name} abn={org.abn} licences={org.licences} state={resolved.state} gstRegistered={org.gst_registered} warnMissing />
         </Card>
-        <StateCompliancePanel state={resolved.state} source={resolved.source} />
+        <StateCompliancePanel
+          state={resolved.state}
+          source={resolved.source}
+          contractValueIncGst={contractValue > 0 ? contractValue : null}
+          contractDate={e.accepted_at ?? new Date()}
+          roofSystem={profile?.roof_system ?? job.roof_material}
+          jobType={profile?.au_job_type ?? job.job_type}
+          doorKnockSale={profile?.door_knock_sale ?? isDoorKnockSource(job.lead_source)}
+          ownerOccupier={profile?.owner_occupier ?? undefined}
+          existingHouse={profile?.existing_house ?? undefined}
+          licenceNumber={resolved.state ? org.licences?.[resolved.state]?.number ?? null : null}
+        />
       </div>
 
       <EstimateEditor

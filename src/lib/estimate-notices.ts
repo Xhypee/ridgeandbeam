@@ -1,10 +1,31 @@
-// Slot for state-specific notices on quotes (cooling-off, home warranty insurance, deposits, licences...).
-// State law is being verified separately and will come from the compliance builder's src/lib/au-rules.ts;
-// until then no notices are generated. The snapshot mechanism (estimates.legal_notices, copied at acceptance)
-// is kept so whatever rules land later are frozen onto the signed quote.
+// State notices on quotes (licence, cooling-off, home warranty insurance, deposits, ACL door-knock rules…),
+// from the rules engine in src/lib/au-rules.ts. The notices shown before signing are frozen into
+// estimates.legal_notices at acceptance, so a signed quote keeps the wording the homeowner saw.
+import { stateNoticesFor, type BusinessDetails } from "@/components/state-notices";
 import { asAuState, type AuState } from "./au";
+import { auJobTypeFrom, isDoorKnockSource, roofSystemFrom } from "./au-rules";
 
-export type Notice = { id: string; title: string; text: string; citation?: string; conspicuous?: boolean };
+export type Notice = { id: string; title: string; text: string; citation?: string; conspicuous?: boolean; sourceUrl?: string; wording?: string; kind?: string; verify?: string; verifiedOn?: string };
+
+/** Facts from Jobs → Compliance → "About this job" (job_compliance_profiles); null fields = not known. */
+export type ComplianceProfile = {
+  roof_system?: string | null; au_job_type?: string | null; owner_occupier?: boolean | null; existing_house?: boolean | null;
+  building_approval_required?: boolean | null; built_before_1990?: boolean | null; door_knock_sale?: boolean | null;
+  urgent_work?: boolean | null; paint_or_coat_only?: boolean | null; mixed_work?: boolean | null; subcontract?: boolean | null;
+  disaster_emergency_repair?: boolean | null;
+};
+
+export type NoticeContext = {
+  /** Contract price incl. GST. */
+  total: number;
+  isInsurance?: boolean;
+  contractDate?: string | Date | null;
+  roofMaterial?: string | null;
+  jobType?: string | null;
+  leadSource?: string | null;
+  profile?: ComplianceProfile | null;
+  business?: BusinessDetails;
+};
 export type NoticeSnapshot = Notice & { state: string | null };
 
 export type ResolvedState = { state: AuState | null; source: "job" | "customer" | "company" | "none" };
@@ -20,11 +41,30 @@ export function resolveJobState(jobState?: string | null, customerState?: string
   return { state: null, source: "none" };
 }
 
-/** Notices required on a quote for this state. Empty until au-rules.ts provides them. */
-export function requiredNotices(state: AuState | null, ctx: { total: number; isInsurance: boolean }): Notice[] {
-  void state;
-  void ctx;
-  return [];
+const opt = (v: boolean | null | undefined) => (v == null ? undefined : v);
+
+/** Notices required on a quote for this job's state (empty when the state is unknown). */
+export function requiredNotices(state: AuState | null, ctx: NoticeContext): Notice[] {
+  if (!state) return [];
+  const p = ctx.profile ?? {};
+  return stateNoticesFor({
+    state,
+    contractValueIncGst: Math.max(0, Number(ctx.total) || 0),
+    contractDate: ctx.contractDate ?? new Date(),
+    roofSystem: roofSystemFrom(p.roof_system ?? ctx.roofMaterial),
+    jobType: auJobTypeFrom(p.au_job_type ?? ctx.jobType),
+    existingHouse: p.existing_house ?? true,
+    ownerOccupier: opt(p.owner_occupier),
+    buildingApprovalRequired: opt(p.building_approval_required),
+    builtBefore1990: opt(p.built_before_1990),
+    doorKnockSale: p.door_knock_sale ?? isDoorKnockSource(ctx.leadSource),
+    urgentWork: opt(p.urgent_work),
+    paintOrCoatOnly: opt(p.paint_or_coat_only),
+    mixedWork: opt(p.mixed_work),
+    subcontract: opt(p.subcontract),
+    disasterEmergencyRepair: opt(p.disaster_emergency_repair),
+    business: ctx.business,
+  });
 }
 
 export const noticeSnapshot = (state: string | null, notices: Notice[]): NoticeSnapshot[] => notices.map((n) => ({ ...n, state }));

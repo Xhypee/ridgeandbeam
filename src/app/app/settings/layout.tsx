@@ -7,6 +7,7 @@ export default async function SettingsLayout({ children }: LayoutProps<"/app/set
   const b = "/app/settings";
   const tabs = [
     { href: b, label: "Company", exact: true },
+    { href: `${b}/state-rules`, label: "State rules" },
     { href: `${b}/price-book`, label: "Price book" },
     { href: `${b}/suppliers`, label: "Suppliers" },
     { href: `${b}/team`, label: "Team" },

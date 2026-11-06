@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PrintButton } from "@/components/print-button";
+import { DoorKnockSaleBanner } from "@/components/door-knock-banner";
 import { QuoteBusiness } from "@/components/quote-business";
+import { StateNotices, type StateNotice } from "@/components/state-notices";
 import { date, money } from "@/lib/format";
 import { anonClient } from "@/lib/public";
 import { round2 } from "@/lib/roof";
@@ -67,6 +69,15 @@ export default async function PublicEstimatePage({ params }: PageProps<"/q/[toke
             {doc.job.site_address && <p className="text-sm text-slate-600">{doc.job.site_address}</p>}
           </div>
         </section>
+
+        <DoorKnockSaleBanner
+          state={p.state}
+          leadSource={doc.job.lead_source}
+          doorKnockSale={doc.compliance?.door_knock_sale ?? undefined}
+          disasterEmergencyRepair={doc.compliance?.disaster_emergency_repair ?? undefined}
+          signedAt={doc.accepted_at}
+          contractValueIncGst={total}
+        />
 
         {hasOptions ? (
           <>
@@ -140,13 +151,7 @@ export default async function PublicEstimatePage({ params }: PageProps<"/q/[toke
         {p.notices.length > 0 && (
           <section className="space-y-3 border-t border-slate-200 pt-6" data-testid="legal-notices">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Important notices</p>
-            {p.notices.map((n) => (
-              <div key={n.id} className="rounded-lg bg-slate-50 p-3 text-sm print:bg-white print:ring-1 print:ring-slate-300">
-                <p className="font-semibold text-slate-900">{n.title}</p>
-                <p className={n.conspicuous ? "mt-1 font-bold text-slate-900" : "mt-1 text-slate-700"}>{n.text}</p>
-                {n.citation && <p className="mt-1 text-xs text-slate-500">{n.citation}</p>}
-              </div>
-            ))}
+            <StateNotices notices={p.notices as StateNotice[]} />
           </section>
         )}
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { CopyLink } from "@/components/copy-link";
+import { DoorKnockSaleBanner } from "@/components/door-knock-banner";
 import { Badge, Card, Field, Input, LinkButton, PageHeader, Select } from "@/components/ui";
 import { requireMoneyAccess } from "@/lib/dal";
 import { date, isoDate, label, money, siteUrl, STATUS_TONE } from "@/lib/format";
@@ -16,7 +17,7 @@ export default async function InvoicePage({ params }: PageProps<"/app/invoices/[
   const { id } = await params;
   const { supabase, org } = await requireMoneyAccess();
   const [{ data: v }, { data: catalog }, { data: tot }] = await Promise.all([
-    supabase.from("invoices").select("*, invoice_items(*), payments(*), jobs(id, title, customers(name, email, address, city, state, zip))").eq("id", id).maybeSingle(),
+    supabase.from("invoices").select("*, invoice_items(*), payments(*), jobs(id, title, state, lead_source, customers(name, email, address, city, state, zip)), estimates(accepted_at)").eq("id", id).maybeSingle(),
     supabase.from("catalog_items").select("*").order("category").order("name"),
     supabase.from("invoice_totals").select("*").eq("invoice_id", id).maybeSingle(),
   ]);
@@ -25,7 +26,9 @@ export default async function InvoicePage({ params }: PageProps<"/app/invoices/[
   const items = ((v.invoice_items ?? []) as (Item & { position: number })[]).sort((a, b) => a.position - b.position);
   const payments = ((v.payments ?? []) as { id: string; amount: number; method: string; paid_on: string; reference: string | null }[]).sort((a, b) => a.paid_on.localeCompare(b.paid_on));
   type Cust = { name: string; email: string | null; address: string | null; city: string | null; state: string | null; zip: string | null };
-  const job = v.jobs as { id: string; title: string; customers: Cust };
+  const job = v.jobs as { id: string; title: string; state: string | null; lead_source: string | null; customers: Cust };
+  const { data: profile } = await supabase.from("job_compliance_profiles").select("door_knock_sale, disaster_emergency_repair").eq("job_id", job.id).maybeSingle();
+  const signedAt = (v.estimates as { accepted_at: string | null } | null)?.accepted_at ?? null;
   const c = job.customers;
   const customerAddress = [c.address, c.city, [c.state, c.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ") || null;
   const publicUrl = `${siteUrl()}/i/${v.public_token}`;
@@ -73,6 +76,16 @@ export default async function InvoicePage({ params }: PageProps<"/app/invoices/[
             {status !== "draft" && status !== "void" && <LinkButton variant="secondary" href={`/i/${v.public_token}`} target="_blank">Customer view</LinkButton>}
           </>
         }
+      />
+
+      <DoorKnockSaleBanner
+        className="mb-4"
+        state={job.state ?? c.state}
+        leadSource={job.lead_source}
+        doorKnockSale={profile?.door_knock_sale ?? undefined}
+        disasterEmergencyRepair={profile?.disaster_emergency_repair ?? undefined}
+        signedAt={signedAt}
+        contractValueIncGst={t.total}
       />
 
       {status === "draft" && check.problems.length > 0 && (

@@ -46,7 +46,7 @@ export default async function JobLayout({ children, params }: LayoutProps<"/app/
   const est = ctx.estimate;
   const value = canSeeMoney && est && ["accepted", "sent"].includes(est.status) ? est.total : null;
   const insurer = ctx.claim?.carrier;
-  const extras = canSeeMoney ? [{ href: `${base}/change-orders`, label: "Change orders" }, { href: `${base}/costs`, label: "Job cost" }] : [];
+  const extras = canSeeMoney ? [{ href: `${base}/compliance`, label: "Compliance" }, { href: `${base}/change-orders`, label: "Change orders" }, { href: `${base}/costs`, label: "Job cost" }] : [];
   const tel = customer.phone ? `tel:${customer.phone.replace(/\s+/g, "")}` : null;
 
   return (

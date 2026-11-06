@@ -1,5 +1,5 @@
 import { asAuState } from "@/lib/au";
-import { noticeSnapshot, requiredNotices, type Notice } from "@/lib/estimate-notices";
+import { noticeSnapshot, requiredNotices, type ComplianceProfile, type Notice } from "@/lib/estimate-notices";
 import { effectiveOptionId, estimateTotals, itemsForOption } from "@/lib/estimate-totals";
 import { monthlyPayment } from "@/lib/roof";
 
@@ -32,7 +32,9 @@ export type PublicEstimate = {
   };
   financing: { enabled: boolean; apr: number; term_months: number };
   customer: { name: string; email: string | null; phone: string | null; street: string | null; suburb: string | null; state: string | null; postcode: string | null };
-  job: { title: string; site_address: string | null; state: string | null; is_insurance: boolean };
+  job: { title: string; site_address: string | null; state: string | null; is_insurance: boolean; roof_material?: string | null; job_type?: string | null; lead_source?: string | null };
+  /** The job's compliance facts (Jobs → Compliance), when the office filled them in. */
+  compliance?: ComplianceProfile | null;
   options: { id: string; name: string; tier: string | null; description: string | null; warranty: string | null; recommended: boolean; position: number }[];
   items: { description: string; quantity: number; unit: string; unit_price: number; option_id: string | null }[];
 };
@@ -64,7 +66,17 @@ export function buildProposal(doc: PublicEstimate) {
   const effective = effectiveOptionId(options, doc.selected_option_id);
   const all = money(itemsForOption(doc.items, effective));
   const state = asAuState(doc.state);
-  const noticesFor = (total: number) => requiredNotices(state, { isInsurance: Boolean(doc.job.is_insurance), total });
+  const noticesFor = (total: number) =>
+    requiredNotices(state, {
+      total,
+      isInsurance: Boolean(doc.job.is_insurance),
+      contractDate: new Date(),
+      roofMaterial: doc.job.roof_material,
+      jobType: doc.job.job_type,
+      leadSource: doc.job.lead_source,
+      profile: doc.compliance,
+      business: { name: doc.org.name, licenceNumber: doc.org.licence?.number ?? null, abn: doc.org.abn, address: doc.org.address, phone: doc.org.phone, email: doc.org.email },
+    });
   // After acceptance, show exactly what was snapshotted; before, what will be attached.
   const maxTotal = views.length ? Math.max(...views.map((v) => v.total)) : all.total;
   const notices: Notice[] = doc.status === "accepted" && doc.legal_notices?.length ? doc.legal_notices : noticesFor(maxTotal);

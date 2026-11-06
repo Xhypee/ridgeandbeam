@@ -148,7 +148,7 @@ export async function setEstimateStatus(fd: FormData) {
 
   const { data: est, error: getErr } = await supabase
     .from("estimates")
-    .select("id, job_id, status, discount, tax_rate, gst_inclusive, selected_option_id, estimate_items(quantity, unit_price, option_id), estimate_options!estimate_options_estimate_id_fkey(id, position, recommended), jobs(state, is_insurance, customers(state))")
+    .select("id, job_id, status, discount, tax_rate, gst_inclusive, selected_option_id, estimate_items(quantity, unit_price, option_id), estimate_options!estimate_options_estimate_id_fkey(id, position, recommended), jobs(state, is_insurance, roof_material, job_type, lead_source, customers(state))")
     .eq("id", id)
     .single();
   if (getErr || !est) throw new Error("Estimate not found.");
@@ -161,13 +161,23 @@ export async function setEstimateStatus(fd: FormData) {
   if (status === "accepted") {
     const wanted = String(fd.get("option_id") ?? "") || null;
     const optionId = options.length ? effectiveOptionId(options, wanted ?? est.selected_option_id) : null;
-    const job = est.jobs as unknown as { state: string | null; is_insurance: boolean; customers: { state: string | null } | null } | null;
+    const job = est.jobs as unknown as { state: string | null; is_insurance: boolean; roof_material: string | null; job_type: string | null; lead_source: string | null; customers: { state: string | null } | null } | null;
+    const { data: profile } = await supabase.from("job_compliance_profiles").select("*").eq("job_id", est.job_id).maybeSingle();
     const resolved = resolveJobState(job?.state, job?.customers?.state, org.state);
     const t = estimateTotals(itemsForOption(items, optionId), Number(est.discount), Number(est.tax_rate), Boolean(est.gst_inclusive));
     patch.accepted_at = new Date().toISOString();
     patch.accepted_name = "Marked accepted by office";
     patch.selected_option_id = optionId;
-    patch.legal_notices = noticeSnapshot(resolved.state, requiredNotices(resolved.state, { isInsurance: Boolean(job?.is_insurance), total: t.total }));
+    patch.legal_notices = noticeSnapshot(resolved.state, requiredNotices(resolved.state, {
+      total: t.total,
+      isInsurance: Boolean(job?.is_insurance),
+      contractDate: new Date(),
+      roofMaterial: job?.roof_material,
+      jobType: job?.job_type,
+      leadSource: job?.lead_source,
+      profile,
+      business: { name: org.name, licenceNumber: resolved.state ? org.licences?.[resolved.state]?.number ?? null : null, abn: org.abn, address: org.address, phone: org.phone, email: org.email },
+    }));
   }
   if (status === "draft") {
     Object.assign(patch, { accepted_at: null, accepted_name: null, selected_option_id: null, signature_data: null, accepted_ip: null, accepted_user_agent: null, legal_notices: [] });
