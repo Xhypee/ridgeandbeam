@@ -1,11 +1,22 @@
 import { money, date } from "@/lib/format";
+import { abnText } from "@/lib/business";
 import { round2, totals } from "@/lib/roof";
 import type { PublicDocument } from "@/lib/types";
 
-/** Printable customer-facing estimate / invoice. */
-export function DocumentView({ doc }: { doc: PublicDocument }) {
+/** AU business identity a payload may carry (ABN, GST status, the licence for the job's state). */
+type AuOrg = { abn?: string | null; gst_registered?: boolean | null; licence?: { number?: string | null; state?: string | null } | null };
+const UNIT: Record<string, string> = { m2: "m²" };
+
+/**
+ * Printable customer-facing estimate / invoice. Invoices show "Tax invoice" with the seller's ABN when the
+ * business is GST registered (ATO), else "Invoice"; prices here are tax-exclusive with GST added.
+ */
+export function DocumentView({ doc }: { doc: PublicDocument & { org: PublicDocument["org"] & AuOrg } }) {
   const t = totals(doc.items, doc.discount, doc.tax_rate);
   const isInvoice = doc.kind === "invoice";
+  const abn = abnText(doc.org.abn);
+  const registered = doc.org.gst_registered !== false;
+  const licence = doc.org.licence?.number ? `${doc.org.licence.state ? `${doc.org.licence.state} ` : ""}licence ${doc.org.licence.number}` : doc.org.license_number ? `Licence ${doc.org.license_number}` : null;
   const paid = Number(doc.paid ?? 0);
   return (
     <article className="mx-auto max-w-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:rounded-2xl sm:p-10 print:p-0 print:shadow-none print:ring-0">
@@ -15,11 +26,12 @@ export function DocumentView({ doc }: { doc: PublicDocument }) {
           <div className="mt-1 space-y-0.5 text-sm text-slate-500">
             {doc.org.address && <p>{doc.org.address}</p>}
             <p>{[doc.org.phone, doc.org.email].filter(Boolean).join(" · ")}</p>
-            {doc.org.license_number && <p>License #{doc.org.license_number}</p>}
+            {abn && <p>{abn}</p>}
+            {licence && <p>{licence}</p>}
           </div>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-semibold uppercase tracking-wide text-brand-600">{isInvoice ? "Invoice" : "Estimate"}</p>
+          <p className="text-2xl font-semibold uppercase tracking-wide text-brand-600">{isInvoice ? (registered && abn ? "Tax invoice" : "Invoice") : "Quote"}</p>
           <p className="text-sm text-slate-600">#{doc.number}</p>
           <p className="text-sm text-slate-500">{date(isInvoice ? doc.issue_date : doc.created_at)}</p>
           {isInvoice && doc.due_date && <p className="text-sm text-slate-500">Due {date(doc.due_date)}</p>}
@@ -53,7 +65,7 @@ export function DocumentView({ doc }: { doc: PublicDocument }) {
           {doc.items.map((it, i) => (
             <tr key={i}>
               <td className="py-2.5 pr-3 text-slate-800">{it.description}</td>
-              <td className="py-2.5 text-right tabular-nums text-slate-600">{Number(it.quantity)} {it.unit}</td>
+              <td className="py-2.5 text-right tabular-nums text-slate-600">{Number(it.quantity)} {UNIT[it.unit] ?? it.unit}</td>
               <td className="hidden py-2.5 text-right tabular-nums text-slate-600 sm:table-cell">{money(it.unit_price)}</td>
               <td className="py-2.5 text-right tabular-nums text-slate-900">{money(round2(Number(it.quantity) * Number(it.unit_price)))}</td>
             </tr>
@@ -64,8 +76,8 @@ export function DocumentView({ doc }: { doc: PublicDocument }) {
       <div className="mt-4 flex flex-col items-end gap-1 text-sm">
         <div className="flex w-60 justify-between"><span className="text-slate-500">Subtotal</span><span className="tabular-nums">{money(t.subtotal)}</span></div>
         {t.discount > 0 && <div className="flex w-60 justify-between"><span className="text-slate-500">Discount</span><span className="tabular-nums">−{money(t.discount)}</span></div>}
-        {t.tax > 0 && <div className="flex w-60 justify-between"><span className="text-slate-500">Tax ({Number(doc.tax_rate)}%)</span><span className="tabular-nums">{money(t.tax)}</span></div>}
-        <div className="flex w-60 justify-between border-t border-slate-200 pt-2 text-base font-semibold"><span>Total</span><span className="tabular-nums">{money(t.total)}</span></div>
+        {t.tax > 0 && <div className="flex w-60 justify-between"><span className="text-slate-500">GST ({Number(doc.tax_rate)}%)</span><span className="tabular-nums">{money(t.tax)}</span></div>}
+        <div className="flex w-60 justify-between border-t border-slate-200 pt-2 text-base font-semibold"><span>Total{t.tax > 0 ? " inc GST" : ""}</span><span className="tabular-nums">{money(t.total)}</span></div>
         {isInvoice && paid > 0 && <div className="flex w-60 justify-between text-slate-500"><span>Paid</span><span className="tabular-nums">−{money(paid)}</span></div>}
         {isInvoice && <div className="flex w-60 justify-between text-base font-semibold text-brand-700"><span>Balance due</span><span className="tabular-nums">{money(round2(t.total - paid))}</span></div>}
       </div>

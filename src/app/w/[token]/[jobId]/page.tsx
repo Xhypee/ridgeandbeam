@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { adminClient, hasAdminKey } from "@/lib/admin";
 import { anonClient } from "@/lib/public";
 import { crewStrings, materialLabel, unitLabel, workOrderMaterials, type Lang, type WorkOrderMaterial } from "@/lib/production-i18n";
-import { normalizeMeasurements, summarize } from "@/lib/roof";
+import { EXISTING_ROOF_LABEL, normalizeMeasurements, summarize } from "@/lib/roof";
 import { fmtDay, LangToggle } from "../crew-ui";
 import { ProblemForm } from "../problem-form";
 
@@ -85,9 +85,9 @@ export default async function CrewJobPage({ params, searchParams }: PageProps<"/
 
       <Block title={t.roof}>
         <dl className="grid grid-cols-2 gap-3 text-sm">
-          <div><dt className="text-slate-500">{t.squares}</dt><dd className="text-lg font-semibold">{s.squares || "—"}</dd></div>
-          <div><dt className="text-slate-500">{t.pitch}</dt><dd className="text-lg font-semibold">{s.squares ? `${maxPitch}/12` : "—"}</dd></div>
-          <div><dt className="text-slate-500">{t.layers}</dt><dd className="text-lg font-semibold">{m.layers}</dd></div>
+          <div><dt className="text-slate-500">{t.squares}</dt><dd className="text-lg font-semibold">{s.trueArea ? `${s.trueArea} m²` : "—"}</dd></div>
+          <div><dt className="text-slate-500">{t.pitch}</dt><dd className="text-lg font-semibold">{s.trueArea ? `${maxPitch}°` : "—"}</dd></div>
+          <div><dt className="text-slate-500">{t.layers}</dt><dd className="text-lg font-semibold">{EXISTING_ROOF_LABEL[m.existingRoof]}</dd></div>
           <div><dt className="text-slate-500">{t.color}</dt><dd className="text-lg font-semibold">{j.shingle_color ?? "—"}</dd></div>
           {j.permit_number && <div><dt className="text-slate-500">{t.permit}</dt><dd className="font-semibold">{j.permit_number}</dd></div>}
         </dl>

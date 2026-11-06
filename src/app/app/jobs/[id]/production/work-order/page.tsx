@@ -5,7 +5,7 @@ import { requireOrg } from "@/lib/dal";
 import { date } from "@/lib/format";
 import { CREW_STRINGS, materialLabel, unitLabel, workOrderMaterials } from "@/lib/production-i18n";
 import { crewLeadCanSee } from "@/lib/production-server";
-import { normalizeMeasurements, summarize } from "@/lib/roof";
+import { EXISTING_ROOF_LABEL, normalizeMeasurements, summarize } from "@/lib/roof";
 
 export const metadata: Metadata = { title: "Work order" };
 
@@ -59,7 +59,7 @@ export default async function WorkOrderPage({ params }: PageProps<"/app/jobs/[id
           <div><L k="homeowner" /><p className="font-medium">{customer?.name}</p><p className="text-sm text-slate-600">{customer?.phone}</p></div>
           <div><L k="start" /><p className="font-medium">{date(job.scheduled_start) || "—"}{job.scheduled_end && job.scheduled_end !== job.scheduled_start ? ` – ${date(job.scheduled_end)}` : ""}</p></div>
           <div><L k="color" /><p className="font-medium">{job.shingle_color ?? "—"}</p></div>
-          {s && <div><L k="roof" /><p className="font-medium">{s.squares} {EN.squares} / {ES.squares} · {maxPitch}/12 · {m!.layers} {EN.layers} / {ES.layers}</p></div>}
+          {s && <div><L k="roof" /><p className="font-medium">{s.trueArea} m² · {maxPitch}° · {EXISTING_ROOF_LABEL[m!.existingRoof]}</p></div>}
           <div><L k="permit" /><p className="font-medium">{job.permit_number ?? "—"}</p></div>
         </section>
         <section>

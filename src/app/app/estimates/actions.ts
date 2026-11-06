@@ -4,22 +4,24 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireMoneyAccess } from "@/lib/dal";
-import { effectiveOptionId, itemsForOption } from "@/lib/estimate-totals";
+import { effectiveOptionId, estimateTotals, itemsForOption } from "@/lib/estimate-totals";
+import { noticeSnapshot, requiredNotices, resolveJobState } from "@/lib/estimate-notices";
 import { friendly } from "@/lib/form";
-import { MEASUREMENT_SOURCES, totals } from "@/lib/roof";
-import { deductibleWaiverError, noticeSnapshot, requiredNotices, resolveState, rulesFor } from "@/lib/state-rules";
+import { MEASUREMENT_SOURCES } from "@/lib/roof";
+import { supplierPriceBook, type PriceRow } from "@/lib/suppliers";
 import type { ActionResult } from "@/components/action-form";
 
 const ItemSchema = z.object({
   description: z.string().trim().min(1, "Every line needs a description.").max(500),
   quantity: z.coerce.number().finite(),
   unit: z.string().trim().max(20).default("ea"),
-  // Negative prices are allowed for credits (deductible-style credits are screened by state rules).
+  // Negative prices are allowed for credits.
   unit_price: z.coerce.number().finite().min(-1000000).max(10000000),
   unit_cost: z.coerce.number().finite().min(0).max(10000000).catch(0),
   category: z.enum(["material", "labor", "other"]).catch("material"),
   calc_key: z.string().max(40).nullable().catch(null),
   option_key: z.string().max(60).nullable().catch(null),
+  supplier_price_item_id: z.uuid().nullable().optional().catch(null),
 });
 
 const OptionSchema = z.object({
@@ -40,26 +42,13 @@ const SaveSchema = z.object({
   options: z.array(OptionSchema).max(6),
   items: z.array(ItemSchema).max(400),
   tax_rate: z.coerce.number().min(0).max(100),
+  gst_inclusive: z.boolean(),
+  org_supplier_id: z.uuid().nullable(),
   discount: z.coerce.number().min(0),
   notes: z.string().max(5000).nullable(),
   terms: z.string().max(5000).nullable(),
 });
 export type SaveEstimateInput = z.input<typeof SaveSchema>;
-
-type Ctx = Awaited<ReturnType<typeof requireMoneyAccess>>;
-
-/** State rules for an estimate's job: job state, else customer state, else company state. */
-async function complianceFor(ctx: Ctx, estimateId: string) {
-  const { data } = await ctx.supabase
-    .from("estimates")
-    .select("id, status, job_id, jobs(state, is_insurance, customers(state))")
-    .eq("id", estimateId)
-    .maybeSingle();
-  if (!data) return null;
-  const job = data.jobs as unknown as { state: string | null; is_insurance: boolean; customers: { state: string | null } | null };
-  const resolved = resolveState(job?.state, job?.customers?.state, ctx.org.state);
-  return { est: data, rule: rulesFor(resolved.state), state: resolved.state, isInsurance: Boolean(job?.is_insurance) };
-}
 
 export async function createEstimate(fd: FormData) {
   const { supabase, org, user } = await requireMoneyAccess();
@@ -69,9 +58,11 @@ export async function createEstimate(fd: FormData) {
     .insert({
       org_id: org.id,
       job_id: jobId,
-      tax_rate: org.tax_rate,
+      tax_rate: org.gst_registered ? 10 : 0,
+      gst_inclusive: org.prices_include_gst !== false,
+      org_supplier_id: org.default_supplier_id ?? null,
       terms: org.estimate_terms,
-      measurements: { wastePct: Number(org.default_waste_pct) },
+      measurements: { units: "metric", wastePct: Number(org.default_waste_pct) },
       created_by: user.id,
     })
     .select("id")
@@ -84,7 +75,7 @@ export async function createEstimate(fd: FormData) {
 export async function saveEstimate(input: SaveEstimateInput): Promise<ActionResult & { optionIds?: Record<string, string> }> {
   const parsed = SaveSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid estimate." };
-  const ctx = await requireMoneyAccess();
+  const { supabase } = await requireMoneyAccess();
   const e = parsed.data;
 
   const keys = new Set(e.options.map((o) => o.key));
@@ -93,11 +84,9 @@ export async function saveEstimate(input: SaveEstimateInput): Promise<ActionResu
   if (orphan) return { error: `"${orphan.description}" belongs to an option that was removed.` };
   if (e.options.length === 1) return { error: "Offer at least two options, or turn options off." };
 
-  const c = await complianceFor(ctx, e.id);
-  if (!c) return { error: "Estimate not found." };
-  if (c.est.status === "accepted") return { error: "This estimate was accepted by the customer and is locked. Duplicate it to make changes." };
-  const banned = deductibleWaiverError(c.rule, e.items);
-  if (banned) return { error: banned };
+  const { data: est } = await supabase.from("estimates").select("id, status").eq("id", e.id).maybeSingle();
+  if (!est) return { error: "Estimate not found." };
+  if (est.status === "accepted") return { error: "This estimate was accepted by the customer and is locked. Duplicate it to make changes." };
 
   // Exactly one recommended option (default: the middle one).
   const options = e.options.map((o) => ({ ...o, id: o.id ?? null }));
@@ -105,13 +94,15 @@ export async function saveEstimate(input: SaveEstimateInput): Promise<ActionResu
   let seen = false;
   for (const o of options) { if (o.recommended && !seen) seen = true; else o.recommended = false; }
 
-  const { data, error } = await ctx.supabase.rpc("save_estimate_content", {
+  const { data, error } = await supabase.rpc("save_estimate_content", {
     p_id: e.id,
     p_estimate: {
       measurements: e.measurements,
       measurement_source: e.measurement_source,
       option_label: e.option_label,
       tax_rate: e.tax_rate,
+      gst_inclusive: e.gst_inclusive,
+      org_supplier_id: e.org_supplier_id ?? "",
       discount: e.discount,
       notes: e.notes,
       terms: e.terms,
@@ -125,16 +116,39 @@ export async function saveEstimate(input: SaveEstimateInput): Promise<ActionResu
   return { ok: "Saved.", optionIds: (data ?? {}) as Record<string, string> };
 }
 
+/**
+ * "Price from: [supplier]" — the supplier's active price sheet as price rows (null = no active sheet).
+ * Also asks for each tiered sheet's profile/finish so Good/Better/Best each get their own sheet price.
+ */
+export async function loadSupplierPrices(orgSupplierId: string, sheets: { profile: string | null; finish: string | null }[] = []): Promise<{ rows: PriceRow[] | null; error?: string }> {
+  const { supabase, org } = await requireMoneyAccess();
+  if (!z.uuid().safeParse(orgSupplierId).success) return { rows: null, error: "Pick a supplier." };
+  try {
+    const base = await supplierPriceBook(supabase, org.id, orgSupplierId);
+    if (!base) return { rows: null };
+    const rows = [...base];
+    for (const s of sheets.slice(0, 6)) {
+      if (!s.profile && !s.finish) continue;
+      const more = await supplierPriceBook(supabase, org.id, orgSupplierId, { profile: s.profile, finish: s.finish });
+      for (const r of more ?? []) {
+        if (r.calc_key === "metal_sheet" && !rows.some((x) => x.supplier_price_item_id === r.supplier_price_item_id)) rows.push(r);
+      }
+    }
+    return { rows };
+  } catch (err) {
+    return { rows: null, error: (err as Error).message };
+  }
+}
+
 export async function setEstimateStatus(fd: FormData) {
-  const ctx = await requireMoneyAccess();
-  const { supabase } = ctx;
+  const { supabase, org } = await requireMoneyAccess();
   const id = String(fd.get("id"));
   const status = String(fd.get("status"));
   if (!["draft", "sent", "accepted", "declined"].includes(status)) throw new Error("Bad status");
 
   const { data: est, error: getErr } = await supabase
     .from("estimates")
-    .select("id, job_id, status, discount, tax_rate, selected_option_id, estimate_items(quantity, unit_price, option_id), estimate_options!estimate_options_estimate_id_fkey(id, position, recommended)")
+    .select("id, job_id, status, discount, tax_rate, gst_inclusive, selected_option_id, estimate_items(quantity, unit_price, option_id), estimate_options!estimate_options_estimate_id_fkey(id, position, recommended), jobs(state, is_insurance, customers(state))")
     .eq("id", id)
     .single();
   if (getErr || !est) throw new Error("Estimate not found.");
@@ -147,12 +161,13 @@ export async function setEstimateStatus(fd: FormData) {
   if (status === "accepted") {
     const wanted = String(fd.get("option_id") ?? "") || null;
     const optionId = options.length ? effectiveOptionId(options, wanted ?? est.selected_option_id) : null;
-    const c = await complianceFor(ctx, id);
-    const t = totals(itemsForOption(items, optionId), Number(est.discount), Number(est.tax_rate));
+    const job = est.jobs as unknown as { state: string | null; is_insurance: boolean; customers: { state: string | null } | null } | null;
+    const resolved = resolveJobState(job?.state, job?.customers?.state, org.state);
+    const t = estimateTotals(itemsForOption(items, optionId), Number(est.discount), Number(est.tax_rate), Boolean(est.gst_inclusive));
     patch.accepted_at = new Date().toISOString();
     patch.accepted_name = "Marked accepted by office";
     patch.selected_option_id = optionId;
-    if (c) patch.legal_notices = noticeSnapshot(c.state, requiredNotices(c.rule, { isInsurance: c.isInsurance, total: t.total }));
+    patch.legal_notices = noticeSnapshot(resolved.state, requiredNotices(resolved.state, { isInsurance: Boolean(job?.is_insurance), total: t.total }));
   }
   if (status === "draft") {
     Object.assign(patch, { accepted_at: null, accepted_name: null, selected_option_id: null, signature_data: null, accepted_ip: null, accepted_user_agent: null, legal_notices: [] });
@@ -170,7 +185,7 @@ export async function setEstimateStatus(fd: FormData) {
   revalidatePath("/app", "layout");
 }
 
-type SrcItem = { description: string; quantity: number; unit: string; unit_price: number; unit_cost: number; category: string; position: number; calc_key: string | null; option_id: string | null };
+type SrcItem = { description: string; quantity: number; unit: string; unit_price: number; unit_cost: number; category: string; position: number; calc_key: string | null; option_id: string | null; supplier_price_item_id: string | null };
 type SrcOption = { id: string; position: number; name: string; tier: string | null; description: string | null; warranty: string | null; recommended: boolean };
 
 export async function duplicateEstimate(fd: FormData) {
@@ -187,6 +202,8 @@ export async function duplicateEstimate(fd: FormData) {
       measurement_source: src.measurement_source,
       option_label: src.option_label,
       tax_rate: src.tax_rate,
+      gst_inclusive: src.gst_inclusive,
+      org_supplier_id: src.org_supplier_id,
       discount: src.discount,
       notes: src.notes,
       terms: src.terms,

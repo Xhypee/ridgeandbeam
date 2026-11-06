@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { LinkButton, PageHeader } from "@/components/ui";
 import { requireMoneyAccess } from "@/lib/dal";
 import type { LatLng } from "@/lib/geo";
+import { degFromRisePer12 } from "@/lib/roof";
 import { SatelliteMeasure, type Facet } from "./satellite-measure";
 
 export const metadata: Metadata = { title: "Satellite measure" };
@@ -19,16 +20,18 @@ export default async function MeasurePage({ params }: PageProps<"/app/measure/[e
   const job = est.jobs as unknown as { id: string; title: string; site_address: string | null; lat: number | null; lng: number | null; customers: { name: string; address: string | null; city: string | null; state: string | null; zip: string | null } };
   const cust = job.customers;
   const address = job.site_address || [cust.address, cust.city, cust.state, cust.zip].filter(Boolean).join(", ");
-  const m = (est.measurements ?? {}) as { satellite?: { facets?: Facet[]; center?: LatLng; zoom?: number } };
-  const saved = m.satellite?.facets?.map((f, i) => ({ ...f, id: `f${i}` })) ?? [];
+  const m = (est.measurements ?? {}) as { satellite?: { units?: string; facets?: Facet[]; center?: LatLng; zoom?: number } };
+  // Tracings saved before the switch to metric stored pitch as rise per 12.
+  const legacy = m.satellite?.units !== "metric";
+  const saved = m.satellite?.facets?.map((f, i) => ({ ...f, pitch: legacy ? degFromRisePer12(f.pitch) : f.pitch, id: `f${i}` })) ?? [];
   const known: LatLng | null = m.satellite?.center ?? (job.lat != null && job.lng != null ? [job.lat, job.lng] : org.lat != null && org.lng != null ? [org.lat, org.lng] : null);
 
   return (
     <>
       <PageHeader
         title="Measure on satellite map"
-        subtitle={<>{cust.name} · Estimate #{est.number}{address ? ` · ${address}` : ""}</>}
-        actions={<LinkButton variant="secondary" href={`/app/estimates/${est.id}`}>Back to estimate</LinkButton>}
+        subtitle={<>{cust.name} · Quote #{est.number}{address ? ` · ${address}` : ""}</>}
+        actions={<LinkButton variant="secondary" href={`/app/estimates/${est.id}`}>Back to quote</LinkButton>}
       />
       <SatelliteMeasure estimateId={est.id} address={address} initialCenter={known} initialZoom={m.satellite?.zoom} initialFacets={saved} locked={est.status === "accepted"} />
     </>
