@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 
 type Line = { description: string; quantity: number; unit: string; unit_price: number; unit_cost: number; category: "material" | "labor" | "other" };
 type Photo = { id: string; url: string | null; caption: string | null };
-const usd = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+const usd = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD" });
 
 export function ChangeOrderBuilder({ jobId, orgId, decking, photos }: {
   jobId: string;

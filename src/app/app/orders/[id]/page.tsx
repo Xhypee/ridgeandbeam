@@ -130,8 +130,8 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ap
                 </form>
               </>
             )}
-            {o.sent_at && <p className="mt-3 text-xs text-slate-500">Sent {new Date(o.sent_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}</p>}
-            {o.delivered_at && <p className="text-xs text-slate-500">Delivered {new Date(o.delivered_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}</p>}
+            {o.sent_at && <p className="mt-3 text-xs text-slate-500">Sent {new Date(o.sent_at).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" })}</p>}
+            {o.delivered_at && <p className="text-xs text-slate-500">Delivered {new Date(o.delivered_at).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" })}</p>}
           </Card>
 
           <Card title={locked ? "Delivery photos" : "Mark delivered"}>

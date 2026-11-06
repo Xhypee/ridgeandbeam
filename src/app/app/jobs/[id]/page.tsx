@@ -49,7 +49,7 @@ export default async function JobPage({ params }: PageProps<"/app/jobs/[id]">) {
             {job.first_contacted_at ? (
               <>
                 <span className="text-sm text-slate-700">
-                  Contacted {new Date(job.first_contacted_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })} ·{" "}
+                  Contacted {new Date(job.first_contacted_at).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" })} ·{" "}
                   <b data-response-time className={cx(responseMin !== null && responseMin <= 5 ? "text-green-700" : responseMin !== null && responseMin <= 60 ? "text-amber-700" : "text-red-700")}>
                     response time {durationLabel(responseMin)}
                   </b>
@@ -59,7 +59,7 @@ export default async function JobPage({ params }: PageProps<"/app/jobs/[id]">) {
             ) : (
               <>
                 <LeadTimer since={job.lead_received_at} />
-                <span className="text-sm text-slate-600">Came in {new Date(job.lead_received_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}</span>
+                <span className="text-sm text-slate-600">Came in {new Date(job.lead_received_at).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" })}</span>
                 {c.phone && <a href={`tel:${c.phone}`} className="inline-flex min-h-11 items-center rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white">Call {c.phone}</a>}
                 <form action={markContacted}><input type="hidden" name="id" value={job.id} /><SubmitButton className="min-h-11">Mark contacted</SubmitButton></form>
               </>
@@ -206,7 +206,7 @@ export default async function JobPage({ params }: PageProps<"/app/jobs/[id]">) {
               {(notes ?? []).map((n) => (
                 <li key={n.id} className="rounded-lg bg-slate-50 p-3">
                   <p className="whitespace-pre-wrap break-words text-sm text-slate-800">{n.body}</p>
-                  <p className="mt-1 text-xs text-slate-500">{n.author_name} · {new Date(n.created_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}</p>
+                  <p className="mt-1 text-xs text-slate-500">{n.author_name} · {new Date(n.created_at).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" })}</p>
                 </li>
               ))}
             </ul>

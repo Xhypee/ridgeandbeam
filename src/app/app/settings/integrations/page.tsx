@@ -18,7 +18,7 @@ export default async function IntegrationsPage({ searchParams }: PageProps<"/app
   ]);
   const configured = qboConfigured();
   const connected = integ && integ.status !== "disconnected";
-  const fmt = (d: string | null | undefined) => (d ? new Date(d).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" }) : "never");
+  const fmt = (d: string | null | undefined) => (d ? new Date(d).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" }) : "never");
 
   return (
     <div className="space-y-6">

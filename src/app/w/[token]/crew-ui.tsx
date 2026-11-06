@@ -4,7 +4,7 @@ import type { Lang } from "@/lib/production-i18n";
 
 export function fmtDay(iso: string | null, lang: Lang) {
   if (!iso) return "";
-  return new Date(iso + "T12:00:00").toLocaleDateString(lang === "es" ? "es-US" : "en-US", { weekday: "short", month: "short", day: "numeric" });
+  return new Date(iso + "T12:00:00").toLocaleDateString(lang === "es" ? "es-US" : "en-AU", { weekday: "short", month: "short", day: "numeric" });
 }
 
 export function LangToggle({ base, lang }: { base: string; lang: Lang }) {

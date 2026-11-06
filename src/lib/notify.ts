@@ -1,5 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { auPhoneE164 } from "@/lib/au";
 
 /**
  * Outbound customer messaging. Providers are optional:
@@ -16,6 +17,8 @@ type Base = { orgId: string; jobId?: string | null; customerId?: string | null }
 
 export function normalizePhone(p: string | null | undefined): string | null {
   if (!p) return null;
+  const au = auPhoneE164(p);
+  if (au) return au;
   const digits = p.replace(/\D/g, "");
   if (digits.length === 10) return `+1${digits}`;
   if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;

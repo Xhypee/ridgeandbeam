@@ -37,7 +37,7 @@ function refresh(jobId?: string | null) {
   revalidatePath("/app/customers", "layout");
 }
 
-const usd = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+const usd = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD" });
 const money = (fd: FormData, k: string) => Math.max(0, Math.round(num(fd, k) * 100) / 100);
 
 function claimFields(fd: FormData) {

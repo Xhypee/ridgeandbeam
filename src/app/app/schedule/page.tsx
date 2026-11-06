@@ -127,7 +127,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/app/sch
             const risk = weatherRisk(fc.get(d));
             return (
               <div key={d} className={cx("border-l border-slate-200 px-1.5 py-1.5 text-xs", d === today && "bg-brand-50", risk && "bg-red-50", isWeekend(d) && !risk && "bg-slate-100")}>
-                <span className={cx("block font-medium", d === today ? "text-brand-700" : "text-slate-700")}>{new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short" })} {Number(d.slice(8))}</span>
+                <span className={cx("block font-medium", d === today ? "text-brand-700" : "text-slate-700")}>{new Date(d + "T12:00:00").toLocaleDateString("en-AU", { weekday: "short" })} {Number(d.slice(8))}</span>
                 <Weather f={fc.get(d)} />
               </div>
             );

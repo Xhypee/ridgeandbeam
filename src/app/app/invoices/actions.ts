@@ -217,7 +217,7 @@ export async function createPaymentSchedule(jobId: string): Promise<{ error?: st
       org_id: org.id,
       invoice_id: inv.id,
       position: 0,
-      description: `${p.label} (${p.pct}% of ${est.total.toLocaleString("en-US", { style: "currency", currency: "USD" })} contract)`,
+      description: `${p.label} (${p.pct}% of ${est.total.toLocaleString("en-AU", { style: "currency", currency: "AUD" })} contract)`,
       quantity: 1,
       unit: "ea",
       unit_price: p.amount,

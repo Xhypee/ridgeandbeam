@@ -39,7 +39,7 @@ export default async function LeadSourcesReport({ searchParams }: PageProps<"/ap
   }
   const rows = buildRows(jobList, revenue, spend ?? [], byMonth);
   const total = buildRows(jobList.map((j) => ({ ...j, lead_source: "all" })), revenue, (spend ?? []).map((s) => ({ ...s, source: "all" })), false)[0];
-  const monthLabel = (m: string) => (m === "all" ? `Last ${months} mo` : new Date(`${m}-15`).toLocaleDateString("en-US", { month: "short", year: "numeric" }));
+  const monthLabel = (m: string) => (m === "all" ? `Last ${months} mo` : new Date(`${m}-15`).toLocaleDateString("en-AU", { month: "short", year: "numeric" }));
   const q = (o: Record<string, string>) => `/app/reports/leads?${new URLSearchParams({ months: String(months), group: byMonth ? "month" : "source", ...o })}`;
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 

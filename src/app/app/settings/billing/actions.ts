@@ -31,7 +31,7 @@ export async function cancelSubscription(): Promise<ActionResult> {
   const { error } = await ctx.supabase.from("organizations").update({ subscription_status: "cancelled", cancel_at: cancelAt.toISOString() }).eq("id", ctx.org.id);
   if (error) return { error: friendly(error) };
   revalidatePath("/app", "layout");
-  return { ok: `Cancelled. Everything keeps working until ${cancelAt.toLocaleDateString("en-US", { dateStyle: "long" })}. No further charges.` };
+  return { ok: `Cancelled. Everything keeps working until ${cancelAt.toLocaleDateString("en-AU", { dateStyle: "long" })}. No further charges.` };
 }
 
 export async function reactivateSubscription(): Promise<ActionResult> {

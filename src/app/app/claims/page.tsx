@@ -134,7 +134,7 @@ export default async function ClaimsPage({ searchParams }: PageProps<"/app/claim
                             <span className={followUpDue ? "font-semibold text-red-700" : "text-slate-600"}>Follow up {date(nextFollowUp, { month: "short", day: "numeric" })}</span>
                           )}
                           {!nextFollowUp && c.adjuster_meeting_at && new Date(c.adjuster_meeting_at) > new Date() && (
-                            <span className="text-slate-600">Adjuster {new Date(c.adjuster_meeting_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                            <span className="text-slate-600">Adjuster {new Date(c.adjuster_meeting_at).toLocaleDateString("en-AU", { month: "short", day: "numeric" })}</span>
                           )}
                           {stale && !followUpDue && <span className="font-medium text-red-700">Stalled</span>}
                           {outstanding > 0 && <span className="ml-auto font-medium tabular-nums text-slate-800">{money(outstanding)} owed</span>}

@@ -70,7 +70,7 @@ export function inspectionSlots(now = new Date(), count = 3) {
     for (const h of hours) {
       if (slots.length >= count) break;
       const s = new Date(d); s.setHours(h, 0, 0, 0);
-      slots.push(s.toLocaleString("en-US", { weekday: "long", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }));
+      slots.push(s.toLocaleString("en-AU", { weekday: "long", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }));
     }
     d = addBusinessDays(d, 1);
   }

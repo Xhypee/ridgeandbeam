@@ -28,7 +28,7 @@ export default async function NotificationsPage() {
                 <span className="min-w-0">
                   <span className="block text-sm font-medium text-slate-900">{n.title}</span>
                   {n.body && <span className="block truncate text-sm text-slate-500">{n.body}</span>}
-                  <span className="text-xs text-slate-400">{new Date(n.created_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}</span>
+                  <span className="text-xs text-slate-400">{new Date(n.created_at).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" })}</span>
                 </span>
               </Link>
             </li>

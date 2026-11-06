@@ -12,7 +12,7 @@ import { saveSatelliteMeasure } from "../actions";
 export type Facet = { id: string; label: string; pitch: number; points: LatLng[] };
 const PITCHES = [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12];
 const US_CENTER: LatLng = [39.5, -98.35];
-const fmt = (n: number, d = 0) => n.toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: d });
+const fmt = (n: number, d = 0) => n.toLocaleString("en-AU", { maximumFractionDigits: d, minimumFractionDigits: d });
 
 export function SatelliteMeasure({ estimateId, address, initialCenter, initialZoom, initialFacets, locked }: {
   estimateId: string; address: string; initialCenter: LatLng | null; initialZoom?: number; initialFacets: Facet[]; locked: boolean;

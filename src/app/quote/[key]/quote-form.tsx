@@ -5,7 +5,7 @@ import { useFormStatus } from "react-dom";
 import { instantQuoteRange, QUOTE_PITCHES, type QuotePitch } from "@/lib/roof";
 import { submitInstantQuote, type QuoteState } from "./actions";
 
-const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+const usd = (n: number) => `$${Math.round(n).toLocaleString("en-AU")}`;
 const input = "block w-full rounded-lg border-0 bg-white px-3 py-3 text-base text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:outline-none";
 const chip = "flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium ring-1 ring-slate-300 has-[:checked]:bg-brand-50 has-[:checked]:text-brand-700 has-[:checked]:ring-2 has-[:checked]:ring-brand-500";
 

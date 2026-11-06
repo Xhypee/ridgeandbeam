@@ -38,7 +38,7 @@ function Time({ iso }: { iso: string | null | undefined }) {
 
 function fmtTime(iso: string | null | undefined) {
   if (!iso) return "";
-  return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  return new Date(iso).toLocaleString("en-AU", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 function useHits(jobId: string) {

@@ -131,7 +131,7 @@ export function claimMoney(c: ClaimMoneyInput): ClaimMoney {
   };
 }
 
-const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const usd = new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" });
 function money(n: number) {
   return usd.format(n);
 }

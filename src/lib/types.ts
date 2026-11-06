@@ -31,6 +31,14 @@ export type Organization = {
   subscription_status: "trialing" | "active" | "cancelled";
   cancel_at: string | null;
   instant_quote: { enabled: boolean; price_per_square_low: number; price_per_square_high: number };
+  abn: string | null;
+  gst_registered: boolean;
+  prices_include_gst: boolean;
+  country: "AU";
+  licences: Record<string, { number?: string; classes?: string[] }>;
+  service_states: string[];
+  markup_pct: Record<string, number>;
+  default_supplier_id: string | null;
 };
 
 export type Membership = { org_id: string; role: Role; full_name: string | null; email: string | null; crew_id?: string | null; phone?: string | null };

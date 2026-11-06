@@ -121,7 +121,7 @@ export default async function Portal({ params }: PageProps<"/p/[token]">) {
               <li key={i} className="rounded-2xl bg-white p-3 ring-1 ring-slate-200">
                 <p className="font-semibold">{EVENT_LABEL[e.kind] ?? "Update"}</p>
                 {e.note && <p className="text-sm text-slate-700">{e.note}</p>}
-                <p className="text-xs text-slate-500">{new Date(e.created_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}</p>
+                <p className="text-xs text-slate-500">{new Date(e.created_at).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" })}</p>
                 {e.photo && urls.get(e.photo) && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={urls.get(e.photo)} alt="" className="mt-2 max-h-64 w-full rounded-xl object-cover" />

@@ -184,7 +184,7 @@ export function CanvassApp({ knocks, territories, people, center, hasData }: { k
                 <span className="h-4 w-4 shrink-0 rounded-full" style={{ background: KNOCK_META[k.status].color }} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">{k.address || `${k.lat.toFixed(5)}, ${k.lng.toFixed(5)}`}</span>
-                  <span className="block truncate text-xs text-slate-500">{KNOCK_META[k.status].label} · {new Date(k.created_at).toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" })}{k.setter_id ? ` · ${names.get(k.setter_id) ?? ""}` : ""}{k.notes ? ` · ${k.notes}` : ""}</span>
+                  <span className="block truncate text-xs text-slate-500">{KNOCK_META[k.status].label} · {new Date(k.created_at).toLocaleString("en-AU", { dateStyle: "short", timeStyle: "short" })}{k.setter_id ? ` · ${names.get(k.setter_id) ?? ""}` : ""}{k.notes ? ` · ${k.notes}` : ""}</span>
                 </span>
               </button>
             </li>
@@ -248,7 +248,7 @@ function KnockSheet({ sheet, knock, setterName, onClose, onQueued, onDone }: {
         <h2 className="text-base font-semibold">{sheet.mode === "new" ? "New knock" : knock?.address || "Door knock"}</h2>
         <button type="button" onClick={onClose} className="min-h-10 rounded-lg px-3 text-sm text-slate-500 hover:bg-slate-100">Close</button>
       </div>
-      {knock && <p className="mb-2 text-xs text-slate-500">{new Date(knock.created_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}{setterName ? ` · by ${setterName}` : ""}</p>}
+      {knock && <p className="mb-2 text-xs text-slate-500">{new Date(knock.created_at).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" })}{setterName ? ` · by ${setterName}` : ""}</p>}
       {knock?.status === "customer" ? (
         <p className="mb-3 rounded-lg bg-violet-50 p-3 text-sm text-violet-800">This door is a customer.{knock.customer_id && <> <Link className="font-medium underline" href={`/app/customers/${knock.customer_id}`}>Open customer</Link></>}</p>
       ) : (

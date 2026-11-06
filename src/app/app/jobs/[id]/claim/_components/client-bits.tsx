@@ -38,8 +38,8 @@ export function LocalDateTime({ iso }: { iso: string }) {
   return (
     <time dateTime={iso}>
       {isClient
-        ? d.toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
-        : d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}
+        ? d.toLocaleString("en-AU", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+        : d.toLocaleDateString("en-AU", { month: "short", day: "numeric", timeZone: "UTC" })}
     </time>
   );
 }

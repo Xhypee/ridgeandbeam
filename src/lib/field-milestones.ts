@@ -159,7 +159,7 @@ export function claimExplainer(claim: NonNullable<PublicJob["claim"]>, carrierFa
     : heldBack > 0
       ? { label: CHECK_LABEL.depreciation, amount: heldBack, payer: "carrier", when: when("depreciation") }
       : null;
-  const usd = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+  const usd = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD" });
   const lines = [
     `Your deductible: ${usd(deductible)} — this is your share, and you pay it to us. We can't waive or cover it.`,
     rcv > 0 ? `${carrier} approved ${usd(rcv)} for the full replacement cost.` : `${carrier} hasn't sent its final number yet.`,

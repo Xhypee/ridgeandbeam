@@ -1,11 +1,11 @@
-const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const usd = new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" });
 export const money = (n: number | string | null | undefined) => usd.format(Number(n) || 0);
 
 export function date(d: string | null | undefined, opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric" }) {
   if (!d) return "";
   // Plain dates (YYYY-MM-DD) are calendar days, so don't let the timezone shift them.
   const v = /^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(d + "T12:00:00") : new Date(d);
-  return v.toLocaleDateString("en-US", opts);
+  return v.toLocaleDateString("en-AU", opts);
 }
 
 export const label = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());

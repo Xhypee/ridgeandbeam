@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button, Field, Input, Select } from "@/components/ui";
 import { applyRainDay, previewRainDay, type RainDayInput, type RainDayPreviewRow } from "./actions";
 
-const fmt = (d: string) => new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+const fmt = (d: string) => new Date(d + "T12:00:00").toLocaleDateString("en-AU", { weekday: "short", month: "short", day: "numeric" });
 const span = (a: string, b: string) => (a === b ? fmt(a) : `${fmt(a)} – ${fmt(b)}`);
 
 export function RainDay({ crews, defaultDate, riskyDates }: { crews: { id: string; name: string }[]; defaultDate: string; riskyDates: string[] }) {

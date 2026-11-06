@@ -15,7 +15,7 @@ const MATERIALS: Record<string, string> = {
 };
 
 const s = (fd: FormData, k: string, max = 200) => String(fd.get(k) ?? "").trim().slice(0, max);
-const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+const usd = (n: number) => `$${Math.round(n).toLocaleString("en-AU")}`;
 
 /** Recomputes the range on the server (never trusts the browser) and files the lead. */
 export async function submitInstantQuote(_: QuoteState, fd: FormData): Promise<QuoteState> {
