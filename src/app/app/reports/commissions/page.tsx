@@ -28,7 +28,7 @@ function StatementView({ s, isAdmin }: { s: Statement; isAdmin: boolean }) {
       </div>
       <p className="text-sm text-slate-600">
         Plan: {s.plan ? <b>{s.plan.name} — {COMMISSION_KIND_LABEL[s.plan.kind]} {s.plan.rate}%{s.plan.draw_amount ? `, draw ${money(s.plan.draw_amount)}` : ""}</b> : <span className="text-amber-700">no commission plan assigned{isAdmin && <> — set one in <Link className="underline" href="/app/settings/team">Settings → Team</Link></>}</span>}
-        {s.totals.pendingSupplements > 0 && <> · <span className="text-violet-700">{money(s.totals.pendingSupplements)} in supplements pending with carriers</span></>}
+        {s.totals.pendingSupplements > 0 && <> · <span className="text-violet-700">{money(s.totals.pendingSupplements)} in variation requests waiting on insurers</span></>}
       </p>
       {s.jobs.length === 0 && <p className="text-sm text-slate-500">No sold jobs with this rep assigned yet.</p>}
       {s.jobs.map((j) => (
@@ -36,13 +36,13 @@ function StatementView({ s, isAdmin }: { s: Statement; isAdmin: boolean }) {
           <div className="grid gap-4 lg:grid-cols-2">
             <table className="w-full text-sm">
               <tbody className="divide-y divide-slate-100">
-                <tr><td className="py-1">Contract value{j.fin.estimate ? ` (estimate #${j.fin.estimate.number}${j.fin.changeOrders ? " + change orders" : ""}${j.fin.approvedSupplements ? " + supplements" : ""})` : ""}</td><td className="py-1 text-right font-medium" data-testid="job-contract">{money(j.fin.contractValue)}</td></tr>
+                <tr><td className="py-1">Contract value{j.fin.estimate ? ` (estimate #${j.fin.estimate.number}${j.fin.changeOrders ? " + change orders" : ""}${j.fin.approvedSupplements ? " + variations" : ""})` : ""}</td><td className="py-1 text-right font-medium" data-testid="job-contract">{money(j.fin.contractValue)}</td></tr>
                 {j.fin.costs.map((c) => (
                   <tr key={c.id} className="text-slate-600"><td className="py-1 pl-3">− {label(c.category)}{c.vendor ? ` · ${c.vendor}` : ""}{c.description ? ` · ${c.description}` : ""} <span className="text-xs text-slate-400">{date(c.incurred_on, { month: "short", day: "numeric" })}</span></td><td className={cx("py-1 text-right", c.amount < 0 && "text-green-700")}>{money(-c.amount)}</td></tr>
                 ))}
                 {j.fin.costs.length === 0 && <tr className="text-slate-500"><td className="py-1 pl-3">− Budgeted cost (no costs posted yet)</td><td className="py-1 text-right">{money(-j.fin.budgetCost)}</td></tr>}
                 <tr className="font-semibold"><td className="py-1">Gross profit · {j.marginPct}%</td><td className="py-1 text-right" data-testid="job-gp">{money(j.gp)}</td></tr>
-                {j.fin.pendingSupplements > 0 && <tr className="text-violet-700"><td className="py-1">Pending supplements (not yet counted)</td><td className="py-1 text-right">{money(j.fin.pendingSupplements)}</td></tr>}
+                {j.fin.pendingSupplements > 0 && <tr className="text-violet-700"><td className="py-1">Pending variation requests (not yet counted)</td><td className="py-1 text-right">{money(j.fin.pendingSupplements)}</td></tr>}
               </tbody>
             </table>
             <table className="w-full text-sm">

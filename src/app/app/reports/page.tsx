@@ -11,11 +11,12 @@ export default async function ReportsPage() {
     { href: "/app/reports/profitability", title: "Job profitability", body: isSalesRep ? "Contract value, costs, gross profit and margin on your jobs." : "Contract value, costs, gross profit and margin per job. Sort and filter by date and rep." },
     { href: "/app/reports/commissions", title: isAdmin ? "Commissions" : "My commission statement", body: isAdmin ? "Every rep's statement: earned, paid, pending supplements and payable now. Record payouts and chargebacks." : "Every cost line, commission earned, paid to date and payable now on your jobs." },
     { href: "/app/reports/leads", title: "Lead sources", body: "Cost per lead and per sold job by source." },
+    { href: "/app/reports/tpar", title: "Taxable payments (TPAR)", body: "Payments to contractors for the financial year (1 Jul – 30 Jun) with their ABNs. CSV for the ATO report due 28 August." },
   ];
   return (
     <>
       <PageHeader title="Reports" />
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {reports.map((r) => (
           <Link key={r.href} href={r.href} className="block rounded-xl bg-white p-5 ring-1 ring-slate-200 transition hover:ring-brand-500">
             <p className="font-semibold text-slate-900">{r.title}</p>

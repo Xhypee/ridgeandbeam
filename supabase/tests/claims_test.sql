@@ -30,10 +30,10 @@ insert into claims (org_id, job_id, carrier, claim_number, policy_type, rcv_amou
 insert into ids values ('claim', :'claim_id'), ('job', :'job_id');
 
 do $$ begin
-  if (select count(*) from claim_documents where claim_id = (select v from ids where k = 'claim')) <> 8 then
+  if (select count(*) from claim_documents where claim_id = (select v from ids where k = 'claim')) <> 9 then
     raise exception 'paperwork checklist not seeded';
   end if;
-  if (select stage from claims where id = (select v from ids where k = 'claim')) <> 'contingency_signed' then raise exception 'default stage wrong'; end if;
+  if (select stage from claims where id = (select v from ids where k = 'claim')) <> 'lodged' then raise exception 'default stage wrong'; end if;
 end $$;
 
 -- One claim per job
@@ -46,7 +46,7 @@ end $$;
 
 -- Stage tracking
 update claims set stage_changed_at = now() - interval '10 days' where id = :'claim_id';
-update claims set stage = 'claim_filed' where id = :'claim_id';
+update claims set stage = 'assessor_booked' where id = :'claim_id';
 do $$ begin
   if (select stage_changed_at from claims where id = (select v from ids where k = 'claim')) < now() - interval '1 minute' then raise exception 'stage_changed_at not reset'; end if;
 end $$;
@@ -100,7 +100,7 @@ end $$;
 update supplements set status = 'partial', approved_amount = 400 where id = :'s1_id';
 do $$ declare c claim_checks; begin
   select * into c from claim_checks where supplement_id = (select v from ids where k = 's1');
-  if c.id is null or c.kind <> 'supplement' or c.expected_amount <> 400 or c.endorsement <> 'needed' then
+  if c.id is null or c.kind <> 'variation' or c.expected_amount <> 400 or c.endorsement <> 'not_required' then
     raise exception 'approved supplement did not add expected check: %', row_to_json(c);
   end if;
 end $$;

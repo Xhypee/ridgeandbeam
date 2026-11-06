@@ -4,8 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/dal";
-import { friendly, num } from "@/lib/form";
+import { friendly, num, str } from "@/lib/form";
 import { siteUrl } from "@/lib/format";
+import { cleanAccount, cleanBsb, isValidAccount, isValidBsb, normalisePayId, type PayIdType } from "@/lib/payments-au";
 import { createAccountLink, createExpressAccount, getAccount, StripeError, stripeConfigured } from "@/lib/stripe";
 import type { ActionResult } from "@/components/action-form";
 
@@ -14,13 +15,40 @@ async function admin() {
 }
 const done = (ok = "Saved.") => { revalidatePath("/app/settings/payments"); return { ok }; };
 
+/** Bank transfer (BSB + account) and PayID details printed on every invoice. */
+export async function saveBankDetails(_: ActionResult, fd: FormData): Promise<ActionResult> {
+  const ctx = await admin();
+  if ("error" in ctx) return { error: ctx.error };
+  const name = str(fd, "bank_account_name");
+  const bsbRaw = str(fd, "bank_bsb");
+  const accRaw = str(fd, "bank_account_number");
+  if ((bsbRaw || accRaw) && !(bsbRaw && accRaw)) return { error: "Enter both the BSB and the account number (or neither)." };
+  if (bsbRaw && !isValidBsb(bsbRaw)) return { error: "A BSB is 6 digits, e.g. 062-000." };
+  if (accRaw && !isValidAccount(accRaw)) return { error: "An account number is 5 to 10 digits." };
+  if (bsbRaw && !name) return { error: "Enter the account name exactly as your bank shows it." };
+  const payidType = (["email", "phone", "abn"].includes(String(fd.get("payid_type"))) ? String(fd.get("payid_type")) : "email") as PayIdType;
+  const payidRaw = str(fd, "payid");
+  const payid = payidRaw ? normalisePayId(payidType, payidRaw) : null;
+  if (payidRaw && !payid) return { error: payidType === "email" ? "That PayID email doesn't look right." : payidType === "phone" ? "A PayID mobile is 04xx xxx xxx." : "A PayID ABN is 11 digits." };
+  const { error } = await ctx.supabase.from("organizations").update({
+    bank_account_name: name,
+    bank_bsb: bsbRaw ? cleanBsb(bsbRaw) : null,
+    bank_account_number: accRaw ? cleanAccount(accRaw) : null,
+    payid,
+    payid_type: payid ? payidType : null,
+  }).eq("id", ctx.org.id);
+  if (error) return { error: friendly(error) };
+  return done("Bank details saved. They appear on every invoice.");
+}
+
+/** Online payment options. There is deliberately no card-surcharge setting (RBA ban from 1 Oct 2026). */
 export async function savePaymentOptions(_: ActionResult, fd: FormData): Promise<ActionResult> {
   const ctx = await admin();
   if ("error" in ctx) return { error: ctx.error };
   const fee = num(fd, "card_fee_pct", NaN);
-  if (!(fee >= 0 && fee <= 10)) return { error: "Card fee should be between 0% and 10%." };
+  if (!(fee >= 0 && fee <= 10)) return { error: "Card cost should be between 0% and 10%." };
   const { error } = await ctx.supabase.from("organizations").update({
-    card_fee_pct: fee, pass_card_fee: fd.get("pass_card_fee") === "on", ach_enabled: fd.get("ach_enabled") === "on",
+    card_fee_pct: fee, pass_card_fee: false, becs_enabled: fd.get("becs_enabled") === "on",
   }).eq("id", ctx.org.id);
   if (error) return { error: friendly(error) };
   return done();
@@ -44,24 +72,26 @@ export async function savePaymentSchedule(rows: unknown): Promise<ActionResult> 
 
 const financingSchema = z.object({
   enabled: z.boolean(),
-  apr: z.number().min(0).max(40),
-  term_months: z.number().int().min(6).max(300),
+  acknowledged: z.boolean(),
   lenders: z.array(z.object({
-    name: z.string().trim().min(1, "Lender name is required").max(80),
-    url: z.string().trim().url("Prequal link must be a full https:// URL").refine((u) => u.startsWith("https://"), "Prequal link must start with https://"),
-    dealer_fee_pct: z.number().min(0).max(40),
-  })).max(5),
+    provider: z.enum(["brighte", "humm", "zip", "plenti", "other"]),
+    name: z.string().trim().min(1, "Provider name is required").max(80),
+    url: z.string().trim().url("Each link must be a full https:// address").refine((u) => u.startsWith("https://"), "Each link must start with https://"),
+  })).max(6),
 });
 
 export async function saveFinancing(payload: unknown): Promise<ActionResult> {
   const ctx = await admin();
   if ("error" in ctx) return { error: ctx.error };
   const parsed = financingSchema.safeParse(payload);
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the financing settings." };
-  if (parsed.data.enabled && parsed.data.lenders.length === 0) return { error: "Add at least one lender with a prequalification link." };
-  const { error } = await ctx.supabase.from("organizations").update({ financing: parsed.data }).eq("id", ctx.org.id);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the finance settings." };
+  const f = parsed.data;
+  if (f.enabled && f.lenders.length === 0) return { error: "Add at least one finance provider link." };
+  if (f.enabled && !f.acknowledged) return { error: "Confirm the credit licensing note before showing finance to homeowners." };
+  const { data: cur } = await ctx.supabase.from("organizations").select("financing").eq("id", ctx.org.id).single();
+  const { error } = await ctx.supabase.from("organizations").update({ financing: { ...((cur?.financing as Record<string, unknown>) ?? {}), ...f } }).eq("id", ctx.org.id);
   if (error) return { error: friendly(error) };
-  return done("Financing saved.");
+  return done("Finance links saved.");
 }
 
 export async function connectStripe(): Promise<ActionResult> {
@@ -103,5 +133,5 @@ export async function disconnectStripe(): Promise<ActionResult> {
   if ("error" in ctx) return { error: ctx.error };
   const { error } = await ctx.supabase.from("organizations").update({ stripe_account_id: null, stripe_charges_enabled: false }).eq("id", ctx.org.id);
   if (error) return { error: friendly(error) };
-  return done("Stripe disconnected. Invoices show check / bank transfer instructions again.");
+  return done("Stripe disconnected. Invoices show bank transfer and PayID details only.");
 }

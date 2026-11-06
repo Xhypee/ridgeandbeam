@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Button, Field, Input, Select, cx } from "@/components/ui";
+import { Button, Input, Select, cx } from "@/components/ui";
 import type { ActionResult } from "@/components/action-form";
+import { FINANCE_DISCLAIMER, FINANCE_PROVIDERS, type FinanceProviderKey } from "@/lib/payments-au";
 import { saveFinancing, savePaymentSchedule } from "./actions";
-import { monthlyPayment } from "./finance-math";
 
 type Milestone = { label: string; pct: number; trigger: string };
 const TRIGGERS = [
@@ -56,41 +56,46 @@ export function ScheduleEditor({ initial, disabled }: { initial: Milestone[]; di
   );
 }
 
-type Lender = { name: string; url: string; dealer_fee_pct?: number };
-type Financing = { enabled: boolean; apr: number; term_months: number; lenders: Lender[] };
+type Lender = { provider: FinanceProviderKey; name: string; url: string };
+type Financing = { enabled: boolean; acknowledged?: boolean; lenders: Lender[] };
 
-export function FinancingEditor({ initial, disabled }: { initial: Financing; disabled?: boolean }) {
-  const [f, setF] = useState<Financing>({ ...initial, lenders: initial.lenders ?? [] });
+/** AU finance providers (Brighte, humm, Zip, Plenti) as configurable referral links. */
+export function FinancingEditor({ initial, disabled }: { initial: { enabled?: boolean; acknowledged?: boolean; lenders?: Partial<Lender>[] }; disabled?: boolean }) {
+  const known = new Map((initial.lenders ?? []).map((l) => [l.provider ?? "other", l]));
+  const [enabled, setEnabled] = useState(Boolean(initial.enabled));
+  const [ack, setAck] = useState(Boolean(initial.acknowledged));
+  const [rows, setRows] = useState(
+    FINANCE_PROVIDERS.map((p) => ({ provider: p.key as FinanceProviderKey, name: p.name, hint: p.hint, on: known.has(p.key), url: known.get(p.key)?.url ?? "" })),
+  );
   const [result, setResult] = useState<ActionResult>();
   const [pending, start] = useTransition();
-  const setLender = (i: number, patch: Partial<Lender>) => setF({ ...f, lenders: f.lenders.map((l, j) => (j === i ? { ...l, ...patch } : l)) });
-  const example = monthlyPayment(15000, Number(f.apr) || 0, Number(f.term_months) || 0);
+  const set = (i: number, patch: Partial<(typeof rows)[number]>) => setRows(rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  const payload = (): Financing => ({ enabled, acknowledged: ack, lenders: rows.filter((r) => r.on).map((r) => ({ provider: r.provider, name: r.name, url: r.url.trim() })) });
   return (
     <div className="space-y-4">
-      <label className="flex items-center gap-2 text-sm text-slate-700">
-        <input type="checkbox" className="h-5 w-5 accent-brand-500" checked={f.enabled} onChange={(e) => setF({ ...f, enabled: e.target.checked })} disabled={disabled} />
-        Offer financing on estimates and invoices
-      </label>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Typical APR (%)"><Input type="number" min={0} max={40} step="0.01" value={f.apr} onChange={(e) => setF({ ...f, apr: Number(e.target.value) })} disabled={disabled} /></Field>
-        <Field label="Term (months)"><Input type="number" min={6} max={300} step="1" value={f.term_months} onChange={(e) => setF({ ...f, term_months: Number(e.target.value) })} disabled={disabled} /></Field>
-      </div>
-      <p className="text-xs text-slate-500">Example shown to homeowners: a $15,000 roof is about <b>${example.toFixed(0)}/month</b> for {f.term_months} months at {f.apr}% APR (subject to credit approval).</p>
-      <div className="space-y-3">
-        <p className="text-xs font-medium text-slate-600">Lenders</p>
-        {f.lenders.map((l, i) => (
-          <div key={i} className="grid grid-cols-2 gap-2 rounded-lg bg-slate-50 p-2 sm:grid-cols-[10rem_1fr_6rem_auto]" data-lender>
-            <Input aria-label="Lender name" placeholder="GreenSky" value={l.name} onChange={(e) => setLender(i, { name: e.target.value })} disabled={disabled} />
-            <Input aria-label="Prequalification link" placeholder="https://…" value={l.url} onChange={(e) => setLender(i, { url: e.target.value })} disabled={disabled} className="col-span-2 sm:col-span-1" />
-            <Input aria-label="Dealer fee %" type="number" min={0} max={40} step="0.01" value={l.dealer_fee_pct ?? 0} onChange={(e) => setLender(i, { dealer_fee_pct: Number(e.target.value) })} disabled={disabled} />
-            {!disabled && <Button type="button" variant="ghost" onClick={() => setF({ ...f, lenders: f.lenders.filter((_, j) => j !== i) })}>Remove</Button>}
+      <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900" data-testid="finance-disclaimer">{FINANCE_DISCLAIMER}</p>
+      <div className="space-y-2">
+        {rows.map((r, i) => (
+          <div key={r.provider} className="grid gap-2 rounded-lg bg-slate-50 p-3 sm:grid-cols-[12rem_1fr]" data-lender={r.provider}>
+            <label className="flex min-h-11 items-center gap-2 text-sm font-medium text-slate-800">
+              <input type="checkbox" className="h-5 w-5 accent-brand-500" checked={r.on} disabled={disabled} onChange={(e) => set(i, { on: e.target.checked })} />
+              <span>{r.name}<span className="block text-xs font-normal text-slate-500">{r.hint}</span></span>
+            </label>
+            <Input aria-label={`${r.name} link`} placeholder="https://… your merchant / referral link" value={r.url} disabled={disabled || !r.on} onChange={(e) => set(i, { url: e.target.value })} />
           </div>
         ))}
-        {!disabled && f.lenders.length < 5 && <Button type="button" variant="secondary" onClick={() => setF({ ...f, lenders: [...f.lenders, { name: "", url: "", dealer_fee_pct: 0 }] })}>+ Lender</Button>}
       </div>
+      <label className="flex items-start gap-2 text-sm text-slate-700">
+        <input type="checkbox" className="mt-0.5 h-5 w-5 accent-brand-500" checked={ack} disabled={disabled} onChange={(e) => setAck(e.target.checked)} />
+        <span>We hold an Australian credit licence, are an authorised credit representative, or act only as a referrer under the provider&apos;s arrangements.</span>
+      </label>
+      <label className="flex items-center gap-2 text-sm text-slate-700">
+        <input type="checkbox" className="h-5 w-5 accent-brand-500" checked={enabled} disabled={disabled} onChange={(e) => setEnabled(e.target.checked)} />
+        Show these finance links on invoices
+      </label>
       {!disabled && (
-        <Button type="button" disabled={pending} onClick={() => start(async () => setResult(await saveFinancing({ ...f, apr: Number(f.apr), term_months: Number(f.term_months), lenders: f.lenders.map((l) => ({ ...l, dealer_fee_pct: Number(l.dealer_fee_pct ?? 0) })) })))}>
-          {pending ? "Saving…" : "Save financing"}
+        <Button type="button" disabled={pending} onClick={() => start(async () => setResult(await saveFinancing(payload())))} className="min-h-11">
+          {pending ? "Saving…" : "Save finance links"}
         </Button>
       )}
       <Result r={result} />

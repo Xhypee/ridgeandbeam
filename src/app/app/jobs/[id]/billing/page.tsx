@@ -1,12 +1,12 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ActionForm, SubmitButton } from "@/components/action-form";
-import { Badge, Card, Empty, Table, cx, td, th } from "@/components/ui";
+import { Badge, Card, Empty, cx } from "@/components/ui";
 import { requireMoneyAccess } from "@/lib/dal";
 import { date, label, money, STATUS_TONE } from "@/lib/format";
-import { CHECK_KIND_LABEL, ENDORSEMENT_LABEL, PAYER_LABEL } from "@/lib/claims";
+import { CHECK_KIND_LABEL, PAYER_GROUP_LABEL, PAYER_GROUP_TONE, PAYER_GROUPS, payerGroup, type PayerGroup } from "@/lib/claims";
 import { BILL_TO_LABEL, INVOICE_KIND_LABEL, INVOICE_KIND_TONE, planSchedule, TRIGGER_LABEL, validateSchedule, type BillTo, type InvoiceKind } from "@/lib/claims-billing";
-import { acceptedEstimateTotal } from "@/lib/claims-estimate";
+import { acceptedEstimateTotal } from "@/lib/estimate-totals";
 import { invoiceTotalsFor, type ClaimCheck } from "@/lib/claims-server";
 import { createPaymentScheduleAction } from "../../../invoices/actions";
 
@@ -25,6 +25,7 @@ type Inv = {
 };
 
 const KIND_ORDER: InvoiceKind[] = ["deposit", "progress", "final", "standard", "supplement", "change_order"];
+const billToGroup = (b: BillTo): PayerGroup => (b === "carrier" ? "insurer" : b === "panel_builder" ? "panel_builder" : "homeowner_balance");
 
 export default async function BillingPage({ params }: PageProps<"/app/jobs/[id]/billing">) {
   const { id } = await params;
@@ -43,39 +44,43 @@ export default async function BillingPage({ params }: PageProps<"/app/jobs/[id]/
   const hasSchedule = live.some((i) => ["deposit", "progress", "final"].includes(i.kind));
   const sched = validateSchedule(orgRow?.payment_schedule);
   const preview = sched.ok && est ? planSchedule(est.total, sched.steps) : null;
+  const gstName = org.gst_registered !== false ? "tax invoice" : "invoice";
 
-  // Combined ledger. Checks applied to an invoice payment are already counted in that invoice's "received".
-  type Line = { key: string; source: string; href?: string; who: string; detail: string; expected: number; received: number; counted: boolean };
+  // Combined ledger by payer. Claim payments applied to an invoice are counted once, in the invoice.
+  type Line = { key: string; group: PayerGroup; source: string; href: string; detail: string; expected: number; received: number; counted: boolean };
   const lines: Line[] = [
     ...live.map((i) => ({
       key: i.id,
+      group: billToGroup(i.bill_to),
       source: `Invoice #${i.number}`,
       href: `/app/invoices/${i.id}`,
-      who: BILL_TO_LABEL[i.bill_to] ?? label(i.bill_to),
-      detail: [i.milestone_label || INVOICE_KIND_LABEL[i.kind], label(i.status)].join(" · "),
+      detail: [i.milestone_label || INVOICE_KIND_LABEL[i.kind], label(i.status), `to ${BILL_TO_LABEL[i.bill_to]}`].join(" · "),
       expected: Number(tot(i).total),
       received: Number(tot(i).paid),
       counted: true,
     })),
     ...checks.map((c) => ({
       key: c.id,
+      group: payerGroup(c),
       source: c.label || CHECK_KIND_LABEL[c.kind],
       href: `/app/jobs/${id}/claim/money`,
-      who: PAYER_LABEL[c.payer],
-      detail: [CHECK_KIND_LABEL[c.kind], c.endorsement !== "not_required" ? ENDORSEMENT_LABEL[c.endorsement] : null, c.payment_id ? "applied to invoice" : null].filter(Boolean).join(" · "),
+      detail: [CHECK_KIND_LABEL[c.kind], c.payment_id ? "applied to an invoice" : "claim ledger"].join(" · "),
       expected: Number(c.expected_amount),
       received: Number(c.received_amount),
       counted: !c.payment_id,
     })),
   ];
+  const groups = PAYER_GROUPS.map((g) => {
+    const ls = lines.filter((l) => l.group === g);
+    const counted = ls.filter((l) => l.counted);
+    return { g, ls, expected: counted.reduce((s, l) => s + l.expected, 0), received: counted.reduce((s, l) => s + l.received, 0) };
+  }).filter((x) => x.ls.length > 0);
   const invTotals = live.reduce((t, i) => ({ total: t.total + Number(tot(i).total), paid: t.paid + Number(tot(i).paid), balance: t.balance + Number(tot(i).balance) }), { total: 0, paid: 0, balance: 0 });
-  const chkTotals = checks.reduce((t, c) => ({ expected: t.expected + Number(c.expected_amount), received: t.received + Number(c.received_amount) }), { expected: 0, received: 0 });
-  const unappliedReceived = checks.filter((c) => !c.payment_id).reduce((s, c) => s + Number(c.received_amount), 0);
 
   return (
     <div className="space-y-6">
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-xl bg-white p-3 ring-1 ring-slate-200"><dt className="text-xs text-slate-500">Contract (accepted estimate)</dt><dd className="text-lg font-semibold tabular-nums">{est ? money(est.total) : "—"}</dd></div>
+        <div className="rounded-xl bg-white p-3 ring-1 ring-slate-200"><dt className="text-xs text-slate-500">Contract (accepted quote, inc GST)</dt><dd className="text-lg font-semibold tabular-nums">{est ? money(est.total) : "—"}</dd></div>
         <div className="rounded-xl bg-white p-3 ring-1 ring-slate-200"><dt className="text-xs text-slate-500">Invoiced</dt><dd className="text-lg font-semibold tabular-nums">{money(invTotals.total)}</dd></div>
         <div className="rounded-xl bg-white p-3 ring-1 ring-slate-200"><dt className="text-xs text-slate-500">Paid on invoices</dt><dd className="text-lg font-semibold tabular-nums text-green-800">{money(invTotals.paid)}</dd></div>
         <div className="rounded-xl bg-white p-3 ring-1 ring-slate-200"><dt className="text-xs text-slate-500">Balance due</dt><dd className={cx("text-lg font-semibold tabular-nums", invTotals.balance > 0 && "text-amber-700")}>{money(invTotals.balance)}</dd></div>
@@ -114,12 +119,12 @@ export default async function BillingPage({ params }: PageProps<"/app/jobs/[id]/
       {!hasSchedule && (
         <Card title="Payment schedule">
           {!est ? (
-            <p className="text-sm text-slate-600">Once the homeowner accepts an estimate, create milestone invoices here (deposit, materials delivered, completion).</p>
+            <p className="text-sm text-slate-600">Once the homeowner accepts a quote, create milestone {gstName}s here (deposit, materials delivered, completion).</p>
           ) : !sched.ok ? (
             <p className="text-sm text-amber-800">{sched.error}</p>
           ) : (
             <>
-              <p className="mb-3 text-sm text-slate-600">Split the {money(est.total)} contract (estimate #{est.estimateNumber}) into milestone invoices using your company&apos;s payment schedule:</p>
+              <p className="mb-3 text-sm text-slate-600">Split the {money(est.total)} contract price (inc GST) into milestone {gstName}s using your payment schedule:</p>
               <ul className="mb-4 space-y-1 text-sm">
                 {preview!.map((p, i) => (
                   <li key={i} className="flex justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2">
@@ -128,6 +133,7 @@ export default async function BillingPage({ params }: PageProps<"/app/jobs/[id]/
                   </li>
                 ))}
               </ul>
+              <p className="mb-3 text-xs text-slate-500">Deposit limits and progress-payment rules differ by state — check the state rules shown on the quote before issuing a deposit invoice.</p>
               <ActionForm action={createPaymentScheduleAction}>
                 <input type="hidden" name="job_id" value={id} />
                 <SubmitButton className="min-h-11">Create payment schedule</SubmitButton>
@@ -137,47 +143,35 @@ export default async function BillingPage({ params }: PageProps<"/app/jobs/[id]/
         </Card>
       )}
 
-      <div>
-        <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-sm font-semibold text-slate-900">Expected vs received</h2>
-          {claim && (
-            <p className="text-xs text-slate-500">
-              Insurance checks: {money(chkTotals.received)} of {money(chkTotals.expected)} received{unappliedReceived > 0 ? ` · ${money(unappliedReceived)} not yet applied to an invoice` : ""}
-            </p>
-          )}
-        </div>
-        {lines.length === 0 ? (
-          <Empty title="Nothing expected yet">Invoices and insurance checks show up here together.</Empty>
+      <section>
+        <h2 className="mb-2 font-display text-lg font-semibold text-ink">Expected vs received, by who pays</h2>
+        {groups.length === 0 ? (
+          <Empty title="Nothing expected yet">Invoices and insurance claim payments show up here together.</Empty>
         ) : (
-          <Table>
-            <thead className="bg-slate-50">
-              <tr><th className={th}>What</th><th className={th}>From</th><th className={`${th} text-right`}>Expected</th><th className={`${th} text-right`}>Received</th><th className={`${th} text-right`}>Still owed</th></tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100" data-testid="expected-vs-received">
-              {lines.map((l) => {
-                const owed = Math.max(0, l.expected - l.received);
-                return (
-                  <tr key={l.key} className={l.counted ? undefined : "text-slate-400"}>
-                    <td className={td}>
-                      {l.href ? <Link href={l.href} className="font-medium text-slate-900 hover:text-brand-600">{l.source}</Link> : l.source}
-                      <div className="text-xs text-slate-500">{l.detail}</div>
-                    </td>
-                    <td className={td}>{l.who}</td>
-                    <td className={`${td} text-right tabular-nums`}>{money(l.expected)}</td>
-                    <td className={`${td} text-right tabular-nums`}>{money(l.received)}</td>
-                    <td className={cx(td, "text-right tabular-nums", owed > 0 && "font-medium text-amber-700")}>{money(owed)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </Table>
+          <div className="space-y-3" data-testid="expected-vs-received">
+            {groups.map(({ g, ls, expected, received }) => (
+              <div key={g} className="rounded-2xl bg-white ring-1 ring-slate-200" data-group={g}>
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
+                  <Badge tone={PAYER_GROUP_TONE[g]}>{PAYER_GROUP_LABEL[g]}</Badge>
+                  <p className="text-sm tabular-nums"><b>{money(received)}</b> <span className="text-slate-500">received of {money(expected)}</span>{expected - received > 0.004 && <span className="ml-2 font-medium text-amber-700">{money(expected - received)} still coming</span>}</p>
+                </div>
+                <ul className="divide-y divide-slate-100">
+                  {ls.map((l) => {
+                    const owed = Math.max(0, l.expected - l.received);
+                    return (
+                      <li key={l.key} className={cx("flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm", !l.counted && "text-slate-400")}>
+                        <span className="min-w-0"><Link href={l.href} className="font-medium hover:text-brand-600">{l.source}</Link><span className="block text-xs text-slate-500">{l.detail}</span></span>
+                        <span className="text-right tabular-nums">{money(l.expected)}<span className="block text-xs">{owed > 0 ? <span className="text-amber-700">owed {money(owed)}</span> : <span className="text-green-700">received</span>}</span></span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
         )}
-        {claim && (
-          <p className="mt-2 text-xs text-slate-500">
-            Insurance checks are what the carrier, lender or homeowner is expected to pay toward the job; invoices are what you bill. A check recorded as a payment on an invoice is counted once, in the invoice.
-          </p>
-        )}
-      </div>
+        {claim && <p className="mt-2 text-xs text-slate-500">A claim payment recorded on an invoice is counted once, in the invoice (greyed out in the claim list).</p>}
+      </section>
     </div>
   );
 }

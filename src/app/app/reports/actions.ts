@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/dal";
 import { friendly, num, oneOf, str } from "@/lib/form";
 import type { ActionResult } from "@/components/action-form";
+import { isValidAbn } from "@/lib/au";
 
 const KINDS = ["advance", "draw", "final", "chargeback", "adjustment"] as const;
 
@@ -34,4 +35,18 @@ export async function deletePayout(fd: FormData) {
   const { error } = await supabase.from("commission_payouts").delete().eq("id", String(fd.get("id")));
   if (error) throw new Error(friendly(error));
   revalidatePath("/app/reports/commissions");
+}
+
+/** Contractor ABN + GST registration for the TPAR (crews table). */
+export async function saveCrewAbn(_: ActionResult, fd: FormData): Promise<ActionResult> {
+  let ctx;
+  try { ctx = await requireAdmin(); } catch (e) { return { error: (e as Error).message }; }
+  const id = str(fd, "crew_id");
+  if (!id) return { error: "Pick a crew." };
+  const abn = (str(fd, "abn") ?? "").replace(/\D/g, "") || null;
+  if (abn && !isValidAbn(abn)) return { error: "That ABN doesn't look right (11 digits, check with ABN Lookup)." };
+  const { error } = await ctx.supabase.from("crews").update({ abn, gst_registered: fd.get("gst_registered") === "on" }).eq("id", id).eq("org_id", ctx.org.id);
+  if (error) return { error: friendly(error) };
+  revalidatePath("/app/reports/tpar");
+  return { ok: "Saved." };
 }

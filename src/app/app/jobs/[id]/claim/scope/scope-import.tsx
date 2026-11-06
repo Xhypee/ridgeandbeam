@@ -18,14 +18,14 @@ export function ScopeImport({ claimId, source, existing }: { claimId: string; so
   async function onFile(f: File | undefined) {
     if (!f) return;
     if (f.size > 2_000_000) { setMsg({ error: "That file is too large (2 MB max)." }); return; }
-    if (/\.esx$/i.test(f.name)) { setMsg({ error: "ESX files can't be read without a Verisk partnership. Export the estimate to CSV or copy the line items from the PDF/spreadsheet instead." }); return; }
+    if (/\.pdf$/i.test(f.name)) { setMsg({ error: "PDFs can't be read here. Open the insurer's scope PDF, select the line items, copy and paste them into the box." }); return; }
     setText(await f.text());
     setMsg(null);
   }
 
   function submit() {
     if (!parsed?.lines.length) return;
-    if (existing > 0 && !window.confirm(`Replace the ${existing} ${source} line${existing === 1 ? "" : "s"} already imported?`)) return;
+    if (existing > 0 && !window.confirm(`Replace the ${existing} line${existing === 1 ? "" : "s"} already imported?`)) return;
     start(async () => {
       const r = await importScope({ claimId, source, lines: parsed.lines });
       setMsg(r ?? null);
@@ -36,17 +36,17 @@ export function ScopeImport({ claimId, source, existing }: { claimId: string; so
   return (
     <div className="space-y-2">
       <Textarea
-        aria-label={`${source === "carrier" ? "Carrier" : "Contractor"} scope lines`}
+        aria-label={`${source === "carrier" ? "Insurer" : "Your"} scope lines`}
         rows={5}
         value={text}
         onChange={(e) => { setText(e.target.value); setMsg(null); }}
-        placeholder={"Paste rows from Excel/Sheets or CSV:\ncode, description, qty, unit, unit price, total\nRFG DRIP, Drip edge, 180, LF, 2.85, 513.00"}
+        placeholder={"Paste lines copied from the scope PDF, or rows from Excel/CSV:\ndescription, qty, unit, rate, total\nReplace valley iron, 12, LM, 38.50, 462.00"}
         className="font-mono text-xs"
       />
       <div className="flex flex-wrap items-center gap-2">
         <label className="inline-flex min-h-11 cursor-pointer items-center rounded-lg bg-white px-3 text-sm font-medium text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50">
           Choose CSV…
-          <input type="file" accept=".csv,.txt,.tsv,.esx,text/csv,text/plain" className="sr-only" onChange={(e) => onFile(e.target.files?.[0])} />
+          <input type="file" accept=".csv,.txt,.tsv,.pdf,text/csv,text/plain" className="sr-only" onChange={(e) => onFile(e.target.files?.[0])} />
         </label>
         <Button type="button" onClick={submit} disabled={pending || !parsed?.lines.length} className="min-h-11">
           {pending ? "Importing…" : parsed?.lines.length ? `Import ${parsed.lines.length} line${parsed.lines.length === 1 ? "" : "s"} (${money(total)})` : "Import"}

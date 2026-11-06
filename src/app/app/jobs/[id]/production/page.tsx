@@ -6,7 +6,7 @@ import { CopyLink } from "@/components/copy-link";
 import { Badge, Button, Card, Field, Input, LinkButton, Select, Textarea, cx } from "@/components/ui";
 import { requireOrg } from "@/lib/dal";
 import { date, isoDate, label, money, siteUrl } from "@/lib/format";
-import { liensDisclaimer, lienSchedule, LIEN_STATES } from "@/lib/liens";
+import { SecurityOfPaymentPanel } from "@/components/security-of-payment-panel";
 import {
   crewPay, daysUntil, DUMPSTER_STATUSES, HOA_STATUSES, jobReadiness, MATERIALS_STATUSES, PERMIT_STATUSES, type ReadinessJob,
 } from "@/lib/production";
@@ -15,7 +15,7 @@ import { orderTotal } from "@/lib/production-orders";
 import { crewLeadCanSee } from "@/lib/production-server";
 import { scheduleJob } from "../../actions";
 import { createOrder } from "../../../orders/actions";
-import { postCrewPay, saveBidDue, saveDelivery, saveLien, saveReadinessDetails, setReadiness, unlockSchedule } from "./actions";
+import { postCrewPay, saveBidDue, saveDelivery, saveReadinessDetails, setReadiness, unlockSchedule } from "./actions";
 
 export const metadata: Metadata = { title: "Production" };
 
@@ -86,7 +86,6 @@ export default async function ProductionPage({ params }: PageProps<"/app/jobs/[i
   const crew = job.crews;
   const pay = crew && est ? crewPay(est.measurements, crew) : null;
   const lienState = job.state ?? job.customers?.state ?? org.state;
-  const lien = lienSchedule(lienState, { lastFurnished: job.last_furnished_on, firstFurnished: job.scheduled_start, today });
   const bidDays = daysUntil(job.bid_due_on, today);
 
   return (
@@ -270,38 +269,7 @@ export default async function ProductionPage({ params }: PageProps<"/app/jobs/[i
             {crew && <p className="mt-2 text-xs text-slate-500">Crew portal shows this job in {crew.language === "es" ? "Spanish" : "English"} with materials (no prices), delivery notes and a problem button.</p>}
           </Card>
 
-          <Card title="Lien deadlines">
-            {lien ? (
-              <div className="space-y-2 text-sm">
-                <p className="text-slate-600">{lien.rule.name}: {lien.rule.lienLabel}.</p>
-                {lien.lienDue ? (
-                  <p className={cx("rounded-lg px-3 py-2 font-medium", (lien.daysLeft ?? 0) < 0 ? "bg-red-50 text-red-800" : (lien.daysLeft ?? 0) <= 14 ? "bg-amber-50 text-amber-800" : "bg-slate-50 text-slate-800")}>
-                    Lien due {date(lien.lienDue)} · {(lien.daysLeft ?? 0) >= 0 ? `${lien.daysLeft} days left` : `${-(lien.daysLeft ?? 0)} days ago`}
-                  </p>
-                ) : (
-                  <p className="text-slate-500">Set the last furnished date to start the countdown.</p>
-                )}
-                {lien.notices.length > 0 && (
-                  <ul className="space-y-1">
-                    {lien.notices.map((n) => (
-                      <li key={n.label} className="flex justify-between gap-2"><span>{n.label}</span><span className="shrink-0 text-slate-500">{n.due ? date(n.due) : n.note}</span></li>
-                    ))}
-                  </ul>
-                )}
-                <p className="text-xs text-slate-400">{lien.rule.citation}. {liensDisclaimer}</p>
-              </div>
-            ) : (
-              <p className="text-sm text-slate-500">No lien rules on file for {lienState || "this state"} yet (covered: {LIEN_STATES.join(", ")}). {liensDisclaimer}</p>
-            )}
-            {!readOnly && (
-              <ActionForm action={saveLien} className="mt-3 grid grid-cols-2 gap-3 border-t border-slate-100 pt-3">
-                <input type="hidden" name="job_id" value={id} />
-                <Field label="Last furnished"><Input type="date" name="last_furnished_on" defaultValue={job.last_furnished_on ?? ""} /></Field>
-                <Field label="State"><Input name="state" maxLength={2} defaultValue={lienState ?? ""} className="uppercase" /></Field>
-                <div className="col-span-2"><SubmitButton variant="secondary">Save</SubmitButton></div>
-              </ActionForm>
-            )}
-          </Card>
+          <SecurityOfPaymentPanel state={lienState} />
 
           <Card title="Bid due (commercial)">
             {job.bid_due_on && <p className={cx("mb-2 text-sm font-medium", (bidDays ?? 0) < 0 ? "text-red-700" : (bidDays ?? 0) <= 3 ? "text-amber-700" : "text-slate-700")}>Due {date(job.bid_due_on)} · {(bidDays ?? 0) >= 0 ? `${bidDays} days left` : "past due"}</p>}

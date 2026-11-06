@@ -36,7 +36,7 @@ export async function POST(req: Request) {
           if (orgId) await db.from("organizations").update({ stripe_customer_id: s.customer, stripe_subscription_id: s.subscription, subscription_status: "active", cancel_at: null }).eq("id", orgId);
           break;
         }
-        if (md.kind !== "invoice" || s.payment_status !== "paid" || !s.payment_intent) break; // ACH: wait for async_payment_succeeded
+        if (md.kind !== "invoice" || s.payment_status !== "paid" || !s.payment_intent) break; // BECS: wait for async_payment_succeeded
         await recordPayment(db, s);
         break;
       }
@@ -65,13 +65,13 @@ async function recordPayment(db: ReturnType<typeof adminClient>, s: Session) {
   const applied = Number(md.applied_amount);
   const amount = Number.isFinite(applied) && applied > 0 ? Math.min(applied, (s.amount_total ?? applied * 100) / 100) : (s.amount_total ?? 0) / 100;
   if (!(amount > 0)) return;
-  const ach = (s.payment_method_types ?? []).includes("us_bank_account");
+  const becs = (s.payment_method_types ?? []).includes("au_becs_debit");
   const { data: inserted, error } = await db
     .from("payments")
     .upsert(
       {
         org_id: inv.org_id, invoice_id: inv.id, amount, method: "online", paid_on: new Date().toISOString().slice(0, 10),
-        reference: ach ? "Stripe bank transfer" : "Stripe card", fee_amount: Number(md.fee_amount) || 0,
+        reference: becs ? "Stripe BECS Direct Debit" : "Stripe card", fee_amount: Number(md.fee_amount) || 0,
         provider: "stripe", provider_ref: s.payment_intent, provider_session: s.id,
       },
       { onConflict: "provider_ref", ignoreDuplicates: true },
@@ -79,6 +79,6 @@ async function recordPayment(db: ReturnType<typeof adminClient>, s: Session) {
     .select("id");
   if (error) throw new Error(error.message);
   if (inserted?.length) {
-    await notifyUser(db, { orgId: inv.org_id, kind: "payment_received", title: `Online payment: $${amount.toFixed(2)} on invoice #${inv.number}`, url: `/app/invoices/${inv.id}` });
+    await notifyUser(db, { orgId: inv.org_id, kind: "payment_received", title: `Online payment: ${amount.toLocaleString("en-AU", { style: "currency", currency: "AUD" })} on invoice #${inv.number}`, url: `/app/invoices/${inv.id}` });
   }
 }

@@ -11,7 +11,7 @@ import { jobFilesWithUrls, type Supplement, type SupplementItem } from "@/lib/cl
 import { deleteSupplement, markFollowedUp, setSupplementStatus } from "../../actions";
 import { SupplementEditor } from "./supplement-editor";
 
-export const metadata: Metadata = { title: "Supplement" };
+export const metadata: Metadata = { title: "Variation request" };
 
 export default async function SupplementPage({ params }: PageProps<"/app/jobs/[id]/claim/supplements/[sid]">) {
   const { id, sid } = await params;
@@ -29,8 +29,8 @@ export default async function SupplementPage({ params }: PageProps<"/app/jobs/[i
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Link href={`/app/jobs/${id}/claim/supplements`} className="text-sm text-slate-500 hover:text-slate-800">← Supplements</Link>
-          <h2 className="text-lg font-semibold text-slate-900">Round {s.round}</h2>
+          <Link href={`/app/jobs/${id}/claim/supplements`} className="text-sm text-slate-500 hover:text-slate-800">← Variation requests</Link>
+          <h2 className="text-lg font-semibold text-slate-900">Variation request {s.round}</h2>
           <Badge tone={SUPPLEMENT_STATUS_TONE[s.status]}>{SUPPLEMENT_STATUS_LABEL[s.status]}</Badge>
         </div>
         <LinkButton variant="secondary" href={`/app/claims/supplements/${s.id}`} target="_blank" className="min-h-11">Printable request</LinkButton>
@@ -58,7 +58,7 @@ export default async function SupplementPage({ params }: PageProps<"/app/jobs/[i
           />
         </div>
         <div className="space-y-6">
-          <Card title="Carrier response">
+          <Card title="Insurer response">
             <dl className="mb-4 grid grid-cols-2 gap-2 text-center">
               <div className="rounded-lg bg-slate-50 p-2"><dt className="text-xs text-slate-500">Requested</dt><dd className="font-semibold tabular-nums">{money(s.requested_amount)}</dd></div>
               <div className="rounded-lg bg-slate-50 p-2"><dt className="text-xs text-slate-500">Approved</dt><dd className="font-semibold tabular-nums">{money(s.approved_amount)}</dd></div>
@@ -66,7 +66,7 @@ export default async function SupplementPage({ params }: PageProps<"/app/jobs/[i
             {s.status === "submitted" && s.next_follow_up_on && (
               <div className={`mb-4 rounded-lg px-3 py-2 text-sm ${due ? "bg-red-50 text-red-800" : "bg-slate-50 text-slate-700"}`}>
                 <p>{due ? "Follow-up due" : "Next follow-up"}: <b>{date(s.next_follow_up_on)}</b></p>
-                <p className="text-xs">Reminders at {FOLLOW_UP_DAYS.join(", ")} days after submitting, then weekly.{s.follow_up_count ? ` ${s.follow_up_count} follow-up${s.follow_up_count === 1 ? "" : "s"} done.` : ""}</p>
+                <p className="text-xs">Reminders at {FOLLOW_UP_DAYS.join(", ")} days after sending, then weekly.{s.follow_up_count ? ` ${s.follow_up_count} follow-up${s.follow_up_count === 1 ? "" : "s"} done.` : ""}</p>
                 <form action={markFollowedUp} className="mt-2">
                   <input type="hidden" name="id" value={s.id} />
                   <SubmitButton variant={due ? "primary" : "secondary"} className="min-h-11 w-full">Mark followed up</SubmitButton>
@@ -76,26 +76,26 @@ export default async function SupplementPage({ params }: PageProps<"/app/jobs/[i
             <KeepForm action={setSupplementStatus} className="space-y-3">
               <input type="hidden" name="id" value={s.id} />
               <Field label="Status">
-                <Select name="status" defaultValue={s.status} aria-label="Supplement status">
+                <Select name="status" defaultValue={s.status} aria-label="Variation request status">
                   {SUPPLEMENT_STATUSES.map((x) => <option key={x} value={x}>{SUPPLEMENT_STATUS_LABEL[x]}</option>)}
                 </Select>
               </Field>
               <div className="grid grid-cols-2 gap-2">
-                <Field label="Submitted on"><Input name="submitted_on" type="date" defaultValue={s.submitted_on ?? today} max={today} /></Field>
+                <Field label="Sent on"><Input name="submitted_on" type="date" defaultValue={s.submitted_on ?? today} max={today} /></Field>
                 <Field label="Answered on"><Input name="responded_on" type="date" defaultValue={s.responded_on ?? ""} /></Field>
               </div>
               <Field label="Approved amount" hint="Leave empty when fully approved to use the requested amount.">
                 <Input name="approved_amount" type="number" step="0.01" min="0" inputMode="decimal" defaultValue={Number(s.approved_amount) || ""} />
               </Field>
-              <Field label="Carrier response"><Textarea name="carrier_response" defaultValue={s.carrier_response ?? ""} rows={2} /></Field>
+              <Field label="Insurer response"><Textarea name="carrier_response" defaultValue={s.carrier_response ?? ""} rows={2} /></Field>
               <SubmitButton className="min-h-11 w-full">Update status</SubmitButton>
             </KeepForm>
-            <p className="mt-3 text-xs text-slate-500">When a round is approved, an expected supplement check is added to the insurance ledger automatically.</p>
+            <p className="mt-3 text-xs text-slate-500">When a variation is approved, an expected payment is added to the claim ledger automatically — from the insurer, the panel builder or the homeowner, depending on the settlement path.</p>
           </Card>
           {s.status === "draft" && (
             <form action={deleteSupplement}>
               <input type="hidden" name="id" value={s.id} />
-              <SubmitButton variant="danger" confirm="Delete this draft supplement?">Delete draft</SubmitButton>
+              <SubmitButton variant="danger" confirm="Delete this draft variation request?">Delete draft</SubmitButton>
             </form>
           )}
         </div>
