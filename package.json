@@ -4,12 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/copy-pdf-worker.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
     "test:db": "psql \"${DB_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}\" -v ON_ERROR_STOP=1 -f supabase/tests/rls_test.sql",
-    "e2e": "node e2e/walkthrough.js"
+    "e2e": "node e2e/walkthrough.js",
+    "postinstall": "node scripts/copy-pdf-worker.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.6.0",
@@ -17,6 +19,7 @@
     "@supabase/supabase-js": "^2.119.0",
     "leaflet": "1.9.4",
     "next": "16.4.5",
+    "pdfjs-dist": "4.10.38",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "read-excel-file": "9.3.12",
