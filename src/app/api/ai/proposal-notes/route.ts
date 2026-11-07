@@ -14,14 +14,14 @@ export async function POST(req: Request) {
 
   const { data: est } = await supabase
     .from("estimates")
-    .select("id, number, measurements, measurement_source, jobs(title, job_type, roof_material, is_insurance, site_address), estimate_items(description, quantity, unit, option_id, position), estimate_options(id, name, tier, description, warranty, position)")
+    .select("id, number, measurements, measurement_source, jobs(title, job_type, roof_material, is_insurance, site_address), estimate_items(description, quantity, unit, option_id, position, extra_status), estimate_options(id, name, tier, description, warranty, position)")
     .eq("id", parsed.data.estimateId)
     .maybeSingle();
   if (!est) return Response.json({ error: "Estimate not found" }, { status: 404 });
 
   const job = est.jobs as unknown as { title: string; job_type: string; roof_material: string | null; is_insurance: boolean; site_address: string | null } | null;
   const options = ((est.estimate_options ?? []) as { id: string; name: string; tier: string | null; description: string | null; warranty: string | null; position: number }[]).sort((a, b) => a.position - b.position);
-  const items = ((est.estimate_items ?? []) as { description: string; quantity: number; unit: string; option_id: string | null; position: number }[]).sort((a, b) => a.position - b.position);
+  const items = ((est.estimate_items ?? []) as { description: string; quantity: number; unit: string; option_id: string | null; position: number; extra_status: string | null }[]).filter((i) => i.extra_status !== "offered").sort((a, b) => a.position - b.position);
   const m = (est.measurements ?? {}) as { sections?: { label: string; area: number; pitch: number }[]; layers?: number };
   const line = (i: (typeof items)[number]) => `- ${i.description} (${Number(i.quantity)} ${i.unit})`;
 

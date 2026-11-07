@@ -5,6 +5,8 @@ import { Badge, Card, Field, Input, Select } from "@/components/ui";
 import { requireMoneyAccess } from "@/lib/dal";
 import { isLegacyItem, TIER_LABEL, TIERS, type CatalogRow } from "@/lib/estimating";
 import { calcKeyLabel, calcKeyUnit, CALCULATOR_KEYS, coverWidthMm, DEFAULT_SETTINGS, METAL_PROFILE_INFO, METAL_PROFILES, normalizeCalcSettings, type CalcSettings } from "@/lib/roof";
+import { IconSheet, ItemIcon } from "@/components/item-icons";
+import { blurbFor, isExtraItem } from "@/lib/docket";
 import { addAustralianItems, deletePriceBookItem, saveCalcDefaults, saveInstantQuoteRates, savePriceBookItem } from "./actions";
 
 export const metadata: Metadata = { title: "Price book" };
@@ -80,6 +82,12 @@ export default async function Page({ searchParams }: PageProps<"/app/settings/pr
                 <option value="material">Material</option><option value="labor">Labour</option><option value="other">Other</option>
               </Select>
               <SubmitButton variant="secondary">Save</SubmitButton>
+              <label className="col-span-2 flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm text-slate-700 ring-1 ring-slate-200 has-[:checked]:bg-brand-50 has-[:checked]:ring-brand-500 sm:col-span-1 lg:col-span-1 lg:justify-self-start lg:pr-5" title="Extras show under “Often added” on the docket: the customer can tap to add them">
+                <input type="hidden" name="extra_present" value="1" />
+                <input type="checkbox" name="is_extra" defaultChecked={isExtraItem(c)} className="h-4 w-4 accent-brand-500" aria-label="Extra" data-testid="extra-flag" />
+                Extra
+              </label>
+              <Input name="blurb" defaultValue={c.blurb ?? ""} placeholder={isExtraItem(c) ? blurbFor(c.calc_key, []) ?? "Why add it (shown to the customer)" : "Why add it (shown to the customer)"} aria-label="Why add it" maxLength={200} className="col-span-2 sm:col-span-3 lg:col-span-7" />
               {sheet && (
                 <>
                   <Select name="profile" defaultValue={c.profile ?? ""} aria-label="Sheet profile" className="col-span-2 lg:col-span-1">
@@ -122,6 +130,7 @@ export default async function Page({ searchParams }: PageProps<"/app/settings/pr
           <p className="text-sm text-slate-500">
             Calculator items are filled in from roof measurements. Sell prices are {inc ? "GST-inclusive" : "ex GST"}; costs are always ex GST.
             Give a sheet item an option (Good / Better / Best) to swap it per option, e.g. ZINCALUME Custom Orb in Good and COLORBOND Klip-Lok in Best.
+            Tick <b>Extra</b> to offer an item under “Often added” on the docket instead of always including it (sarking, gutters, fascia, safety mesh, edge protection, whirlybirds and skip bins are extras to start with).
             Margins below your {floor}% minimum are flagged. {unpriced > 0 && <b className="text-amber-700">{unpriced} calculator item{unpriced === 1 ? " is" : "s are"} still $0.</b>}
           </p>
         </Card>
@@ -138,7 +147,7 @@ export default async function Page({ searchParams }: PageProps<"/app/settings/pr
 
       <div id="items" className="space-y-6">
         {keys.map((k) => (
-          <Card key={k} title={k === "__custom" ? "Other items (not from the calculator)" : <span className="flex flex-wrap items-center gap-2">{calcKeyLabel(k)} <Badge tone="slate">per {unitLabel(calcKeyUnit(k))}</Badge></span>}>
+          <Card key={k} title={k === "__custom" ? <span className="flex items-center gap-3"><ItemIcon calcKey={null} size={20} />Other items (not from the calculator)</span> : <span className="flex flex-wrap items-center gap-3"><ItemIcon calcKey={k} size={20} />{calcKeyLabel(k)} <Badge tone="slate">per {unitLabel(calcKeyUnit(k))}</Badge>{rowsFor(k).some(isExtraItem) && <Badge tone="teal">Extra</Badge>}</span>}>
             <div className="space-y-3">
               <div className="hidden grid-cols-[1fr_7.5rem_4.5rem_6.5rem_6.5rem_4rem_8rem_auto] gap-2 px-1 text-xs font-medium text-slate-500 lg:grid">
                 <span>Item</span><span>Option</span><span>Unit</span><span>{priceLabel}</span><span>Cost ex GST</span><span className="text-right">Margin</span><span>Category</span><span />
@@ -165,6 +174,11 @@ export default async function Page({ searchParams }: PageProps<"/app/settings/pr
             <SubmitButton>Add</SubmitButton>
           </div>
         </ActionForm>
+      </Card>
+
+      <Card title="Item icons">
+        <p className="mb-4 text-sm text-slate-500">Each line on the docket gets the icon of its calculator item. Lines you add yourself get the parcel.</p>
+        <IconSheet />
       </Card>
 
       <Card title="Calculator assumptions">

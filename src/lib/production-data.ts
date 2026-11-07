@@ -34,7 +34,7 @@ export type AcceptedEstimate = {
 type EstRow = {
   id: string; job_id: string; number: number; selected_option_id: string | null; accepted_at: string | null; created_at: string;
   measurements: unknown; discount: number; tax_rate: number;
-  estimate_items: (AcceptedItem & { option_id: string | null; position: number })[];
+  estimate_items: (AcceptedItem & { option_id: string | null; position: number; extra_status?: string | null })[];
 };
 
 export async function acceptedEstimates(supabase: SupabaseClient, jobIds: string[]): Promise<Map<string, AcceptedEstimate>> {
@@ -42,7 +42,7 @@ export async function acceptedEstimates(supabase: SupabaseClient, jobIds: string
   if (jobIds.length === 0) return out;
   const { data } = await supabase
     .from("estimates")
-    .select("id, job_id, number, selected_option_id, accepted_at, created_at, measurements, discount, tax_rate, estimate_items(description, quantity, unit, unit_price, unit_cost, calc_key, category, option_id, position)")
+    .select("id, job_id, number, selected_option_id, accepted_at, created_at, measurements, discount, tax_rate, estimate_items(description, quantity, unit, unit_price, unit_cost, calc_key, category, option_id, position, extra_status)")
     .in("job_id", jobIds)
     .eq("status", "accepted")
     .order("accepted_at", { ascending: false, nullsFirst: false })
@@ -50,7 +50,7 @@ export async function acceptedEstimates(supabase: SupabaseClient, jobIds: string
   for (const e of (data ?? []) as EstRow[]) {
     if (out.has(e.job_id)) continue;
     const items = (e.estimate_items ?? [])
-      .filter((i) => i.option_id === null || i.option_id === e.selected_option_id)
+      .filter((i) => (i.option_id === null || i.option_id === e.selected_option_id) && i.extra_status !== "offered")
       .sort((a, b) => a.position - b.position)
       .map((i) => ({
         description: i.description, quantity: Number(i.quantity), unit: i.unit, unit_price: Number(i.unit_price),

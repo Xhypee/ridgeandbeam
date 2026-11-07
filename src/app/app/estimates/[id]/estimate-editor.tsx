@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { Badge, Button, Card, Field, Input, Select, Textarea, cx } from "@/components/ui";
-import { estimateTotals, itemsForOption, marginExGst } from "@/lib/estimate-totals";
+import { countsInTotal, estimateTotals, itemsForOption, marginExGst } from "@/lib/estimate-totals";
+import { fillQuoteLines, sectionsProfile } from "@/lib/docket";
 import {
-  buildLines, defaultOptions, isCalculatorLine, newKey, priceIn, resolvePriceBook, rowProfile, TIER_LABEL, TIERS,
+  defaultOptions, isCalculatorLine, newKey, priceIn, resolvePriceBook, rowProfile, TIER_LABEL, TIERS,
   type CatalogRow, type DraftItem, type DraftOption, type PriceMode, type Tier,
 } from "@/lib/estimating";
 import { money } from "@/lib/format";
 import {
   calcKeyLabel, coverWidthMm, cutList, EXISTING_ROOF_LABEL, EXISTING_ROOFS, JOB_TYPE_LABEL, JOB_TYPES, MEASUREMENT_SOURCE_LABEL, mergeMeasurements,
   METAL_PROFILE_INFO, METAL_PROFILES, monthlyPayment, normalizeMeasurements, pitchFromRiseRun, round2, ROOF_SYSTEM_LABEL, ROOF_SYSTEM_SHORT, ROOF_SYSTEMS, sectionSystem,
-  summarize, takeoff, takeoffWarnings, trueArea, type CalcSettings, type ExistingRoof, type JobType, type Measurements, type MetalProfile, type RoofSection, type RoofSystem,
+  summarize, takeoffWarnings, trueArea, type CalcSettings, type ExistingRoof, type JobType, type Measurements, type MetalProfile, type RoofSection, type RoofSystem,
 } from "@/lib/roof";
 import { loadSupplierPrices, saveEstimate } from "../actions";
 import { ImportPanel, type ImportResult } from "./import-panel";
@@ -41,6 +42,8 @@ type Props = {
   gstRegistered: boolean;
   financing: { enabled: boolean; apr: number; term_months: number };
   aiEnabled: boolean;
+  /** The docket's COLORBOND colour, added to the sheet line when filling. */
+  roofColour?: string | null;
 };
 
 const n = (v: string) => (v === "" ? 0 : Number(v));
@@ -76,7 +79,7 @@ const SETTING_FIELDS: { key: Exclude<keyof CalcSettings, "coverWidthMm">; label:
   { key: "lapPct", label: "Laps on capping & flashings (%)", step: "0.5" },
 ];
 
-export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaultWaste, calcDefaults, minMarginPct, gstRegistered, financing, aiEnabled }: Props) {
+export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaultWaste, calcDefaults, minMarginPct, gstRegistered, financing, aiEnabled, roofColour }: Props) {
   const [m, setM] = useState<Measurements>(() => normalizeMeasurements(initial.measurements, defaultWaste, calcDefaults));
   const [source, setSource] = useState<string | null>(initial.measurement_source);
   const [options, setOptions] = useState<DraftOption[]>(initial.options);
@@ -186,12 +189,13 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
         if (res.rows?.length) book = resolvePriceBook(catalog, res.rows);
         else note = res.error ? ` (${supplierName}: ${res.error}; used your price book)` : ` (${supplierName} has no active price sheet; used your price book)`;
       }
-      const { items: generated, missing, warranties } = buildLines(takeoff(m), book, options, { mode, rowsFor: (o) => takeoff(m, { profileOverride: o }) });
       const custom = items.filter((it) => !isCalculatorLine(it, calcNames));
+      // Same lines as the docket: main lines, extras added (in the total) and extras offered ("Often added").
+      const { items: generated, missing, warranties } = fillQuoteLines({ m, book, options, mode, previous: items, colour: roofColour, keepCustom: custom });
       setItems([...generated, ...custom]);
       if (Object.keys(warranties).length) setOptions((p) => p.map((o) => (o.warranty || !warranties[o.key] ? o : { ...o, warranty: warranties[o.key] })));
       touch();
-      const zero = generated.filter((i) => !(Number(i.unit_price) > 0)).length;
+      const zero = generated.filter((i) => i.extra_status !== "offered" && !(Number(i.unit_price) > 0)).length;
       const problems = [
         missing.length ? `No price-book item for: ${missing.map(calcKeyLabel).join(", ")}. Add them in Settings → Price book.` : "",
         zero ? `${zero} line${zero === 1 ? " is" : "s are"} $0 — set your prices in Settings → Price book or import a supplier price sheet.` : "",
@@ -230,7 +234,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
     return { t, mg: marginExGst(lines, discount, taxRate, inclusive), monthly: financing.enabled ? monthlyPayment(t.total, financing.apr, financing.term_months) : 0 };
   };
   const perOption = options.map((o) => ({ o, ...calc(linesFor(o.key)) }));
-  const single = calc(asLines(items));
+  const single = calc(asLines(items.filter(countsInTotal)));
   const lowMargin = hasOptions ? perOption.filter((p) => p.mg.sell > 0 && p.mg.pct < minMarginPct) : single.mg.sell > 0 && single.mg.pct < minMarginPct ? [{ o: null }] : [];
 
   function save() {
@@ -255,6 +259,8 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
         discount,
         notes: notes || null,
         terms: terms || null,
+        // Keep the docket's profile in step with the sections' sheet profile (when they all use one).
+        ...(sectionsProfile(m) ? { roof_profile: sectionsProfile(m) } : {}),
       });
       if (res?.optionIds) setOptions((p) => p.map((o) => (res.optionIds![o.key] ? { ...o, id: res.optionIds![o.key] } : o)));
       setMsg(res ? { error: res.error, ok: res.ok } : null);
@@ -665,7 +671,7 @@ function LineGroup({ title, groupKey, items, options, word, ro, catalog, priceHe
   mode: PriceMode;
 }) {
   const rows = items.map((it, idx) => ({ it, idx })).filter(({ it }) => (it.option_key ?? null) === groupKey);
-  const sub = round2(rows.reduce((s, { it }) => s + round2((Number(it.quantity) || 0) * (Number(it.unit_price) || 0)), 0));
+  const sub = round2(rows.filter(({ it }) => countsInTotal(it)).reduce((s, { it }) => s + round2((Number(it.quantity) || 0) * (Number(it.unit_price) || 0)), 0));
   return (
     <section className={cx(title && "mb-6")} data-testid={groupKey ? "option-lines" : "shared-lines"}>
       {title && (
@@ -683,6 +689,7 @@ function LineGroup({ title, groupKey, items, options, word, ro, catalog, priceHe
               <th className="w-28 pb-2 font-medium">{priceHead}</th>
               <th className="w-28 pb-2 font-medium">Cost (ex GST)</th>
               {options.length > 0 && <th className="w-40 pb-2 font-medium">Applies to</th>}
+              <th className="w-36 pb-2 font-medium">On the docket</th>
               <th className="w-24 pb-2 text-right font-medium">Amount</th>
               <th className="w-8" />
             </tr>
@@ -706,14 +713,21 @@ function LineGroup({ title, groupKey, items, options, word, ro, catalog, priceHe
                     </Select>
                   </td>
                 )}
-                <td className="py-3 text-right tabular-nums">{money(round2((Number(it.quantity) || 0) * (Number(it.unit_price) || 0)))}</td>
+                <td className="py-1 pr-2">
+                  <Select disabled={ro} value={it.extra_status ?? ""} onChange={(e) => setItemAt(idx, { extra_status: (e.target.value || null) as DraftItem["extra_status"], customer_added: false })} aria-label="On the docket">
+                    <option value="">Main line</option>
+                    <option value="added">Extra: added</option>
+                    <option value="offered">Extra: offered</option>
+                  </Select>
+                </td>
+                <td className={cx("py-3 text-right tabular-nums", it.extra_status === "offered" && "text-slate-400 line-through")} title={it.extra_status === "offered" ? "Offered: not in the total until added" : undefined}>{money(round2((Number(it.quantity) || 0) * (Number(it.unit_price) || 0)))}</td>
                 <td className="py-2 text-center">
                   {!ro && <button type="button" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => remove(idx)} aria-label="Remove line">✕</button>}
                 </td>
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={8} className="py-4 text-center text-slate-500">
+              <tr><td colSpan={9} className="py-4 text-center text-slate-500">
                 {groupKey ? "No lines only for this choice yet." : "No line items yet. Enter measurements and click "}{!groupKey && <b>Fill line items from measurements</b>}{!groupKey && ", or add lines below."}
               </td></tr>
             )}

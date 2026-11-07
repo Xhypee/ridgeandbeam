@@ -34,6 +34,8 @@ export async function savePriceBookItem(_: ActionResult, fd: FormData): Promise<
   if (fd.has("finish")) row.finish = str(fd, "finish")?.slice(0, 60) ?? null;
   if (fd.has("cover_width_mm")) row.cover_width_mm = cover > 100 && cover < 2000 ? cover : null;
   if (fd.has("warranty")) row.warranty = str(fd, "warranty");
+  if (fd.has("extra_present")) row.is_extra = fd.get("is_extra") === "on";
+  if (fd.has("blurb")) row.blurb = str(fd, "blurb")?.slice(0, 200) ?? null;
   if (fd.has("calc_key")) {
     const key = str(fd, "calc_key");
     row.calc_key = key && CALCULATOR_KEYS.includes(key) ? key : null;

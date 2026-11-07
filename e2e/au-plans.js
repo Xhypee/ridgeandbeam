@@ -229,6 +229,9 @@ async function makePdf(browser, file) {
   console.log("9. Back on the quote: lines, and View the roof");
   await page.click('[data-testid="open-quote"]');
   await page.waitForURL(/\/app\/estimates\/[0-9a-f-]+$/);
+  check((await page.locator('[data-testid="docket-roof"] polygon').count()) === 6, "the quote opens on the docket with the roof from the plans");
+  await page.click('[data-testid="detailed-editor"]');
+  await page.waitForURL(/view=editor/);
   check((await page.locator("text=Measured from plans").count()) > 0, "quote shows the measurement source");
   check(await page.locator('[data-testid="cut-list"]').innerText().then((t) => t.includes("cut list from plans")), "quote's cut list comes from the plans");
   await shot("p07-quote");

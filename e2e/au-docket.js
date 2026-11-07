@@ -1,0 +1,328 @@
+// End-to-end: the receipt docket quote. Synthetic data only: a made-up company, customer and a generated vector plan
+// (the same L-shaped hip roof as e2e/au-plans.js). Measure from plans, the docket as the quote's default view,
+// switch profile and colour, remove / add extras (live totals that match the database), the detailed editor link,
+// send, the customer's docket link (add an extra, sign), the stored items, the locked receipt and the invoice.
+//   BASE_URL=http://localhost:3208 node e2e/au-docket.js /tmp/shots
+// Optional: DESIGN_SHOTS=/dir for 1440×900 @2x screenshots of each state.
+const { chromium } = require("playwright");
+const { execSync } = require("child_process");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const BASE = process.env.BASE_URL || "http://localhost:3208";
+const DB = process.env.DB_URL || "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
+const SHOTS = process.argv[2] || os.tmpdir();
+const DESIGN = process.env.DESIGN_SHOTS || null;
+const stamp = Date.now();
+
+function check(cond, msg) {
+  if (!cond) throw new Error("CHECK FAILED: " + msg);
+  console.log("  ✓ " + msg);
+}
+const near = (a, b, tol, msg) => check(Math.abs(Number(a) - Number(b)) <= tol, `${msg} (${a} ≈ ${b})`);
+const sql = (q) => execSync(`psql "${DB}" -At -c "${q.replace(/"/g, '\\"')}"`).toString().trim();
+const moneyNum = (s) => Number(String(s).replace(/[^0-9.-]/g, ""));
+
+// ---------------------------------------------------------------------------
+// Synthetic plans (as e2e/au-plans.js): L-shaped hip roof, 1:100 on A3, 25°, 3 downpipes, made-up title block.
+// ---------------------------------------------------------------------------
+const S = 100, OX = 40, OY = 70;
+const mm = (v) => v / S;
+const roofLines = [
+  [[0, 0], [14000, 0]], [[14000, 0], [14000, 8000]], [[14000, 8000], [8000, 8000]], [[8000, 8000], [8000, 14000]], [[8000, 14000], [0, 14000]], [[0, 14000], [0, 0]],
+  [[0, 0], [4000, 4000]], [[14000, 0], [10000, 4000]], [[14000, 8000], [10000, 4000]], [[8000, 14000], [4000, 10000]], [[0, 14000], [4000, 10000]],
+  [[4000, 4000], [10000, 4000]], [[4000, 4000], [4000, 10000]], [[8000, 8000], [4000, 4000]],
+];
+const svgLine = ([a, b], w = 0.25, c = "#333") => `<line x1="${OX + mm(a[0])}" y1="${OY + mm(a[1])}" x2="${OX + mm(b[0])}" y2="${OY + mm(b[1])}" stroke="${c}" stroke-width="${w}" />`;
+const txt = (s, x, y, size = 2.6) => `<div style="position:absolute;left:${x}mm;top:${y}mm;font:${size}mm Arial, sans-serif;white-space:nowrap">${s}</div>`;
+const titleBlock = [
+  txt("PROJECT ADDRESS:", 330, 180), txt("8 BANKSIA CRES", 330, 185), txt("TOOWONG QLD 4066", 330, 190),
+  txt("CLIENT", 330, 200), txt("WATTLE BUILT HOMES PTY LTD", 330, 205), txt("PROJECT", 330, 215), txt("NEW DWELLING", 330, 220),
+  txt("DATE", 330, 230), txt("01/10/26", 330, 235),
+].join("");
+const sheet = (body) => `<section style="position:relative;width:420mm;height:297mm;page-break-after:always;overflow:hidden">${body}${titleBlock}
+  <svg style="position:absolute;left:0;top:0" width="420mm" height="297mm" viewBox="0 0 420 297"><rect x="5" y="5" width="410" height="287" fill="none" stroke="#000" stroke-width="0.5"/><line x1="320" y1="5" x2="320" y2="292" stroke="#000" stroke-width="0.5"/></svg></section>`;
+const floor = sheet(`<svg style="position:absolute;left:0;top:0" width="420mm" height="297mm" viewBox="0 0 420 297">
+    ${[[[6, 6], [134, 6]], [[134, 6], [134, 74]], [[134, 74], [74, 74]], [[74, 74], [74, 134]], [[74, 134], [6, 134]], [[6, 134], [6, 6]]].map(([a, b]) => svgLine([[a[0] * 100, a[1] * 100], [b[0] * 100, b[1] * 100]], 0.5, "#000")).join("")}
+  </svg>${txt("FLOOR PLAN", 40, 260, 5)}${txt("SCALE 1:100 @ A3", 40, 268)}${txt("SINGLE STOREY", 200, 120)}`);
+const dps = [[14000, 2000], [0, 12000], [8000, 13000]];
+const roof = sheet(`<svg style="position:absolute;left:0;top:0" width="420mm" height="297mm" viewBox="0 0 420 297">
+    ${roofLines.map((l) => svgLine(l)).join("")}
+    ${dps.map(([x, y]) => `<rect x="${OX + mm(x) - 0.5}" y="${OY + mm(y) - 0.5}" width="1" height="1" fill="none" stroke="#333" stroke-width="0.25"/>`).join("")}
+  </svg>${dps.map(([x, y]) => txt("DP", OX + mm(x) + 1.5, OY + mm(y) - 1, 2)).join("")}
+  ${[[2000, 6000], [7000, 1800], [11500, 5200], [6000, 11000], [2000, 11000], [6200, 7000]].map(([x, y]) => txt("25°", OX + mm(x), OY + mm(y), 2.4)).join("")}
+  ${txt("ROOF PLAN", 40, 260, 5)}${txt("SCALE 1:100 @ A3", 40, 268)}${txt("COLORBOND ROOF.", 200, 240, 2.4)}`);
+
+async function makePdf(browser, file) {
+  const p = await browser.newPage();
+  await p.setContent(`<!doctype html><html><head><style>@page{size:420mm 297mm;margin:0}body{margin:0}</style></head><body>${floor}${roof}</body></html>`);
+  await p.pdf({ path: file, width: "420mm", height: "297mm", printBackground: true });
+  await p.close();
+}
+
+async function noHorizontalScroll(page, what) {
+  const { sw, iw } = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth }));
+  check(sw <= iw + 1, `${what}: no horizontal scroll at 390px (${sw} <= ${iw})`);
+}
+
+(async () => {
+  const browser = await chromium.launch();
+  const errors = [];
+  const pdfFile = path.join(os.tmpdir(), `au-docket-${stamp}.pdf`);
+  await makePdf(browser, pdfFile);
+
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("dialog", (d) => d.accept());
+  const shot = (p, name) => p.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true });
+  const design = async (p, name, full = true) => {
+    if (!DESIGN) return;
+    const vp = p.viewportSize();
+    const d = await (await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2, storageState: await p.context().storageState() })).newPage();
+    await d.goto(p.url());
+    await d.waitForLoadState("networkidle").catch(() => {});
+    await d.screenshot({ path: `${DESIGN}/${name}.png`, fullPage: full });
+    await d.context().close();
+    return vp;
+  };
+
+  console.log("1. Sign up, company (ABN, QLD licence), prices");
+  await page.goto(BASE + "/signup");
+  await page.fill('input[name="full_name"]', "Dana Docket");
+  await page.fill('input[name="email"]', `au-docket${stamp}@example.com`);
+  await page.fill('input[name="password"]', "password123");
+  await page.click('button[type="submit"]');
+  await page.waitForURL("**/onboarding");
+  await page.fill('input[name="name"]', `Gumtree Roofing ${stamp}`);
+  await page.fill('input[name="phone"]', "0412 345 678");
+  await page.click('button[type="submit"]');
+  await page.waitForURL(BASE + "/app");
+  const orgId = sql(`select id from organizations where name = 'Gumtree Roofing ${stamp}'`);
+  sql(`update organizations set abn = '51824753556', state = 'QLD', zip = '4066', licences = '{"QLD": {"number": "1234567", "classes": ["Roofing"]}}'::jsonb where id = '${orgId}'`);
+  const prices = {
+    metal_sheet_good: 22, metal_sheet_better: 29.7, metal_sheet_best: 38.5, labour_install: 38, ridge_capping: 24.2, barge_capping: 24, valley_iron: 26.4, roof_battens: 7.7,
+    roof_screws: 110, flashing: 25, sarking: 198, safety_mesh: 231, gutter: 35.2, downpipe: 88, fascia: 22, edge_protection: 1650, whirlybird: 165, skip_bin: 550,
+  };
+  for (const [k, p] of Object.entries(prices)) {
+    const [key, tier] = k.startsWith("metal_sheet_") ? ["metal_sheet", k.slice(12)] : [k, null];
+    sql(`update catalog_items set unit_price = ${p}, unit_cost = ${Math.round(p * 60) / 100} where org_id = '${orgId}' and calc_key = '${key}' and tier ${tier ? `= '${tier}'` : "is null"}`);
+  }
+
+  console.log("2. Price book: Extra flag and the why line");
+  await page.goto(BASE + "/app/settings/price-book");
+  const sarkRow = page.locator('[data-testid="price-row"]', { has: page.locator('input[value="Sarking (roll)"]') });
+  check(await sarkRow.locator('[data-testid="extra-flag"]').isChecked(), "sarking is an extra by default");
+  const installRow = page.locator('[data-testid="price-row"]', { has: page.locator('input[value="Installation labour"]') });
+  check(!(await installRow.locator('[data-testid="extra-flag"]').isChecked()), "installation labour is a main line");
+  await sarkRow.locator('input[aria-label="Why add it"]').fill("Cooler house, no drips");
+  await sarkRow.locator('button:has-text("Save")').click();
+  await sarkRow.getByText("Saved.").waitFor();
+  check(sql(`select coalesce(is_extra::text, 'null') || '|' || blurb from catalog_items where org_id = '${orgId}' and calc_key = 'sarking'`) === "true|Cooler house, no drips", "Extra flag and why line saved");
+  check((await page.locator('[data-testid="icon-tile"]').count()) >= 29, "price book shows the icon set");
+  await shot(page, "d01-price-book");
+  if (DESIGN) {
+    const d = await (await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2, storageState: await ctx.storageState() })).newPage();
+    await d.goto(BASE + "/app/settings/price-book");
+    await d.locator('[data-testid="price-row"]', { has: d.locator('input[value="Sarking (roll)"]') }).scrollIntoViewIfNeeded();
+    await d.evaluate(() => window.scrollBy(0, -200));
+    await d.screenshot({ path: `${DESIGN}/price-book-extra.png` });
+    await d.getByText("Item icons").scrollIntoViewIfNeeded();
+    await d.locator("section", { has: d.getByText("Item icons") }).last().screenshot({ path: `${DESIGN}/icon-set.png` });
+    await d.context().close();
+  }
+
+  console.log("3. Customer, job, quote: the docket is the default view");
+  await page.goto(BASE + "/app/customers/new");
+  await page.fill('input[name="name"]', "Sam Sample");
+  await page.fill('input[name="email"]', "sam@example.com");
+  await page.fill('input[name="job_title"]', "New dwelling roof");
+  await page.click('button:has-text("Save customer")');
+  await page.waitForURL(/\/app\/jobs\/[0-9a-f-]+$/);
+  const jobId = page.url().split("/").pop();
+  sql(`update jobs set state = 'QLD', zip = '4066' where id = '${jobId}'`);
+  await page.click('button:has-text("New quote")');
+  await page.waitForURL(/\/app\/estimates\/[0-9a-f-]+$/);
+  const estUrl = page.url();
+  const estId = estUrl.split("/").pop();
+  await page.locator('[data-testid="docket-editor"]').waitFor();
+  check(await page.locator('[data-testid="docket-empty"]').isVisible(), "new quote opens on the docket, asking to measure");
+  check((await page.locator('[data-testid="docket-top"]').innerText()).includes("ABN 51 824 753 556 · QLD 1234567"), "receipt top line: ABN and QLD licence");
+
+  console.log("4. Measure from plans");
+  await page.click('[data-testid="measure-from-plans"]');
+  await page.waitForURL(/\/plans$/);
+  await page.setInputFiles('[data-testid="plans-input"]', pdfFile);
+  await page.waitForSelector('[data-testid="details-step"]', { timeout: 60000 });
+  await page.click('[data-testid="details-next"]');
+  await page.waitForSelector('[data-testid="total-area"]');
+  await page.click('[data-testid="pick-sheets"]');
+  await page.click('[data-testid="profile-custom_orb"]');
+  await page.click('button[aria-label="Woodland Grey"]');
+  await page.click('[data-testid="add-to-quote"]');
+  await page.locator('[data-testid="done-card"]').waitFor({ timeout: 30000 });
+  check(sql(`select roof_profile || '|' || roof_colour from estimates where id = '${estId}'`) === "custom_orb|Woodland Grey", "plans set the docket's profile and colour");
+  check(sql(`select count(*) from estimate_items where estimate_id = '${estId}' and extra_status = 'offered'`) !== "0", "plans filled offered extras too");
+  await page.click('[data-testid="open-quote"]');
+  await page.waitForURL(/\/app\/estimates\/[0-9a-f-]+$/);
+
+  console.log("5. The docket");
+  await page.locator('[data-testid="docket"]').waitFor();
+  check((await page.locator('[data-testid="roof-title"]').innerText()) === "New Custom Orb roof", "roof header: New Custom Orb roof");
+  const facts = await page.locator('[data-testid="roof-facts"]').innerText();
+  check(/176\.5 m² · 6 panels at 25° · Woodland Grey/.test(facts), `facts line (${facts})`);
+  check((await page.locator('[data-testid="docket-roof"] polygon').count()) === 6, "roof drawn from the plans: 6 panels");
+  check((await page.locator('[data-testid="main-line"]').count()) >= 6, "main lines listed");
+  check((await page.locator('[data-testid="main-line"] [data-icon="sheets"]').count()) === 1, "sheet line has the sheet icon");
+  const addedIds = await page.locator('[data-testid="added-extra"]').evaluateAll((els) => els.map((e) => e.getAttribute("data-extra")));
+  const offeredIds = await page.locator('[data-testid="offered-extra"]').evaluateAll((els) => els.map((e) => e.getAttribute("data-extra")));
+  check(addedIds.includes("gutters") && addedIds.includes("sarking"), `added extras on the receipt (${addedIds.join(", ")})`);
+  check(offeredIds.includes("whirlybird") && offeredIds.includes("fascia"), `often added (${offeredIds.join(", ")})`);
+  const total = async (p = page) => Number(await p.locator('[data-testid="docket-total"]').getAttribute("data-value"));
+  const saved = async () => { await page.waitForFunction(() => document.querySelector('[data-testid="save-state"]')?.textContent === "Saved"); };
+  const dbTotal = () => Number(sql(`select total from estimate_totals where estimate_id = '${estId}'`));
+  near(await total(), dbTotal(), 0.01, "docket total = database total");
+
+  console.log("6. Profile and colour");
+  const sheetQty = (p) => Number(sql(`select round((measurements->'planQty'->'sheets'->'${p}'->>'lm')::numeric, 2) from estimates where id = '${estId}'`));
+  await page.click('[data-testid="docket-profile-trimdek"]');
+  check((await page.locator('[data-testid="roof-title"]').innerText()) === "New Trimdek roof", "Trimdek button: New Trimdek roof");
+  await page.click('button[aria-label="Surfmist"]');
+  check((await page.locator('[data-testid="docket-roof"]').getAttribute("data-colour")) === "#e4e2d5", "roof drawing recoloured Surfmist");
+  await saved();
+  check(sql(`select roof_profile || '|' || roof_colour from estimates where id = '${estId}'`) === "trimdek|Surfmist", "profile and colour saved");
+  const sheetRow = sql(`select description || '|' || quantity || '|' || unit_price from estimate_items where estimate_id = '${estId}' and calc_key = 'metal_sheet'`).split("|");
+  check(sheetRow[0] === "COLORBOND Trimdek 0.42 BMT · Surfmist", `sheet line re-priced and named (${sheetRow[0]})`);
+  near(sheetRow[1], sheetQty("trimdek"), 0.01, "sheet lm = the plans' Trimdek cut list");
+  check(Number(sheetRow[2]) === 29.7, "Trimdek price from the price book");
+  near(await total(), dbTotal(), 0.01, "total follows the profile");
+  await shot(page, "d02-docket");
+  await design(page, "roofer-docket-surfmist-trimdek");
+
+  console.log("7. Remove and add extras");
+  const before = await total();
+  const mesh = page.locator('[data-testid="added-extra"][data-extra="safety_mesh"]');
+  const meshAmt = moneyNum(await mesh.locator("span.tabular-nums").innerText());
+  await mesh.locator('button:has-text("Remove")').click();
+  near(await total(), before - meshAmt, 0.01, "Remove takes safety mesh off the total");
+  check(await page.locator('[data-testid="offered-extra"][data-extra="safety_mesh"]').isVisible(), "safety mesh moved to Often added");
+  const whirly = page.locator('[data-testid="offered-extra"][data-extra="whirlybird"]');
+  const whirlyAmt = moneyNum((await whirly.locator("span.tabular-nums").innerText()).replace("+", ""));
+  await whirly.locator('button:has-text("Add")').click();
+  near(await total(), before - meshAmt + whirlyAmt, 0.01, "Add puts whirlybirds on the total");
+  await saved();
+  near(await total(), dbTotal(), 0.01, "database total matches after remove/add");
+  check(sql(`select extra_status from estimate_items where estimate_id = '${estId}' and calc_key = 'safety_mesh'`) === "offered", "safety mesh stored as offered");
+  check(sql(`select measurements->>'includeSafetyMesh' from estimates where id = '${estId}'`) === "false", "calculator switch kept in step");
+  await page.reload();
+  near(await total(), dbTotal(), 0.01, "total survives a reload");
+  await shot(page, "d03-after-remove-add");
+  await design(page, "roofer-docket-after-remove-add");
+
+  console.log("8. Detailed editor");
+  await page.click('[data-testid="detailed-editor"]');
+  await page.waitForURL(/view=editor/);
+  check(await page.locator('[data-testid="cut-list"]').isVisible(), "detailed editor: measurements and cut list");
+  check((await page.locator('select[aria-label="On the docket"]').count()) > 0, "line grid shows main / extra per line");
+  near(moneyNum(await page.locator('[data-testid="estimate-total"]').innerText()), dbTotal(), 0.01, "detailed editor total = docket total");
+  await shot(page, "d04-detailed-editor");
+  await design(page, "detailed-editor", false);
+  await page.click('[data-testid="docket-view"]');
+  await page.locator('[data-testid="docket"]').waitFor();
+
+  console.log("9. Send the quote");
+  await page.click('[data-testid="send-quote"]');
+  await page.locator('[data-testid="sent-card"]').waitFor();
+  const link = await page.locator('[data-testid="customer-link"]').innerText();
+  check(/\/q\/[A-Za-z0-9_-]+$/.test(link), "sent: customer link shown");
+  check(sql(`select status from estimates where id = '${estId}'`) === "sent", "status sent");
+  await shot(page, "d05-sent");
+  await design(page, "roofer-sent-link");
+
+  console.log("10. Customer docket: add an extra, sign");
+  const pub = await browser.newContext({ viewport: { width: 1100, height: 900 } });
+  const cpage = await pub.newPage();
+  cpage.on("pageerror", (e) => errors.push(e.message));
+  const publicPath = link.slice(link.indexOf("/q/"));
+  await cpage.goto(BASE + publicPath);
+  await cpage.locator('[data-testid="docket"]').waitFor();
+  check(await cpage.getByText("Prepared for").isVisible(), "customer page: prepared for");
+  check((await cpage.locator('[data-testid="roof-title"]').innerText()) === "New Trimdek roof", "customer sees the roofer's profile");
+  check((await cpage.locator('[data-testid="docket-roof"]').getAttribute("data-colour")) === "#e4e2d5", "and colour");
+  check((await cpage.locator('[data-testid="docket-profile-trimdek"]').count()) === 0, "no profile buttons for the customer");
+  check((await cpage.locator('[data-testid="main-line"] button').count()) === 0, "main lines are read only");
+  const cBefore = await total(cpage);
+  near(cBefore, dbTotal(), 0.01, "customer total = roofer total");
+  if (DESIGN) await cpage.screenshot({ path: `${DESIGN}/customer-docket-before.png`, fullPage: true });
+  await cpage.screenshot({ path: `${SHOTS}/d06-customer-before.png`, fullPage: true });
+  const cMesh = cpage.locator('[data-testid="offered-extra"][data-extra="safety_mesh"]');
+  await cMesh.locator('button:has-text("Add")').click();
+  near(await total(cpage), cBefore + meshAmt, 0.01, "customer adds safety mesh: total goes up");
+  check((await cpage.locator('[data-testid="sign-total"]').innerText()).includes((cBefore + meshAmt).toLocaleString("en-AU", { minimumFractionDigits: 2 })), "sign form shows the new total");
+  check(await cpage.locator('[data-testid="added-extra"][data-extra="safety_mesh"] button:has-text("Remove")').isVisible(), "customer can remove their own pick");
+  check((await cpage.locator('[data-testid="added-extra"][data-extra="sarking"] button').count()) === 0, "but not the roofer's extras");
+  if (DESIGN) await cpage.screenshot({ path: `${DESIGN}/customer-docket-after-add.png`, fullPage: true });
+  await cpage.screenshot({ path: `${SHOTS}/d07-customer-after.png`, fullPage: true });
+  await cpage.fill('input[name="name"]', "Sam Sample");
+  const sig = await cpage.locator('canvas[aria-label^="Signature"]').boundingBox();
+  await cpage.mouse.move(sig.x + 20, sig.y + sig.height / 2);
+  await cpage.mouse.down();
+  for (let i = 1; i <= 12; i++) await cpage.mouse.move(sig.x + 20 + i * 18, sig.y + sig.height / 2 + (i % 2 ? -25 : 25));
+  await cpage.mouse.up();
+  await cpage.check('input[name="agree"]');
+  await cpage.click('button:has-text("Accept")');
+  await cpage.getByText("Your acceptance has been recorded").waitFor();
+  check(sql(`select status from estimates where id = '${estId}'`) === "accepted", "accepted");
+  check(sql(`select extra_status || '|' || customer_added from estimate_items where estimate_id = '${estId}' and calc_key = 'safety_mesh'`) === "added|true", "safety mesh stored as added by the customer");
+  check(sql(`select count(*) from estimate_items where estimate_id = '${estId}' and calc_key = 'fascia' and extra_status = 'offered'`) === "1", "fascia (not chosen) stays offered");
+  near(dbTotal(), cBefore + meshAmt, 0.01, "accepted total includes the customer's extra");
+  check(sql(`select body from notifications where org_id = '${orgId}' and kind = 'estimate_accepted' order by created_at desc limit 1`).includes("added Safety mesh"), "notification names the extra the customer added");
+  await cpage.screenshot({ path: `${SHOTS}/d08-customer-signed.png`, fullPage: true });
+
+  console.log("11. Locked receipt, invoice");
+  await page.goto(estUrl);
+  await page.locator('[data-testid="signed-receipt"]').waitFor();
+  check((await page.locator('[data-testid="docket-profile-trimdek"]').count()) === 0, "accepted docket is read only");
+  check(await page.locator('[data-testid="added-extra"][data-extra="safety_mesh"]').getByText("Added by customer").isVisible(), "shows the customer's pick");
+  check((await page.locator('[data-testid="added-extra"] button').count()) === 0, "no Remove once accepted");
+  await shot(page, "d09-signed");
+  await design(page, "signed-receipt");
+  if (DESIGN) {
+    const d = await (await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2, storageState: await ctx.storageState() })).newPage();
+    await d.emulateMedia({ media: "print" });
+    await d.goto(estUrl);
+    await d.screenshot({ path: `${DESIGN}/print-roofer.png`, fullPage: true });
+    const dc = await (await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 })).newPage();
+    await dc.emulateMedia({ media: "print" });
+    await dc.goto(BASE + publicPath);
+    await dc.screenshot({ path: `${DESIGN}/print-customer.png`, fullPage: true });
+    await d.context().close();
+    await dc.context().close();
+  }
+  const pdf = await page.pdf({ format: "A4", printBackground: true }).catch(() => null);
+  check(!pdf || pdf.length > 5000, "prints to PDF");
+  await page.click('button:has-text("Create invoice")');
+  await page.waitForURL(/\/app\/invoices\/[0-9a-f-]+$/);
+  const invId = page.url().split("/").pop();
+  const counted = Number(sql(`select count(*) from estimate_items where estimate_id = '${estId}' and extra_status is distinct from 'offered'`));
+  check(Number(sql(`select count(*) from invoice_items where invoice_id = '${invId}'`)) === counted, `invoice has the ${counted} quoted lines (no unchosen extras)`);
+  check(sql(`select count(*) from invoice_items where invoice_id = '${invId}' and description = 'Safety mesh (roll)'`) === "1", "invoice includes the customer's safety mesh");
+  check(sql(`select count(*) from invoice_items where invoice_id = '${invId}' and description = 'Fascia'`) === "0", "invoice leaves out the fascia nobody added");
+  near(sql(`select total from invoice_totals where invoice_id = '${invId}'`), dbTotal(), 0.01, "invoice total = accepted quote total");
+
+  console.log("12. Phone width (390px)");
+  const mctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, storageState: await ctx.storageState() });
+  const mp = await mctx.newPage();
+  for (const [p, what] of [[`/app/estimates/${estId}`, "roofer docket"], [publicPath, "customer docket"], ["/app/settings/price-book", "price book"]]) {
+    await mp.goto(BASE + p);
+    await mp.waitForLoadState("networkidle").catch(() => {});
+    await noHorizontalScroll(mp, what);
+  }
+  await mp.goto(BASE + publicPath);
+  await mp.screenshot({ path: `${SHOTS}/d10-mobile-customer.png`, fullPage: true });
+
+  check(errors.length === 0, `no page errors${errors.length ? ": " + errors.join(" | ") : ""}`);
+  fs.unlinkSync(pdfFile);
+  await browser.close();
+  console.log("\nAU DOCKET E2E PASSED");
+})().catch((e) => { console.error(e); process.exit(1); });

@@ -63,6 +63,9 @@ function check(cond, msg) {
   await page.click('button:has-text("New quote")');
   await page.waitForURL(/\/app\/estimates\/[0-9a-f-]+$/);
   const estUrl = page.url();
+  // New quotes open on the receipt docket; enter the measurements by hand in the detailed editor.
+  await page.click('[data-testid="detailed-editor"]');
+  await page.waitForURL(/view=editor/);
   await page.fill('input[aria-label="Plan area m²"]', "186");
   await page.fill('input[aria-label="Pitch degrees"]', "26.6");
   await page.fill('input[aria-label="Ridge lm"]', "12");
@@ -80,6 +83,8 @@ function check(cond, msg) {
   await page.getByText("Saved.").waitFor();
   await page.reload();
   check((await page.locator('input[aria-label="Description"]').count()) === rows + 1, "line items persisted after reload");
+  // Extras left "offered" (Often added) aren't part of the quote unless someone adds them.
+  const offered = (await page.locator('select[aria-label="On the docket"]').evaluateAll((els) => els.map((e) => e.value))).filter((v) => v === "offered").length;
   await shot("02-estimate-editor");
 
   console.log("5. Send + customer accepts via public link");
@@ -112,7 +117,7 @@ function check(cond, msg) {
   check(await page.getByText("Accepted").first().isVisible(), "estimate shows Accepted & is locked");
   await page.click('button:has-text("Create invoice")');
   await page.waitForURL(/\/app\/invoices\/[0-9a-f-]+$/);
-  check((await page.locator('input[aria-label="Description"]').count()) === rows + 1, `invoice copied all ${rows + 1} quote lines`);
+  check((await page.locator('input[aria-label="Description"]').count()) === rows + 1 - offered, `invoice copied all ${rows + 1 - offered} quoted lines`);
   await page.click('button:has-text("Issue tax invoice")');
   await page.locator('a:has-text("Customer view")').waitFor();
   const amountInput = page.locator('input[name="amount"]');

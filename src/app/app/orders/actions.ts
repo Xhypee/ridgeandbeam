@@ -60,11 +60,11 @@ async function estimateMaterialLines(supabase: Db, jobId: string): Promise<Sourc
   const est = await acceptedEstimate(supabase, jobId);
   if (!est) return [];
   const pick = (cols: string) => supabase.from("estimate_items").select(cols).eq("estimate_id", est.estimateId).order("position");
-  type Row = { description: string; quantity: number; unit: string; unit_cost: number; calc_key: string | null; category: string; option_id: string | null; supplier_price_item_id?: string | null };
-  let res = await pick("description, quantity, unit, unit_cost, calc_key, category, option_id, supplier_price_item_id");
+  type Row = { description: string; quantity: number; unit: string; unit_cost: number; calc_key: string | null; category: string; option_id: string | null; supplier_price_item_id?: string | null; extra_status?: string | null };
+  let res = await pick("description, quantity, unit, unit_cost, calc_key, category, option_id, supplier_price_item_id, extra_status");
   if (res.error) res = await pick("description, quantity, unit, unit_cost, calc_key, category, option_id"); // column added by estimating later
   return ((res.data ?? []) as unknown as Row[])
-    .filter((i) => (i.option_id === null || i.option_id === est.optionId) && i.category === "material" && Number(i.quantity) > 0)
+    .filter((i) => (i.option_id === null || i.option_id === est.optionId) && i.extra_status !== "offered" && i.category === "material" && Number(i.quantity) > 0)
     .map((i) => ({ description: i.description, quantity: Number(i.quantity), unit: i.unit, unit_cost: Number(i.unit_cost) || 0, calc_key: i.calc_key, supplier_price_item_id: i.supplier_price_item_id ?? null }));
 }
 

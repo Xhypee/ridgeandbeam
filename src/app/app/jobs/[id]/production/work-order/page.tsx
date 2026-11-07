@@ -18,12 +18,12 @@ export default async function WorkOrderPage({ params }: PageProps<"/app/jobs/[id
   const { data: job } = await supabase.from("jobs").select("*, customers(name, phone), crews(name)").eq("id", id).maybeSingle();
   if (!job || !crewLeadCanSee(ctx, job)) notFound();
   const [{ data: est }, { data: orders }] = await Promise.all([
-    supabase.from("estimates").select("measurements, selected_option_id, estimate_items(description, quantity, unit, category, option_id, position)")
+    supabase.from("estimates").select("measurements, selected_option_id, estimate_items(description, quantity, unit, category, option_id, position, extra_status)")
       .eq("job_id", id).eq("status", "accepted").order("accepted_at", { ascending: false, nullsFirst: false }).limit(1).maybeSingle(),
     supabase.from("material_orders").select("status, supplier, delivery_date, material_order_items(description, quantity, unit, position)").eq("job_id", id).order("created_at"),
   ]);
-  const estItems = ((est?.estimate_items ?? []) as { description: string; quantity: number; unit: string; category: string; option_id: string | null; position: number }[])
-    .filter((i) => i.option_id === null || i.option_id === est?.selected_option_id)
+  const estItems = ((est?.estimate_items ?? []) as { description: string; quantity: number; unit: string; category: string; option_id: string | null; position: number; extra_status: string | null }[])
+    .filter((i) => (i.option_id === null || i.option_id === est?.selected_option_id) && i.extra_status !== "offered")
     .sort((a, b) => a.position - b.position);
   const mats = workOrderMaterials(
     (orders ?? []).map((o) => ({ status: o.status, items: (o.material_order_items ?? []).sort((a: { position: number }, b: { position: number }) => a.position - b.position) })),

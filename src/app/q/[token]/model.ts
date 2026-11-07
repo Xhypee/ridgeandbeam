@@ -36,7 +36,26 @@ export type PublicEstimate = {
   /** The job's compliance facts (Jobs → Compliance), when the office filled them in. */
   compliance?: ComplianceProfile | null;
   options: { id: string; name: string; tier: string | null; description: string | null; warranty: string | null; recommended: boolean; position: number }[];
-  items: { description: string; quantity: number; unit: string; unit_price: number; option_id: string | null }[];
+  items: PublicItem[];
+  /** The docket's sheet profile and colour. */
+  roof_profile?: string | null;
+  roof_colour?: string | null;
+  /** The roof shape for the docket header (plan lines from "Measure from plans", else the sections). */
+  roof?: { job_type?: string | null; sections?: { area?: number; pitch?: number; system?: string; profile?: string }[]; plan?: { lines: unknown[]; scale: number; pitch: number } | null } | null;
+};
+
+export type PublicItem = {
+  id?: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  unit_price: number;
+  option_id: string | null;
+  calc_key?: string | null;
+  /** null = main line; "added" = extra in the total; "offered" = the customer can add it. */
+  extra_status?: "added" | "offered" | null;
+  blurb?: string | null;
+  customer_added?: boolean;
 };
 
 export type OptionView = PublicEstimate["options"][number] & {
@@ -53,15 +72,22 @@ export function auAddress(a: { street?: string | null; suburb?: string | null; s
   return [a.street, tail].filter(Boolean).join(", ");
 }
 
+/** Totals with the offered extras the customer picked counted in. */
+export function withChosen(items: PublicItem[], chosen: Iterable<string>): PublicItem[] {
+  const set = new Set(chosen);
+  return items.map((i) => (i.extra_status === "offered" && i.id && set.has(i.id) ? { ...i, extra_status: "added" as const } : i));
+}
+
 /** Everything the public page needs, computed once on the server. */
 export function buildProposal(doc: PublicEstimate) {
   const options = [...(doc.options ?? [])].sort((a, b) => a.position - b.position);
-  const shared = (doc.items ?? []).filter((i) => !i.option_id);
+  const offered = (doc.items ?? []).filter((i) => i.extra_status === "offered");
+  const shared = (doc.items ?? []).filter((i) => !i.option_id && i.extra_status !== "offered");
   const money = (lines: PublicEstimate["items"]) => estimateTotals(lines, Number(doc.discount), Number(doc.tax_rate), Boolean(doc.gst_inclusive));
   const monthly = (total: number) => (doc.financing?.enabled ? monthlyPayment(total, doc.financing.apr, doc.financing.term_months) : 0);
   const views: OptionView[] = options.map((o) => {
     const t = money(itemsForOption(doc.items, o.id));
-    return { ...o, items: doc.items.filter((i) => i.option_id === o.id), total: t.total, subtotal: t.subtotal, gst: t.gst, monthly: monthly(t.total) };
+    return { ...o, items: doc.items.filter((i) => i.option_id === o.id && i.extra_status !== "offered"), total: t.total, subtotal: t.subtotal, gst: t.gst, monthly: monthly(t.total) };
   });
   const effective = effectiveOptionId(options, doc.selected_option_id);
   const all = money(itemsForOption(doc.items, effective));
@@ -77,8 +103,11 @@ export function buildProposal(doc: PublicEstimate) {
       profile: doc.compliance,
       business: { name: doc.org.name, licenceNumber: doc.org.licence?.number ?? null, abn: doc.org.abn, address: doc.org.address, phone: doc.org.phone, email: doc.org.email },
     });
-  // After acceptance, show exactly what was snapshotted; before, what will be attached.
-  const maxTotal = views.length ? Math.max(...views.map((v) => v.total)) : all.total;
+  // After acceptance, show exactly what was snapshotted; before, what will be attached (worst case: every extra added).
+  const everything = withChosen(doc.items ?? [], offered.map((i) => i.id ?? ""));
+  const maxTotal = views.length ? Math.max(...views.map((v) => money(itemsForOption(everything, v.id)).total)) : money(itemsForOption(everything, null)).total;
   const notices: Notice[] = doc.status === "accepted" && doc.legal_notices?.length ? doc.legal_notices : noticesFor(maxTotal);
-  return { options: views, shared, effective, totals: all, monthly: monthly(all.total), state, notices, noticesFor, snapshot: (total: number) => noticeSnapshot(state, noticesFor(total)) };
+  /** The total with the customer's picks (for the chosen option). */
+  const totalWith = (chosen: Iterable<string>, optionId: string | null) => money(itemsForOption(withChosen(doc.items ?? [], chosen), optionId ?? effective));
+  return { options: views, shared, offered, totalWith, effective, totals: all, monthly: monthly(all.total), state, notices, noticesFor, snapshot: (total: number) => noticeSnapshot(state, noticesFor(total)) };
 }
