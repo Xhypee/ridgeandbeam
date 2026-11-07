@@ -63,7 +63,7 @@ export function plansMeasurements(current: Measurements, t: PlanTakeoff, opts: {
     downpipes: opts.downpipes,
     includeGutters: true,
     existingRoof: opts.newBuild ? "none" : current.existingRoof,
-    jobType: opts.newBuild && current.jobType !== "reroof" && current.jobType !== "tile_to_metal" && current.jobType !== "asbestos" ? "reroof" : current.jobType,
+    jobType: opts.newBuild ? "new_build" : current.jobType,
     planQty: planQtyOf(t, opts.pitch),
   };
 }

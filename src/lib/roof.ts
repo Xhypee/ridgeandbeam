@@ -43,18 +43,19 @@ export function profileFromText(text: string | null | undefined): MetalProfile |
   return null;
 }
 
-export const JOB_TYPES = ["reroof", "tile_to_metal", "restoration", "repair", "gutters", "asbestos"] as const;
+export const JOB_TYPES = ["reroof", "new_build", "tile_to_metal", "restoration", "repair", "gutters", "asbestos"] as const;
 export type JobType = (typeof JOB_TYPES)[number];
 export const JOB_TYPE_LABEL: Record<JobType, string> = {
   reroof: "Re-roof",
+  new_build: "New build (new roof, nothing to strip)",
   tile_to_metal: "Tile to metal re-roof",
   restoration: "Roof restoration",
   repair: "Repair / leak",
   gutters: "Gutters & downpipes only",
   asbestos: "Asbestos roof replacement",
 };
-/** Job types that strip the old roof and install a new one. */
-const REPLACES_ROOF: JobType[] = ["reroof", "tile_to_metal", "asbestos"];
+/** Job types that install a whole new roof (stripping the old one unless there is none). */
+const REPLACES_ROOF: JobType[] = ["reroof", "new_build", "tile_to_metal", "asbestos"];
 
 export const EXISTING_ROOFS = ["tile", "metal", "fibro", "none"] as const;
 export type ExistingRoof = (typeof EXISTING_ROOFS)[number];
