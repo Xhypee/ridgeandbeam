@@ -52,6 +52,8 @@ export type AnalyzedFace = {
   eave: [Pt, Pt] | null; // eave line, face on its left
   label: Pt;
   name: string;
+  /** Indices into edges, in order round the panel. */
+  edges: number[];
 };
 export type Run = { kind: LineKind | EdgeType; edges: number[]; plan: number; true: number; a: Pt; b: Pt };
 export type RoofTotals = { plan: number; area: number; ridge: number; hip: number; valley: number; barge: number; apron: number; eave: number };
@@ -60,8 +62,12 @@ export type RoofAnalysis = {
   edges: AnalyzedEdge[];
   runs: Run[];
   height: (p: Pt) => number;
+  /** Height of any point on panel fi (from that panel's own plane). */
+  faceHeight: (fi: number, p: Pt) => number;
   vertexHeight: Map<string, number>;
   totals: RoofTotals;
+  /** Outline loops (panel on the left), for drawing. */
+  outlines: Pt[][];
   /** Outline corners: convex / reflex / kink (a straight eave with a slight bend, under 20°). */
   corners: Map<string, "convex" | "reflex" | "kink">;
   warnings: string[];
@@ -336,6 +342,7 @@ export function analyzeRoof(model: PlanModel): RoofAnalysis {
     eave: faceEave[fi],
     label: interiorPoint(f.pts),
     name: `Panel ${panelName(order.indexOf(fi))}`,
+    edges: f.edges.map((e) => e.seg),
   }));
   const totals: RoofTotals = { plan: 0, area: 0, ridge: 0, hip: 0, valley: 0, barge: 0, apron: 0, eave: 0 };
   for (const f of faces) { totals.plan += f.plan; totals.area += f.area; }
@@ -344,7 +351,24 @@ export function analyzeRoof(model: PlanModel): RoofAnalysis {
   if (!faces.length) warnings.push("No closed roof outline found. Draw the outline or pick another page.");
   if (faces.length && !eaveSegs().length) warnings.push("Mark at least one edge as a gutter (eave) so the roof slopes can be worked out.");
 
-  return { faces, edges, runs, height: (p: Pt) => (vertexHeight.has(key(p)) ? vertexHeight.get(key(p))! : fallback(p)), vertexHeight, totals, corners, warnings };
+  const outlines: Pt[][] = [];
+  const seenLoop = new Set<string>();
+  for (const h0 of outHalf.values()) {
+    if (seenLoop.has(key(h0.from))) continue;
+    const loop: Pt[] = [];
+    let h: typeof h0 | undefined = h0;
+    for (let g = 0; h && !seenLoop.has(key(h.from)) && g < 10000; g++) {
+      seenLoop.add(key(h.from));
+      loop.push(h.from);
+      h = outHalf.get(key(h.to));
+    }
+    if (loop.length >= 3) outlines.push(loop);
+  }
+  return {
+    faces, edges, runs, vertexHeight, totals, corners, warnings, outlines,
+    height: (p: Pt) => (vertexHeight.has(key(p)) ? vertexHeight.get(key(p))! : fallback(p)),
+    faceHeight: (fi: number, p: Pt) => (facePlane[fi] ? facePlane[fi](p) : fallback(p)),
+  };
 }
 
 const panelName = (i: number) => (i < 26 ? String.fromCharCode(65 + i) : `${String.fromCharCode(65 + Math.floor(i / 26) - 1)}${String.fromCharCode(65 + (i % 26))}`);

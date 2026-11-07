@@ -277,6 +277,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
   }
 
   const ro = locked;
+  const hasPlans = Boolean((initial.measurements as { plans?: { v?: number } } | null)?.plans?.v);
   const removeSection = (i: number) => setMeas({ sections: m.sections.filter((_, j) => j !== i) });
   const supplier = suppliers.find((s) => s.id === supplierId);
 
@@ -287,7 +288,14 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
       >
         {!ro && (
           <div className="mb-4 flex flex-wrap gap-2">
-            <Button type="button" variant="secondary" onClick={() => setImporting((v) => !v)} aria-expanded={importing}>Import measurement report</Button>
+            <Link
+              href={`/app/measure/${id}/plans`}
+              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
+              onClick={(e) => { if (dirty && !window.confirm("You have unsaved changes. Leave without saving?")) e.preventDefault(); }}
+              data-testid="measure-from-plans"
+            >
+              {hasPlans ? "Re-measure from plans" : "Measure from plans"}
+            </Link>
             <Link
               href={`/app/measure/${id}`}
               className="inline-flex min-h-10 items-center justify-center rounded-lg px-3.5 py-2 text-sm font-medium text-slate-800 ring-1 ring-slate-300 hover:bg-slate-50"
@@ -295,7 +303,14 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
             >
               Measure on satellite map
             </Link>
+            <Button type="button" variant="secondary" onClick={() => setImporting((v) => !v)} aria-expanded={importing}>Import measurement report</Button>
           </div>
+        )}
+        {hasPlans && (
+          <Link href={`/app/measure/${id}/plans`} className="mb-4 flex items-center justify-between gap-3 rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-700 ring-1 ring-brand-500/30 hover:bg-brand-100" data-testid="view-roof">
+            <span><b>View the roof</b> · plan, 3D model and sheet cut list from the plans</span>
+            <span aria-hidden>→</span>
+          </Link>
         )}
         {importing && !ro && <div className="mb-5"><ImportPanel onApply={applyImport} onCancel={() => setImporting(false)} /></div>}
 
@@ -449,7 +464,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
                   <tr key={i}>
                     <td className="py-1.5">{c.section}</td>
                     <td className="py-1.5">{METAL_PROFILE_INFO[c.profile].label} <span className="text-xs text-slate-400">{c.coverMm} mm</span></td>
-                    <td className="py-1.5 tabular-nums">{c.exact ? <b>{c.sheets} × {c.lengthMm.toLocaleString("en-AU")} mm</b> : <span className="text-slate-500">from area + waste</span>}</td>
+                    <td className="py-1.5 tabular-nums">{c.rows?.length ? <span title={c.rows.map((r) => `${r.qty} × ${r.lengthMm} mm`).join(", ")}><b>{c.sheets} sheets</b> <span className="text-xs text-slate-500">{c.rows.slice(0, 3).map((r) => `${r.qty} × ${r.lengthMm.toLocaleString("en-AU")}`).join(", ")}{c.rows.length > 3 ? ", …" : ""}</span></span> : c.exact ? <b>{c.sheets} × {c.lengthMm.toLocaleString("en-AU")} mm</b> : <span className="text-slate-500">from area + waste</span>}</td>
                     <td className="py-1.5 text-right tabular-nums">{fmt(c.lm)}</td>
                     <td className="py-1.5 text-right tabular-nums text-slate-600">≈{Math.round(c.screws)}</td>
                   </tr>

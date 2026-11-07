@@ -65,6 +65,9 @@ export const EXISTING_ROOF_LABEL: Record<ExistingRoof, string> = {
 /** Calculator-only keys not (yet) in calc-keys.ts. Requested from the coordinator. */
 export const EXTRA_CALC_KEYS: CalcKeyDef[] = [
   { key: "membrane_roof", label: "Membrane roofing system", unit: "m2", category: "material", systems: ["membrane"], hints: ["membrane roof", "torch on", "torch-on", "bitumen membrane"] },
+  // Measured from plans (new builds): requested for calc-keys.ts.
+  { key: "roof_battens", label: "Roof battens (metal roof)", unit: "lm", category: "material", systems: ["metal"], hints: ["roof batten", "top hat", "tophat", "batten"] },
+  { key: "fascia", label: "Fascia", unit: "lm", category: "material", hints: ["fascia"] },
 ];
 const EXTRA_MAP: Record<string, CalcKeyDef> = Object.fromEntries(EXTRA_CALC_KEYS.map((k) => [k.key, k]));
 export const calcKeyDef = (key: string): CalcKeyDef | undefined => CALC_KEY_MAP[key] ?? EXTRA_MAP[key];
@@ -147,6 +150,21 @@ export const DEFAULT_SETTINGS: CalcSettings = {
 /** Loose volume of stripped roofing per m² of roof (m³/m²), by what's on the roof now. Rough site rule. */
 export const OLD_ROOF_M3_PER_M2: Record<ExistingRoof, number> = { tile: 0.04, metal: 0.03, fibro: 0.03, none: 0 };
 
+/**
+ * Quantities worked out from the architect's plans ("Measure from plans"): an exact sheet cut list per profile and
+ * flashings ordered in lengths. Used instead of the area-based estimate while the measurements still match what
+ * the plans gave (`trueArea` and `basis`); edit the roof by hand and the calculator falls back to its usual maths.
+ */
+export type PlanQty = {
+  trueArea: number;
+  sheets: Partial<Record<MetalProfile, { coverMm: number; sheets: number; lm: number; rows: { lengthMm: number; qty: number }[] }>>;
+  /** Ordered lineal metres (run allowances, laps and lengths included). */
+  flashings: Partial<Record<"ridge_capping" | "barge_capping" | "valley_iron" | "flashing" | "gutter" | "fascia", number>>;
+  /** The measured lineal metres those orders were made from. */
+  basis: { ridgeHip: number; barge: number; valley: number; apron: number; eave: number };
+  battensLm: number;
+};
+
 export type Measurements = {
   units: "metric";
   jobType: JobType;
@@ -174,6 +192,8 @@ export type Measurements = {
   includeEdgeProtection: boolean;
   includeSkip: boolean;
   settings: CalcSettings;
+  /** From "Measure from plans" (absent otherwise). */
+  planQty?: PlanQty | null;
 };
 
 export const DEFAULT_MEASUREMENTS: Measurements = {
@@ -250,6 +270,8 @@ export type CutRow = {
   /** Support rows crossed per sheet (for fixings); 0 when estimated. */
   supports: number;
   screws: number;
+  /** Cut list by length (from plans). */
+  rows?: { lengthMm: number; qty: number }[];
 };
 
 export type ProfileOverride = { profile?: MetalProfile | null; coverMm?: number | null };
@@ -285,8 +307,38 @@ export function metalCut(s: RoofSection, m: Pick<Measurements, "wastePct" | "set
   return { section: s.label, profile, coverMm, sheets: 0, lengthMm: 0, lm: round2(gross / cover), exact: false, supports: 0, screws: ceil(round2(gross / (cover * spacing))) * perSupport };
 }
 
+const near = (a: number, b: number) => Math.abs(a - b) <= Math.max(0.05, Math.abs(b) * 0.01);
+
+/** The plans cut list for this profile, when the measurements still match the plans. */
+export function planCut(m: Measurements, override?: ProfileOverride): CutRow | null {
+  const q = m.planQty;
+  if (!q) return null;
+  const metal = m.sections.filter((s) => sectionSystem(s) === "metal" && pos(s.area) > 0);
+  if (!metal.length) return null;
+  const profiles = new Set(metal.map((s) => sectionProfile(s)));
+  if (!override?.profile && profiles.size > 1) return null;
+  const profile = override?.profile ?? [...profiles][0];
+  const settings = m.settings ?? DEFAULT_SETTINGS;
+  const coverMm = Number(override?.coverMm) > 100 ? Number(override!.coverMm) : coverWidthMm(profile, settings);
+  const c = q.sheets?.[profile];
+  if (!c || Math.abs(c.coverMm - coverMm) > 1) return null;
+  const area = metal.reduce((s, x) => s + trueArea(x), 0);
+  if (!near(area, q.trueArea)) return null;
+  const spacing = Math.max(0.1, pos(settings.supportSpacingMm) / 1000 || 0.9);
+  const per = pos(settings.screwsPerSheetPerSupport);
+  const rows = c.rows ?? [];
+  const screws = rows.reduce((s, r) => s + r.qty * (ceil(r.lengthMm / 1000 / spacing) + 1) * per, 0);
+  const longest = Math.max(0, ...rows.map((r) => r.lengthMm));
+  return {
+    section: "Whole roof (cut list from plans)", profile, coverMm, sheets: c.sheets, lengthMm: longest, lm: round2(c.lm), exact: true,
+    supports: ceil(longest / 1000 / spacing) + 1, screws, rows,
+  };
+}
+
 /** Cut list for every metal section (optionally re-run with another profile, e.g. a Best-option Klip-Lok). */
 export function cutList(m: Measurements, override?: ProfileOverride): CutRow[] {
+  const plan = planCut(m, override);
+  if (plan) return [plan];
   return m.sections.filter((s) => sectionSystem(s) === "metal" && pos(s.area) > 0).map((s) => metalCut(s, m, override));
 }
 
@@ -389,14 +441,20 @@ export function takeoff(m: Measurements, opts: { profileOverride?: ProfileOverri
     for (const [profile, rows] of byProfile) {
       const lm = rows.reduce((a, r) => a + r.lm, 0);
       const exact = rows.every((r) => r.exact);
-      add("metal_sheet", lm, { profile, basis: `${METAL_PROFILE_INFO[profile].label}, ${rows[0].coverMm} mm cover${exact ? ", cut list" : ", from area + waste"}` });
+      const fromPlans = rows.some((r) => r.rows);
+      add("metal_sheet", lm, { profile, basis: `${METAL_PROFILE_INFO[profile].label}, ${rows[0].coverMm} mm cover${fromPlans ? `, ${rows[0].sheets} sheets cut from the plans` : exact ? ", cut list" : ", from area + waste"}` });
     }
     const screws = cuts.reduce((a, r) => a + r.screws, 0);
     const perBox = Math.max(1, pos(st.screwsPerBox) || 500);
     add("roof_screws", ceil(screws / perBox), { basis: `≈${Math.round(screws)} screws (${st.screwsPerSheetPerSupport} per sheet per support at ${st.supportSpacingMm} mm), ${perBox}/box` });
     if (metalSecs.length) {
-      add("ridge_capping", s.ridgeHip * lap, { basis: `ridge + hip ${s.ridgeHip} lm + ${st.lapPct}% laps` });
-      add("barge_capping", pos(m.barge) * lap, { basis: `barge ${pos(m.barge)} lm + ${st.lapPct}% laps` });
+      const pr = planLm(m, "ridge_capping", "ridgeHip", s.ridgeHip);
+      add("ridge_capping", pr ?? s.ridgeHip * lap, { basis: pr != null ? `ridge + hip ${s.ridgeHip} lm in lengths from the plans (300 mm per run, 100 mm laps)` : `ridge + hip ${s.ridgeHip} lm + ${st.lapPct}% laps` });
+      const pb = planLm(m, "barge_capping", "barge", pos(m.barge));
+      add("barge_capping", pb ?? pos(m.barge) * lap, { basis: pb != null ? `barge ${pos(m.barge)} lm in lengths from the plans` : `barge ${pos(m.barge)} lm + ${st.lapPct}% laps` });
+      if (m.planQty && m.existingRoof === "none" && near(trueAreaOf(metalSecs), m.planQty.trueArea)) {
+        add("roof_battens", m.planQty.battensLm, { basis: `rows every ${st.supportSpacingMm} mm from the plans` });
+      }
       if (m.includeSafetyMesh) {
         const metalArea = round2(metalSecs.reduce((a, x) => a + trueArea(x), 0));
         add("safety_mesh", ceil(metalArea / Math.max(1, pos(st.safetyMeshRollM2))), { basis: `${metalArea} m² ÷ ${st.safetyMeshRollM2} m²/roll` });
@@ -417,8 +475,14 @@ export function takeoff(m: Measurements, opts: { profileOverride?: ProfileOverri
 
     const sarkArea = round2(gross([...metalSecs, ...tiles]));
     if (m.includeSarking) add("sarking", ceil(sarkArea / Math.max(1, pos(st.sarkingRollM2))), { basis: `${sarkArea} m² incl. waste ÷ ${st.sarkingRollM2} m²/roll` });
-    add("valley_iron", pos(m.valley) * lap, { basis: `valleys ${pos(m.valley)} lm + ${st.lapPct}% laps` });
-    add("flashing", pos(m.apron) * lap, { basis: `apron / wall ${pos(m.apron)} lm + ${st.lapPct}% laps` });
+    const pv = planLm(m, "valley_iron", "valley", pos(m.valley));
+    add("valley_iron", pv ?? pos(m.valley) * lap, { basis: pv != null ? `valleys ${pos(m.valley)} lm in lengths from the plans` : `valleys ${pos(m.valley)} lm + ${st.lapPct}% laps` });
+    const pa = planLm(m, "flashing", "apron", pos(m.apron));
+    add("flashing", pa ?? pos(m.apron) * lap, { basis: pa != null ? `apron / wall ${pos(m.apron)} lm in lengths from the plans` : `apron / wall ${pos(m.apron)} lm + ${st.lapPct}% laps` });
+    if (m.existingRoof === "none") {
+      const pf = planLm(m, "fascia", "eave", pos(m.eave));
+      if (pf != null) add("fascia", pf, { basis: `eave ${pos(m.eave)} lm in lengths from the plans` });
+    }
     add("whirlybird", Math.round(pos(m.whirlybirds)));
 
     if (m.includeSkip && !asbestos && m.existingRoof !== "none") {
@@ -438,11 +502,21 @@ export function takeoff(m: Measurements, opts: { profileOverride?: ProfileOverri
   }
 
   if (job === "gutters" || m.includeGutters) {
-    add("gutter", pos(m.eave), { basis: "eave / gutter line" });
+    const pg = planLm(m, "gutter", "eave", pos(m.eave));
+    add("gutter", pg ?? pos(m.eave), { basis: pg != null ? `eave ${pos(m.eave)} lm in lengths from the plans (350 mm per run)` : "eave / gutter line" });
     add("downpipe", Math.round(pos(m.downpipes)));
   }
   if (m.includeEdgeProtection && (out.length > 0 || job === "repair")) add("edge_protection", 1, { basis: "per job" });
   return out;
+}
+
+const trueAreaOf = (xs: RoofSection[]) => xs.reduce((a, x) => a + trueArea(x), 0);
+/** Ordered lm from the plans for a flashing, when the measured length still matches what the plans gave. */
+function planLm(m: Measurements, k: keyof PlanQty["flashings"], b: keyof PlanQty["basis"], current: number): number | null {
+  const q = m.planQty;
+  const v = q?.flashings?.[k];
+  if (!q || v == null || !(v > 0) || !near(current, Number(q.basis?.[b]) || 0)) return null;
+  return v;
 }
 
 export type TakeoffWarning = { code: "asbestos" | "no_area"; text: string };
@@ -543,6 +617,32 @@ export function normalizeMeasurements(raw: unknown, defaultWaste = 10, orgSettin
     includeEdgeProtection: bool("includeEdgeProtection", true),
     includeSkip: bool("includeSkip", true),
     settings: normalizeSettings(r.settings, base),
+    ...(normalizePlanQty(r.planQty) ? { planQty: normalizePlanQty(r.planQty) } : {}),
+  };
+}
+
+function normalizePlanQty(raw: unknown): PlanQty | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : 0);
+  const sheets: PlanQty["sheets"] = {};
+  const rs = (r.sheets && typeof r.sheets === "object" ? r.sheets : {}) as Record<string, Record<string, unknown>>;
+  for (const p of METAL_PROFILES) {
+    const c = rs[p];
+    if (!c || typeof c !== "object") continue;
+    const rows = Array.isArray(c.rows) ? (c.rows as Record<string, unknown>[]).map((x) => ({ lengthMm: num(x?.lengthMm), qty: Math.round(num(x?.qty)) })).filter((x) => x.lengthMm > 0 && x.qty > 0) : [];
+    if (num(c.coverMm) > 100 && num(c.lm) > 0) sheets[p] = { coverMm: num(c.coverMm), sheets: Math.round(num(c.sheets)), lm: num(c.lm), rows };
+  }
+  const fr = (r.flashings && typeof r.flashings === "object" ? r.flashings : {}) as Record<string, unknown>;
+  const flashings: PlanQty["flashings"] = {};
+  for (const k of ["ridge_capping", "barge_capping", "valley_iron", "flashing", "gutter", "fascia"] as const) if (num(fr[k]) > 0) flashings[k] = num(fr[k]);
+  const br = (r.basis && typeof r.basis === "object" ? r.basis : {}) as Record<string, unknown>;
+  const trueArea = num(r.trueArea);
+  if (!(trueArea > 0)) return null;
+  return {
+    trueArea, sheets, flashings,
+    basis: { ridgeHip: num(br.ridgeHip), barge: num(br.barge), valley: num(br.valley), apron: num(br.apron), eave: num(br.eave) },
+    battensLm: num(r.battensLm),
   };
 }
 
@@ -559,11 +659,12 @@ export function mergeMeasurements(raw: unknown, m: Measurements): Record<string,
 // ---------------------------------------------------------------------------
 // Measurement report import (Nearmap / other aerial report / hand-measured table)
 // ---------------------------------------------------------------------------
-export const MEASUREMENT_SOURCES = ["manual", "satellite", "nearmap", "roofgraf", "other", "eagleview", "hover", "roofr", "gaf_quickmeasure"] as const;
+export const MEASUREMENT_SOURCES = ["manual", "satellite", "plans", "nearmap", "roofgraf", "other", "eagleview", "hover", "roofr", "gaf_quickmeasure"] as const;
 export type MeasurementSource = (typeof MEASUREMENT_SOURCES)[number];
 export const MEASUREMENT_SOURCE_LABEL: Record<string, string> = {
   manual: "Hand measured",
   satellite: "Satellite self-measure",
+  plans: "Measured from plans",
   nearmap: "Nearmap",
   roofgraf: "Roofgraf",
   other: "Other report",

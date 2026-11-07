@@ -43,3 +43,6 @@ next-env.d.ts
 
 # Claude Code local worktrees/settings
 .claude/
+
+# pdf.js worker, copied from node_modules by scripts/copy-pdf-worker.mjs
+/public/pdfjs/

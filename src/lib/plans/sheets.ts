@@ -77,7 +77,7 @@ function longestEdge(pts: Pt[]): [Pt, Pt] {
 /** Top or bottom boundary of a clipped strip, sampled at its left and right sides. */
 function ends(local: Pt[], x0: number, x1: number): { top: [number, number]; bot: [number, number]; xl: number; xr: number } | null {
   const xs = local.map((p) => p[0]);
-  const xl = Math.max(x0, Math.min(...xs)) + 1, xr = Math.min(x1, Math.max(...xs)) - 1;
+  const xl = Math.max(x0, Math.min(...xs)) + 0.01, xr = Math.min(x1, Math.max(...xs)) - 0.01;
   if (xr <= xl) return null;
   const il = verticalIntervals(local, xl), ir = verticalIntervals(local, xr);
   if (!il.length || !ir.length) return null;
@@ -98,10 +98,12 @@ function layFace(face: AnalyzedFace, fi: number, cosP: number, o: SheetOptions, 
     const x0 = start + k * w, x1 = x0 + w;
     const clip = clipSlab(local, x0, x1);
     if (clip.length < 3) continue;
-    const ys = clip.map((p) => p[1]);
+    // Extent from the strip's inside (a panel edge lying exactly on the strip's side adds nothing).
+    const e = ends(clip, x0, x1);
+    const inner = clip.filter((p) => p[0] > x0 + 0.01 && p[0] < x1 - 0.01).map((p) => p[1]);
+    const ys = e ? [...inner, ...e.top, ...e.bot] : clip.map((p) => p[1]);
     const hi = Math.max(...ys), lo = Math.min(...ys);
     if (hi - lo < 20) continue;
-    const e = ends(clip, x0, x1);
     const onGutter = lo < 30;
     const raw = (hi - lo) / cosP + (onGutter ? o.overhangMm : 0);
     let top: Cut | null = null, bottom: Cut | null = null;
