@@ -73,6 +73,7 @@ export default async function EstimatePage({ params, searchParams }: PageProps<"
   const lic = licenceFor(org.licences, resolved.state);
   const priced = docket && status !== "accepted" ? await quotePriceBook(supabase, org, offered, (e.org_supplier_id as string | null) ?? null) : { book: offered };
   const draftItems: DraftItem[] = items.map((i) => ({
+    id: i.id, required: Boolean(i.required), customer_removed: Boolean(i.customer_removed), variants: (i.variants as DraftItem["variants"]) ?? null,
     description: i.description, quantity: Number(i.quantity), unit: i.unit, unit_price: Number(i.unit_price), unit_cost: Number(i.unit_cost ?? 0),
     category: i.category, calc_key: i.calc_key ?? null, option_key: i.option_id, supplier_price_item_id: i.supplier_price_item_id ?? null,
     extra_status: i.extra_status ?? null, blurb: i.blurb ?? null, customer_added: Boolean(i.customer_added),
@@ -181,6 +182,8 @@ export default async function EstimatePage({ params, searchParams }: PageProps<"
               items: draftItems,
               roof_profile: (e.roof_profile as never) ?? null,
               roof_colour: (e.roof_colour as string | null) ?? null,
+              customer_colour: e.customer_colour !== false,
+              colour_by_customer: Boolean(e.colour_by_customer),
               tax_rate: org.gst_registered !== false ? Number(e.tax_rate) : 0,
               gst_inclusive: Boolean(e.gst_inclusive),
               org_supplier_id: (e.org_supplier_id as string | null) ?? null,

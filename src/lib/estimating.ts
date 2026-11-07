@@ -45,6 +45,8 @@ export function allowedCatalog<T extends Pick<CatalogRow, "requires_certificatio
 export const isLegacyItem = (c: Pick<CatalogRow, "calc_key">) => Boolean(c.calc_key) && !isCurrentCalcKey(c.calc_key);
 
 export type DraftItem = {
+  /** The line's id (kept across saves; new lines get one in the browser). */
+  id?: string;
   description: string;
   quantity: number;
   unit: string;
@@ -64,6 +66,12 @@ export type DraftItem = {
   blurb?: string | null;
   /** The customer added this extra when signing. */
   customer_added?: boolean;
+  /** The customer took this (optional) extra off when signing; stored as offered. */
+  customer_removed?: boolean;
+  /** An extra the customer can't remove (e.g. edge protection). */
+  required?: boolean;
+  /** Sheet line: its price in each finish (COLORBOND / ZINCALUME), for the customer's colour choice. */
+  variants?: Partial<Record<"colorbond" | "zincalume", { name: string; unit_price: number; unit_cost?: number; supplier_price_item_id?: string | null }>> | null;
 };
 
 export type DraftOption = {

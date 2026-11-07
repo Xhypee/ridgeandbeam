@@ -11,7 +11,9 @@ import { MEASUREMENT_SOURCES, METAL_PROFILES } from "@/lib/roof";
 import { supplierPriceBook, type PriceRow } from "@/lib/suppliers";
 import type { ActionResult } from "@/components/action-form";
 
+const VariantSchema = z.object({ name: z.string().max(500), unit_price: z.coerce.number().finite().min(0), unit_cost: z.coerce.number().finite().min(0).optional(), supplier_price_item_id: z.uuid().nullable().optional() });
 const ItemSchema = z.object({
+  id: z.uuid().optional().nullable().catch(null),
   description: z.string().trim().min(1, "Every line needs a description.").max(500),
   quantity: z.coerce.number().finite(),
   unit: z.string().trim().max(20).default("ea"),
@@ -25,6 +27,9 @@ const ItemSchema = z.object({
   extra_status: z.enum(["added", "offered"]).nullable().optional().catch(null),
   blurb: z.string().trim().max(200).nullable().optional().catch(null),
   customer_added: z.boolean().optional().catch(false),
+  customer_removed: z.boolean().optional().catch(false),
+  required: z.boolean().optional().catch(false),
+  variants: z.object({ colorbond: VariantSchema.optional(), zincalume: VariantSchema.optional() }).nullable().optional().catch(null),
 });
 
 const OptionSchema = z.object({
@@ -53,6 +58,8 @@ const SaveSchema = z.object({
   /** The docket's sheet profile and colour (omit to leave them as they are). */
   roof_profile: z.enum(METAL_PROFILES).nullable().optional(),
   roof_colour: z.string().trim().max(40).nullable().optional(),
+  /** Let the customer pick the colour on their link. */
+  customer_colour: z.boolean().optional(),
 });
 export type SaveEstimateInput = z.input<typeof SaveSchema>;
 
@@ -78,7 +85,7 @@ export async function createEstimate(fd: FormData) {
   redirect(`/app/estimates/${data.id}`);
 }
 
-export async function saveEstimate(input: SaveEstimateInput): Promise<ActionResult & { optionIds?: Record<string, string> }> {
+export async function saveEstimate(input: SaveEstimateInput): Promise<ActionResult & { optionIds?: Record<string, string>; itemIds?: string[] }> {
   const parsed = SaveSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid estimate." };
   const { supabase } = await requireMoneyAccess();
@@ -114,6 +121,7 @@ export async function saveEstimate(input: SaveEstimateInput): Promise<ActionResu
       terms: e.terms,
       ...(e.roof_profile !== undefined ? { roof_profile: e.roof_profile ?? "" } : {}),
       ...(e.roof_colour !== undefined ? { roof_colour: e.roof_colour ?? "" } : {}),
+      ...(e.customer_colour !== undefined ? { customer_colour: e.customer_colour } : {}),
     },
     p_options: options,
     p_items: e.items,
@@ -121,7 +129,8 @@ export async function saveEstimate(input: SaveEstimateInput): Promise<ActionResu
   if (error) return { error: friendly(error) };
   revalidatePath(`/app/estimates/${e.id}`);
   revalidatePath("/app/estimates");
-  return { ok: "Saved.", optionIds: (data ?? {}) as Record<string, string> };
+  const { __items: itemIds, ...optionIds } = (data ?? {}) as Record<string, string> & { __items?: string[] };
+  return { ok: "Saved.", optionIds, itemIds: itemIds ?? [] };
 }
 
 /**
@@ -193,7 +202,12 @@ export async function setEstimateStatus(fd: FormData) {
   const { error } = await supabase.from("estimates").update(patch).eq("id", id);
   if (error) throw new Error(friendly(error));
   // Back to draft: extras the customer added when signing go back on offer.
-  if (status === "draft") await supabase.from("estimate_items").update({ extra_status: "offered", customer_added: false }).eq("estimate_id", id).eq("customer_added", true);
+  // Back to draft: the customer's choices are undone (extras they added go back on offer, ones they removed come back).
+  if (status === "draft") {
+    await supabase.from("estimate_items").update({ extra_status: "offered", customer_added: false }).eq("estimate_id", id).eq("customer_added", true);
+    await supabase.from("estimate_items").update({ extra_status: "added", customer_removed: false }).eq("estimate_id", id).eq("customer_removed", true);
+    await supabase.from("estimates").update({ colour_by_customer: false }).eq("id", id);
+  }
 
   // Move the job along the pipeline.
   const { data: job } = await supabase.from("jobs").select("stage").eq("id", est.job_id).single();
@@ -205,7 +219,7 @@ export async function setEstimateStatus(fd: FormData) {
   revalidatePath("/app", "layout");
 }
 
-type SrcItem = { description: string; quantity: number; unit: string; unit_price: number; unit_cost: number; category: string; position: number; calc_key: string | null; option_id: string | null; supplier_price_item_id: string | null };
+type SrcItem = { id: string; description: string; quantity: number; unit: string; unit_price: number; unit_cost: number; category: string; position: number; calc_key: string | null; option_id: string | null; supplier_price_item_id: string | null };
 type SrcOption = { id: string; position: number; name: string; tier: string | null; description: string | null; warranty: string | null; recommended: boolean };
 
 export async function duplicateEstimate(fd: FormData) {
@@ -229,6 +243,7 @@ export async function duplicateEstimate(fd: FormData) {
       terms: src.terms,
       roof_profile: src.roof_profile ?? null,
       roof_colour: src.roof_colour ?? null,
+      customer_colour: src.customer_colour !== false,
       created_by: user.id,
     })
     .select("id")
@@ -240,7 +255,7 @@ export async function duplicateEstimate(fd: FormData) {
     p_id: copy.id,
     p_estimate: { notes: src.notes, terms: src.terms },
     p_options: options.map((o) => ({ key: o.id, name: o.name, tier: o.tier, description: o.description, warranty: o.warranty, recommended: o.recommended })),
-    p_items: items.map((i) => ({ ...i, option_key: i.option_id, customer_added: false })),
+    p_items: items.map(({ id: _id, ...i }) => ({ ...i, option_key: i.option_id, customer_added: false, customer_removed: false })), // eslint-disable-line @typescript-eslint/no-unused-vars
   });
   if (saveErr) throw new Error(friendly(saveErr));
   revalidatePath("/app", "layout");

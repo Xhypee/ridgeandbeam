@@ -2,6 +2,7 @@ import { asAuState } from "@/lib/au";
 import { noticeSnapshot, requiredNotices, type ComplianceProfile, type Notice } from "@/lib/estimate-notices";
 import { effectiveOptionId, estimateTotals, itemsForOption } from "@/lib/estimate-totals";
 import { monthlyPayment } from "@/lib/roof";
+import { applyChoices } from "@/lib/docket";
 
 /** Shape returned by get_public_estimate(token). */
 export type PublicEstimate = {
@@ -40,8 +41,18 @@ export type PublicEstimate = {
   /** The docket's sheet profile and colour. */
   roof_profile?: string | null;
   roof_colour?: string | null;
+  /** Bumped on every change to the quote; acceptance must quote the version the customer saw. */
+  version?: number;
+  /** The customer may pick the colour. */
+  customer_colour?: boolean;
+  colour_by_customer?: boolean;
   /** The roof shape for the docket header (plan lines from "Measure from plans", else the sections). */
-  roof?: { job_type?: string | null; sections?: { area?: number; pitch?: number; system?: string; profile?: string }[]; plan?: { lines: unknown[]; scale: number; pitch: number } | null } | null;
+  roof?: {
+    job_type?: string | null;
+    sections?: { label?: string; area?: number; pitch?: number; system?: string; profile?: string }[];
+    plan?: { lines: unknown[]; scale: number; pitch: number } | null;
+    satellite?: { label?: string; points: [number, number][] }[] | null;
+  } | null;
 };
 
 export type PublicItem = {
@@ -56,6 +67,10 @@ export type PublicItem = {
   extra_status?: "added" | "offered" | null;
   blurb?: string | null;
   customer_added?: boolean;
+  customer_removed?: boolean;
+  required?: boolean;
+  /** Sheet line: its price in each finish (no costs). */
+  variants?: Partial<Record<"colorbond" | "zincalume", { name: string; unit_price: number }>> | null;
 };
 
 export type OptionView = PublicEstimate["options"][number] & {
@@ -77,6 +92,8 @@ export function withChosen(items: PublicItem[], chosen: Iterable<string>): Publi
   const set = new Set(chosen);
   return items.map((i) => (i.extra_status === "offered" && i.id && set.has(i.id) ? { ...i, extra_status: "added" as const } : i));
 }
+
+export type Choices = { added: string[]; removed: string[]; colour: string | null };
 
 /** Everything the public page needs, computed once on the server. */
 export function buildProposal(doc: PublicEstimate) {
@@ -107,7 +124,8 @@ export function buildProposal(doc: PublicEstimate) {
   const everything = withChosen(doc.items ?? [], offered.map((i) => i.id ?? ""));
   const maxTotal = views.length ? Math.max(...views.map((v) => money(itemsForOption(everything, v.id)).total)) : money(itemsForOption(everything, null)).total;
   const notices: Notice[] = doc.status === "accepted" && doc.legal_notices?.length ? doc.legal_notices : noticesFor(maxTotal);
-  /** The total with the customer's picks (for the chosen option). */
-  const totalWith = (chosen: Iterable<string>, optionId: string | null) => money(itemsForOption(withChosen(doc.items ?? [], chosen), optionId ?? effective));
+  /** The total with the customer's choices (for the chosen option). Mirrors accept_public_estimate. */
+  const totalWith = (c: Choices, optionId: string | null) =>
+    money(itemsForOption(applyChoices(doc.items ?? [], { ...c, roofColour: doc.roof_colour ?? null }), optionId ?? effective));
   return { options: views, shared, offered, totalWith, effective, totals: all, monthly: monthly(all.total), state, notices, noticesFor, snapshot: (total: number) => noticeSnapshot(state, noticesFor(total)) };
 }

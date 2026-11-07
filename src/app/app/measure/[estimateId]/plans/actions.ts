@@ -117,6 +117,7 @@ export async function savePlansTakeoff(input: SavePlansInput): Promise<Result & 
   const calcNames = new Set(catalog.filter((c) => c.calc_key).map((c) => c.name));
   type Item = DraftItem & { option_id: string | null; position: number };
   const existing = ((est.estimate_items ?? []) as Item[]).sort((a, b) => a.position - b.position).map((it) => ({
+    id: it.id, required: Boolean(it.required), customer_removed: Boolean(it.customer_removed), variants: it.variants ?? null,
     description: it.description, quantity: Number(it.quantity), unit: it.unit, unit_price: Number(it.unit_price), unit_cost: Number(it.unit_cost ?? 0),
     category: it.category, calc_key: it.calc_key ?? null, option_key: it.option_id ?? null, supplier_price_item_id: it.supplier_price_item_id ?? null,
     extra_status: it.extra_status ?? null, blurb: it.blurb ?? null, customer_added: Boolean(it.customer_added),

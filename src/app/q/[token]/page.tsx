@@ -8,8 +8,8 @@ import { date, money } from "@/lib/format";
 import { anonClient } from "@/lib/public";
 import { AcceptForm, OptionCards } from "./accept-form";
 import { CustomerDocket } from "./customer-docket";
-import { colourHex, roofFacts, roofTitle, sectionsProfile } from "@/lib/docket";
-import { GENERIC_ROOF, roofShapeFromPlan } from "@/lib/docket-shape";
+import { roofFacts, roofTitle, sectionsProfile } from "@/lib/docket";
+import { roofShape } from "@/lib/docket-shape";
 import { abnText, licenceFor } from "@/lib/business";
 import { AU_STATE_TZ } from "@/lib/au";
 import { METAL_PROFILES, normalizeMeasurements, type MetalProfile } from "@/lib/roof";
@@ -60,7 +60,7 @@ export default async function PublicEstimatePage({ params }: PageProps<"/q/[toke
   if (!hasOptions) {
     // The receipt docket (single-price quotes).
     const m = normalizeMeasurements({ units: "metric", jobType: doc.roof?.job_type ?? undefined, sections: doc.roof?.sections ?? [] });
-    const plan = roofShapeFromPlan(doc.roof?.plan);
+    const drawing = roofShape(doc.roof);
     const metal = m.sections.some((x) => x.area > 0 && (x.system ?? "metal") === "metal");
     const profile = (METAL_PROFILES as string[]).includes(doc.roof_profile ?? "") ? (doc.roof_profile as MetalProfile) : sectionsProfile(m);
     const lic = licenceFor(licences, p.state);
@@ -90,12 +90,16 @@ export default async function PublicEstimatePage({ params }: PageProps<"/q/[toke
             token={token}
             orgName={doc.org.name}
             status={doc.status}
+            version={doc.version ?? 0}
+            roofColour={doc.roof_colour ?? null}
+            customerColour={doc.customer_colour !== false}
+            colourByCustomer={Boolean(doc.colour_by_customer)}
             header={{ name: doc.org.name, abn: abnText(doc.org.abn), licence: lic ? `${lic.state} ${lic.number}` : null, number: doc.number, date: date(doc.sent_at ?? doc.created_at, { day: "2-digit", month: "2-digit", year: "numeric" }) }}
             roof={{
-              shape: plan ?? GENERIC_ROOF,
-              hex: colourHex(doc.roof_colour) ?? "#a9adb0",
+              shape: drawing.shape,
+              metal,
               title: roofTitle(m, metal ? profile : null),
-              facts: `${roofFacts(m, plan ? plan.faces.length : null)}${metal && doc.roof_colour ? ` · ${doc.roof_colour}` : ""}`,
+              facts: roofFacts(m, drawing.panels),
               address: doc.job.site_address || customerAddress || null,
             }}
             items={doc.items}
@@ -236,7 +240,7 @@ export default async function PublicEstimatePage({ params }: PageProps<"/q/[toke
       {doc.status === "sent" && (
         <div className="mx-auto mt-6 max-w-4xl">
           <AcceptForm token={token} orgName={doc.org.name} options={p.options} word={word} total={p.totals.total} financingNote={financingNote} gstCharged={gstCharged}
-            items={doc.items} discount={Number(doc.discount)} taxRate={Number(doc.tax_rate)} inclusive={Boolean(doc.gst_inclusive)} />
+            items={doc.items} discount={Number(doc.discount)} taxRate={Number(doc.tax_rate)} inclusive={Boolean(doc.gst_inclusive)} version={doc.version} />
         </div>
       )}
       {accepted && (
