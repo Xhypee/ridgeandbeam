@@ -136,6 +136,7 @@ export default async function EstimatePage({ params }: PageProps<"/app/estimates
           <QuoteBusiness name={org.name} abn={org.abn} licences={org.licences} state={resolved.state} gstRegistered={org.gst_registered} warnMissing />
         </Card>
         <StateCompliancePanel
+          summary
           state={resolved.state}
           source={resolved.source}
           contractValueIncGst={contractValue > 0 ? contractValue : null}

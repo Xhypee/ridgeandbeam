@@ -21,7 +21,7 @@ insert into ids values ('a_org', public.create_organization('Alice Springs Roofi
 do $$
 declare a uuid := (select v from ids where k = 'a_org');
 begin
-  if (select count(*) from catalog_items where org_id = a) <> 28 then raise exception 'expected 28 AU items, got %', (select count(*) from catalog_items where org_id = a); end if;
+  if (select count(*) from catalog_items where org_id = a) <> 30 then raise exception 'expected 30 AU items, got %', (select count(*) from catalog_items where org_id = a); end if;
   if exists (select 1 from catalog_items where org_id = a and calc_key in ('shingles', 'tearoff', 'underlayment', 'ice_water', 'warranty', 'dumpster', 'permit', 'drip_edge')) then
     raise exception 'US items seeded for a new company';
   end if;
@@ -35,7 +35,7 @@ begin
   -- idempotent: seeding again adds nothing; the v2 seeder now seeds AU items too
   if public.seed_catalog_au(a) <> 0 then raise exception 'reseed added rows'; end if;
   perform public.seed_catalog_v2(a);
-  if (select count(*) from catalog_items where org_id = a) <> 28 then raise exception 'v2 reseed changed the catalog'; end if;
+  if (select count(*) from catalog_items where org_id = a) <> 30 then raise exception 'v2 reseed changed the catalog'; end if;
 end $$;
 
 -- An existing company with only legacy items can add the AU items; nothing is overwritten.
@@ -65,7 +65,7 @@ do $$ begin
   exception when raise_exception then
     if sqlerrm not like 'only owners and admins%' then raise; end if;
   end;
-  if (select count(*) from catalog_items) <> 28 then raise exception 'B should see only its own 28 items'; end if;
+  if (select count(*) from catalog_items) <> 30 then raise exception 'B should see only its own 30 items'; end if;
 end $$;
 -- B's own supplier + price row (used below to prove A can't reference it).
 insert into org_suppliers (org_id, custom_name) select v, 'B Metals' from ids where k = 'b_org' returning id \gset bsup_

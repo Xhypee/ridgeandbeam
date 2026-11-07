@@ -62,20 +62,15 @@ export const EXISTING_ROOF_LABEL: Record<ExistingRoof, string> = {
   tile: "Tiles", metal: "Metal sheets", fibro: "Fibro / cement sheet", none: "Nothing (new frame)",
 };
 
-/** Calculator-only keys not (yet) in calc-keys.ts. Requested from the coordinator. */
-export const EXTRA_CALC_KEYS: CalcKeyDef[] = [
-  { key: "membrane_roof", label: "Membrane roofing system", unit: "m2", category: "material", systems: ["membrane"], hints: ["membrane roof", "torch on", "torch-on", "bitumen membrane"] },
-  // Measured from plans (new builds): requested for calc-keys.ts.
-  { key: "roof_battens", label: "Roof battens (metal roof)", unit: "lm", category: "material", systems: ["metal"], hints: ["roof batten", "top hat", "tophat", "batten"] },
-  { key: "fascia", label: "Fascia", unit: "lm", category: "material", hints: ["fascia"] },
-];
+/** Calculator-only keys not in calc-keys.ts (none at the moment: membrane, battens and fascia moved there). */
+export const EXTRA_CALC_KEYS: CalcKeyDef[] = [];
 const EXTRA_MAP: Record<string, CalcKeyDef> = Object.fromEntries(EXTRA_CALC_KEYS.map((k) => [k.key, k]));
 export const calcKeyDef = (key: string): CalcKeyDef | undefined => CALC_KEY_MAP[key] ?? EXTRA_MAP[key];
 export const calcKeyLabel = (key: string) => calcKeyDef(key)?.label ?? key;
 export const calcKeyUnit = (key: string): CalcUnit => calcKeyDef(key)?.unit ?? "ea";
 export const calcKeyCategory = (key: string): CalcCategory => calcKeyDef(key)?.category ?? "material";
 /** Every key the calculator can emit, in a stable display order. */
-export const CALCULATOR_KEYS: string[] = [...Object.keys(CALC_KEY_MAP), ...EXTRA_CALC_KEYS.map((k) => k.key)];
+export const CALCULATOR_KEYS: string[] = [...new Set([...Object.keys(CALC_KEY_MAP), ...EXTRA_CALC_KEYS.map((k) => k.key)])];
 export const isCurrentCalcKey = (key: string | null | undefined) => Boolean(key && calcKeyDef(key));
 
 // ---------------------------------------------------------------------------

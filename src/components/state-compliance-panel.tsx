@@ -39,6 +39,8 @@ export type StateComplianceProps = {
   /** Hide the sources/unverified sections (e.g. narrow sidebars). */
   compact?: boolean;
   className?: string;
+  /** Show five headline rules and fold the rest behind "Show all rules" (used on the quote page). */
+  summary?: boolean;
 };
 
 const ROOF_VALUES = ["metal", "concrete_tile", "terracotta_tile", "membrane"];
@@ -155,6 +157,26 @@ export function StateCompliancePanel(props: StateComplianceProps) {
         </div>
         <a href={r.regulator.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-700 hover:text-brand-600">{r.regulator.name} ↗</a>
       </header>
+      {props.summary && (
+        <div className="grid grid-cols-2 gap-2 px-5 pt-4 @lg:grid-cols-3" data-testid="compliance-summary">
+          {[
+            ["Licence", triText(r.licence.required, props.licenceNumber ? `Show no. ${props.licenceNumber}` : "Licence needed", "Not needed"), triTone(r.licence.required)],
+            ["Contract", r.writtenContract.tier ?? triText(r.writtenContract.required, "Written contract", "Not required"), triTone(r.writtenContract.required)],
+            ["Max deposit", r.deposit.isLegalLimit ? `${r.deposit.maxAud !== null ? $(r.deposit.maxAud) : "—"}${r.deposit.maxPct !== null ? ` (${r.deposit.maxPct}%)` : ""}` : "No legal cap", r.deposit.isLegalLimit ? "amber" : "slate"],
+            ["Cooling-off", r.coolingOff.applies ? (coolEnd ? `Until ${formatAuDate(coolEnd)}` : `${r.coolingOff.length} business days`) : "None", r.coolingOff.applies ? "amber" : "slate"],
+            ["Home warranty", triText(r.insurance.required, r.insurance.mustBeBefore === "deposit" ? "Before the deposit" : r.insurance.mustBeBefore === "work" ? "Before work starts" : "Needed", "Not needed"), triTone(r.insurance.required)],
+            ...(r.acl.applies ? [["Door-knock sale", "No payment for 10 business days", "red"]] : []),
+          ].map(([k, v, tone]) => (
+            <div key={k} className="min-w-0 rounded-xl bg-slate-50 px-3 py-2.5">
+              <p className="text-xs font-medium text-slate-500">{k}</p>
+              <Badge tone={tone as Parameters<typeof Badge>[0]["tone"]} className="mt-1 max-w-full whitespace-normal! text-left">{v}</Badge>
+            </div>
+          ))}
+        </div>
+      )}
+      {props.summary ? (
+        <details className="group px-5 pb-1 pt-2">
+          <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-semibold text-brand-700">Show all {r.stateName} rules</summary>
       <div className="px-5 pb-2">
         <p className="pt-3 text-sm text-slate-700">{r.scope.summary}</p>
 
@@ -268,6 +290,122 @@ export function StateCompliancePanel(props: StateComplianceProps) {
           Rules last verified {formatAuDate(r.verifiedOn)}. {r.disclaimer} If something looks wrong, check with {r.regulator.name}.
         </p>
       </div>
+        </details>
+      ) : (
+      <div className="px-5 pb-2">
+        <p className="pt-3 text-sm text-slate-700">{r.scope.summary}</p>
+
+        <Row label="Licence" badge={<Badge tone={triTone(r.licence.required)}>{triText(r.licence.required, "Licence needed", "No licence needed")}</Badge>}>
+          {r.licence.required !== false && showLicence && (
+            <p className="font-semibold text-ink">
+              {props.licenceNumber ? <>Show licence no. <span data-licence-number>{props.licenceNumber}</span> on this quote and the contract.</> : <>Add your {r.state} licence number in Settings → Company so it prints on quotes and contracts.</>}
+            </p>
+          )}
+          <p>{r.licence.thresholdText}</p>
+          {r.licence.classes.length > 0 && <p className="mt-1 text-slate-600">Classes: {r.licence.classes.join("; ")}.</p>}
+          {whereLicence.length > 0 && <p className="mt-1 text-slate-600">Show the number on: {whereLicence.join(", ")}.</p>}
+          <Sources src={r.licence.src} />
+        </Row>
+
+        <Row label="Written contract" badge={<Badge tone={triTone(r.writtenContract.required)}>{r.writtenContract.tier ?? triText(r.writtenContract.required, "Written contract", "Not required by law")}</Badge>}>
+          <p>{r.writtenContract.note}</p>
+          {r.writtenContract.mustInclude.length > 0 && (
+            <details className="mt-1">
+              <summary className="inline-flex min-h-9 cursor-pointer items-center font-semibold text-brand-700">What the contract must include ({r.writtenContract.mustInclude.length})</summary>
+              <ul className="ml-5 list-disc text-slate-600">{r.writtenContract.mustInclude.map((m) => <li key={m}>{m}</li>)}</ul>
+            </details>
+          )}
+          <Sources src={r.writtenContract.src} />
+        </Row>
+
+        <Row label="Maximum deposit" badge={r.deposit.isLegalLimit ? <Badge tone="amber" className="text-sm">{r.deposit.maxAud !== null ? $(r.deposit.maxAud) : "—"}{r.deposit.maxPct !== null ? ` (${r.deposit.maxPct}%)` : ""}</Badge> : <Badge>No legal cap</Badge>}>
+          <p data-deposit-max={r.deposit.maxAud ?? ""}>{r.deposit.note}</p>
+          <Sources src={r.deposit.src} />
+        </Row>
+
+        <Row label="Cooling-off" badge={<Badge tone={r.coolingOff.applies ? "amber" : "slate"}>{r.coolingOff.applies ? `${r.coolingOff.length} business days` : "None under state law"}</Badge>}>
+          {r.coolingOff.applies && coolEnd && (
+            <p className="font-semibold text-ink" data-cooling-off-end={coolEnd}>
+              Owner can withdraw until the end of {formatAuDate(coolEnd)} (if they get the signed copy on {formatAuDate(copyOn)}).
+            </p>
+          )}
+          {r.coolingOff.applies && <p>{r.coolingOff.startsWhen}</p>}
+          <p>{r.coolingOff.note}</p>
+          {r.coolingOff.applies && r.coolingOff.exceptions.length > 0 && (
+            <details className="mt-1">
+              <summary className="inline-flex min-h-9 cursor-pointer items-center font-semibold text-brand-700">Exceptions</summary>
+              <ul className="ml-5 list-disc text-slate-600">{r.coolingOff.exceptions.map((m) => <li key={m}>{m}</li>)}</ul>
+            </details>
+          )}
+          {r.coolingOff.applies && <p className="mt-1 text-xs text-slate-500">{HOLIDAY_NOTE}</p>}
+          <Sources src={r.coolingOff.src} />
+        </Row>
+
+        <Row label="Home warranty insurance" badge={<Badge tone={triTone(r.insurance.required)}>{triText(r.insurance.required, r.insurance.mustBeBefore === "deposit" ? "Needed before the deposit" : r.insurance.mustBeBefore === "work" ? "Needed before work starts" : "Needed", "Not needed")}</Badge>}>
+          {r.insurance.scheme && <p className="font-medium text-ink">{r.insurance.scheme}</p>}
+          <p>{r.insurance.note}</p>
+          <Sources src={r.insurance.src} />
+        </Row>
+
+        {r.documents.length > 0 && (
+          <Row label="Give the owner">
+            <ul className="space-y-1">
+              {r.documents.map((d) => (
+                <li key={d.name}>
+                  <a href={d.link} target="_blank" rel="noreferrer" className="font-medium text-brand-700 underline underline-offset-2 hover:text-brand-600">{d.name}</a>
+                  <span className="text-slate-500"> — {d.when}</span>
+                </li>
+              ))}
+            </ul>
+          </Row>
+        )}
+
+        <Row label="Warranties">
+          {r.statutoryWarranty.length > 0 ? (
+            <ul className="space-y-0.5">{r.statutoryWarranty.map((w) => <li key={w.type}><span className="font-semibold text-ink">{w.years < 1 ? `${Math.round(w.years * 12)} months` : `${w.years} years`}</span> — {w.type}</li>)}</ul>
+          ) : null}
+          <p className="text-slate-600">{r.warrantyNote}</p>
+        </Row>
+
+        {r.acl.applies && (
+          <Row label="Door-knock sale (ACL)" badge={<Badge tone="red">{r.acl.exemptionClaimed ? "Emergency-repair exemption" : "No payment for 10 business days"}</Badge>}>
+            {aclEnd && !r.acl.exemptionClaimed && <p className="font-semibold text-ink" data-acl-end={aclEnd}>No work and no payment until after {formatAuDate(aclEnd)} (if signed {formatAuDate(r.contractDate)}).</p>}
+            <ul className="ml-5 list-disc text-slate-600">{r.acl.notes.map((n) => <li key={n}>{n}</li>)}</ul>
+            <p className="mt-1 text-slate-600">{r.acl.callingHours}</p>
+            <Sources src={r.acl.src} />
+          </Row>
+        )}
+
+        <Row label="Pricing">
+          <ul className="ml-5 list-disc text-slate-600">{r.national.notes.map((n) => <li key={n}>{n}</li>)}</ul>
+        </Row>
+
+        {r.unverified.length > 0 && (
+          <Row label="Check with your regulator">
+            <ul className="space-y-1" data-unverified>
+              {r.unverified.map((u) => (
+                <li key={u.topic}>
+                  <span className="font-semibold text-ink">{u.topic}:</span> {u.note}{" "}
+                  <a href={u.regulator.url} target="_blank" rel="noreferrer" className="whitespace-nowrap font-semibold text-brand-700 underline underline-offset-2">Check with {u.regulator.name} ↗</a>
+                </li>
+              ))}
+            </ul>
+          </Row>
+        )}
+
+        {!props.compact && (
+          <details className="border-t border-slate-100 py-3">
+            <summary className="inline-flex min-h-9 cursor-pointer items-center text-sm font-semibold text-brand-700">All sources ({r.sources.length})</summary>
+            <ul className="mt-1 space-y-0.5 text-xs">
+              {r.sources.map((s) => <li key={s.url}><a href={s.url} target="_blank" rel="noreferrer" className="break-words text-brand-700 underline underline-offset-2">{s.label}</a></li>)}
+            </ul>
+          </details>
+        )}
+        <p className="border-t border-slate-100 py-3 text-xs text-slate-500">
+          Rules last verified {formatAuDate(r.verifiedOn)}. {r.disclaimer} If something looks wrong, check with {r.regulator.name}.
+        </p>
+      </div>
+      )}
     </section>
   );
 }

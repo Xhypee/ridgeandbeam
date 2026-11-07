@@ -11,7 +11,7 @@ export const DAMAGE_CATEGORIES = ["broken_tiles", "ridge_capping", "sheet_damage
 export const PHOTO_CATEGORIES = ["overview", ...DAMAGE_CATEGORIES, "decking", "progress", "completion", "delivery"] as const;
 export type PhotoCategory = (typeof PHOTO_CATEGORIES)[number];
 /** All categories the DB accepts (field capture uses PHOTO_CATEGORIES). */
-export const FILE_CATEGORIES = [...PHOTO_CATEGORIES, "document", "other", "test_square"] as const;
+export const FILE_CATEGORIES = [...PHOTO_CATEGORIES, "document", "plans", "other", "test_square"] as const;
 
 /** Photos of this category carry a count of broken / cracked tiles on that slope (job_files.test_square_hits). */
 export const COUNT_CATEGORY = "broken_tiles";
@@ -31,6 +31,7 @@ export const CATEGORY_LABEL: Record<string, string> = {
   completion: "Completion",
   delivery: "Delivery",
   document: "Document",
+  plans: "Plans",
   other: "Other",
   test_square: "Test square (old)",
 };

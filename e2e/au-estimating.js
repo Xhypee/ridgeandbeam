@@ -68,7 +68,7 @@ async function noHorizontalScroll(page, what) {
   await shot(page, "e01-company-settings");
 
   console.log("3. Price book: AU items at $0, empty state, legacy toggle, prices");
-  check(sql(`select count(*) from catalog_items where org_id = '${orgId}'`) === "28", "28 Australian items seeded");
+  check(sql(`select count(*) from catalog_items where org_id = '${orgId}'`) === "30", "30 Australian items seeded (incl. roof battens and fascia)");
   check(sql(`select count(*) from catalog_items where org_id = '${orgId}' and (unit_price <> 0 or calc_key in ('shingles','permit','dumpster'))`) === "0", "no US items and every price $0");
   sql(`insert into catalog_items (org_id, calc_key, name, unit, unit_price) values ('${orgId}', 'shingles', 'Old US shingles', 'bundle', 42)`);
   await page.goto(BASE + "/app/settings/price-book");
