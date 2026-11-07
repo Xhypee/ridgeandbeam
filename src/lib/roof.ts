@@ -47,7 +47,7 @@ export const JOB_TYPES = ["reroof", "new_build", "tile_to_metal", "restoration",
 export type JobType = (typeof JOB_TYPES)[number];
 export const JOB_TYPE_LABEL: Record<JobType, string> = {
   reroof: "Re-roof",
-  new_build: "New build (new roof, nothing to strip)",
+  new_build: "New build",
   tile_to_metal: "Tile to metal re-roof",
   restoration: "Roof restoration",
   repair: "Repair / leak",
