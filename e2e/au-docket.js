@@ -108,6 +108,8 @@ async function noHorizontalScroll(page, what) {
     const [key, tier] = k.startsWith("metal_sheet_") ? ["metal_sheet", k.slice(12)] : [k, null];
     sql(`update catalog_items set unit_price = ${p}, unit_cost = ${Math.round(p * 60) / 100} where org_id = '${orgId}' and calc_key = '${key}' and tier ${tier ? `= '${tier}'` : "is null"}`);
   }
+  // ZINCALUME Trimdek priced (the customer can switch to it); COLORBOND Custom Orb left at $0 (the roofer gets a warning).
+  sql(`update catalog_items set unit_price = 26, unit_cost = 15.6 where org_id = '${orgId}' and name = 'ZINCALUME Trimdek 0.42 BMT'`);
 
   console.log("2. Price book: Extra flag and the why line");
   await page.goto(BASE + "/app/settings/price-book");
@@ -166,12 +168,17 @@ async function noHorizontalScroll(page, what) {
   await page.click('[data-testid="open-quote"]');
   await page.waitForURL(/\/app\/estimates\/[0-9a-f-]+$/);
 
-  console.log("5. The docket");
+  console.log("5. The docket (COLORBOND Custom Orb isn't priced yet)");
   await page.locator('[data-testid="docket"]').waitFor();
   check((await page.locator('[data-testid="roof-title"]').innerText()) === "New Custom Orb roof", "roof header: New Custom Orb roof");
   const facts = await page.locator('[data-testid="roof-facts"]').innerText();
   check(/176\.5 m² · 6 panels at 25° · Woodland Grey/.test(facts), `facts line (${facts})`);
   check((await page.locator('[data-testid="docket-roof"] polygon').count()) === 6, "roof drawn from the plans: 6 panels");
+  check((await page.locator('[data-testid="sheet-price-warning"]').innerText()).includes("No price for COLORBOND Custom Orb"), "missing-price warning for COLORBOND Custom Orb");
+  check(await page.locator('[data-testid="send-quote"]').isDisabled(), "Send is blocked until the sheet is priced");
+  check(sql(`select unit_price from estimate_items where estimate_id = '${estId}' and calc_key = 'metal_sheet'`) === "0.00", "never borrows the ZINCALUME price");
+  await shot(page, "d02a-missing-price");
+  await design(page, "missing-price-warning", false);
   check((await page.locator('[data-testid="main-line"]').count()) >= 6, "main lines listed");
   check((await page.locator('[data-testid="main-line"] [data-icon="sheets"]').count()) === 1, "sheet line has the sheet icon");
   const addedIds = await page.locator('[data-testid="added-extra"]').evaluateAll((els) => els.map((e) => e.getAttribute("data-extra")));
@@ -182,6 +189,7 @@ async function noHorizontalScroll(page, what) {
   const saved = async () => { await page.waitForFunction(() => document.querySelector('[data-testid="save-state"]')?.textContent === "Saved"); };
   const dbTotal = () => Number(sql(`select total from estimate_totals where estimate_id = '${estId}'`));
   near(await total(), dbTotal(), 0.01, "docket total = database total");
+  const ids0 = sql(`select string_agg(id::text, ',' order by calc_key) from estimate_items where estimate_id = '${estId}' and calc_key in ('labour_install', 'sarking', 'metal_sheet')`);
 
   console.log("6. Profile and colour");
   const sheetQty = (p) => Number(sql(`select round((measurements->'planQty'->'sheets'->'${p}'->>'lm')::numeric, 2) from estimates where id = '${estId}'`));
@@ -189,17 +197,20 @@ async function noHorizontalScroll(page, what) {
   check((await page.locator('[data-testid="roof-title"]').innerText()) === "New Trimdek roof", "Trimdek button: New Trimdek roof");
   await page.click('button[aria-label="Surfmist"]');
   check((await page.locator('[data-testid="docket-roof"]').getAttribute("data-colour")) === "#e4e2d5", "roof drawing recoloured Surfmist");
+  check((await page.locator('[data-testid="sheet-price-warning"]').count()) === 0, "warning gone once the sheet is priced");
   await saved();
   check(sql(`select roof_profile || '|' || roof_colour from estimates where id = '${estId}'`) === "trimdek|Surfmist", "profile and colour saved");
   const sheetRow = sql(`select description || '|' || quantity || '|' || unit_price from estimate_items where estimate_id = '${estId}' and calc_key = 'metal_sheet'`).split("|");
   check(sheetRow[0] === "COLORBOND Trimdek 0.42 BMT · Surfmist", `sheet line re-priced and named (${sheetRow[0]})`);
   near(sheetRow[1], sheetQty("trimdek"), 0.01, "sheet lm = the plans' Trimdek cut list");
   check(Number(sheetRow[2]) === 29.7, "Trimdek price from the price book");
+  check(sql(`select variants->'zincalume'->>'unit_price' || '|' || (variants->'colorbond'->>'unit_price') from estimate_items where estimate_id = '${estId}' and calc_key = 'metal_sheet'`) === "26|29.7", "sheet line keeps its price in both finishes");
+  check(sql(`select string_agg(id::text, ',' order by calc_key) from estimate_items where estimate_id = '${estId}' and calc_key in ('labour_install', 'sarking', 'metal_sheet')`) === ids0, "line ids unchanged across saves");
   near(await total(), dbTotal(), 0.01, "total follows the profile");
   await shot(page, "d02-docket");
   await design(page, "roofer-docket-surfmist-trimdek");
 
-  console.log("7. Remove and add extras");
+  console.log("7. Remove and add extras; edge protection required");
   const before = await total();
   const mesh = page.locator('[data-testid="added-extra"][data-extra="safety_mesh"]');
   const meshAmt = moneyNum(await mesh.locator("span.tabular-nums").innerText());
@@ -210,14 +221,19 @@ async function noHorizontalScroll(page, what) {
   const whirlyAmt = moneyNum((await whirly.locator("span.tabular-nums").innerText()).replace("+", ""));
   await whirly.locator('button:has-text("Add")').click();
   near(await total(), before - meshAmt + whirlyAmt, 0.01, "Add puts whirlybirds on the total");
+  const edgeRow = page.locator('[data-testid="added-extra"][data-extra="edge_protection"]');
+  check((await edgeRow.locator('[data-testid="required-toggle"]').innerText()).includes("Optional"), "extras are optional by default");
+  await edgeRow.locator('[data-testid="required-toggle"]').click();
+  check((await edgeRow.locator('[data-testid="required-toggle"]').innerText()).includes("Required"), "edge protection marked required");
   await saved();
+  check(sql(`select required from estimate_items where estimate_id = '${estId}' and calc_key = 'edge_protection'`) === "t", "required stored");
   near(await total(), dbTotal(), 0.01, "database total matches after remove/add");
   check(sql(`select extra_status from estimate_items where estimate_id = '${estId}' and calc_key = 'safety_mesh'`) === "offered", "safety mesh stored as offered");
   check(sql(`select measurements->>'includeSafetyMesh' from estimates where id = '${estId}'`) === "false", "calculator switch kept in step");
   await page.reload();
   near(await total(), dbTotal(), 0.01, "total survives a reload");
   await shot(page, "d03-after-remove-add");
-  await design(page, "roofer-docket-after-remove-add");
+  await design(page, "roofer-required-optional");
 
   console.log("8. Detailed editor");
   await page.click('[data-testid="detailed-editor"]');
@@ -225,8 +241,12 @@ async function noHorizontalScroll(page, what) {
   check(await page.locator('[data-testid="cut-list"]').isVisible(), "detailed editor: measurements and cut list");
   check((await page.locator('select[aria-label="On the docket"]').count()) > 0, "line grid shows main / extra per line");
   near(moneyNum(await page.locator('[data-testid="estimate-total"]').innerText()), dbTotal(), 0.01, "detailed editor total = docket total");
+  await page.fill('textarea[aria-label="Notes to customer"]', "Colorbond roof with new gutters.");
+  await page.click('button:has-text("Save quote")');
+  await page.getByText("Saved.").waitFor();
+  check(sql(`select string_agg(id::text, ',' order by calc_key) from estimate_items where estimate_id = '${estId}' and calc_key in ('labour_install', 'sarking', 'metal_sheet')`) === ids0, "the detailed editor keeps line ids too");
+  check(sql(`select required from estimate_items where estimate_id = '${estId}' and calc_key = 'edge_protection'`) === "t", "and keeps required");
   await shot(page, "d04-detailed-editor");
-  await design(page, "detailed-editor", false);
   await page.click('[data-testid="docket-view"]');
   await page.locator('[data-testid="docket"]').waitFor();
 
@@ -237,12 +257,12 @@ async function noHorizontalScroll(page, what) {
   check(/\/q\/[A-Za-z0-9_-]+$/.test(link), "sent: customer link shown");
   check(sql(`select status from estimates where id = '${estId}'`) === "sent", "status sent");
   await shot(page, "d05-sent");
-  await design(page, "roofer-sent-link");
 
-  console.log("10. Customer docket: add an extra, sign");
-  const pub = await browser.newContext({ viewport: { width: 1100, height: 900 } });
+  console.log("10. Customer docket: colour, add, remove (optional only)");
+  const pub = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: DESIGN ? 2 : 1 });
   const cpage = await pub.newPage();
   cpage.on("pageerror", (e) => errors.push(e.message));
+  cpage.on("dialog", (d) => d.accept());
   const publicPath = link.slice(link.indexOf("/q/"));
   await cpage.goto(BASE + publicPath);
   await cpage.locator('[data-testid="docket"]').waitFor();
@@ -253,16 +273,50 @@ async function noHorizontalScroll(page, what) {
   check((await cpage.locator('[data-testid="main-line"] button').count()) === 0, "main lines are read only");
   const cBefore = await total(cpage);
   near(cBefore, dbTotal(), 0.01, "customer total = roofer total");
-  if (DESIGN) await cpage.screenshot({ path: `${DESIGN}/customer-docket-before.png`, fullPage: true });
+  const cEdge = cpage.locator('[data-testid="added-extra"][data-extra="edge_protection"]');
+  check((await cEdge.locator("button").count()) === 0 && (await cEdge.locator('[data-testid="required-badge"]').isVisible()), "required edge protection: no Remove, padlock shown");
+  if (DESIGN) await cpage.screenshot({ path: `${DESIGN}/customer-required-optional.png`, fullPage: true });
   await cpage.screenshot({ path: `${SHOTS}/d06-customer-before.png`, fullPage: true });
-  const cMesh = cpage.locator('[data-testid="offered-extra"][data-extra="safety_mesh"]');
-  await cMesh.locator('button:has-text("Add")').click();
-  near(await total(cpage), cBefore + meshAmt, 0.01, "customer adds safety mesh: total goes up");
-  check((await cpage.locator('[data-testid="sign-total"]').innerText()).includes((cBefore + meshAmt).toLocaleString("en-AU", { minimumFractionDigits: 2 })), "sign form shows the new total");
-  check(await cpage.locator('[data-testid="added-extra"][data-extra="safety_mesh"] button:has-text("Remove")').isVisible(), "customer can remove their own pick");
-  check((await cpage.locator('[data-testid="added-extra"][data-extra="sarking"] button').count()) === 0, "but not the roofer's extras");
-  if (DESIGN) await cpage.screenshot({ path: `${DESIGN}/customer-docket-after-add.png`, fullPage: true });
+  // remove an optional extra
+  const cSark = cpage.locator('[data-testid="added-extra"][data-extra="sarking"]');
+  const sarkAmt = moneyNum(await cSark.locator("span.tabular-nums").innerText());
+  await cSark.locator('button:has-text("Remove")').click();
+  near(await total(cpage), cBefore - sarkAmt, 0.01, "customer removes sarking (optional): total goes down");
+  check(await cpage.locator('[data-testid="offered-extra"][data-extra="sarking"]').isVisible(), "sarking can be added back");
+  // add an offered extra
+  await cpage.locator('[data-testid="offered-extra"][data-extra="safety_mesh"] button:has-text("Add")').click();
+  near(await total(cpage), cBefore - sarkAmt + meshAmt, 0.01, "customer adds safety mesh: total goes up");
+  // pick a colour in the other finish: ZINCALUME is re-priced
+  const trimLm = Number(sql(`select quantity from estimate_items where estimate_id = '${estId}' and calc_key = 'metal_sheet'`));
+  const zincDiff = Math.round(trimLm * 26 * 100) / 100 - Math.round(trimLm * 29.7 * 100) / 100;
+  await cpage.click('[data-testid="customer-colour"][aria-label="ZINCALUME"]');
+  check((await cpage.locator('[data-testid="docket-roof"]').getAttribute("data-colour")) === "#a9adb0", "roof recoloured ZINCALUME");
+  check((await cpage.locator('[data-testid="main-line"][data-key="metal_sheet"]').innerText()).includes("ZINCALUME Trimdek 0.42 BMT"), "sheet line becomes ZINCALUME Trimdek");
+  const cAfter = cBefore - sarkAmt + meshAmt + zincDiff;
+  near(await total(cpage), cAfter, 0.01, "ZINCALUME price applied live");
+  if (DESIGN) await cpage.screenshot({ path: `${DESIGN}/customer-picks-colour.png`, fullPage: false });
   await cpage.screenshot({ path: `${SHOTS}/d07-customer-after.png`, fullPage: true });
+
+  console.log("11. The roofer edits while the customer has the link open");
+  const fasc = page.locator('[data-testid="offered-extra"][data-extra="fascia"]');
+  const fasciaAmt = moneyNum((await fasc.locator("span.tabular-nums").innerText()).replace("+", ""));
+  await fasc.locator('button:has-text("Add")').click();
+  await saved();
+  await cpage.locator('[data-testid="quote-updated"]').waitFor({ timeout: 20000 });
+  check((await cpage.locator('[data-testid="quote-updated"]').innerText()).includes(`updated by Gumtree Roofing ${stamp}`), "customer sees 'This quote was just updated'");
+  near(await total(cpage), cAfter + fasciaAmt, 0.01, "new total includes the roofer's fascia");
+  check((await cpage.locator('[data-testid="added-extra"][data-extra="sarking"]').count()) === 0, "customer's removal kept");
+  check((await cpage.locator('[data-testid="added-extra"][data-extra="safety_mesh"]').count()) === 1, "customer's added extra kept");
+  check((await cpage.locator('[data-testid="docket-roof"]').getAttribute("data-colour")) === "#a9adb0", "customer's colour kept");
+  if (DESIGN) await cpage.screenshot({ path: `${DESIGN}/customer-quote-updated.png`, fullPage: false });
+
+  console.log("12. Signing an outdated price is refused, then succeeds");
+  // Hold the page's background version check so the change below is only discovered when signing.
+  await cpage.route("**/q/**", async (route) => {
+    const r = route.request();
+    if (r.method() === "POST" && (r.postData() ?? "").startsWith("[")) return route.abort();
+    return route.continue();
+  });
   await cpage.fill('input[name="name"]', "Sam Sample");
   const sig = await cpage.locator('canvas[aria-label^="Signature"]').boundingBox();
   await cpage.mouse.move(sig.x + 20, sig.y + sig.height / 2);
@@ -270,47 +324,83 @@ async function noHorizontalScroll(page, what) {
   for (let i = 1; i <= 12; i++) await cpage.mouse.move(sig.x + 20 + i * 18, sig.y + sig.height / 2 + (i % 2 ? -25 : 25));
   await cpage.mouse.up();
   await cpage.check('input[name="agree"]');
+  sql(`update estimates set notes = 'Price includes a site clean-up.' where id = '${estId}'`); // the roofer changes the quote
+  await cpage.click('button:has-text("Accept")');
+  await cpage.locator('[role="alert"]', { hasText: "was just updated by" }).waitFor({ timeout: 15000 });
+  check(sql(`select status from estimates where id = '${estId}'`) === "sent", "outdated signature refused (still sent)");
+  check(await cpage.getByText("Price includes a site clean-up.").isVisible(), "page refreshed to the latest quote");
+  near(await total(cpage), cAfter + fasciaAmt, 0.01, "choices still applied after the refresh");
   await cpage.click('button:has-text("Accept")');
   await cpage.getByText("Your acceptance has been recorded").waitFor();
-  check(sql(`select status from estimates where id = '${estId}'`) === "accepted", "accepted");
+  check(sql(`select status from estimates where id = '${estId}'`) === "accepted", "accepted on the second try");
   check(sql(`select extra_status || '|' || customer_added from estimate_items where estimate_id = '${estId}' and calc_key = 'safety_mesh'`) === "added|true", "safety mesh stored as added by the customer");
-  check(sql(`select count(*) from estimate_items where estimate_id = '${estId}' and calc_key = 'fascia' and extra_status = 'offered'`) === "1", "fascia (not chosen) stays offered");
-  near(dbTotal(), cBefore + meshAmt, 0.01, "accepted total includes the customer's extra");
-  check(sql(`select body from notifications where org_id = '${orgId}' and kind = 'estimate_accepted' order by created_at desc limit 1`).includes("added Safety mesh"), "notification names the extra the customer added");
+  check(sql(`select extra_status || '|' || customer_removed from estimate_items where estimate_id = '${estId}' and calc_key = 'sarking'`) === "offered|true", "sarking stored as removed by the customer");
+  check(sql(`select extra_status || '|' || required from estimate_items where estimate_id = '${estId}' and calc_key = 'edge_protection'`) === "added|true", "required edge protection kept");
+  check(sql(`select roof_colour || '|' || colour_by_customer from estimates where id = '${estId}'`) === "ZINCALUME|true", "colour chosen by the customer stored");
+  check(sql(`select description || '|' || unit_price from estimate_items where estimate_id = '${estId}' and calc_key = 'metal_sheet'`) === "ZINCALUME Trimdek 0.42 BMT|26.00", "sheet re-priced server-side for ZINCALUME");
+  near(dbTotal(), cAfter + fasciaAmt, 0.01, "accepted total = what the customer saw");
+  check(sql(`select body from notifications where org_id = '${orgId}' and kind = 'estimate_accepted' order by created_at desc limit 1`).includes("removed Sarking"), "notification names the removal");
   await cpage.screenshot({ path: `${SHOTS}/d08-customer-signed.png`, fullPage: true });
 
-  console.log("11. Locked receipt, invoice");
+  console.log("13. Roofer's copy, invoice");
   await page.goto(estUrl);
   await page.locator('[data-testid="signed-receipt"]').waitFor();
   check((await page.locator('[data-testid="docket-profile-trimdek"]').count()) === 0, "accepted docket is read only");
   check(await page.locator('[data-testid="added-extra"][data-extra="safety_mesh"]').getByText("Added by customer").isVisible(), "shows the customer's pick");
+  check(await page.locator('[data-testid="removed-extra"][data-extra="sarking"]').getByText("Removed by customer").isVisible(), "shows 'Removed by customer'");
+  check((await page.locator('[data-testid="roof-badge"]').innerText()) === "Colour chosen by customer", "shows 'Colour chosen by customer'");
   check((await page.locator('[data-testid="added-extra"] button').count()) === 0, "no Remove once accepted");
   await shot(page, "d09-signed");
-  await design(page, "signed-receipt");
+  await design(page, "roofer-removed-by-customer");
   if (DESIGN) {
     const d = await (await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2, storageState: await ctx.storageState() })).newPage();
     await d.emulateMedia({ media: "print" });
     await d.goto(estUrl);
     await d.screenshot({ path: `${DESIGN}/print-roofer.png`, fullPage: true });
-    const dc = await (await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 })).newPage();
-    await dc.emulateMedia({ media: "print" });
-    await dc.goto(BASE + publicPath);
-    await dc.screenshot({ path: `${DESIGN}/print-customer.png`, fullPage: true });
     await d.context().close();
-    await dc.context().close();
   }
-  const pdf = await page.pdf({ format: "A4", printBackground: true }).catch(() => null);
-  check(!pdf || pdf.length > 5000, "prints to PDF");
   await page.click('button:has-text("Create invoice")');
   await page.waitForURL(/\/app\/invoices\/[0-9a-f-]+$/);
   const invId = page.url().split("/").pop();
   const counted = Number(sql(`select count(*) from estimate_items where estimate_id = '${estId}' and extra_status is distinct from 'offered'`));
-  check(Number(sql(`select count(*) from invoice_items where invoice_id = '${invId}'`)) === counted, `invoice has the ${counted} quoted lines (no unchosen extras)`);
+  check(Number(sql(`select count(*) from invoice_items where invoice_id = '${invId}'`)) === counted, `invoice has the ${counted} quoted lines`);
   check(sql(`select count(*) from invoice_items where invoice_id = '${invId}' and description = 'Safety mesh (roll)'`) === "1", "invoice includes the customer's safety mesh");
-  check(sql(`select count(*) from invoice_items where invoice_id = '${invId}' and description = 'Fascia'`) === "0", "invoice leaves out the fascia nobody added");
+  check(sql(`select count(*) from invoice_items where invoice_id = '${invId}' and description = 'Sarking (roll)'`) === "0", "invoice leaves out the sarking the customer removed");
   near(sql(`select total from invoice_totals where invoice_id = '${invId}'`), dbTotal(), 0.01, "invoice total = accepted quote total");
 
-  console.log("12. Phone width (390px)");
+  console.log("14. Roof drawings without plans: satellite tracing and typed-in sections");
+  const lat = -27.4836, lng = 152.9934, m2lat = 1 / 110574, m2lng = 1 / (111320 * Math.cos((lat * Math.PI) / 180));
+  const P = (x, y) => [Math.round((lat + y * m2lat) * 1e7) / 1e7, Math.round((lng + x * m2lng) * 1e7) / 1e7]; // x east, y north (m)
+  const facets = [ // a 12 m × 8 m hip roof plus a flat patio roof to the east
+    { label: "South", pitch: 22.5, points: [P(0, 0), P(12, 0), P(8, 4), P(4, 4)] },
+    { label: "North", pitch: 22.5, points: [P(0, 8), P(4, 4), P(8, 4), P(12, 8)] },
+    { label: "West", pitch: 22.5, points: [P(0, 0), P(4, 4), P(0, 8)] },
+    { label: "East", pitch: 22.5, points: [P(12, 0), P(12, 8), P(8, 4)] },
+    { label: "Patio", pitch: 5, points: [P(12, 1.5), P(17, 1.5), P(17, 6.5), P(12, 6.5)] },
+  ];
+  const sections = facets.map((f) => ({ label: f.label, area: 10, pitch: f.pitch, system: "metal", profile: "trimdek" }));
+  const satM = JSON.stringify({ units: "metric", jobType: "reroof", existingRoof: "tile", sections, satellite: { units: "metric", facets } }).replace(/'/g, "''");
+  const satId = sql(`insert into estimates (org_id, job_id, tax_rate, gst_inclusive, measurements, measurement_source, roof_profile, roof_colour) values ('${orgId}', '${jobId}', 10, true, '${satM}'::jsonb, 'satellite', 'trimdek', 'Basalt') returning id`).split("\n")[0];
+  await page.goto(`${BASE}/app/estimates/${satId}`);
+  await page.locator('[data-testid="docket-roof"][data-kind="satellite"]').waitFor();
+  check((await page.locator('[data-testid="docket-roof"] polygon').count()) === 5, "satellite quote: the 5 traced facets are drawn");
+  await shot(page, "d10-satellite");
+  await design(page, "satellite-roof-drawing", false);
+  const manM = JSON.stringify({ units: "metric", jobType: "reroof", existingRoof: "tile", sections: [
+    { label: "Main roof", area: 120, pitch: 22.5, system: "metal" }, { label: "Garage", area: 36, pitch: 15, system: "metal" }, { label: "Verandah", area: 18, pitch: 10, system: "metal" },
+  ] });
+  const manId = sql(`insert into estimates (org_id, job_id, tax_rate, gst_inclusive, measurements, measurement_source, roof_colour) values ('${orgId}', '${jobId}', 10, true, '${manM}'::jsonb, 'manual', 'Surfmist') returning id`).split("\n")[0];
+  await page.goto(`${BASE}/app/estimates/${manId}`);
+  await page.locator('[data-testid="docket-roof"][data-kind="tiles"]').waitFor();
+  check((await page.locator('[data-testid="roof-tile"]').count()) === 3, "typed-in sections: one tile each");
+  check((await page.locator('[data-testid="docket-roof"]').innerHTML()).includes("Garage"), "tiles are labelled");
+  await page.click('[data-testid="docket-fill"]');
+  await page.locator('[data-testid="main-line"]').first().waitFor();
+  await saved();
+  await shot(page, "d11-tiles");
+  await design(page, "manual-tiles-drawing", false);
+
+  console.log("15. Phone width (390px)");
   const mctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, storageState: await ctx.storageState() });
   const mp = await mctx.newPage();
   for (const [p, what] of [[`/app/estimates/${estId}`, "roofer docket"], [publicPath, "customer docket"], ["/app/settings/price-book", "price book"]]) {

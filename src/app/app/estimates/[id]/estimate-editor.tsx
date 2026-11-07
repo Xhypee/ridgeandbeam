@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { Badge, Button, Card, Field, Input, Select, Textarea, cx } from "@/components/ui";
 import { countsInTotal, estimateTotals, itemsForOption, marginExGst } from "@/lib/estimate-totals";
-import { fillQuoteLines, sectionsProfile } from "@/lib/docket";
+import { fillQuoteLines, newId, sectionsProfile, withIds } from "@/lib/docket";
 import {
   defaultOptions, isCalculatorLine, newKey, priceIn, resolvePriceBook, rowProfile, TIER_LABEL, TIERS,
   type CatalogRow, type DraftItem, type DraftOption, type PriceMode, type Tier,
@@ -84,7 +84,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
   const [source, setSource] = useState<string | null>(initial.measurement_source);
   const [options, setOptions] = useState<DraftOption[]>(initial.options);
   const [optionLabel, setOptionLabel] = useState<"options" | "alternates">(initial.option_label);
-  const [items, setItems] = useState<DraftItem[]>(initial.items);
+  const [items, setItems] = useState<DraftItem[]>(() => withIds(initial.items));
   const [taxRate, setTaxRate] = useState(gstRegistered ? Number(initial.tax_rate) : 0);
   const [inclusive, setInclusive] = useState(initial.gst_inclusive);
   const [supplierId, setSupplierId] = useState<string>(initial.org_supplier_id ?? "");
@@ -218,11 +218,11 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
   function addFromCatalog(cid: string, optionKey: string | null) {
     const c = catalog.find((x) => x.id === cid);
     if (!c) return;
-    setItems((p) => [...p, { description: c.name, quantity: 1, unit: c.unit, unit_price: priceIn(c, mode), unit_cost: Number(c.unit_cost), category: c.category, calc_key: null, option_key: optionKey, supplier_price_item_id: c.supplier_price_item_id ?? null }]);
+    setItems((p) => [...p, { id: newId(), description: c.name, quantity: 1, unit: c.unit, unit_price: priceIn(c, mode), unit_cost: Number(c.unit_cost), category: c.category, calc_key: null, option_key: optionKey, supplier_price_item_id: c.supplier_price_item_id ?? null }]);
     touch();
   }
   const addCustom = (optionKey: string | null) => {
-    setItems((p) => [...p, { description: "", quantity: 1, unit: "ea", unit_price: 0, unit_cost: 0, category: "other", calc_key: null, option_key: optionKey, supplier_price_item_id: null }]);
+    setItems((p) => [...p, { id: newId(), description: "", quantity: 1, unit: "ea", unit_price: 0, unit_cost: 0, category: "other", calc_key: null, option_key: optionKey, supplier_price_item_id: null }]);
     touch();
   };
 

@@ -211,5 +211,184 @@ begin
   end;
 end $$;
 
+-- 7. Stable line ids and the version.
+set local role authenticated;
+select null from set_config('request.jwt.claim.sub', :'ua', true);
+insert into estimates (org_id, job_id, tax_rate, gst_inclusive, roof_profile, roof_colour)
+  select (select v from ids where k = 'a_org'), :'job_id', 10, true, 'trimdek', 'Surfmist' returning id, public_token \gset c_
+insert into ids values ('c', :'c_id');
+insert into t values ('c_token', :'c_public_token');
+do $$
+declare e uuid := (select v from ids where k = 'c'); r jsonb; v0 int; sheet uuid := gen_random_uuid(); sark uuid := gen_random_uuid(); keep uuid[];
+  items jsonb;
+begin
+  items := jsonb_build_array(
+    jsonb_build_object('id', sheet, 'description', 'COLORBOND Trimdek 0.42 BMT · Surfmist', 'quantity', 100, 'unit', 'lm', 'unit_price', 30, 'unit_cost', 18, 'calc_key', 'metal_sheet',
+      'variants', jsonb_build_object('colorbond', jsonb_build_object('name', 'COLORBOND Trimdek 0.42 BMT', 'unit_price', 30, 'unit_cost', 18),
+                                     'zincalume', jsonb_build_object('name', 'ZINCALUME Trimdek 0.42 BMT', 'unit_price', 25, 'unit_cost', 15))),
+    jsonb_build_object('id', sark, 'description', 'Sarking (roll)', 'quantity', 2, 'unit', 'roll', 'unit_price', 150, 'calc_key', 'sarking', 'extra_status', 'added'),
+    jsonb_build_object('description', 'Edge protection', 'quantity', 1, 'unit', 'job', 'unit_price', 1000, 'calc_key', 'edge_protection', 'extra_status', 'added', 'required', true),
+    jsonb_build_object('description', 'Gutter', 'quantity', 10, 'unit', 'lm', 'unit_price', 30, 'calc_key', 'gutter', 'extra_status', 'offered', 'required', true));
+  v0 := (select version from estimates where id = e);
+  r := public.save_estimate_content(e, jsonb_build_object('tax_rate', 10), '[]'::jsonb, items);
+  if (select version from estimates where id = e) <> v0 + 1 then raise exception 'save did not bump the version'; end if;
+  if jsonb_array_length(r->'__items') <> 4 or (r->'__items'->>0)::uuid <> sheet or (r->'__items'->>1)::uuid <> sark then raise exception 'browser ids not kept: %', r; end if;
+  if (select required from estimate_items where estimate_id = e and calc_key = 'gutter') then raise exception 'only added extras can be required'; end if;
+  if not (select required from estimate_items where estimate_id = e and calc_key = 'edge_protection') then raise exception 'required not saved'; end if;
+  keep := array(select id from estimate_items where estimate_id = e order by position);
+  -- Save again: same ids, a price change in place, sarking dropped, a new line added.
+  items := jsonb_build_array(
+    jsonb_set(items->0, '{unit_price}', '31'),
+    jsonb_build_object('id', keep[3], 'description', 'Edge protection', 'quantity', 1, 'unit', 'job', 'unit_price', 1000, 'calc_key', 'edge_protection', 'extra_status', 'added', 'required', true),
+    jsonb_build_object('id', keep[4], 'description', 'Gutter', 'quantity', 10, 'unit', 'lm', 'unit_price', 30, 'calc_key', 'gutter', 'extra_status', 'offered'),
+    jsonb_build_object('description', 'Skylight reflash', 'quantity', 1, 'unit', 'ea', 'unit_price', 350));
+  r := public.save_estimate_content(e, jsonb_build_object('tax_rate', 10), '[]'::jsonb, items);
+  if (select array_agg(id order by position) from estimate_items where estimate_id = e and description <> 'Skylight reflash') <> array[keep[1], keep[3], keep[4]] then raise exception 'ids changed on resave'; end if;
+  if exists (select 1 from estimate_items where id = sark) then raise exception 'dropped line not deleted'; end if;
+  if (select unit_price from estimate_items where id = sheet) <> 31 then raise exception 'price not updated in place'; end if;
+  if (select count(*) from estimate_items where estimate_id = e) <> 4 then raise exception 'expected 4 lines'; end if;
+  -- an id from another quote becomes a new line on this one (the other quote is untouched)
+  r := public.save_estimate_content(e, jsonb_build_object('tax_rate', 10), '[]'::jsonb,
+         items || jsonb_build_array(jsonb_build_object('id', (select v from t where k = 'other'), 'description', 'Stolen id', 'quantity', 1, 'unit_price', 1)));
+  if (select estimate_id from estimate_items where id = (select v from t where k = 'other')::uuid) = e then raise exception 'took another quote''s line'; end if;
+  if not exists (select 1 from estimate_items where estimate_id = e and description = 'Stolen id') then raise exception 'line with a foreign id dropped'; end if;
+  -- direct edits that change what the customer sees bump the version too
+  v0 := (select version from estimates where id = e);
+  update estimates set notes = 'New note' where id = e;
+  if (select version from estimates where id = e) <> v0 + 1 then raise exception 'notes change did not bump version'; end if;
+  -- back to the quote under test: sarking optional again
+  r := public.save_estimate_content(e, jsonb_build_object('tax_rate', 10), '[]'::jsonb, jsonb_build_array(
+    jsonb_set(items->0, '{unit_price}', '30'),
+    jsonb_build_object('id', sark, 'description', 'Sarking (roll)', 'quantity', 2, 'unit', 'roll', 'unit_price', 150, 'calc_key', 'sarking', 'extra_status', 'added'),
+    items->1, items->2));
+  update estimates set status = 'sent', sent_at = now() where id = e;
+end $$;
+insert into t select 'c_version', version::text from estimates where id = :'c_id';
+insert into t select 'edge', id::text from estimate_items where estimate_id = :'c_id' and calc_key = 'edge_protection';
+insert into t select 'c_gutter', id::text from estimate_items where estimate_id = :'c_id' and calc_key = 'gutter';
+insert into t select 'c_sark', id::text from estimate_items where estimate_id = :'c_id' and calc_key = 'sarking';
+
+-- 8. The customer's choices on acceptance.
+set local role anon;
+select null from set_config('request.jwt.claim.sub', '', true);
+do $$
+declare tok text := (select v from t where k = 'c_token'); ver int := (select v::int from t where k = 'c_version');
+  sig text := 'data:image/png;base64,' || repeat('A', 200); d jsonb;
+begin
+  d := public.get_public_estimate(tok);
+  if (d->>'version')::int <> ver or not (d->>'customer_colour')::boolean then raise exception 'version / colour flag not public'; end if;
+  if (select x->'variants'->'zincalume'->>'unit_price' from jsonb_array_elements(d->'items') x where x->>'calc_key' = 'metal_sheet') <> '25' then raise exception 'variants not public'; end if;
+  if d::text like '%unit_cost%' then raise exception 'variant cost leaked'; end if;
+  if (select (x->>'required')::boolean from jsonb_array_elements(d->'items') x where x->>'calc_key' = 'edge_protection') is not true then raise exception 'required not public'; end if;
+  if public.public_estimate_version(tok) <> ver then raise exception 'public_estimate_version'; end if;
+  -- a stale version is refused
+  begin
+    perform public.accept_public_estimate(tok, 'Pat Sample', null, sig, '1.2.3.4', 't', '[]'::jsonb, '{}'::uuid[], '{}'::uuid[], null, ver - 1);
+    raise exception 'stale version accepted';
+  exception when raise_exception then if sqlerrm not like 'QUOTE_CHANGED%' then raise; end if;
+  end;
+  -- a required extra can't be removed
+  begin
+    perform public.accept_public_estimate(tok, 'Pat Sample', null, sig, '1.2.3.4', 't', '[]'::jsonb, '{}'::uuid[], array[(select v from t where k = 'edge')::uuid], null, ver);
+    raise exception 'required extra removed';
+  exception when raise_exception then if sqlerrm not like 'That extra can''t be removed%' then raise; end if;
+  end;
+  -- an offered (not added) line can't be "removed"
+  begin
+    perform public.accept_public_estimate(tok, 'Pat Sample', null, sig, '1.2.3.4', 't', '[]'::jsonb, '{}'::uuid[], array[(select v from t where k = 'c_gutter')::uuid], null, ver);
+    raise exception 'offered line removed';
+  exception when raise_exception then if sqlerrm not like 'That extra can''t be removed%' then raise; end if;
+  end;
+  -- a colour that isn't on the list
+  begin
+    perform public.accept_public_estimate(tok, 'Pat Sample', null, sig, '1.2.3.4', 't', '[]'::jsonb, '{}'::uuid[], '{}'::uuid[], 'Hot Pink', ver);
+    raise exception 'unknown colour accepted';
+  exception when raise_exception then if sqlerrm not like 'Please choose one of the colours%' then raise; end if;
+  end;
+  -- the real thing: ZINCALUME, sarking off, gutter on
+  if not public.accept_public_estimate(tok, 'Pat Sample', null, sig, '1.2.3.4', 't', '[]'::jsonb,
+       array[(select v from t where k = 'c_gutter')::uuid], array[(select v from t where k = 'c_sark')::uuid], 'ZINCALUME', ver) then
+    raise exception 'accept with choices failed';
+  end if;
+end $$;
+
+set local role authenticated;
+select null from set_config('request.jwt.claim.sub', :'ua', true);
+do $$
+declare e uuid := (select v from ids where k = 'c');
+begin
+  if (select roof_colour || '|' || colour_by_customer from estimates where id = e) <> 'ZINCALUME|true' then raise exception 'colour choice not stored'; end if;
+  if (select description || '|' || unit_price || '|' || unit_cost from estimate_items where estimate_id = e and calc_key = 'metal_sheet') <> 'ZINCALUME Trimdek 0.42 BMT|25.00|15.00' then
+    raise exception 'sheet not re-priced from the ZINCALUME price: %', (select description || '|' || unit_price || '|' || unit_cost from estimate_items where estimate_id = e and calc_key = 'metal_sheet');
+  end if;
+  if (select extra_status || '|' || customer_removed from estimate_items where estimate_id = e and calc_key = 'sarking') <> 'offered|true' then raise exception 'sarking not removed by customer'; end if;
+  if (select extra_status from estimate_items where estimate_id = e and calc_key = 'edge_protection') <> 'added' then raise exception 'required extra lost'; end if;
+  -- 2500 sheet + 1000 edge + 300 gutter
+  if (select total from estimate_totals where estimate_id = e) <> 3800 then raise exception 'total with choices: %', (select total from estimate_totals where estimate_id = e); end if;
+  if (select body from notifications where url = '/app/estimates/' || e order by created_at desc limit 1) not like '%removed Sarking%colour ZINCALUME%' then raise exception 'notification missing choices'; end if;
+end $$;
+
+-- The roofer can keep the colour: a quote with customer_colour off refuses a colour change; the same colour is fine.
+do $$
+declare a uuid := (select v from ids where k = 'a_org'); e uuid; tok text; ok boolean;
+begin
+  insert into estimates (org_id, job_id, tax_rate, gst_inclusive, roof_colour, customer_colour, status)
+    values (a, (select job_id from estimates where id = (select v from ids where k = 'c')), 10, true, 'Monument', false, 'sent') returning id, public_token into e, tok;
+  insert into estimate_items (org_id, estimate_id, description, quantity, unit_price, calc_key) values (a, e, 'COLORBOND Trimdek · Monument', 100, 30, 'metal_sheet');
+  insert into t values ('d_token', tok), ('d_id', e::text);
+end $$;
+set local role anon;
+select null from set_config('request.jwt.claim.sub', '', true);
+do $$
+declare tok text := (select v from t where k = 'd_token'); sig text := 'data:image/png;base64,' || repeat('A', 200);
+begin
+  begin
+    perform public.accept_public_estimate(tok, 'Pat Sample', null, sig, '1.2.3.4', 't', '[]'::jsonb, '{}'::uuid[], '{}'::uuid[], 'Surfmist', null);
+    raise exception 'colour changed although the roofer set it';
+  exception when raise_exception then if sqlerrm not like 'The colour on this quote is set by%' then raise; end if;
+  end;
+  if not public.accept_public_estimate(tok, 'Pat Sample', null, sig, '1.2.3.4', 't', '[]'::jsonb, '{}'::uuid[], '{}'::uuid[], 'Monument', null) then raise exception 'same colour refused'; end if;
+end $$;
+
+-- A COLORBOND -> ZINCALUME change without a ZINCALUME price is refused (never another finish's price).
+set local role authenticated;
+select null from set_config('request.jwt.claim.sub', :'ua', true);
+do $$
+declare a uuid := (select v from ids where k = 'a_org'); e uuid; tok text;
+begin
+  insert into estimates (org_id, job_id, tax_rate, gst_inclusive, roof_colour, status)
+    values (a, (select job_id from estimates where id = (select v from ids where k = 'c')), 10, true, 'Monument', 'sent') returning id, public_token into e, tok;
+  insert into estimate_items (org_id, estimate_id, description, quantity, unit_price, calc_key, variants)
+    values (a, e, 'COLORBOND Trimdek · Monument', 100, 30, 'metal_sheet', '{"colorbond": {"name": "COLORBOND Trimdek", "unit_price": 30}}');
+  insert into t values ('z_token', tok), ('z_id', e::text);
+end $$;
+set local role anon;
+select null from set_config('request.jwt.claim.sub', '', true);
+do $$
+declare tok text := (select v from t where k = 'z_token'); sig text := 'data:image/png;base64,' || repeat('A', 200);
+begin
+  begin
+    perform public.accept_public_estimate(tok, 'Pat Sample', null, sig, '1.2.3.4', 't', '[]'::jsonb, '{}'::uuid[], '{}'::uuid[], 'ZINCALUME', null);
+    raise exception 'priced ZINCALUME from the COLORBOND price';
+  exception when raise_exception then if sqlerrm not like 'That colour isn''t available%' then raise; end if;
+  end;
+  -- Same finish: just renamed, price unchanged.
+  if not public.accept_public_estimate(tok, 'Pat Sample', null, sig, '1.2.3.4', 't', '[]'::jsonb, '{}'::uuid[], '{}'::uuid[], 'Basalt', null) then raise exception 'Basalt refused'; end if;
+end $$;
+set local role authenticated;
+select null from set_config('request.jwt.claim.sub', :'ua', true);
+do $$ begin
+  if (select description || '|' || unit_price from estimate_items where estimate_id = (select v from t where k = 'z_id')::uuid) <> 'COLORBOND Trimdek · Basalt|30.00' then
+    raise exception 'same-finish rename wrong: %', (select description || '|' || unit_price from estimate_items where estimate_id = (select v from t where k = 'z_id')::uuid);
+  end if;
+end $$;
+
+-- 9. Every sheet profile in both finishes in a new company's price book.
+do $$ begin
+  if (select count(*) from catalog_items where org_id = (select v from ids where k = 'a_org') and calc_key = 'metal_sheet') <> 6 then raise exception 'expected 6 sheet rows'; end if;
+  if (select string_agg(profile || ':' || finish, ',' order by profile, finish) from catalog_items where org_id = (select v from ids where k = 'a_org') and calc_key = 'metal_sheet')
+     <> 'custom_orb:COLORBOND,custom_orb:ZINCALUME,klip_lok:COLORBOND,klip_lok:ZINCALUME,trimdek:COLORBOND,trimdek:ZINCALUME' then raise exception 'sheet profile x finish rows wrong'; end if;
+end $$;
+
 \echo 'DOCKET TESTS PASSED'
 rollback;

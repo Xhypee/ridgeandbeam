@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import { ICON_FOR_KEY, ICONS, iconFor } from "@/components/item-icons";
 import { CALC_KEYS } from "./calc-keys";
 import {
-  COLOURS, DEFAULT_EXTRA_KEYS, docketTakeoff, docketTotals, docketView, extraKeySet, extraStatusFor, fillQuoteLines, isExtraItem, pickSheet, qtyText,
-  roofFacts, roofTitle, sectionsProfile, setExtra, sheetDescription, switchColour, switchProfile,
+  applyChoices, COLOURS, DEFAULT_EXTRA_KEYS, docketTakeoff, docketTotals, docketView, extraKeySet, extraStatusFor, fillQuoteLines, finishOf, isExtraItem, matchChoices,
+  pickableColours, pickSheet, qtyText, roofFacts, roofTitle, rowFinish, sectionsProfile, setExtra, setRequired, sheetDescription, sheetProblem, sheetVariants,
+  switchColour, switchProfile, withIds,
 } from "./docket";
-import { GENERIC_ROOF, roofShape, roofShapeFromPlan } from "./docket-shape";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { roofShape, roofShapeFromPlan, roofShapeFromSatellite, roofShapeFromSections } from "./docket-shape";
 import { estimateTotals, itemsForOption } from "./estimate-totals";
 import type { CatalogRow, DraftItem } from "./estimating";
 import { DEFAULT_MEASUREMENTS, type Measurements } from "./roof";
@@ -67,7 +70,11 @@ describe("filling the docket from the measurements", () => {
   const by = (k: string) => r.items.find((i) => i.calc_key === k)!;
   it("main lines, added extras and offered extras", () => {
     expect(by("metal_sheet").extra_status).toBeNull();
-    expect(by("metal_sheet").description).toBe("ZINCALUME Custom Orb 0.42 BMT · Surfmist");
+    // Surfmist is COLORBOND and this book only has ZINCALUME Custom Orb: never borrow the other finish's price.
+    expect([by("metal_sheet").description, by("metal_sheet").unit_price]).toEqual(["COLORBOND Custom Orb · Surfmist", 0]);
+    expect(sheetProblem(book, "custom_orb", "Surfmist")).toBe("No price for COLORBOND Custom Orb — set it in the price book");
+    expect(fillQuoteLines({ m: job, book, mode, colour: "ZINCALUME" }).items.find((i) => i.calc_key === "metal_sheet")!.unit_price).toBe(22);
+    expect(r.items.every((i) => /^[0-9a-f-]{36}$/.test(i.id!))).toBe(true);
     expect(by("labour_install").extra_status).toBeNull();
     expect(by("sarking").extra_status).toBe("added");
     expect(by("edge_protection").extra_status).toBe("added");
@@ -80,10 +87,12 @@ describe("filling the docket from the measurements", () => {
     expect(by("whirlybird").quantity).toBe(2);
     expect(by("sarking").blurb).toBe("Keeps heat out and stops condensation");
   });
-  it("keeps the roofer's choices when refilled", () => {
-    const toggled = r.items.map((i) => (i.calc_key === "whirlybird" ? { ...i, extra_status: "added" as const } : i));
+  it("keeps the roofer's choices and the line ids when refilled", () => {
+    const toggled = setRequired(r.items.map((i) => (i.calc_key === "whirlybird" ? { ...i, extra_status: "added" as const } : i)), [r.items.findIndex((i) => i.calc_key === "sarking")], true);
     const again = fillQuoteLines({ m: job, book, mode, previous: toggled, colour: "Surfmist" });
     expect(again.items.find((i) => i.calc_key === "whirlybird")!.extra_status).toBe("added");
+    expect(again.items.find((i) => i.calc_key === "sarking")!.required).toBe(true);
+    for (const k of ["metal_sheet", "labour_install", "sarking", "gutter"]) expect(again.items.find((i) => i.calc_key === k)!.id).toBe(r.items.find((i) => i.calc_key === k)!.id);
   });
   it("offers price-book items marked extra that the calculator doesn't measure", () => {
     const more = fillQuoteLines({ m: job, book: [...book, row({ name: "Gutter guard", is_extra: true, unit_price: 900, blurb: "Keeps leaves out" })], mode });
@@ -153,6 +162,8 @@ describe("profile and colour", () => {
     const s = switchProfile({ items: edited, m: job, profile: "klip_lok", colour: "Surfmist", book, mode });
     const sheet = s.items.find((i) => i.calc_key === "metal_sheet")!;
     expect([sheet.description, sheet.quantity, sheet.unit_price]).toEqual(["COLORBOND Klip-Lok 700 0.48 BMT · Surfmist", 196.5, 38.5]);
+    expect(sheet.id).toBe(edited.find((i) => i.calc_key === "metal_sheet")!.id);
+    expect(sheet.variants).toEqual({ colorbond: { name: "COLORBOND Klip-Lok 700 0.48 BMT", unit_price: 38.5, unit_cost: 5, supplier_price_item_id: null } });
     expect(s.items.find((i) => i.calc_key === "labour_install")!.unit_price).toBe(40);
     expect(sectionsProfile(s.m)).toBe("klip_lok");
     expect(s.items.length).toBe(edited.length);
@@ -164,6 +175,16 @@ describe("profile and colour", () => {
     expect(pickSheet(extra, "custom_orb", "ZINCALUME")?.name).toBe("ZINCALUME Custom Orb 0.42 BMT");
     const next = switchColour({ items: r.items, m: job, profile: "custom_orb", from: "ZINCALUME", to: "Monument", book: extra, mode });
     expect(next.find((i) => i.calc_key === "metal_sheet")!.description).toBe("COLORBOND Custom Orb 0.42 BMT · Monument");
+  });
+  it("only the exact profile and finish is priced", () => {
+    expect(rowFinish({ finish: null, name: "ZINCALUME Trimdek" })).toBe("zincalume");
+    expect(rowFinish({ finish: null, name: "Trimdek" })).toBeNull();
+    expect(finishOf(null)).toBe("colorbond");
+    expect(pickSheet(book, "trimdek", "ZINCALUME")).toBeUndefined();
+    const s = switchProfile({ items: r.items, m: job, profile: "trimdek", colour: "ZINCALUME", book, mode });
+    expect(s.priced).toBe(false);
+    expect(s.items.find((i) => i.calc_key === "metal_sheet")!.unit_price).toBe(0);
+    expect(sheetVariants(book, "custom_orb", mode)).toEqual({ zincalume: { name: "ZINCALUME Custom Orb 0.42 BMT", unit_price: 22, unit_cost: 5, supplier_price_item_id: null } });
   });
   it("renames the sheet line between COLORBOND colours", () => {
     expect(sheetDescription("COLORBOND Trimdek 0.42 BMT · Monument", "Surfmist")).toBe("COLORBOND Trimdek 0.42 BMT · Surfmist");
@@ -180,15 +201,77 @@ describe("profile and colour", () => {
 });
 
 describe("roof drawing", () => {
-  it("draws the panels from the plans, else a generic hip roof", () => {
+  it("draws the panels from the plans", () => {
     // A 10 m × 6 m gable at 1:100: outline + ridge.
     const lines = [[[0, 0], [100, 0]], [[100, 0], [100, 30]], [[100, 30], [100, 60]], [[100, 60], [0, 60]], [[0, 60], [0, 30]], [[0, 30], [0, 0]], [[0, 30], [100, 30]]].map(([a, b]) => ({ a, b }));
     const s = roofShapeFromPlan({ lines, scale: 100, pitch: 22.5 })!;
-    expect(s.faces).toHaveLength(2);
-    expect(s.fromPlans).toBe(true);
+    expect(s.kind).toBe("plans");
+    expect(s.kind !== "tiles" && s.faces).toHaveLength(2);
     expect(roofShape({ plans: { lines, scale: 100, pitch: 22.5 } }).panels).toBe(2);
-    expect(roofShape({}).shape).toBe(GENERIC_ROOF);
+    expect(roofShape({ plan: { lines, scale: 100, pitch: 22.5 } }).panels).toBe(2);
     expect(roofShapeFromPlan({ lines: [] })).toBeNull();
+  });
+  it("projects satellite facets to metres, north up", () => {
+    // ~10 m east-west × ~5 m north-south near Brisbane.
+    const lat = -27.47, lng = 153.02, dLat = 5 / 110574, dLng = 10 / (111320 * Math.cos((lat * Math.PI) / 180));
+    const facet = { label: "A", points: [[lat, lng], [lat, lng + dLng], [lat + dLat, lng + dLng], [lat + dLat, lng]] };
+    const s = roofShapeFromSatellite([facet])!;
+    expect(s.kind).toBe("satellite");
+    const f = s.kind === "satellite" ? s.faces[0] : [];
+    const xs = f.map((p) => p[0]), ys = f.map((p) => p[1]);
+    expect(Math.round((Math.max(...xs) - Math.min(...xs)) / 100) / 10).toBe(10);
+    expect(Math.round((Math.max(...ys) - Math.min(...ys)) / 100) / 10).toBe(5);
+    // north (higher latitude) is up: smaller y
+    expect(f[2][1]).toBeLessThan(f[0][1]);
+    expect(roofShape({ satellite: { facets: [facet] }, sections: [{ area: 50 }] }).shape.kind).toBe("satellite");
+    expect(roofShapeFromSatellite([{ points: [[1, 2]] }])).toBeNull();
+  });
+  it("draws one tile per section, sized by its area", () => {
+    const s = roofShapeFromSections([{ label: "Front", area: 100 }, { label: "Back", area: 25 }, { label: "Empty", area: 0 }]);
+    expect(s.kind).toBe("tiles");
+    const t = s.kind === "tiles" ? s.tiles : [];
+    expect(t.map((x) => [x.label, x.area, x.size])).toEqual([["Front", 100, 10000], ["Back", 25, 5000]]);
+    expect(t[1].x >= t[0].size || t[1].y >= t[0].size).toBe(true);
+    expect(roofShape({ sections: [] }).shape).toEqual({ kind: "tiles", tiles: [] });
+  });
+});
+
+describe("the customer's choices", () => {
+  const items: DraftItem[] = withIds([
+    { description: "COLORBOND Trimdek 0.42 BMT · Surfmist", quantity: 100, unit: "lm", unit_price: 30, unit_cost: 0, category: "material", calc_key: "metal_sheet", option_key: null,
+      variants: { colorbond: { name: "COLORBOND Trimdek 0.42 BMT", unit_price: 30 }, zincalume: { name: "ZINCALUME Trimdek 0.42 BMT", unit_price: 25 } } },
+    { description: "Sarking", quantity: 2, unit: "roll", unit_price: 150, unit_cost: 0, category: "material", calc_key: "sarking", option_key: null, extra_status: "added" },
+    { description: "Edge protection", quantity: 1, unit: "job", unit_price: 1000, unit_cost: 0, category: "other", calc_key: "edge_protection", option_key: null, extra_status: "added", required: true },
+    { description: "Gutter", quantity: 10, unit: "lm", unit_price: 30, unit_cost: 0, category: "material", calc_key: "gutter", option_key: null, extra_status: "offered" },
+  ]);
+  const [sheet, sark, edge, gutter] = items;
+  it("adds offered, removes optional (never required), re-prices the colour by finish", () => {
+    const c = applyChoices(items, { added: [gutter.id!], removed: [sark.id!, edge.id!], colour: "ZINCALUME", roofColour: "Surfmist" });
+    expect(c[3].extra_status).toBe("added");
+    expect([c[1].extra_status, c[1].customer_removed]).toEqual(["offered", true]);
+    expect(c[2].extra_status).toBe("added");
+    expect([c[0].description, c[0].unit_price]).toEqual(["ZINCALUME Trimdek 0.42 BMT", 25]);
+    expect(docketTotals(c, 0, 10, true).total).toBe(2500 + 1000 + 300);
+    expect(docketView(c).removed.map((r) => r.id)).toEqual(["sarking"]); // offered + customer_removed: "Removed by customer"
+    expect(applyChoices(items, { added: [], removed: [], colour: "Monument", roofColour: "Surfmist" })[0].description).toBe("COLORBOND Trimdek 0.42 BMT · Monument");
+  });
+  it("matches earlier choices to a changed quote by id, then calc key", () => {
+    const changed = items.map((i) => (i.calc_key === "gutter" ? { ...i, id: "11111111-1111-4111-8111-111111111111" } : i));
+    expect(matchChoices(changed, [{ id: gutter.id!, calc_key: "gutter" }], "offered")).toEqual(["11111111-1111-4111-8111-111111111111"]);
+    expect(matchChoices(changed, [{ id: edge.id!, calc_key: "edge_protection" }], "added")).toEqual([]);
+    expect(matchChoices(changed, [{ id: sark.id!, calc_key: "sarking" }], "added")).toEqual([sark.id]);
+  });
+  it("only offers colours in a finish the roofer has priced", () => {
+    expect(pickableColours(items, "Surfmist").map((c) => c.name)).toContain("ZINCALUME");
+    const noZinc = items.map((i) => (i.calc_key === "metal_sheet" ? { ...i, variants: { colorbond: i.variants!.colorbond! } } : i));
+    expect(pickableColours(noZinc, "Surfmist").map((c) => c.name)).not.toContain("ZINCALUME");
+    expect(pickableColours(noZinc, "Surfmist")).toHaveLength(12);
+    expect(sheet.id).toBeTruthy();
+  });
+  it("the colour list matches the database's docket_colours()", () => {
+    const sqlText = readFileSync(path.join(__dirname, "../../supabase/migrations/20261112000200_docket_choices.sql"), "utf8");
+    const arr = sqlText.match(/select array\[([^\]]+)\]::text\[\]/)![1];
+    expect(arr.split(",").map((x) => x.trim().replace(/^'|'$/g, ""))).toEqual(COLOURS.map((c) => c.name));
   });
 });
 

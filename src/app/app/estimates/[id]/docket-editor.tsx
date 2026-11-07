@@ -7,11 +7,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CopyLink } from "@/components/copy-link";
-import { AddedExtras, DocketPaper, DocketTopLine, DocketTotal, MainLines, OftenAdded, RoofBand } from "@/components/docket";
+import { AddedExtras, DocketPaper, DocketTopLine, DocketTotal, MainLines, OftenAdded, RemovedExtras, RoofBand } from "@/components/docket";
 import { cx } from "@/components/ui";
 import {
-  COLOURS, colourHex, DOCKET_PROFILES, docketTotals, docketView, fillQuoteLines, PROFILE_SHORT, qtyText, roofFacts, roofTitle,
-  sectionsProfile, setExtra, switchColour, switchProfile, type ExtraRow,
+  attachVariants, COLOURS, colourHex, DOCKET_PROFILES, docketTotals, docketView, fillQuoteLines, PROFILE_SHORT, qtyText, roofFacts, roofTitle,
+  sectionsProfile, setExtra, setRequired, sheetProblem, switchColour, switchProfile, withIds, type ExtraRow,
 } from "@/lib/docket";
 import type { RoofShape } from "@/lib/docket-shape";
 import { isCalculatorLine, type CatalogRow, type DraftItem, type PriceMode } from "@/lib/estimating";
@@ -38,6 +38,10 @@ type Props = {
     items: DraftItem[];
     roof_profile: MetalProfile | null;
     roof_colour: string | null;
+    /** The customer may pick the colour on their link. */
+    customer_colour: boolean;
+    /** The customer picked the colour when they signed. */
+    colour_by_customer: boolean;
     tax_rate: number;
     gst_inclusive: boolean;
     org_supplier_id: string | null;
@@ -55,7 +59,8 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
   const router = useRouter();
   const locked = status === "accepted";
   const [m, setM] = useState<Measurements>(() => normalizeMeasurements(initial.measurements, defaultWaste, calcDefaults));
-  const [items, setItems] = useState<DraftItem[]>(initial.items);
+  const [items, setItems] = useState<DraftItem[]>(() => withIds(initial.items));
+  const [customerColour, setCustomerColour] = useState(initial.customer_colour);
   const [profile, setProfile] = useState<MetalProfile | null>(() => sectionsProfile(normalizeMeasurements(initial.measurements, defaultWaste, calcDefaults)) ?? initial.roof_profile);
   const [colour, setColour] = useState<string | null>(initial.roof_colour ?? (initial.measurements as { plans?: { colour?: string } } | null)?.plans?.colour ?? null);
   const [dirty, setDirty] = useState(false);
@@ -69,9 +74,11 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
   const metal = m.sections.some((s) => s.area > 0 && sectionSystem(s) === "metal") || !m.sections.some((s) => s.area > 0);
   const measured = m.sections.some((s) => s.area > 0) || m.eave > 0;
   const hex = colourHex(colour) ?? NEUTRAL;
+  const hasSheet = items.some((i) => i.calc_key === "metal_sheet" && !i.extra_status);
+  const problem = metal && hasSheet && !locked ? sheetProblem(book, profile, colour) : null;
 
   // ----- saving: every change saves itself (latest state wins); the page warns before leaving with unsaved edits.
-  const latest = useRef({ m, items, profile, colour });
+  const latest = useRef({ m, items, profile, colour, customerColour });
   const queued = useRef(false);
   const running = useRef<Promise<void> | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -87,7 +94,7 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
       measurement_source: (initial.measurement_source as never) ?? null,
       option_label: "options",
       options: [],
-      items: s.items.map((it) => ({ ...it, quantity: Number(it.quantity) || 0, unit_price: Number(it.unit_price) || 0, unit_cost: Number(it.unit_cost) || 0, option_key: null })),
+      items: attachVariants(s.items, book, s.profile, mode).map((it) => ({ ...it, quantity: Number(it.quantity) || 0, unit_price: Number(it.unit_price) || 0, unit_cost: Number(it.unit_cost) || 0, option_key: null })),
       tax_rate: initial.tax_rate,
       gst_inclusive: initial.gst_inclusive,
       org_supplier_id: initial.org_supplier_id,
@@ -96,9 +103,10 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
       terms: initial.terms,
       roof_profile: s.profile,
       roof_colour: s.colour,
+      customer_colour: s.customerColour,
     });
     if (res?.error) setMsg({ error: res.error });
-  }, [id, initial]);
+  }, [id, initial, book, mode.inclusive, mode.gstRatePct]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const flush = useCallback(async () => {
     if (timer.current) { clearTimeout(timer.current); timer.current = null; }
@@ -118,12 +126,14 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
     }
   }, [persist]);
 
-  const change = (next: Partial<{ m: Measurements; items: DraftItem[]; profile: MetalProfile | null; colour: string | null }>) => {
+  const change = (next: Partial<{ m: Measurements; items: DraftItem[]; profile: MetalProfile | null; colour: string | null; customerColour: boolean }>) => {
+    if (next.items) next = { ...next, items: withIds(next.items) };
     latest.current = { ...latest.current, ...next };
     if (next.m) setM(next.m);
     if (next.items) setItems(next.items);
     if (next.profile !== undefined) setProfile(next.profile);
     if (next.colour !== undefined) setColour(next.colour);
+    if (next.customerColour !== undefined) setCustomerColour(next.customerColour);
     setDirty(true);
     setMsg(null);
     if (timer.current) clearTimeout(timer.current);
@@ -142,7 +152,6 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
     if (locked || p === profile) return;
     const r = switchProfile({ items: latest.current.items, m: latest.current.m, profile: p, colour: latest.current.colour, book, mode });
     change({ items: r.items, m: r.m, profile: p });
-    if (!r.priced) setMsg({ error: `No ${PROFILE_SHORT[p]} sheet in your price book. Add one in Settings → Price book; the sheet keeps its old price until then.` });
   };
   const pickColour = (c: string) => {
     if (locked || c === colour) return;
@@ -154,12 +163,16 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
     const res = setExtra(latest.current.items, r.idx, to, latest.current.m);
     change({ items: res.items, ...(res.m ? { m: res.m } : {}) });
   };
+  const required = (r: ExtraRow, on: boolean) => {
+    if (locked) return;
+    change({ items: setRequired(latest.current.items, r.idx, on) });
+  };
   const fill = () => {
     const calcNames = new Set(book.filter((c) => c.calc_key).map((c) => c.name));
     const custom = latest.current.items.filter((it) => !isCalculatorLine(it, calcNames));
     const r = fillQuoteLines({ m: latest.current.m, book, mode, previous: latest.current.items, colour: latest.current.colour, keepCustom: custom });
     change({ items: [...r.items, ...custom] });
-    const zero = r.items.filter((i) => !i.extra_status && !(Number(i.unit_price) > 0)).length;
+    const zero = r.items.filter((i) => !i.extra_status && i.calc_key !== "metal_sheet" && !(Number(i.unit_price) > 0)).length;
     if (r.missing.length || zero) {
       setMsg({ error: [r.missing.length ? `No price-book item for: ${r.missing.map(calcKeyLabel).join(", ")}.` : "", zero ? `${zero} line${zero === 1 ? " is" : "s are"} $0: set your prices in Settings → Price book.` : ""].filter(Boolean).join(" ") });
     } else setMsg({ ok: `Filled ${r.items.length} lines from the measurements.` });
@@ -182,7 +195,7 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
   };
 
   const guardLeave = (e: React.MouseEvent) => { if ((dirty || saving) && !window.confirm("Your last change is still saving. Leave anyway?")) e.preventDefault(); };
-  const zeroMain = view.main.filter((l) => !(Number(l.unit_price) > 0)).length;
+  const zeroMain = view.main.filter((l) => l.calc_key !== "metal_sheet" && !(Number(l.unit_price) > 0)).length;
 
   return (
     <div className="mx-auto max-w-3xl" data-testid="docket-editor">
@@ -217,7 +230,8 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
 
       <DocketPaper>
         <DocketTopLine {...header} />
-        <RoofBand shape={shape} hex={hex} title={roofTitle(m, metal ? profile : null)} facts={`${roofFacts(m, panels)}${metal && colour ? ` · ${colour}` : ""}`} address={address} price={view.mainTotal}>
+        <RoofBand shape={shape} hex={hex} title={roofTitle(m, metal ? profile : null)} facts={`${roofFacts(m, panels)}${metal && colour ? ` · ${colour}` : ""}`}
+          badge={locked && initial.colour_by_customer ? "Colour chosen by customer" : null} address={address} price={view.mainTotal}>
           {metal && !locked && (
             <div className="no-print">
               <div className="flex flex-wrap gap-2" role="group" aria-label="Sheet profile">
@@ -234,6 +248,15 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
                     className={cx("h-9 w-9 rounded-full ring-offset-2 sm:h-8 sm:w-8", c.name === colour ? "ring-2 ring-brand-500" : "ring-1 ring-slate-300")} style={{ background: c.hex }} />
                 ))}
               </div>
+              <label className="mt-2 inline-flex min-h-11 items-center gap-2 text-sm text-slate-600">
+                <input type="checkbox" className="h-4 w-4 accent-brand-500" checked={customerColour} onChange={(e) => change({ customerColour: e.target.checked })} data-testid="customer-colour-toggle" />
+                Let the customer choose the colour
+              </label>
+              {problem && (
+                <p role="alert" className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200" data-testid="sheet-price-warning">
+                  {problem.split(" — ")[0]} — <Link href="/app/settings/price-book" className="font-semibold underline">set it in the price book</Link>.
+                </p>
+              )}
             </div>
           )}
         </RoofBand>
@@ -254,7 +277,8 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
         ) : (
           <MainLines lines={view.main.map((l) => ({ key: l.idx, calcKey: l.calc_key, description: l.description, qty: qtyText(Number(l.quantity), l.unit), amount: Math.round(Number(l.quantity) * Number(l.unit_price) * 100) / 100 }))} />
         )}
-        <AddedExtras rows={view.added} onRemove={locked ? undefined : (r) => toggle(r, "offered")} />
+        <AddedExtras rows={view.added} onRemove={locked ? undefined : (r) => toggle(r, "offered")} onRequired={locked ? undefined : required} />
+        <RemovedExtras rows={view.removed} />
         <DocketTotal total={totals.total} gst={totals.gst} gstCharged={initial.tax_rate > 0} discount={totals.discount} />
       </DocketPaper>
 
@@ -276,9 +300,9 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
           <OftenAdded rows={view.offered} onAdd={(r) => toggle(r, "added")} className="mt-6"
             note={status === "draft" ? <p className="mb-1 text-xs text-slate-400">Not in the total. The customer can add these on their quote link too.</p> : null} />
           {status === "draft" ? (
-            <button type="button" onClick={send} disabled={sending || items.length === 0} data-testid="send-quote"
+            <button type="button" onClick={send} disabled={sending || items.length === 0 || Boolean(problem)} data-testid="send-quote" title={problem ?? undefined}
               className="no-print mt-6 flex min-h-14 w-full items-center justify-center rounded-2xl bg-brand-500 text-lg font-semibold text-white hover:bg-brand-600 disabled:opacity-50">
-              {sending ? "Sending…" : "Send the quote →"}
+              {sending ? "Sending…" : problem ? "Set the sheet price to send" : "Send the quote →"}
             </button>
           ) : status === "sent" ? (
             <section className="no-print mt-6 rounded-2xl bg-ink p-5 text-white" data-testid="sent-card">

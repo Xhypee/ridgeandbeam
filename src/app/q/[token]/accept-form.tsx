@@ -68,8 +68,14 @@ export function OptionCards({ options, selected, onSelect, word, financingNote, 
 }
 
 /** Draw a signature, type the name, agree, Accept. `extras` = ids of the offered extras the customer added. */
-export function SignForm({ token, orgName, optionId, optionName, total, gstCharged, extras }: {
+export function SignForm({ token, orgName, optionId, optionName, total, gstCharged, extras, removed = [], colour = null, version }: {
   token: string; orgName: string; optionId: string | null; optionName?: string | null; total: number; gstCharged: boolean; extras: string[];
+  /** Optional extras the customer took off. */
+  removed?: string[];
+  /** The colour the customer picked (null = the roofer's). */
+  colour?: string | null;
+  /** The quote version on screen: a changed quote is refused (and the page refreshes) instead of signing an old price. */
+  version?: number;
 }) {
   return (
     <section className="no-print rounded-2xl bg-white p-5 ring-1 ring-slate-200 sm:p-6" data-testid="sign-form">
@@ -82,6 +88,9 @@ export function SignForm({ token, orgName, optionId, optionName, total, gstCharg
         <input type="hidden" name="token" value={token} />
         <input type="hidden" name="option_id" value={optionId ?? ""} />
         <input type="hidden" name="extras" value={extras.join(",")} />
+        <input type="hidden" name="removed" value={removed.join(",")} />
+        <input type="hidden" name="colour" value={colour ?? ""} />
+        {version != null && <input type="hidden" name="version" value={version} />}
         <div>
           <p className="mb-1 text-xs font-medium text-slate-600">Signature</p>
           <SignaturePad name="signature" required />
@@ -101,8 +110,8 @@ export function SignForm({ token, orgName, optionId, optionName, total, gstCharg
 }
 
 /** Homeowner picks an option (and any extras on offer), draws a signature, types their name and agrees. */
-export function AcceptForm({ token, orgName, options, word, total, financingNote, gstCharged, items, discount, taxRate, inclusive }: Props & {
-  items: PublicItem[]; discount: number; taxRate: number; inclusive: boolean;
+export function AcceptForm({ token, orgName, options, word, total, financingNote, gstCharged, items, discount, taxRate, inclusive, version }: Props & {
+  items: PublicItem[]; discount: number; taxRate: number; inclusive: boolean; version?: number;
 }) {
   const rec = options.find((o) => o.recommended)?.id ?? options[0]?.id ?? null;
   const [selected, setSelected] = useState<string | null>(rec);
@@ -135,7 +144,7 @@ export function AcceptForm({ token, orgName, options, word, total, financingNote
           ))}
         </section>
       )}
-      <SignForm token={token} orgName={orgName} optionId={selected} optionName={option?.name} total={shownTotal} gstCharged={gstCharged} extras={picks} />
+      <SignForm token={token} orgName={orgName} optionId={selected} optionName={option?.name} total={shownTotal} gstCharged={gstCharged} extras={picks} version={version} />
     </div>
   );
 }
