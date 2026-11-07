@@ -10,8 +10,8 @@ export async function acceptedEstimateItems(db: SupabaseClient, jobId: string) {
   const { data: est } = await db.from("estimates").select("id, selected_option_id").eq("job_id", jobId).eq("status", "accepted")
     .order("accepted_at", { ascending: false, nullsFirst: false }).limit(1).maybeSingle();
   if (!est) return null;
-  const { data: items } = await db.from("estimate_items").select("description, quantity, unit, unit_price, unit_cost, calc_key, category, option_id").eq("estimate_id", est.id).order("position");
-  const list = (items ?? []).filter((i) => i.option_id === null || i.option_id === est.selected_option_id);
+  const { data: items } = await db.from("estimate_items").select("description, quantity, unit, unit_price, unit_cost, calc_key, category, option_id, extra_status").eq("estimate_id", est.id).order("position");
+  const list = (items ?? []).filter((i) => (i.option_id === null || i.option_id === est.selected_option_id) && i.extra_status !== "offered");
   return { estimateId: est.id as string, optionId: est.selected_option_id as string | null, items: list };
 }
 

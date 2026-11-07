@@ -53,9 +53,9 @@ export function buildRows(jobs: LeadJob[], revenueByJob: Map<string, number>, sp
 }
 
 /** Accepted estimate total honoring good/better/best: shared items + the selected option's items. */
-export function acceptedTotal(e: { discount: number; tax_rate: number; selected_option_id: string | null; estimate_items: { quantity: number; unit_price: number; option_id: string | null }[] }) {
+export function acceptedTotal(e: { discount: number; tax_rate: number; selected_option_id: string | null; estimate_items: { quantity: number; unit_price: number; option_id: string | null; extra_status?: string | null }[] }) {
   const sub = e.estimate_items
-    .filter((i) => !i.option_id || i.option_id === e.selected_option_id)
+    .filter((i) => (!i.option_id || i.option_id === e.selected_option_id) && i.extra_status !== "offered")
     .reduce((s, i) => s + Math.round(Number(i.quantity) * Number(i.unit_price) * 100) / 100, 0);
   const taxable = Math.max(0, sub - Number(e.discount));
   return Math.round(taxable * (1 + Number(e.tax_rate) / 100) * 100) / 100;

@@ -4,9 +4,10 @@ import { useState } from "react";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { SignaturePad } from "@/components/signature-pad";
 import { Input, cx } from "@/components/ui";
+import { estimateTotals, itemsForOption } from "@/lib/estimate-totals";
 import { money } from "@/lib/format";
 import { acceptEstimate } from "./actions";
-import type { OptionView } from "./model";
+import { withChosen, type OptionView, type PublicItem } from "./model";
 
 type Props = {
   token: string;
@@ -66,12 +67,52 @@ export function OptionCards({ options, selected, onSelect, word, financingNote, 
   );
 }
 
-/** Homeowner picks an option, draws a signature, types their name and agrees. */
-export function AcceptForm({ token, orgName, options, word, total, financingNote, gstCharged }: Props) {
+/** Draw a signature, type the name, agree, Accept. `extras` = ids of the offered extras the customer added. */
+export function SignForm({ token, orgName, optionId, optionName, total, gstCharged, extras }: {
+  token: string; orgName: string; optionId: string | null; optionName?: string | null; total: number; gstCharged: boolean; extras: string[];
+}) {
+  return (
+    <section className="no-print rounded-2xl bg-white p-5 ring-1 ring-slate-200 sm:p-6" data-testid="sign-form">
+      <h2 className="text-lg font-semibold">Accept and sign</h2>
+      <p className="mb-4 text-sm text-slate-500">
+        {optionName ? <>You&apos;re accepting <b className="text-slate-800">{optionName}</b> for <b className="text-slate-800" data-testid="sign-total">{money(total)}</b>{gstCharged ? " inc GST" : ""}.</> : <>Total <b className="text-slate-800" data-testid="sign-total">{money(total)}</b>{gstCharged ? " inc GST" : ""}.</>}
+        {" "}Draw your signature, type your name, and tap Accept.
+      </p>
+      <ActionForm action={acceptEstimate} className="space-y-4">
+        <input type="hidden" name="token" value={token} />
+        <input type="hidden" name="option_id" value={optionId ?? ""} />
+        <input type="hidden" name="extras" value={extras.join(",")} />
+        <div>
+          <p className="mb-1 text-xs font-medium text-slate-600">Signature</p>
+          <SignaturePad name="signature" required />
+        </div>
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-slate-600">Your full name</span>
+          <Input name="name" placeholder="Your full name" autoComplete="name" required className="max-w-sm py-3 text-base" />
+        </label>
+        <label className="flex items-start gap-3 text-sm text-slate-700">
+          <input type="checkbox" name="agree" className="mt-0.5 h-5 w-5 shrink-0 accent-brand-500" required />
+          <span>I accept this quote and authorise {orgName} to do the work described{optionName ? ` in ${optionName}` : ""} for {money(total)}{gstCharged ? " (including GST)" : ""}, on the terms above.</span>
+        </label>
+        <SubmitButton className="min-h-12 w-full px-6 text-base sm:w-auto">Accept & sign</SubmitButton>
+      </ActionForm>
+    </section>
+  );
+}
+
+/** Homeowner picks an option (and any extras on offer), draws a signature, types their name and agrees. */
+export function AcceptForm({ token, orgName, options, word, total, financingNote, gstCharged, items, discount, taxRate, inclusive }: Props & {
+  items: PublicItem[]; discount: number; taxRate: number; inclusive: boolean;
+}) {
   const rec = options.find((o) => o.recommended)?.id ?? options[0]?.id ?? null;
   const [selected, setSelected] = useState<string | null>(rec);
-  const chosen = options.find((o) => o.id === selected);
-  const shownTotal = chosen ? chosen.total : total;
+  const [chosen, setChosen] = useState<string[]>([]);
+  const option = options.find((o) => o.id === selected);
+  const offered = items.filter((i) => i.extra_status === "offered" && i.id && (!i.option_id || i.option_id === selected) && Number(i.unit_price) > 0);
+  const picks = chosen.filter((id) => offered.some((i) => i.id === id));
+  const shownTotal = picks.length || options.length
+    ? estimateTotals(itemsForOption(withChosen(items, picks), selected).map((i) => ({ quantity: Number(i.quantity), unit_price: Number(i.unit_price) })), discount, taxRate, inclusive).total
+    : total;
   return (
     <div className="space-y-6">
       {options.length > 0 && (
@@ -82,30 +123,19 @@ export function AcceptForm({ token, orgName, options, word, total, financingNote
           {financingNote && <p className="mt-3 text-xs text-slate-500">* {financingNote}</p>}
         </section>
       )}
-      <section className="no-print rounded-2xl bg-white p-5 ring-1 ring-slate-200 sm:p-6">
-        <h2 className="text-lg font-semibold">Accept and sign</h2>
-        <p className="mb-4 text-sm text-slate-500">
-          {chosen ? <>You&apos;re accepting <b className="text-slate-800">{chosen.name}</b> for <b className="text-slate-800">{money(shownTotal)}</b>{gstCharged ? " inc GST" : ""}.</> : <>Total <b className="text-slate-800">{money(shownTotal)}</b>{gstCharged ? " inc GST" : ""}.</>}
-          {" "}Draw your signature, type your name, and tap Accept.
-        </p>
-        <ActionForm action={acceptEstimate} className="space-y-4">
-          <input type="hidden" name="token" value={token} />
-          <input type="hidden" name="option_id" value={selected ?? ""} />
-          <div>
-            <p className="mb-1 text-xs font-medium text-slate-600">Signature</p>
-            <SignaturePad name="signature" required />
-          </div>
-          <label className="block">
-            <span className="mb-1 block text-xs font-medium text-slate-600">Your full name</span>
-            <Input name="name" placeholder="Your full name" autoComplete="name" required className="max-w-sm py-3 text-base" />
-          </label>
-          <label className="flex items-start gap-3 text-sm text-slate-700">
-            <input type="checkbox" name="agree" className="mt-0.5 h-5 w-5 shrink-0 accent-brand-500" required />
-            <span>I accept this quote and authorise {orgName} to do the work described{chosen ? ` in ${chosen.name}` : ""} for {money(shownTotal)}{gstCharged ? " (including GST)" : ""}, on the terms above.</span>
-          </label>
-          <SubmitButton className="min-h-12 w-full px-6 text-base sm:w-auto">Accept & sign</SubmitButton>
-        </ActionForm>
-      </section>
+      {offered.length > 0 && (
+        <section className="rounded-[24px] border-2 border-dashed border-slate-300 px-5 py-4" data-testid="often-added">
+          <p className="mb-1 text-sm font-semibold uppercase tracking-wider text-slate-500">Often added</p>
+          {offered.map((i) => (
+            <label key={i.id} className="flex min-h-11 items-center gap-3 py-1.5 text-slate-600" data-testid="offered-extra">
+              <input type="checkbox" className="h-5 w-5 accent-brand-500" checked={picks.includes(i.id!)} onChange={(e) => setChosen((c) => (e.target.checked ? [...c, i.id!] : c.filter((x) => x !== i.id)))} />
+              <span className="min-w-0 flex-1">{i.description}{i.blurb ? <span className="text-sm text-slate-400"> · {i.blurb}</span> : null}</span>
+              <span className="tabular-nums">+{money(Math.round(Number(i.quantity) * Number(i.unit_price) * 100) / 100)}</span>
+            </label>
+          ))}
+        </section>
+      )}
+      <SignForm token={token} orgName={orgName} optionId={selected} optionName={option?.name} total={shownTotal} gstCharged={gstCharged} extras={picks} />
     </div>
   );
 }

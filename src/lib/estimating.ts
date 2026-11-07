@@ -29,6 +29,10 @@ export type CatalogRow = {
   product_code?: string | null;
   /** Whether unit_price includes GST (price book: the company's "prices include GST" setting). */
   price_inc_gst?: boolean;
+  /** Offered as a tap-to-add extra on the docket. null/undefined = the default for its calc key (see docket.ts). */
+  is_extra?: boolean | null;
+  /** The short "why" shown next to an extra. */
+  blurb?: string | null;
 };
 
 /** Legacy price-book items gated by a (US) manufacturer certification are hidden unless the company holds it. */
@@ -54,6 +58,12 @@ export type DraftItem = {
   option_key: string | null;
   /** The supplier price-sheet row the price came from (null = price book / typed). */
   supplier_price_item_id?: string | null;
+  /** null = main line; "added" = an extra in the total; "offered" = shown under "Often added", not in the total. */
+  extra_status?: "added" | "offered" | null;
+  /** Short "why" for an extra. */
+  blurb?: string | null;
+  /** The customer added this extra when signing. */
+  customer_added?: boolean;
 };
 
 export type DraftOption = {

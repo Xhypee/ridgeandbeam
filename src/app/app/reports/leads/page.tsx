@@ -32,7 +32,7 @@ export default async function LeadSourcesReport({ searchParams }: PageProps<"/ap
   for (let i = 0; i < ids.length; i += 200) {
     const { data: est } = await supabase
       .from("estimates")
-      .select("job_id, discount, tax_rate, selected_option_id, estimate_items(quantity, unit_price, option_id)")
+      .select("job_id, discount, tax_rate, selected_option_id, estimate_items(quantity, unit_price, option_id, extra_status)")
       .eq("status", "accepted")
       .in("job_id", ids.slice(i, i + 200));
     for (const e of est ?? []) revenue.set(e.job_id, (revenue.get(e.job_id) ?? 0) + acceptedTotal(e as Parameters<typeof acceptedTotal>[0]));

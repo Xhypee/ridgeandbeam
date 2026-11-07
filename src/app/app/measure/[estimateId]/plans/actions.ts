@@ -4,9 +4,10 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireMoneyAccess } from "@/lib/dal";
 import { friendly } from "@/lib/form";
-import { allowedCatalog, buildLines, isCalculatorLine, isLegacyItem, resolvePriceBook, type CatalogRow, type DraftItem } from "@/lib/estimating";
-import { mergeMeasurements, METAL_PROFILE_INFO, METAL_PROFILES, normalizeMeasurements, takeoff, type MetalProfile } from "@/lib/roof";
-import { supplierPriceBook, type PriceRow } from "@/lib/suppliers";
+import { fillQuoteLines } from "@/lib/docket";
+import { quotePriceBook, usableCatalog } from "@/lib/docket-server";
+import { isCalculatorLine, type CatalogRow, type DraftItem } from "@/lib/estimating";
+import { mergeMeasurements, METAL_PROFILE_INFO, METAL_PROFILES, normalizeMeasurements, type MetalProfile } from "@/lib/roof";
 import { aiReadDetails } from "@/lib/plans/ai-details";
 import { DETAIL_KEYS, jobTypeFromBuilding, type DetailKey, type Found } from "@/lib/plans/details";
 import { EDGE_TYPES, LINE_KINDS, normalizeLines } from "@/lib/plans/roof-model";
@@ -106,41 +107,29 @@ export async function savePlansTakeoff(input: SavePlansInput): Promise<Result & 
   }, t);
   const measurements = { ...mergeMeasurements(est.measurements, m), plans: snapshot };
 
-  // 2. Lines: same as "Fill line items from measurements" in the quote editor.
+  // 2. Lines: same as "Fill line items from measurements" and the docket (main lines, extras added and offered).
   const { data: catalogRows } = await supabase.from("catalog_items").select("*").order("category").order("calc_key").order("name");
-  const priceInc = org.prices_include_gst !== false;
-  const catalog = allowedCatalog((catalogRows ?? []) as CatalogRow[], org.certifications ?? []).filter((c) => !isLegacyItem(c)).map((c) => ({ ...c, price_inc_gst: priceInc }));
-  let book: CatalogRow[] = catalog;
-  if (est.org_supplier_id) {
-    try {
-      const base = await supplierPriceBook(supabase, org.id, est.org_supplier_id as string);
-      if (base?.length) {
-        const rows: PriceRow[] = [...base];
-        for (const c of catalog.filter((x) => x.calc_key === "metal_sheet" && x.tier)) {
-          const more = await supplierPriceBook(supabase, org.id, est.org_supplier_id as string, { profile: c.profile ?? null, finish: c.finish ?? null });
-          for (const r of more ?? []) if (r.calc_key === "metal_sheet" && !rows.some((x) => x.supplier_price_item_id === r.supplier_price_item_id)) rows.push(r);
-        }
-        book = resolvePriceBook(catalog, rows);
-      }
-    } catch { /* price book only */ }
-  }
+  const catalog = usableCatalog((catalogRows ?? []) as CatalogRow[], org);
+  const { book } = await quotePriceBook(supabase, org, catalog, (est.org_supplier_id as string | null) ?? null);
   const optionRows = ((est.estimate_options ?? []) as { id: string; position: number; name: string; tier: "good" | "better" | "best" | null; description: string | null; warranty: string | null; recommended: boolean }[]).sort((a, b) => a.position - b.position);
   const options = optionRows.map((o) => ({ key: o.id, id: o.id, name: o.name, tier: o.tier, description: o.description ?? "", warranty: o.warranty ?? "", recommended: o.recommended }));
   const mode = { inclusive: Boolean(est.gst_inclusive), gstRatePct: Number(est.tax_rate) || 0 };
-  const built = buildLines(takeoff(m), book, options, { mode, rowsFor: (o) => takeoff(m, { profileOverride: o }) });
-  const colourNote = d.colour ? ` · ${d.colour}` : "";
-  const generated = built.items.map((it) => (it.calc_key === "metal_sheet" && colourNote && !it.description.includes(d.colour) ? { ...it, description: `${it.description}${colourNote}`.slice(0, 500) } : it));
   const calcNames = new Set(catalog.filter((c) => c.calc_key).map((c) => c.name));
   type Item = DraftItem & { option_id: string | null; position: number };
-  const custom = ((est.estimate_items ?? []) as Item[]).sort((a, b) => a.position - b.position).filter((it) => !isCalculatorLine(it, calcNames)).map((it) => ({
+  const existing = ((est.estimate_items ?? []) as Item[]).sort((a, b) => a.position - b.position).map((it) => ({
     description: it.description, quantity: Number(it.quantity), unit: it.unit, unit_price: Number(it.unit_price), unit_cost: Number(it.unit_cost ?? 0),
     category: it.category, calc_key: it.calc_key ?? null, option_key: it.option_id ?? null, supplier_price_item_id: it.supplier_price_item_id ?? null,
+    extra_status: it.extra_status ?? null, blurb: it.blurb ?? null, customer_added: Boolean(it.customer_added),
   }));
+  const custom = existing.filter((it) => !isCalculatorLine(it, calcNames));
+  const built = fillQuoteLines({ m, book, options, mode, previous: existing, colour: d.colour || null, keepCustom: custom });
+  const generated = built.items;
   const { error: saveErr } = await supabase.rpc("save_estimate_content", {
     p_id: est.id,
     p_estimate: {
       measurements, measurement_source: "plans", option_label: est.option_label, tax_rate: est.tax_rate, gst_inclusive: est.gst_inclusive,
       org_supplier_id: (est.org_supplier_id as string | null) ?? "", discount: est.discount, notes: est.notes, terms: est.terms,
+      roof_profile: d.profile, roof_colour: d.colour || "",
     },
     p_options: options,
     p_items: [...generated, ...custom],

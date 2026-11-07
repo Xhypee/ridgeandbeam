@@ -3,13 +3,17 @@
 // the selected option, else the recommended one, else the first. No options -> every line.
 // Prices on an estimate with gst_inclusive = true already include GST (consumer quotes, ACL single price):
 // total = lines − discount and "tax" is the GST included in it. Otherwise GST is added on top.
+// Offered extras (estimate_items.extra_status = 'offered') never count until added.
 // Mirrors the SQL views public.estimate_totals / estimate_option_totals. Pure helpers are client-safe.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { round2, type CostedItem, type LineItem } from "./roof";
 
 export type EstimateOptionLite = { id: string; position?: number | null; recommended?: boolean | null };
-export type OptionLine = { option_id?: string | null };
+export type OptionLine = { option_id?: string | null; extra_status?: string | null };
+
+/** Offered extras ("Often added") are not part of any total until someone adds them. */
+export const countsInTotal = (i: { extra_status?: string | null }) => i.extra_status !== "offered";
 
 /** The option whose price counts: selected, else recommended, else first by position. */
 export function effectiveOptionId(options: EstimateOptionLite[], selectedOptionId?: string | null): string | null {
@@ -19,10 +23,9 @@ export function effectiveOptionId(options: EstimateOptionLite[], selectedOptionI
   return sorted[0].id;
 }
 
-/** Shared lines + the given option's lines (all lines when optionId is null). */
+/** Shared lines + the given option's lines (all lines when optionId is null), without offered extras. */
 export function itemsForOption<T extends OptionLine>(items: T[], optionId: string | null): T[] {
-  if (!optionId) return items;
-  return items.filter((i) => !i.option_id || i.option_id === optionId);
+  return items.filter((i) => countsInTotal(i) && (!optionId || !i.option_id || i.option_id === optionId));
 }
 
 export type EstimateTotals = {
@@ -91,7 +94,7 @@ export type AcceptedEstimateTotal = {
 export async function acceptedEstimateTotal(supabase: SupabaseClient, jobId: string): Promise<AcceptedEstimateTotal | null> {
   const { data: est } = await supabase
     .from("estimates")
-    .select("id, discount, tax_rate, gst_inclusive, org_supplier_id, selected_option_id, estimate_options!estimate_options_estimate_id_fkey(id, position, recommended), estimate_items(description, quantity, unit, unit_price, unit_cost, calc_key, supplier_price_item_id, option_id, position)")
+    .select("id, discount, tax_rate, gst_inclusive, org_supplier_id, selected_option_id, estimate_options!estimate_options_estimate_id_fkey(id, position, recommended), estimate_items(description, quantity, unit, unit_price, unit_cost, calc_key, supplier_price_item_id, option_id, position, extra_status)")
     .eq("job_id", jobId)
     .eq("status", "accepted")
     .order("accepted_at", { ascending: false, nullsFirst: false })
@@ -100,7 +103,7 @@ export async function acceptedEstimateTotal(supabase: SupabaseClient, jobId: str
   if (!est) return null;
   const options = (est.estimate_options ?? []) as EstimateOptionLite[];
   const optionId = effectiveOptionId(options, est.selected_option_id as string | null);
-  const rows = ((est.estimate_items ?? []) as (AcceptedEstimateItem & { option_id: string | null; position: number })[])
+  const rows = ((est.estimate_items ?? []) as (AcceptedEstimateItem & { option_id: string | null; position: number; extra_status: string | null })[])
     .sort((a, b) => a.position - b.position);
   const items = itemsForOption(rows, optionId).map((i) => ({
     description: i.description,

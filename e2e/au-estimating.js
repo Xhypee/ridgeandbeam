@@ -120,6 +120,10 @@ async function noHorizontalScroll(page, what) {
   await page.waitForURL(/\/app\/estimates\/[0-9a-f-]+$/);
   const estUrl = page.url();
   const estId = estUrl.split("/").pop();
+  // New quotes open on the receipt docket; the calculator and Good / Better / Best live in the detailed editor.
+  await page.locator('[data-testid="docket-editor"]').waitFor();
+  await page.click('[data-testid="detailed-editor"]');
+  await page.waitForURL(/view=editor/);
   check(sql(`select gst_inclusive || '|' || tax_rate from estimates where id = '${estId}'`) === "true|10.000", "new quote is GST-inclusive at 10%");
   check((await page.locator('[data-testid="compliance-state"]').innerText()).includes("New South Wales"), "state compliance panel shows the job's state");
   check(await page.locator('[data-testid="quote-business"]').getByText("ABN 51 824 753 556").isVisible(), "quote header shows ABN");

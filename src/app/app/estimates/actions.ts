@@ -7,7 +7,7 @@ import { requireMoneyAccess } from "@/lib/dal";
 import { effectiveOptionId, estimateTotals, itemsForOption } from "@/lib/estimate-totals";
 import { noticeSnapshot, requiredNotices, resolveJobState } from "@/lib/estimate-notices";
 import { friendly } from "@/lib/form";
-import { MEASUREMENT_SOURCES } from "@/lib/roof";
+import { MEASUREMENT_SOURCES, METAL_PROFILES } from "@/lib/roof";
 import { supplierPriceBook, type PriceRow } from "@/lib/suppliers";
 import type { ActionResult } from "@/components/action-form";
 
@@ -22,6 +22,9 @@ const ItemSchema = z.object({
   calc_key: z.string().max(40).nullable().catch(null),
   option_key: z.string().max(60).nullable().catch(null),
   supplier_price_item_id: z.uuid().nullable().optional().catch(null),
+  extra_status: z.enum(["added", "offered"]).nullable().optional().catch(null),
+  blurb: z.string().trim().max(200).nullable().optional().catch(null),
+  customer_added: z.boolean().optional().catch(false),
 });
 
 const OptionSchema = z.object({
@@ -47,6 +50,9 @@ const SaveSchema = z.object({
   discount: z.coerce.number().min(0),
   notes: z.string().max(5000).nullable(),
   terms: z.string().max(5000).nullable(),
+  /** The docket's sheet profile and colour (omit to leave them as they are). */
+  roof_profile: z.enum(METAL_PROFILES).nullable().optional(),
+  roof_colour: z.string().trim().max(40).nullable().optional(),
 });
 export type SaveEstimateInput = z.input<typeof SaveSchema>;
 
@@ -106,6 +112,8 @@ export async function saveEstimate(input: SaveEstimateInput): Promise<ActionResu
       discount: e.discount,
       notes: e.notes,
       terms: e.terms,
+      ...(e.roof_profile !== undefined ? { roof_profile: e.roof_profile ?? "" } : {}),
+      ...(e.roof_colour !== undefined ? { roof_colour: e.roof_colour ?? "" } : {}),
     },
     p_options: options,
     p_items: e.items,
@@ -148,13 +156,13 @@ export async function setEstimateStatus(fd: FormData) {
 
   const { data: est, error: getErr } = await supabase
     .from("estimates")
-    .select("id, job_id, status, discount, tax_rate, gst_inclusive, selected_option_id, estimate_items(quantity, unit_price, option_id), estimate_options!estimate_options_estimate_id_fkey(id, position, recommended), jobs(state, is_insurance, roof_material, job_type, lead_source, customers(state))")
+    .select("id, job_id, status, discount, tax_rate, gst_inclusive, selected_option_id, estimate_items(quantity, unit_price, option_id, extra_status), estimate_options!estimate_options_estimate_id_fkey(id, position, recommended), jobs(state, is_insurance, roof_material, job_type, lead_source, customers(state))")
     .eq("id", id)
     .single();
   if (getErr || !est) throw new Error("Estimate not found.");
-  const items = (est.estimate_items ?? []) as { quantity: number; unit_price: number; option_id: string | null }[];
+  const items = (est.estimate_items ?? []) as { quantity: number; unit_price: number; option_id: string | null; extra_status: string | null }[];
   const options = (est.estimate_options ?? []) as { id: string; position: number; recommended: boolean }[];
-  if (status === "sent" && items.length === 0) throw new Error("Add at least one line item before sending.");
+  if (status === "sent" && !items.some((i) => i.extra_status !== "offered")) throw new Error("Add at least one line item before sending.");
 
   const patch: Record<string, unknown> = { status };
   if (status === "sent") patch.sent_at = new Date().toISOString();
@@ -184,6 +192,8 @@ export async function setEstimateStatus(fd: FormData) {
   }
   const { error } = await supabase.from("estimates").update(patch).eq("id", id);
   if (error) throw new Error(friendly(error));
+  // Back to draft: extras the customer added when signing go back on offer.
+  if (status === "draft") await supabase.from("estimate_items").update({ extra_status: "offered", customer_added: false }).eq("estimate_id", id).eq("customer_added", true);
 
   // Move the job along the pipeline.
   const { data: job } = await supabase.from("jobs").select("stage").eq("id", est.job_id).single();
@@ -217,6 +227,8 @@ export async function duplicateEstimate(fd: FormData) {
       discount: src.discount,
       notes: src.notes,
       terms: src.terms,
+      roof_profile: src.roof_profile ?? null,
+      roof_colour: src.roof_colour ?? null,
       created_by: user.id,
     })
     .select("id")
@@ -228,7 +240,7 @@ export async function duplicateEstimate(fd: FormData) {
     p_id: copy.id,
     p_estimate: { notes: src.notes, terms: src.terms },
     p_options: options.map((o) => ({ key: o.id, name: o.name, tier: o.tier, description: o.description, warranty: o.warranty, recommended: o.recommended })),
-    p_items: items.map((i) => ({ ...i, option_key: i.option_id })),
+    p_items: items.map((i) => ({ ...i, option_key: i.option_id, customer_added: false })),
   });
   if (saveErr) throw new Error(friendly(saveErr));
   revalidatePath("/app", "layout");
