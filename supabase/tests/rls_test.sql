@@ -92,9 +92,12 @@ set local role anon;
 select null from set_config('request.jwt.claim.sub', '', true);
 select (public.get_public_document('estimate', :'est_public_token')->>'number')::int = 1001 as visible \gset
 \if :visible \else \echo 'FAIL sent estimate not public' \quit \endif
-select public.accept_public_estimate(:'est_public_token', 'Jane Homeowner') as accepted \gset
+select public.accept_public_estimate(:'est_public_token', 'Jane Homeowner', null, 'data:image/png;base64,' || repeat('A', 200), '1.2.3.4', 'rls-test', '[]'::jsonb) as accepted \gset
 \if :accepted \else \echo 'FAIL accept' \quit \endif
-select public.accept_public_estimate(:'est_public_token', 'Jane Homeowner') as accepted_again \gset
+select public.accept_public_estimate(:'est_public_token', 'Jane Homeowner', null, 'data:image/png;base64,' || repeat('A', 200), '1.2.3.4', 'rls-test', '[]'::jsonb) as accepted_again \gset
+-- The old name-only accept (no signature) must be gone.
+select count(*) = 0 as legacy_gone from pg_proc where proname = 'accept_public_estimate' and pronargs = 2 \gset
+\if :legacy_gone \else \echo 'FAIL legacy accept_public_estimate(text, text) still exists' \quit \endif
 \if :accepted_again \echo 'FAIL double accept' \quit \endif
 do $$ begin
   begin perform public.create_organization('anon org'); raise exception 'anon created org';

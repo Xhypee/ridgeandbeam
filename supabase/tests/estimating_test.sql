@@ -160,10 +160,6 @@ do $$ begin
     perform public.accept_public_estimate(current_setting('my.tok'), 'Jane Tex', null, 'not-a-png', '1.2.3.4', 'UA', '[]'::jsonb);
     raise exception 'accept without signature allowed';
   exception when raise_exception then if sqlerrm not like '%draw your signature%' then raise; end if; end;
-  begin
-    perform public.accept_public_estimate(current_setting('my.tok'), 'Jane Tex');
-    raise exception 'legacy accept allowed on options estimate';
-  exception when raise_exception then if sqlerrm not like '%choose an option%' then raise; end if; end;
 end $$;
 select public.accept_public_estimate(:'est_public_token', 'Jane Tex', :'good_id'::uuid, current_setting('my.sig'), '1.2.3.4', 'Mozilla/5.0',
   '[{"id":"tx_27_02","title":"Texas deductible notice","text":"TEXAS LAW REQUIRES","citation":"Tex. Bus. & Com. Code §27.02","state":"TX"}]'::jsonb) as accepted \gset
