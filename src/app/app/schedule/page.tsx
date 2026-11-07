@@ -39,7 +39,7 @@ function JobChip({ j, r, compact }: { j: Row; r: Readiness; compact?: boolean })
       data-locked={j.schedule_locked ? "true" : "false"}
       className={cx(
         "block min-w-0 rounded-lg px-2.5 py-1.5 text-xs transition hover:brightness-95",
-        j.schedule_locked ? "border-l-4 bg-white shadow-sm ring-1 ring-slate-200" : "border-2 border-dashed bg-white/80",
+        j.schedule_locked ? "border-l-4 bg-white ring-1 ring-slate-200" : "border-2 border-dashed bg-white/80",
       )}
       style={j.schedule_locked ? { borderLeftColor: color } : { borderColor: color }}
     >

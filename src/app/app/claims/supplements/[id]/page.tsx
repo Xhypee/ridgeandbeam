@@ -35,7 +35,7 @@ export default async function SupplementPrintPage({ params }: PageProps<"/app/cl
         <Link href={`/app/jobs/${job.id}/claim/supplements/${s.id}`} className="text-sm text-slate-500 hover:text-slate-800">← Back to variation request</Link>
         <PrintButton />
       </div>
-      <article className="mx-auto max-w-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:rounded-2xl sm:p-10 print:p-0 print:shadow-none print:ring-0">
+      <article className="mx-auto max-w-3xl bg-white p-6 ring-1 ring-slate-200 sm:rounded-2xl sm:p-10 print:p-0 print:ring-0">
         <header className="flex flex-wrap items-start justify-between gap-6 border-b border-slate-200 pb-6">
           <div>
             <p className="text-xl font-semibold text-slate-900">{org.name}</p>

@@ -5,7 +5,7 @@ import type { Tone } from "@/lib/format";
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
 const BTN = {
-  primary: "bg-brand-500 text-white hover:bg-brand-600 shadow-sm",
+  primary: "bg-brand-500 text-white hover:bg-brand-600",
   secondary: "bg-white text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50",
   danger: "bg-white text-red-700 ring-1 ring-inset ring-red-200 hover:bg-red-50",
   ghost: "text-slate-600 hover:bg-slate-100",

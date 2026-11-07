@@ -623,9 +623,9 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
 
       {!ro && (
         <div className="no-print sticky bottom-4 z-10 flex flex-wrap items-center justify-end gap-3">
-          {msg?.error && <p role="alert" className="max-w-xl rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 shadow">{msg.error}</p>}
-          {msg?.ok && <p className="max-w-xl rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 shadow">{msg.ok}</p>}
-          <Button onClick={save} disabled={pending} className={cx("min-h-11 shadow-lg", !dirty && "opacity-80")}>
+          {msg?.error && <p role="alert" className="max-w-xl rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{msg.error}</p>}
+          {msg?.ok && <p className="max-w-xl rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">{msg.ok}</p>}
+          <Button onClick={save} disabled={pending} className={cx("min-h-11", !dirty && "opacity-80")}>
             {pending ? "Saving…" : dirty ? "Save quote" : "Saved"}
           </Button>
         </div>

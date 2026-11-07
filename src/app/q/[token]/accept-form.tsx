@@ -37,7 +37,7 @@ export function OptionCards({ options, selected, onSelect, word, financingNote, 
             className={cx(
               "relative flex flex-col rounded-2xl bg-white p-5 ring-1 transition print:break-inside-avoid",
               onSelect && "cursor-pointer hover:ring-brand-500",
-              isSel ? "ring-2 ring-brand-500 shadow-md" : o.recommended ? "ring-2 ring-brand-100" : "ring-slate-200",
+              isSel ? "ring-2 ring-brand-500" : o.recommended ? "ring-2 ring-brand-100" : "ring-slate-200",
             )}
           >
             {o.recommended && (

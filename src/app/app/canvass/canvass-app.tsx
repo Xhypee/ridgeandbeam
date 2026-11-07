@@ -134,7 +134,7 @@ export function CanvassApp({ knocks, territories, people, center, hasData }: { k
       <div className="flex flex-wrap items-center gap-2">
         <div className="inline-flex rounded-lg bg-slate-100 p-0.5 text-sm" role="tablist">
           {(["map", "list", "territories", "import"] as const).map((v) => (
-            <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => setView(v)} className={cx("min-h-10 rounded-md px-3 font-medium capitalize", view === v ? "bg-white text-slate-900 shadow-sm" : "text-slate-600")}>
+            <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => setView(v)} className={cx("min-h-10 rounded-md px-3 font-medium capitalize", view === v ? "bg-white text-slate-900" : "text-slate-600")}>
               {v === "import" ? "Import CSV" : v}
             </button>
           ))}
@@ -159,7 +159,7 @@ export function CanvassApp({ knocks, territories, people, center, hasData }: { k
       </div>
 
       {view === "map" && !sheet && !drawing && (
-        <button type="button" onClick={knockHere} disabled={gpsBusy} className="sticky bottom-3 z-[1100] w-full rounded-xl bg-brand-500 px-4 py-4 text-lg font-semibold text-white shadow-lg hover:bg-brand-600 disabled:opacity-70" data-knock-here>
+        <button type="button" onClick={knockHere} disabled={gpsBusy} className="sticky bottom-3 z-[1100] w-full rounded-xl bg-brand-500 px-4 py-4 text-lg font-semibold text-white hover:bg-brand-600 disabled:opacity-70" data-knock-here>
           {gpsBusy ? "Finding you…" : "Knock here"}
         </button>
       )}
@@ -244,7 +244,7 @@ function KnockSheet({ sheet, knock, setterName, onClose, onQueued, onDone }: {
     });
 
   return (
-    <section className="rounded-xl bg-white p-4 shadow-lg ring-1 ring-slate-200" data-knock-sheet>
+    <section className="rounded-xl bg-white p-4 ring-1 ring-slate-200" data-knock-sheet>
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="text-base font-semibold">{sheet.mode === "new" ? "New knock" : knock?.address || "Door knock"}</h2>
         <button type="button" onClick={onClose} className="min-h-10 rounded-lg px-3 text-sm text-slate-500 hover:bg-slate-100">Close</button>

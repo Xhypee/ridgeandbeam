@@ -26,7 +26,7 @@ function PitchIcon({ deg }: { deg: number }) {
 function Submit() {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" disabled={pending} className="min-h-12 w-full rounded-xl bg-brand-500 px-6 text-base font-semibold text-white shadow-sm hover:bg-brand-600 disabled:opacity-60">
+    <button type="submit" disabled={pending} className="min-h-12 w-full rounded-xl bg-brand-500 px-6 text-base font-semibold text-white hover:bg-brand-600 disabled:opacity-60">
       {pending ? "Sending…" : "Get my price"}
     </button>
   );

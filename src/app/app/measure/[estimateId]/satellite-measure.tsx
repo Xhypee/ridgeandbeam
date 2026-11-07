@@ -108,7 +108,7 @@ export function SatelliteMeasure({ estimateId, address, initialCenter, initialZo
         f.points.forEach((p, i) => {
           const m = L.marker(p, {
             draggable: !removeMode,
-            icon: L.divIcon({ className: "", html: `<div style="width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:9999px;background:${removeMode ? "#dc2626" : "#fff"};border:3px solid #f97316;box-shadow:0 1px 3px rgba(0,0,0,.4)"></div>` }),
+            icon: L.divIcon({ className: "", html: `<div style="width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:9999px;background:${removeMode ? "#dc2626" : "#fff"};border:3px solid #f97316"></div>` }),
           }).addTo(g);
           m.on("drag", () => {
             const ll = m.getLatLng();

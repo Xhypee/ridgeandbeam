@@ -82,7 +82,7 @@ export function MapCanvas({
   return (
     <div className="relative">
       <div ref={el} className={`${className} w-full overflow-hidden rounded-xl bg-slate-200 ring-1 ring-slate-300`} data-map />
-      <div className="absolute right-2 top-2 z-[1000] flex overflow-hidden rounded-lg bg-white text-xs font-medium shadow ring-1 ring-slate-300">
+      <div className="absolute right-2 top-2 z-[1000] flex overflow-hidden rounded-lg bg-white text-xs font-medium ring-1 ring-slate-300">
         {(["satellite", "street"] as const).map((m) => (
           <button
             key={m}

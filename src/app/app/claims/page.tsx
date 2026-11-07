@@ -130,7 +130,7 @@ export default async function ClaimsPage({ searchParams }: PageProps<"/app/claim
                 <ul className="space-y-2">
                   {cards.map(({ c, days, outstanding, nextFollowUp, followUpDue, codeDue, stale }) => (
                     <li key={c.id}>
-                      <Link href={`/app/jobs/${c.jobs.id}/claim`} className="block rounded-lg bg-white p-3 shadow-sm ring-1 ring-slate-200 hover:ring-brand-500" data-testid="claim-card">
+                      <Link href={`/app/jobs/${c.jobs.id}/claim`} className="block rounded-lg bg-white p-3 ring-1 ring-slate-200 hover:ring-brand-500" data-testid="claim-card">
                         <div className="flex items-start justify-between gap-2">
                           <p className="truncate font-medium text-slate-900">{c.jobs.customers?.name ?? c.jobs.title}</p>
                           <Badge tone={agingTone(days)}>{days}d</Badge>

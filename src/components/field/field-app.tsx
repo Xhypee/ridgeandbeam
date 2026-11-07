@@ -225,7 +225,7 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
         <input value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Caption for next photos (optional)"
           className="mb-3 block min-h-12 w-full rounded-xl px-3 text-base ring-1 ring-slate-300 focus:ring-2 focus:ring-brand-500 focus:outline-none" />
 
-        <label className={cx("flex min-h-20 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-brand-500 text-xl font-black text-white shadow active:bg-brand-600", busy && "opacity-60")}>
+        <label className={cx("flex min-h-20 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-brand-500 text-xl font-black text-white active:bg-brand-600", busy && "opacity-60")}>
           <input type="file" accept="image/*" capture="environment" multiple className="sr-only" data-testid="photo-input"
             onChange={(e) => { const fl = e.target.files; void onPhotos(fl).then(() => { e.target.value = ""; }); }} />
           {busy ?? "Take photos"}
@@ -345,7 +345,7 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
       </section>
 
       {toast && (
-        <div role="status" className="fixed inset-x-3 bottom-4 z-40 mx-auto max-w-md rounded-2xl bg-slate-900 px-4 py-3 text-center text-base font-semibold text-white shadow-lg">{toast}</div>
+        <div role="status" className="fixed inset-x-3 bottom-4 z-40 mx-auto max-w-md rounded-2xl bg-slate-900 px-4 py-3 text-center text-base font-semibold text-white">{toast}</div>
       )}
 
       {open && (
@@ -405,7 +405,7 @@ function SyncBanner({ online, pendingPhotos, pendingOther, failed, uploading, st
   else if (!online) { tone = "bg-slate-700 text-white"; text = "Offline — captures will be saved on this phone"; }
   return (
     <div role="status" aria-live="polite" data-testid="sync-banner"
-      className={cx("sticky top-[5.75rem] z-20 -mx-1 flex min-h-12 items-center justify-between gap-2 rounded-xl px-3 py-2 text-base font-bold shadow lg:top-2", tone)}>
+      className={cx("sticky top-[5.75rem] z-20 -mx-1 flex min-h-12 items-center justify-between gap-2 rounded-xl px-3 py-2 text-base font-bold lg:top-2", tone)}>
       <span>{text}</span>
       {failed > 0 && <button type="button" onClick={onRetry} className="min-h-10 rounded-lg bg-white px-3 text-sm font-bold text-red-800">Retry</button>}
     </div>

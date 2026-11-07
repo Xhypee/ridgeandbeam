@@ -33,7 +33,7 @@ export function TaxInvoice({ doc }: { doc: TaxInvoiceDoc }) {
   const title = doc.seller.gst_registered ? "Tax invoice" : "Invoice";
   const balance = r2(t.total - Number(doc.paid || 0));
   return (
-    <article className="mx-auto max-w-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:rounded-2xl sm:p-10 print:p-0 print:shadow-none print:ring-0" data-testid="tax-invoice">
+    <article className="mx-auto max-w-3xl bg-white p-5 ring-1 ring-slate-200 sm:rounded-2xl sm:p-10 print:p-0 print:ring-0" data-testid="tax-invoice">
       <header className="flex flex-wrap items-start justify-between gap-6 border-b border-slate-200 pb-6">
         <div className="min-w-0">
           <p className="font-display text-xl font-semibold text-ink">{doc.seller.name}</p>

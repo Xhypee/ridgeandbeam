@@ -161,9 +161,9 @@ export function InvoiceEditor({ id, locked, catalog, paid, gstRegistered, custom
 
       {!ro && (
         <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-end gap-3">
-          {msg?.error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 shadow">{msg.error}</p>}
-          {msg?.ok && !dirty && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 shadow">{msg.ok}</p>}
-          <Button onClick={save} disabled={pending} className="min-h-11 shadow-lg">{pending ? "Saving…" : dirty ? "Save invoice" : "Saved"}</Button>
+          {msg?.error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{msg.error}</p>}
+          {msg?.ok && !dirty && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">{msg.ok}</p>}
+          <Button onClick={save} disabled={pending} className="min-h-11">{pending ? "Saving…" : dirty ? "Save invoice" : "Saved"}</Button>
         </div>
       )}
     </div>

@@ -30,7 +30,7 @@ export function ProblemForm({ token, jobId, t }: { token: string; jobId: string;
     return (
       <div className="space-y-2">
         {msg?.ok && <p role="status" className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{t.sent}{msg.error ? ` ${msg.error}` : ""}</p>}
-        <button type="button" onClick={() => { setOpen(true); setMsg(null); }} className="min-h-14 w-full rounded-xl bg-red-600 px-4 text-lg font-semibold text-white shadow-sm active:bg-red-700">
+        <button type="button" onClick={() => { setOpen(true); setMsg(null); }} className="min-h-14 w-full rounded-xl bg-red-600 px-4 text-lg font-semibold text-white active:bg-red-700">
           ⚠ {t.problem}
         </button>
       </div>

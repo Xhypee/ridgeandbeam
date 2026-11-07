@@ -156,7 +156,7 @@ export function ImportWizard({ orgSupplierId, supplierName, today, saved, previo
         <Card>
           <div className="mb-4 flex gap-1 rounded-lg bg-slate-100 p-1 text-sm">
             {(["file", "paste"] as const).map((s) => (
-              <button key={s} type="button" onClick={() => setSource(s)} className={cx("min-h-11 flex-1 rounded-md px-3 font-medium", source === s ? "bg-white shadow-sm" : "text-slate-600")}>
+              <button key={s} type="button" onClick={() => setSource(s)} className={cx("min-h-11 flex-1 rounded-md px-3 font-medium", source === s ? "bg-white" : "text-slate-600")}>
                 {s === "file" ? "Upload CSV / Excel" : "Paste from Excel"}
               </button>
             ))}

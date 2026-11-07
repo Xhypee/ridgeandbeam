@@ -39,7 +39,7 @@ export default async function PublicEstimatePage({ params }: PageProps<"/q/[toke
     <main className="min-h-screen px-4 py-6 sm:py-10">
       <div className="no-print mx-auto mb-4 flex max-w-4xl justify-end"><PrintButton /></div>
 
-      <article className="mx-auto max-w-4xl space-y-8 bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:rounded-2xl sm:p-10 print:p-0 print:shadow-none print:ring-0">
+      <article className="mx-auto max-w-4xl space-y-8 bg-white p-5 ring-1 ring-slate-200 sm:rounded-2xl sm:p-10 print:p-0 print:ring-0">
         <header className="flex flex-wrap items-start justify-between gap-6 border-b border-slate-200 pb-6">
           <div>
             <QuoteBusiness name={doc.org.name} abn={doc.org.abn} licences={licences} state={p.state} gstRegistered={doc.org.gst_registered} />

@@ -14,7 +14,7 @@ export default async function OnboardingPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <Logo className="mb-8" />
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 ring-1 ring-slate-200">
         <h1 className="text-xl font-semibold">Set up your roofing company</h1>
         <p className="mb-6 mt-1 text-sm text-slate-500">
           We&apos;ll load a starter price book (sheeting, tiles, flashings, labour and more) that you can edit later, and tailor quotes and contracts to your state.
