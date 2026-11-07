@@ -4,7 +4,7 @@ import { Badge, Empty, PageHeader, Table, td, th, cx } from "@/components/ui";
 import { requireMoneyAccess } from "@/lib/dal";
 import { date, label, money, STATUS_TONE } from "@/lib/format";
 
-export const metadata: Metadata = { title: "Estimates" };
+export const metadata: Metadata = { title: "Quotes" };
 
 const FILTERS = ["all", "draft", "sent", "accepted", "declined"] as const;
 
@@ -38,7 +38,7 @@ export default async function EstimatesPage({ searchParams }: PageProps<"/app/es
 
   return (
     <>
-      <PageHeader title="Estimates" subtitle="Create estimates from a job so they're tied to the customer and site." />
+      <PageHeader title="Quotes" subtitle="Start a quote from a job so it’s tied to the customer and the site." />
       <div className="mb-4 flex flex-wrap gap-1.5">
         {FILTERS.map((x) => (
           <Link key={x} href={x === "all" ? "/app/estimates" : `/app/estimates?status=${x}`}
@@ -48,7 +48,7 @@ export default async function EstimatesPage({ searchParams }: PageProps<"/app/es
         ))}
       </div>
       {rows.length === 0 ? (
-        <Empty title="No estimates">Open a job and click <b>New estimate</b>.</Empty>
+        <Empty title="No quotes yet">Open a job and click <b>New quote</b>.</Empty>
       ) : (
         <Table>
           <thead className="bg-slate-50"><tr><th className={th}>#</th><th className={th}>Customer / job</th><th className={th}>Created</th><th className={th}>Status</th><th className={`${th} text-right`}>Total</th></tr></thead>
