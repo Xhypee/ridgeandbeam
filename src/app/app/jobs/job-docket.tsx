@@ -13,6 +13,7 @@ import { addJobMembers, removeJobMember } from "./team-actions";
 import { LeadPanel } from "./lead-panel";
 import { SoldPanel } from "./sold-panel";
 import { BuildPanel } from "./build-panel";
+import { WrapPanel } from "./wrap-panel";
 import { JobContact, JobDocuments, JobNotes } from "./job-sections";
 import { ClaudeBar } from "./claude-bar";
 
@@ -82,10 +83,10 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
             <p className="truncate text-sm text-white/70">{j.site_address ?? d.customer.address ?? j.title}</p>
             <div className="mt-5 flex items-end justify-between gap-2">
               <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-200">Now</p><p className="truncate font-display text-[28px] font-bold leading-none">{lost ? "Lost" : done ? "Paid ✓" : STAGES[at]}</p></div>
-              {!lost && !done && at < 4 && (
+              {!lost && !done && at <= 4 && (
                 <>
                   <svg viewBox="0 0 80 20" className="mb-1 h-5 w-16 shrink-0 text-brand-300" aria-hidden><path d="M2 10h70M64 3l8 7-8 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="4 4" /></svg>
-                  <div className="min-w-0 text-right"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-200">Next</p><p className="truncate font-display text-lg font-bold leading-none text-white/70">{STAGES[at + 1]}</p></div>
+                  <div className="min-w-0 text-right"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-200">Next</p><p className="truncate font-display text-lg font-bold leading-none text-white/70">{STAGES[at + 1] ?? "Paid ✓"}</p></div>
                 </>
               )}
             </div>
@@ -96,7 +97,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
           <div className="relative h-5" aria-hidden><span className="absolute -left-2.5 top-0 h-5 w-5 rounded-full bg-cream" /><span className="absolute -right-2.5 top-0 h-5 w-5 rounded-full bg-cream" /><span className="absolute inset-x-4 top-2.5 border-t-2 border-dashed border-slate-200" /></div>
 
           {d.lead && canSeeMoney ? <LeadPanel d={d} previewHref={previewHref} /> : d.build && !isCrewLead ? (<>
-            <BuildPanel d={d} askHref={askHref} payHref={payHref} />
+            {d.wrap ? <WrapPanel d={d} askHref={askHref} payHref={payHref} /> : <BuildPanel d={d} askHref={askHref} payHref={payHref} />}
             <JobContact d={d} />
             <JobNotes d={d} />
             <JobDocuments jobId={j.id} docs={d.docs} meta={d.build.invoiceDocs} />
