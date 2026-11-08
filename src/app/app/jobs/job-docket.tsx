@@ -12,11 +12,12 @@ import { initials } from "./people";
 import { addJobMembers, removeJobMember } from "./team-actions";
 import { LeadPanel } from "./lead-panel";
 import { SoldPanel } from "./sold-panel";
+import { BuildPanel } from "./build-panel";
+import { JobContact, JobDocuments, JobNotes } from "./job-sections";
 import { ClaudeBar } from "./claude-bar";
 
 const STAGES = ["New lead", "Quoting", "Sold", "Building", "Wrapping up"];
 const STAGE_INDEX: Record<string, number> = { lead: 0, inspection: 1, estimate_sent: 1, sold: 2, scheduled: 2, in_progress: 3, completed: 4, paid: 4 };
-const DAY = 86400000;
 const shortDate = (iso: string) => new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T12:00:00` : iso).toLocaleDateString("en-AU", { day: "numeric", month: "short" });
 const whole = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 });
 
@@ -36,14 +37,10 @@ function Row({ href, title, value, external }: { href: string; title: string; va
   return <li>{external ? <a href={href} target="_blank" rel="noreferrer" className={cls} data-docket-row={title}>{body}</a> : <Link href={href} className={cls} data-docket-row={title}>{body}</Link>}</li>;
 }
 
-/** Top-right of the ticket: build day, else how long in this stage. */
+/** Top-right of the ticket: how long a new lead has waited, the start date, else nothing (no build-day counts). */
 function stageClock(d: Docket, now = new Date()) {
   const j = d.job;
-  if (j.stage === "in_progress" && j.scheduled_start) {
-    const day = Math.max(1, Math.floor((now.getTime() - new Date(`${j.scheduled_start}T00:00:00`).getTime()) / DAY) + 1);
-    const total = j.scheduled_end ? Math.max(day, Math.round((new Date(`${j.scheduled_end}T00:00:00`).getTime() - new Date(`${j.scheduled_start}T00:00:00`).getTime()) / DAY) + 1) : null;
-    return total ? `Day ${day} of ${total}` : `Day ${day}`;
-  }
+  if (j.stage === "in_progress") return null;
   if (j.stage === "lead" && !j.first_contacted_at && j.lead_received_at) {
     const h = Math.floor((now.getTime() - new Date(j.lead_received_at).getTime()) / 3600000);
     return h < 1 ? "Just in" : h < 48 ? `Waiting ${h} h` : `Waiting ${Math.floor(h / 24)} d`;
@@ -53,7 +50,7 @@ function stageClock(d: Docket, now = new Date()) {
   return `Since ${shortDate(j.created_at)}`;
 }
 
-export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, aiReady }: { d: Docket; org: Organization; canSeeMoney: boolean; isCrewLead: boolean; closeHref: string; previewHref: string; aiReady: boolean }) {
+export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, askHref, payHref, aiReady }: { d: Docket; org: Organization; canSeeMoney: boolean; isCrewLead: boolean; closeHref: string; previewHref: string; askHref: string; payHref: (orderId: string) => string; aiReady: boolean }) {
   const j = d.job;
   const base = `/app/jobs/${j.id}`;
   const lost = j.stage === "lost";
@@ -77,7 +74,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
           <div className={cx("px-5 pb-5 pt-4 text-white", lost ? "bg-slate-600" : "bg-brand-500")} data-docket-stages>
             <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-200">
               <span className="min-w-0 flex-1 truncate">{tag}</span>
-              <span className="shrink-0">{lost ? "Lost" : stageClock(d)}</span>
+              {(lost || stageClock(d)) && <span className="shrink-0">{lost ? "Lost" : stageClock(d)}</span>}
               <Link href={base} aria-label="Open the full job" title="Open the full job" className="-my-1 grid h-8 w-8 place-items-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"><Icon d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6" /></Link>
               <Link href={closeHref} scroll={false} aria-label="Close" className="-my-1 -mr-2 grid h-8 w-8 place-items-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"><Icon d="M6 6l12 12M18 6L6 18" /></Link>
             </div>
@@ -98,7 +95,12 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
           {/* Tear line */}
           <div className="relative h-5" aria-hidden><span className="absolute -left-2.5 top-0 h-5 w-5 rounded-full bg-cream" /><span className="absolute -right-2.5 top-0 h-5 w-5 rounded-full bg-cream" /><span className="absolute inset-x-4 top-2.5 border-t-2 border-dashed border-slate-200" /></div>
 
-          {d.lead && canSeeMoney ? <LeadPanel d={d} previewHref={previewHref} /> : (<>
+          {d.lead && canSeeMoney ? <LeadPanel d={d} previewHref={previewHref} /> : d.build && !isCrewLead ? (<>
+            <BuildPanel d={d} askHref={askHref} payHref={payHref} />
+            <JobContact d={d} />
+            <JobNotes d={d} />
+            <JobDocuments jobId={j.id} docs={d.docs} meta={d.build.invoiceDocs} />
+          </>) : (<>
           <div className="px-5">
             {d.sold && !isCrewLead ? <div className="-mx-5"><SoldPanel d={d} /></div> : !isCrewLead && (
               <div data-docket-now>
@@ -133,6 +135,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
             {d.claim && canSeeMoney && <Row href={`${base}/claim`} title="Insurance claim" value={human(d.claim.stage)} />}
             <Row href={base} title="Everything else" value="Notes, build, compliance" />
           </ul>
+          {d.sold && !isCrewLead && <><JobContact d={d} /><JobNotes d={d} /><JobDocuments jobId={j.id} docs={d.docs} /></>}
           </>)}
         </div>
 

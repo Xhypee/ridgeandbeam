@@ -15,6 +15,10 @@ export type PartMessage = {
   label: string; amount: number; dueDate: string | null; invoiceToken: string; jobToken: string; methods: PayMethod[];
   /** "due" = new invoice, "soon" = reminder 3 days out, "today" = due today. */
   when: "due" | "soon" | "today";
+  /** Optional: why it's due, in the customer's words ("Your materials were delivered…"), and the stage line ("Materials delivered · 30% of $36,172"). */
+  reason?: string; detail?: string;
+  /** Optional: what's been paid and what's still to come, shown under the amount. */
+  footnote?: string;
 };
 
 /** "Pay by card, PayID or bank transfer" for the ways this job takes. */
@@ -28,25 +32,43 @@ function fmtDate(iso: string | null) {
   return iso ? new Date(`${iso}T00:00:00`).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" }) : null;
 }
 
-/** Email (and text, once Twilio is set up) the customer a payment from their plan. Every attempt is logged in messages. */
-export async function sendPartMessage(db: SupabaseClient, m: PartMessage) {
+/** The message for one payment: subject, branded email and text. Used to send and to preview. */
+export function partMessage(m: PartMessage) {
   const first = m.customerName.trim().split(/\s+/)[0] || "there";
   const pay = `${site()}/i/${m.invoiceToken}`;
   const plan = `${site()}/p/${m.jobToken}`;
   const due = fmtDate(m.dueDate);
   const ways = waysToPay(m.methods);
-  const lead = m.when === "soon" ? `A reminder that your ${m.label.toLowerCase()} payment of ${aud(m.amount)} is due ${due ?? "soon"}.`
+  const lead = m.reason ? m.reason
+    : m.when === "soon" ? `A reminder that your ${m.label.toLowerCase()} payment of ${aud(m.amount)} is due ${due ?? "soon"}.`
     : m.when === "today" ? `Your ${m.label.toLowerCase()} payment of ${aud(m.amount)} is due today.`
     : `Your ${m.label.toLowerCase()} payment of ${aud(m.amount)} is ready${due ? `, due ${due}` : ""}.`;
-  const sms = `Hi ${first}, ${lead.charAt(0).toLowerCase()}${lead.slice(1)} ${ways}: ${pay} - ${m.orgName}`;
-  const html = `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5;color:#13221a">
-<p>Hi ${esc(first)},</p><p>${esc(lead)}</p>
-<p><a href="${pay}" style="display:inline-block;background:#1f5f3f;color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:600">View and pay ${esc(aud(m.amount))}</a></p>
-<p>${esc(ways)} on that page. You can see your whole payment plan here: <a href="${plan}">${plan}</a></p>
-<p>Thanks,<br>${esc(m.orgName)}${m.orgPhone ? `<br>${esc(m.orgPhone)}` : ""}</p></div>`;
+  const sms = `Hi ${first}, ${lead.charAt(0).toLowerCase()}${lead.slice(1)}${m.reason ? ` ${aud(m.amount)}.` : ""} ${ways}: ${pay} - ${m.orgName}`;
+  const html = `<!doctype html><html><body style="margin:0;background:#eef0ea;padding:24px 12px;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:#13221a">
+<div style="max-width:560px;margin:0 auto;background:#fff;border-radius:18px;overflow:hidden;border:1px solid #e3e6df">
+<div style="background:#1f5f3f;color:#fff;padding:16px 22px;font-weight:700;font-size:17px">${esc(m.orgName)}</div>
+<div style="padding:22px;font-size:15px;line-height:1.55">
+<p style="margin:0 0 12px">Hi ${esc(first)},</p>
+<p style="margin:0 0 16px">${esc(lead)}</p>
+<div style="background:#fbfaf5;border:1px solid #e3e6df;border-radius:14px;padding:14px 16px;margin:0 0 16px">
+<div style="font-size:12px;color:#64748b">${esc(m.detail ?? m.label)}${due ? ` · due ${esc(due)}` : ""}</div>
+<div style="font-size:28px;font-weight:700;margin-top:4px">${esc(aud(m.amount))}</div>
+${m.footnote ? `<div style="font-size:12px;color:#64748b;margin-top:2px">${esc(m.footnote)}</div>` : ""}
+</div>
+<p style="margin:0 0 16px"><a href="${pay}" style="display:block;text-align:center;background:#1f5f3f;color:#fff;padding:13px 18px;border-radius:12px;text-decoration:none;font-weight:600">Pay ${esc(aud(m.amount))}</a></p>
+<p style="margin:0 0 12px;font-size:13px;color:#475569">${esc(ways)} on that page. Your whole payment plan: <a href="${plan}" style="color:#1f5f3f">${plan}</a></p>
+<p style="margin:0">Thanks,<br>${esc(m.orgName)}${m.orgPhone ? `<br>${esc(m.orgPhone)}` : ""}</p>
+</div></div></body></html>`;
+  const subject = m.reason ? `Next payment for your roof · ${aud(m.amount)} · ${m.orgName}` : `${m.label}: ${aud(m.amount)}${due ? ` due ${due}` : ""} · ${m.orgName}`;
+  return { subject, html, sms, pay };
+}
+
+/** Email (and text, once Twilio is set up) the customer a payment from their plan. Every attempt is logged in messages. */
+export async function sendPartMessage(db: SupabaseClient, m: PartMessage) {
+  const { subject, html, sms } = partMessage(m);
   const base = { orgId: m.orgId, jobId: m.jobId, customerId: m.customerId };
   const results = await Promise.all([
-    isRealEmail(m.email) ? sendEmail(db, { ...base, to: m.email, subject: `${m.label}: ${aud(m.amount)}${due ? ` due ${due}` : ""} · ${m.orgName}`, html, text: sms }) : null,
+    isRealEmail(m.email) ? sendEmail(db, { ...base, to: m.email, subject, html, text: sms, fromName: m.orgName }) : null,
     m.phone ? sendSms(db, { ...base, to: m.phone, body: sms }) : null,
   ]);
   return results.filter(Boolean).map((r) => r!.status);
