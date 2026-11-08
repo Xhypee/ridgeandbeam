@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { requestPayment } from "./build-actions";
+import { sendQuoteReminder } from "./quoting-actions";
 import { Icon } from "./job-sections";
 export { SupplierPayForm } from "./supplier-pay-form";
 
@@ -47,5 +48,28 @@ export function PaymentRequestSheet({ jobId, closeHref, title, asked, toEmail, t
         <div className="rounded-xl bg-white px-3.5 py-2.5 text-xs text-slate-600 ring-1 ring-slate-200"><p className="mb-1 flex items-center gap-1.5 font-semibold text-slate-500"><Icon d="M4 5h16v11H9l-5 4z" className="h-3.5 w-3.5" />Text message</p><p className="[overflow-wrap:anywhere]">{sms}</p></div>
       </div>
     </Sheet>
+  );
+}
+
+/** The quote reminder as the customer gets it: email + text. */
+export function ReminderBody({ toEmail, toPhone, subject, html, sms }: { toEmail: string | null; toPhone: string | null; subject: string; html: string; sms: string }) {
+  return (
+    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4" data-reminder>
+      <div className="space-y-1 text-sm">
+        <p className="[overflow-wrap:anywhere]"><span className="inline-block w-16 text-slate-500">To</span>{[toEmail, toPhone].filter(Boolean).join(" · ") || <span className="font-semibold text-red-700">no email or mobile yet</span>}</p>
+        <p><span className="inline-block w-16 text-slate-500">Subject</span><b className="text-ink">{subject}</b></p>
+      </div>
+      <iframe title="Reminder email" srcDoc={html} sandbox="" className="h-[420px] w-full rounded-2xl bg-[#eef0ea] ring-1 ring-slate-200" />
+      {toPhone && <div className="rounded-xl bg-white px-3.5 py-2.5 text-xs text-slate-600 ring-1 ring-slate-200"><p className="mb-1 flex items-center gap-1.5 font-semibold text-slate-500"><Icon d="M4 5h16v11H9l-5 4z" className="h-3.5 w-3.5" />Text message</p><p className="[overflow-wrap:anywhere]">{sms}</p></div>}
+    </div>
+  );
+}
+export function RemindFooter({ estimateId, back, hasContact }: { estimateId: string; back: string; hasContact: boolean }) {
+  return (
+    <div className="flex items-center gap-3 border-t border-slate-200 bg-white px-5 py-3">
+      <span className="min-w-0 flex-1 text-xs text-slate-500">Sends this email and text with the quote link</span>
+      <ActionForm action={sendQuoteReminder}><input type="hidden" name="estimate_id" value={estimateId} /><input type="hidden" name="back" value={back} />
+        {hasContact ? <SubmitButton className="min-h-12 gap-2 px-5"><Icon d={SEND} />Send reminder</SubmitButton> : <span className="text-xs font-semibold text-red-700">Add an email or mobile first</span>}</ActionForm>
+    </div>
   );
 }

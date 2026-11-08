@@ -120,7 +120,8 @@ async function noHorizontalScroll(page, what) {
   await page.waitForURL(/\/app\/estimates\/[0-9a-f-]+$/);
   const estUrl = page.url();
   const estId = estUrl.split("/").pop();
-  // New quotes open on the receipt docket; the calculator and Good / Better / Best live in the detailed editor.
+  // New quotes open in the quoting engine; the docket view and the detailed editor (calculator, Good / Better / Best) are a click away.
+  await page.goto(`${estUrl}?view=docket`);
   await page.locator('[data-testid="docket-editor"]').waitFor();
   await page.click('[data-testid="detailed-editor"]');
   await page.waitForURL(/view=editor/);

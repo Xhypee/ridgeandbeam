@@ -14,6 +14,7 @@ import { LeadPanel } from "./lead-panel";
 import { SoldPanel } from "./sold-panel";
 import { BuildPanel } from "./build-panel";
 import { WrapPanel } from "./wrap-panel";
+import { QuotingPanel } from "./quoting-panel";
 import { JobContact, JobDocuments, JobNotes } from "./job-sections";
 import { ClaudeBar } from "./claude-bar";
 
@@ -46,12 +47,17 @@ function stageClock(d: Docket, now = new Date()) {
     const h = Math.floor((now.getTime() - new Date(j.lead_received_at).getTime()) / 3600000);
     return h < 1 ? "Just in" : h < 48 ? `Waiting ${h} h` : `Waiting ${Math.floor(h / 24)} d`;
   }
+  if (["inspection", "estimate_sent"].includes(j.stage)) {
+    const ago = (iso: string) => Math.max(0, Math.floor((now.getTime() - new Date(iso).getTime()) / 86400000));
+    if (d.quote?.status === "sent" && d.quote.sent_at) { const n = ago(d.quote.sent_at); return n === 0 ? "Sent today" : `Sent ${n} d ago`; }
+    return `${ago(j.created_at)} d in quoting`;
+  }
   if (["sold", "scheduled"].includes(j.stage) && j.scheduled_start) return `Starts ${shortDate(j.scheduled_start)}`;
   if (j.completed_at) return `Finished ${shortDate(j.completed_at)}`;
   return `Since ${shortDate(j.created_at)}`;
 }
 
-export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, askHref, payHref, aiReady }: { d: Docket; org: Organization; canSeeMoney: boolean; isCrewLead: boolean; closeHref: string; previewHref: string; askHref: string; payHref: (orderId: string) => string; aiReady: boolean }) {
+export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, askHref, payHref, remindHref, aiReady }: { d: Docket; org: Organization; canSeeMoney: boolean; isCrewLead: boolean; closeHref: string; previewHref: string; askHref: string; payHref: (orderId: string) => string; remindHref: string; aiReady: boolean }) {
   const j = d.job;
   const base = `/app/jobs/${j.id}`;
   const lost = j.stage === "lost";
@@ -96,7 +102,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
           {/* Tear line */}
           <div className="relative h-5" aria-hidden><span className="absolute -left-2.5 top-0 h-5 w-5 rounded-full bg-cream" /><span className="absolute -right-2.5 top-0 h-5 w-5 rounded-full bg-cream" /><span className="absolute inset-x-4 top-2.5 border-t-2 border-dashed border-slate-200" /></div>
 
-          {d.lead && canSeeMoney ? <LeadPanel d={d} previewHref={previewHref} /> : d.build && !isCrewLead ? (<>
+          {d.lead && canSeeMoney ? <LeadPanel d={d} previewHref={previewHref} /> : d.quoting && canSeeMoney && !isCrewLead ? <QuotingPanel d={d} previewHref={previewHref} remindHref={remindHref} /> : d.build && !isCrewLead ? (<>
             {d.wrap ? <WrapPanel d={d} askHref={askHref} payHref={payHref} /> : <BuildPanel d={d} askHref={askHref} payHref={payHref} />}
             <JobContact d={d} />
             <JobNotes d={d} />

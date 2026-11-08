@@ -1,7 +1,11 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { loadBuild, type BuildData } from "./build-stage-server";
+import { asAuState, AU_STATE_TZ } from "./au";
+import { calendarDate } from "./au-business-days";
 import { signPaths } from "./field-server";
+import { validDays } from "./quote-email";
+import { daysLeft, validUntil } from "./quote-remind";
 import { checklistProgress } from "./job-compliance";
 import { loadJobCompliance } from "./job-compliance-server";
 import { defaultJobRole, type JobRole } from "./job-team";
@@ -47,6 +51,13 @@ export type Docket = {
   docs: LeadDoc[];
   /** Building + Wrapping up: the quote's payments and each supplier's delivery + invoice. */
   build: BuildData | null;
+  /** Quoting only: where the quote is up to, and what's left before there is one. */
+  quoting: {
+    intake: { by: string; at: string | null; body: string } | null;
+    sent: { at: string | null; validUntil: string | null; daysLeft: number | null; views: number; lastViewed: string | null; firstViewed: string | null; remindedAt: string | null; title: string | null } | null;
+    draft: { id: string; number: number; total: number; area: number | null } | null;
+    inspection: { photos: number; at: string | null };
+  } | null;
   /** Wrapping up only: what's left to close the job out. */
   wrap: { handoverSentAt: string | null; reviewRequestedAt: string | null; reviewUrl: string | null; warrantyRegisteredAt: string | null; warrantyProduct: string | null; finishedOn: string | null; quotedMargin: number | null; workmanshipYears: number } | null;
 };
@@ -187,6 +198,30 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
       docs: docs.slice(0, 20),
     };
   }
+  let quoting: Docket["quoting"] = null;
+  if (row.stage === "inspection" || row.stage === "estimate_sent") {
+    const SRC: Record<string, string> = { website: "From your website", instant_quote: "From your instant quote", gmail: "From Gmail", email: "From email", manual: "Added by hand" };
+    const intakeBody = ((row as { notes?: string | null }).notes ?? c.notes ?? null)?.trim() || null;
+    const firstPhoto = [...photos].sort((a, b) => a.created_at.localeCompare(b.created_at))[0];
+    let sent: NonNullable<Docket["quoting"]>["sent"] = null;
+    let draft: NonNullable<Docket["quoting"]>["draft"] = null;
+    if (e && e.status === "sent") {
+      const { data: v } = await supabase.from("estimates").select("terms, view_count, first_viewed_at, last_viewed_at, reminded_at, roof_profile").eq("id", e.id).single();
+      const tz = AU_STATE_TZ[asAuState(row.state) ?? asAuState(org.state) ?? "NSW"];
+      const until = validUntil(e.sent_at, validDays((v as { terms?: string | null } | null)?.terms));
+      sent = {
+        at: e.sent_at, validUntil: until, daysLeft: daysLeft(until, calendarDate(new Date(), tz)),
+        views: Number(v?.view_count ?? 0), lastViewed: v?.last_viewed_at ?? null, firstViewed: v?.first_viewed_at ?? null, remindedAt: v?.reminded_at ?? null,
+        title: [row.job_type === "repair" ? "Repair" : "Re-roof", e.roof_profile].filter(Boolean).join(", "),
+      };
+    } else if (e && e.status === "draft") {
+      draft = { id: e.id, number: e.number, total: quote?.total ?? 0, area: roof ? Math.round(roof.summary.trueArea) : null };
+    }
+    quoting = {
+      intake: intakeBody ? { by: SRC[row.lead_source ?? ""] ?? "When they got in touch", at: row.lead_received_at, body: intakeBody } : null,
+      sent, draft, inspection: { photos: photos.length, at: firstPhoto?.created_at ?? null },
+    };
+  }
   const wrapping = row.stage === "completed" || row.stage === "paid";
   const build = (row.stage === "in_progress" || wrapping) && canSeeMoney
     ? await loadBuild(supabase, org, jobId, { state: row.state, scheduled_end: row.scheduled_end, completed_at: row.completed_at, stage: row.stage }, contract)
@@ -232,6 +267,7 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
     docs,
     build,
     wrap,
+    quoting,
     money: { contract, invoiced, paid, owing: contract !== null ? Math.max(0, Math.round((contract - paid) * 100) / 100) : invoices.reduce((a, i) => a + i.balance, 0), costs: costs.total, profit, margin: profit !== null && exGst ? Math.round((profit / exGst) * 100) : null },
   };
 }

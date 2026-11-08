@@ -136,7 +136,7 @@ export default async function EstimatePage({ params, searchParams }: PageProps<"
             {!docket && !options.length && <LinkButton variant="secondary" href={`/app/estimates/${e.id}?view=docket`} data-testid="docket-view">Docket view</LinkButton>}
             {status === "draft" && !docket && statusBtn("sent", "Mark as sent", "primary")}
             {status !== "draft" && !docket && <CopyLink url={publicUrl} />}
-            {status !== "draft" && <LinkButton variant="secondary" href={`/q/${e.public_token}`} target="_blank">Customer view</LinkButton>}
+            {status !== "draft" && <LinkButton variant="secondary" href={`/q/${e.public_token}?office=1`} target="_blank">Customer view</LinkButton>}
             {status === "sent" && (
               <form action={setEstimateStatus} className="flex items-center gap-1.5">
                 <input type="hidden" name="id" value={e.id} />
