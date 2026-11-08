@@ -45,8 +45,10 @@ export type Docket = {
   lead: { message: string | null; source: string | null; receivedAt: string | null; docs: LeadDoc[] } | null;
   /** Every document on the job (quote, plans, supplier invoices…), newest first. */
   docs: LeadDoc[];
-  /** Building only: the quote's payments and each supplier's delivery + invoice. */
+  /** Building + Wrapping up: the quote's payments and each supplier's delivery + invoice. */
   build: BuildData | null;
+  /** Wrapping up only: what's left to close the job out. */
+  wrap: { handoverSentAt: string | null; reviewRequestedAt: string | null; reviewUrl: string | null; warrantyRegisteredAt: string | null; warrantyProduct: string | null; finishedOn: string | null; quotedMargin: number | null; workmanshipYears: number } | null;
 };
 export type SoldReady = {
   signedAt: string | null; deposit: { amount: number; on: string; method: string } | null;
@@ -185,9 +187,23 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
       docs: docs.slice(0, 20),
     };
   }
-  const build = row.stage === "in_progress" && canSeeMoney
+  const wrapping = row.stage === "completed" || row.stage === "paid";
+  const build = (row.stage === "in_progress" || wrapping) && canSeeMoney
     ? await loadBuild(supabase, org, jobId, { state: row.state, scheduled_end: row.scheduled_end, completed_at: row.completed_at, stage: row.stage }, contract)
     : null;
+  let wrap: Docket["wrap"] = null;
+  if (wrapping && canSeeMoney) {
+    const [{ data: wj }, { data: wo }, { data: we }] = await Promise.all([
+      supabase.from("jobs").select("handover_sent_at, review_requested_at, warranty_registered_at, warranty_product, completed_at, scheduled_end").eq("id", jobId).single(),
+      supabase.from("organizations").select("google_review_url, workmanship_years").eq("id", org.id).single(),
+      e?.status === "accepted" ? supabase.from("estimates").select("margin_pct").eq("id", e.id).single() : Promise.resolve({ data: null }),
+    ]);
+    wrap = {
+      handoverSentAt: wj?.handover_sent_at ?? null, reviewRequestedAt: wj?.review_requested_at ?? null, reviewUrl: wo?.google_review_url ?? null,
+      warrantyRegisteredAt: wj?.warranty_registered_at ?? null, warrantyProduct: wj?.warranty_product ?? null, finishedOn: wj?.completed_at ?? wj?.scheduled_end ?? null,
+      quotedMargin: (we as { margin_pct: number | null } | null)?.margin_pct ?? null, workmanshipYears: wo?.workmanship_years ?? 7,
+    };
+  }
 
   const addr = [c.address, c.city, [c.state, c.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
   return {
@@ -215,6 +231,7 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
     sold,
     docs,
     build,
+    wrap,
     money: { contract, invoiced, paid, owing: contract !== null ? Math.max(0, Math.round((contract - paid) * 100) / 100) : invoices.reduce((a, i) => a + i.balance, 0), costs: costs.total, profit, margin: profit !== null && exGst ? Math.round((profit / exGst) * 100) : null },
   };
 }

@@ -102,5 +102,6 @@ export async function requestReview(_: ActionResult, fd: FormData): Promise<Acti
   if (!out.length) return { error: "The customer has no phone or email on file." };
   await supabase.from("jobs").update({ review_requested_at: new Date().toISOString() }).eq("id", job.id);
   revalidatePath(path(job.id), "layout");
+  revalidatePath("/app/jobs");
   return { ok: `Review request sent (${out.join(", ")}).` };
 }

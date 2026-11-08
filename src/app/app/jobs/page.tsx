@@ -55,7 +55,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
 
   let q = supabase.from("jobs")
     .select(`${NEXT_STEP_JOB_COLS}, title, site_address, lead_source, assigned_to, sales_rep_id, setter_id, customers(name, phone)`)
-    .neq("stage", "lost").or(`stage.neq.paid,stage_changed_at.gte.${since30}`)
+    .neq("stage", "lost").is("closed_at", null).or(`stage.neq.paid,stage_changed_at.gte.${since30}`)
     .order("stage_changed_at").limit(500);
   if (filter === "insurance") q = q.eq("is_insurance", true);
   if (filter === "retail") q = q.eq("is_insurance", false);

@@ -41,7 +41,7 @@ export function estimatePlan(e: EstPlan | null): Pick<PaymentPlan, "mode" | "whe
 /** "Sheets, capping, flashings": the order's headings, else its first items. */
 function whatText(items: { description: string; group_label: string | null }[]) {
   const groups = [...new Set(items.map((i) => i.group_label).filter((g): g is string => Boolean(g) && !g!.startsWith("Extras")))];
-  const words = (groups.length ? groups : items.map((i) => i.description)).map((g) => g.replace(/^COLORBOND\s+/i, "").split(/[,(·&]/)[0].trim());
+  const words = (groups.length ? groups : items.map((i) => i.description)).map((g) => g.replace(/^COLORBOND\s+/i, "").split(/[,(·]/)[0].trim());
   const list = [...new Set(words)].slice(0, 3).join(", ");
   return list || `${items.length} item${items.length === 1 ? "" : "s"}`;
 }
