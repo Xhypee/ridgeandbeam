@@ -16,7 +16,6 @@ export async function sendQuoteEmail(_prev: ActionResult, fd: FormData): Promise
   const before = await loadQuoteEmail(supabase, org, id, { ...sender, asSent: true });
   if (!before) return { error: "Quote not found." };
   const first = before.to.name.split(" ")[0] || "the customer";
-  if (!isRealEmail(before.to.email)) return { error: `Add ${first}'s email address first (Contact).` };
   if (before.estimate.itemCount === 0) return { error: "Add at least one line to the quote before sending it." };
   if (before.estimate.status === "accepted") return { error: "This quote is already signed." };
   if (before.estimate.status !== "sent") {
@@ -24,6 +23,10 @@ export async function sendQuoteEmail(_prev: ActionResult, fd: FormData): Promise
     s.set("id", id);
     s.set("status", "sent");
     try { await setEstimateStatus(s); } catch (e) { return { error: (e as Error).message }; }
+  }
+  if (!isRealEmail(before.to.email)) {
+    revalidatePath("/app", "layout");
+    return { ok: `Marked sent. ${first} has no email address on file, so copy the link and text it.` };
   }
   const q = await loadQuoteEmail(supabase, org, id, { ...sender, message: String(fd.get("message") ?? "") || null });
   if (!q) return { error: "Quote not found." };

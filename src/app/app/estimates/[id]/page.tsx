@@ -5,7 +5,7 @@ import { CopyLink } from "@/components/copy-link";
 import { QuoteBusiness } from "@/components/quote-business";
 import { DoorKnockSaleBanner } from "@/components/door-knock-banner";
 import { StateCompliancePanel } from "@/components/state-compliance-panel";
-import { Badge, Card, LinkButton, PageHeader, Select } from "@/components/ui";
+import { Badge, Card, LinkButton, Select } from "@/components/ui";
 import { requireMoneyAccess } from "@/lib/dal";
 import { resolveJobState } from "@/lib/estimate-notices";
 import { effectiveOptionId, estimateTotals, itemsForOption } from "@/lib/estimate-totals";
@@ -81,15 +81,17 @@ export default async function EstimatePage({ params, searchParams }: PageProps<"
 
   return (
     <>
-      <PageHeader
-        title={<span className="flex items-center gap-3">Quote #{e.number} <Badge tone={STATUS_TONE[status]}>{label(status)}</Badge></span>}
-        subtitle={
-          <>
-            <Link href={`/app/jobs/${job.id}`} className="font-medium text-slate-700 hover:text-brand-600">{job.title}</Link> · {job.customers.name} · Created {date(e.created_at)}
-          </>
-        }
-        actions={
-          <div className="no-print flex flex-wrap items-center gap-2">
+      {/* Full-screen quoting engine: its own top bar instead of the app menu. */}
+      <header className="no-print sticky top-0 z-30 border-b border-slate-200 bg-white" data-quote-bar>
+        <div className="flex min-h-16 flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 sm:px-6">
+          <Link href={`/app/jobs?job=${job.id}`} aria-label="Back to the job" title="Back to the job" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-ink ring-1 ring-slate-300 hover:bg-slate-50">
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M15 6l-6 6 6 6" /></svg>
+          </Link>
+          <div className="min-w-0 flex-1">
+            <p className="flex min-w-0 items-center gap-2"><span className="truncate font-display text-lg font-bold text-ink">{job.customers.name}</span><Badge tone={STATUS_TONE[status]}>{label(status)}</Badge></p>
+            <p className="truncate text-xs text-slate-500">Quote #{e.number} · {job.title} · Created {date(e.created_at)}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             {docket && <PrintButton />}
             {!docket && !options.length && <LinkButton variant="secondary" href={`/app/estimates/${e.id}`} data-testid="docket-view">Docket view</LinkButton>}
             {status === "draft" && !docket && statusBtn("sent", "Mark as sent", "primary")}
@@ -114,10 +116,19 @@ export default async function EstimatePage({ params, searchParams }: PageProps<"
                 <SubmitButton>Create invoice</SubmitButton>
               </form>
             )}
+          
+            {status !== "accepted" && (
+              <Link href={`/app/jobs?job=${job.id}&preview=1`} title="Preview the email the customer gets" aria-label="Preview the email the customer gets" className="grid h-10 w-10 place-items-center rounded-xl text-ink ring-1 ring-slate-300 hover:bg-slate-50">
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6" /></svg>
+              </Link>
+            )}
+            <Link href={`/app/jobs?job=${job.id}`} aria-label="Close" title="Close" className="grid h-10 w-10 place-items-center rounded-xl text-slate-500 hover:bg-slate-50 hover:text-ink">
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </Link>
           </div>
-        }
-      />
-
+        </div>
+      </header>
+      <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
       {!docket && (
         <>
           {status === "draft" && (
@@ -277,6 +288,7 @@ export default async function EstimatePage({ params, searchParams }: PageProps<"
           </form>
         </div>
       </Card>
+      </div>
     </>
   );
 }

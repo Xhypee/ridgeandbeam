@@ -15,6 +15,7 @@ const PHONE = "M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0
 const MAIL = "M4 6h16v12H4zM4 7l8 6 8-6";
 const PIN = "M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5";
 const SEND = "M4 12l16-8-6 16-2.5-6.5z";
+const PEN = "M4 20l4-1 11-11-3-3L5 16zM14 6l3 3";
 
 function Icon({ d, className = "h-4 w-4" }: { d: string; className?: string }) {
   return <svg viewBox="0 0 24 24" className={cx("shrink-0", className)} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={d} /></svg>;
@@ -142,11 +143,12 @@ export function LeadPanel({ d, previewHref }: { d: Docket; previewHref: string }
               <input type="hidden" name="estimate_id" value={q.id} />
               <div className="flex gap-2">
                 <SubmitButton className="min-h-12 flex-1 gap-2 text-[15px]"><Icon d={SEND} />{q.status === "sent" ? "Send quote again" : "Send quote"}</SubmitButton>
+                <Link href={`/app/estimates/${q.id}`} title="Edit the quote" aria-label="Edit the quote" className="grid h-12 w-12 shrink-0 place-items-center rounded-xl text-ink ring-1 ring-slate-300 hover:bg-slate-50"><Icon d={PEN} className="h-5 w-5" /></Link>
                 <Link href={previewHref} scroll={false} title={`Preview what ${first} will get`} aria-label={`Preview what ${first} will get`} className="grid h-12 w-12 shrink-0 place-items-center rounded-xl text-ink ring-1 ring-slate-300 hover:bg-slate-50"><Icon d={EYE} className="h-5 w-5" /></Link>
               </div>
             </ActionForm>
             <p className="mt-2 text-xs text-slate-500">
-              Quote #{q.number} · {q.total.toLocaleString("en-AU", { style: "currency", currency: "AUD" })} · {q.status === "sent" ? "sent" : "draft"}. <Link href={`/app/estimates/${q.id}`} className="font-semibold text-brand-700">Check or edit it</Link> before you send.
+              Quote #{q.number} · {q.total.toLocaleString("en-AU", { style: "currency", currency: "AUD" })} · {q.status === "sent" ? "sent" : "draft, check it before you send"}.
             </p>
           </>
         ) : (

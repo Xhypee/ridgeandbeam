@@ -129,9 +129,16 @@ export function useDocketOpen() {
   return path === "/app/jobs" && sp.has("job");
 }
 
+/** The quoting engine (/app/estimates/<id>) takes the whole screen: no menu, its own top bar. */
+export function useFocusPage() {
+  return /^\/app\/estimates\/[0-9a-f-]{36}$/i.test(usePathname() ?? "");
+}
+
 /** Swaps the full menu for the icon rail and lets the page use the full width while a docket is open. */
 export function AppFrame({ full, rail, header, tabs, children }: { full: React.ReactNode; rail: React.ReactNode; header: React.ReactNode; tabs: React.ReactNode; children: React.ReactNode }) {
   const docket = useDocketOpen();
+  const focus = useFocusPage();
+  if (focus) return <main className="min-h-screen min-w-0">{children}</main>;
   return (
     <div className="flex min-h-screen">
       {docket ? rail : full}

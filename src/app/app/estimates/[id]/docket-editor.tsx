@@ -17,7 +17,8 @@ import type { RoofShape } from "@/lib/docket-shape";
 import { isCalculatorLine, type CatalogRow, type DraftItem, type PriceMode } from "@/lib/estimating";
 import { money } from "@/lib/format";
 import { calcKeyLabel, mergeMeasurements, normalizeMeasurements, sectionSystem, type Measurements, type MetalProfile } from "@/lib/roof";
-import { saveEstimate, setEstimateStatus } from "../actions";
+import { saveEstimate } from "../actions";
+import { sendQuoteEmail } from "../../jobs/quote-actions";
 
 type Props = {
   id: string;
@@ -183,9 +184,10 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
     try {
       await flush();
       const fd = new FormData();
-      fd.set("id", id);
-      fd.set("status", "sent");
-      await setEstimateStatus(fd);
+      fd.set("estimate_id", id);
+      const res = await sendQuoteEmail(undefined, fd);
+      if (res?.error) setMsg({ error: res.error });
+      else if (res?.ok) setMsg({ ok: res.ok });
       router.refresh();
     } catch (e) {
       setMsg({ error: (e as Error).message || "Couldn't send the quote." });
