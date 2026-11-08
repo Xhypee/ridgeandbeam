@@ -59,7 +59,7 @@ export async function sendSms(db: SupabaseClient, m: Base & { to: string | null 
   return { status, error };
 }
 
-export async function sendEmail(db: SupabaseClient, m: Base & { to: string | null | undefined; subject: string; html: string; text?: string; replyTo?: string | null; fromName?: string | null }) {
+export async function sendEmail(db: SupabaseClient, m: Base & { to: string | null | undefined; subject: string; html: string; text?: string; replyTo?: string | null; fromName?: string | null; attachments?: { filename: string; content?: string; path?: string }[] }) {
   let status = "not_configured";
   let providerRef: string | null = null;
   let error: string | null = null;
@@ -71,7 +71,7 @@ export async function sendEmail(db: SupabaseClient, m: Base & { to: string | nul
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from: fromWithName(process.env.EMAIL_FROM!, m.fromName), to: [m.to], subject: m.subject, html: m.html, text: m.text, ...(m.replyTo ? { reply_to: m.replyTo } : {}) }),
+        body: JSON.stringify({ from: fromWithName(process.env.EMAIL_FROM!, m.fromName), to: [m.to], subject: m.subject, html: m.html, text: m.text, ...(m.replyTo ? { reply_to: m.replyTo } : {}), ...(m.attachments?.length ? { attachments: m.attachments } : {}) }),
       });
       const json = (await res.json()) as { id?: string; message?: string };
       if (res.ok) { status = "sent"; providerRef = json.id ?? null; } else { status = "failed"; error = json.message ?? `HTTP ${res.status}`; }

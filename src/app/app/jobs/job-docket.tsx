@@ -11,6 +11,7 @@ import type { Organization } from "@/lib/types";
 import { initials } from "./people";
 import { addJobMembers, removeJobMember } from "./team-actions";
 import { LeadPanel } from "./lead-panel";
+import { SoldPanel } from "./sold-panel";
 import { ClaudeBar } from "./claude-bar";
 
 const STAGES = ["New lead", "Quoting", "Sold", "Building", "Wrapping up"];
@@ -99,7 +100,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
 
           {d.lead && canSeeMoney ? <LeadPanel d={d} previewHref={previewHref} /> : (<>
           <div className="px-5">
-            {!isCrewLead && (
+            {d.sold && !isCrewLead ? <div className="-mx-5"><SoldPanel d={d} /></div> : !isCrewLead && (
               <div data-docket-now>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Next step</p>
                 <div className="mt-1 flex items-center gap-3">

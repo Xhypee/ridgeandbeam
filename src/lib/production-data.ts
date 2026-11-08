@@ -15,6 +15,8 @@ export type AcceptedItem = {
   unit_cost: number;
   calc_key: string | null;
   category: string;
+  /** "added" = an extra the customer added (in the total); null = a main line. */
+  extra_status?: string | null;
 };
 export type AcceptedEstimate = {
   estimateId: string;
@@ -54,7 +56,7 @@ export async function acceptedEstimates(supabase: SupabaseClient, jobIds: string
       .sort((a, b) => a.position - b.position)
       .map((i) => ({
         description: i.description, quantity: Number(i.quantity), unit: i.unit, unit_price: Number(i.unit_price),
-        unit_cost: Number(i.unit_cost ?? 0), calc_key: i.calc_key ?? null, category: i.category,
+        unit_cost: Number(i.unit_cost ?? 0), calc_key: i.calc_key ?? null, category: i.category, extra_status: i.extra_status ?? null,
       }));
     const subtotal = round2(items.reduce((s, i) => s + round2(i.quantity * i.unit_price), 0));
     const discount = Number(e.discount) || 0;
