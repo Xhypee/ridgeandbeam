@@ -145,8 +145,10 @@ async function noHorizontalScroll(page, what) {
   sql(`update jobs set state = 'QLD', zip = '4066' where id = '${jobId}'`);
   await page.click('button:has-text("New quote")');
   await page.waitForURL(/\/app\/estimates\/[0-9a-f-]+$/);
-  const estUrl = page.url();
-  const estId = estUrl.split("/").pop();
+  // New quotes open in the quoting engine; this test drives the receipt docket (?view=docket).
+  const estId = page.url().split("/").pop();
+  const estUrl = `${BASE}/app/estimates/${estId}?view=docket`;
+  await page.goto(estUrl);
   await page.locator('[data-testid="docket-editor"]').waitFor();
   check(await page.locator('[data-testid="docket-empty"]').isVisible(), "new quote opens on the docket, asking to measure");
   check((await page.locator('[data-testid="docket-top"]').innerText()).includes("ABN 51 824 753 556 · QLD 1234567"), "receipt top line: ABN and QLD licence");
@@ -167,6 +169,7 @@ async function noHorizontalScroll(page, what) {
   check(sql(`select count(*) from estimate_items where estimate_id = '${estId}' and extra_status = 'offered'`) !== "0", "plans filled offered extras too");
   await page.click('[data-testid="open-quote"]');
   await page.waitForURL(/\/app\/estimates\/[0-9a-f-]+$/);
+  await page.goto(estUrl);
 
   console.log("5. The docket (COLORBOND Custom Orb isn't priced yet)");
   await page.locator('[data-testid="docket"]').waitFor();
@@ -381,7 +384,7 @@ async function noHorizontalScroll(page, what) {
   const sections = facets.map((f) => ({ label: f.label, area: 10, pitch: f.pitch, system: "metal", profile: "trimdek" }));
   const satM = JSON.stringify({ units: "metric", jobType: "reroof", existingRoof: "tile", sections, satellite: { units: "metric", facets } }).replace(/'/g, "''");
   const satId = sql(`insert into estimates (org_id, job_id, tax_rate, gst_inclusive, measurements, measurement_source, roof_profile, roof_colour) values ('${orgId}', '${jobId}', 10, true, '${satM}'::jsonb, 'satellite', 'trimdek', 'Basalt') returning id`).split("\n")[0];
-  await page.goto(`${BASE}/app/estimates/${satId}`);
+  await page.goto(`${BASE}/app/estimates/${satId}?view=docket`);
   await page.locator('[data-testid="docket-roof"][data-kind="satellite"]').waitFor();
   check((await page.locator('[data-testid="docket-roof"] polygon').count()) === 5, "satellite quote: the 5 traced facets are drawn");
   await shot(page, "d10-satellite");
@@ -390,7 +393,7 @@ async function noHorizontalScroll(page, what) {
     { label: "Main roof", area: 120, pitch: 22.5, system: "metal" }, { label: "Garage", area: 36, pitch: 15, system: "metal" }, { label: "Verandah", area: 18, pitch: 10, system: "metal" },
   ] });
   const manId = sql(`insert into estimates (org_id, job_id, tax_rate, gst_inclusive, measurements, measurement_source, roof_colour) values ('${orgId}', '${jobId}', 10, true, '${manM}'::jsonb, 'manual', 'Surfmist') returning id`).split("\n")[0];
-  await page.goto(`${BASE}/app/estimates/${manId}`);
+  await page.goto(`${BASE}/app/estimates/${manId}?view=docket`);
   await page.locator('[data-testid="docket-roof"][data-kind="tiles"]').waitFor();
   check((await page.locator('[data-testid="roof-tile"]').count()) === 3, "typed-in sections: one tile each");
   check((await page.locator('[data-testid="docket-roof"]').innerHTML()).includes("Garage"), "tiles are labelled");
@@ -403,7 +406,7 @@ async function noHorizontalScroll(page, what) {
   console.log("15. Phone width (390px)");
   const mctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, storageState: await ctx.storageState() });
   const mp = await mctx.newPage();
-  for (const [p, what] of [[`/app/estimates/${estId}`, "roofer docket"], [publicPath, "customer docket"], ["/app/settings/price-book", "price book"]]) {
+  for (const [p, what] of [[`/app/estimates/${estId}?view=docket`, "roofer docket"], [publicPath, "customer docket"], ["/app/settings/price-book", "price book"]]) {
     await mp.goto(BASE + p);
     await mp.waitForLoadState("networkidle").catch(() => {});
     await noHorizontalScroll(mp, what);

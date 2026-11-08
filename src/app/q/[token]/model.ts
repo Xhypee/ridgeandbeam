@@ -41,6 +41,8 @@ export type PublicEstimate = {
   /** The docket's sheet profile and colour. */
   roof_profile?: string | null;
   roof_colour?: string | null;
+  /** How the customer pays: in full (one invoice) or instalments (Deposit + stages + Upon completion). */
+  payment?: { mode: "full" | "instalments"; when: "signed" | "delivered" | "completed"; stages: { label: string; pct: number; trigger: string }[] } | null;
   /** Bumped on every change to the quote; acceptance must quote the version the customer saw. */
   version?: number;
   /** The customer may pick the colour. */

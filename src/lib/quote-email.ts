@@ -142,7 +142,9 @@ export function buildQuoteEmail(input: QuoteEmailInput): QuoteEmail {
 </td></tr>`;
 
   const facts: [string, string, string][] = [
-    ["Deposit", upFront > 0 ? aud(upFront) : "$0", upFront > 0 ? "when you accept" : "pay when it's done"],
+    parts.length === 1
+      ? ["Payment", "In full", WHEN[parts[0].trigger] ?? "when the job is finished"]
+      : ["Deposit", upFront > 0 ? aud(upFront) : "$0", upFront > 0 ? "when you accept" : "pay when it's done"],
     ["Valid until", day(valid).replace(/ \d{4}$/, ""), String(valid.getFullYear())],
     ["Pay by", input.payMethods.length ? input.payMethods.map((m) => (m === "bank" ? "PayID" : cap(m))).join(" · ") : "Bank", input.payMethods.includes("card") ? "no card surcharge" : "details on the quote"],
   ];

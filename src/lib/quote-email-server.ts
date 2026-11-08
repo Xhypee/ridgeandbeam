@@ -9,6 +9,7 @@ import { siteUrl } from "./format";
 import { depositLimit } from "./pay-plan";
 import { effectiveMethods } from "./pay-plan-server";
 import { buildQuoteEmail, type QuoteEmail } from "./quote-email";
+import { planSchedule, type PaymentPlan } from "./quote-pricing";
 import type { Organization } from "./types";
 
 export type QuoteEmailContext = {
@@ -56,7 +57,8 @@ export async function loadQuoteEmail(
     logoUrl: `${siteUrl()}/email/mark.png`,
     sender: { name: opts.senderName, phone: opts.senderPhone ?? null },
     payMethods: methods.length ? methods : ["bank"],
-    schedule: sched.ok ? sched.steps : [],
+    // The quote's own payment choice (Full / Instalments), else the company's usual schedule.
+    schedule: planSchedule(doc.payment as PaymentPlan | null | undefined) ?? (sched.ok ? sched.steps : []),
     depositCap,
     message: opts.message,
   });

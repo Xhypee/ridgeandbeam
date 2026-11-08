@@ -22,6 +22,11 @@ import { auAddress } from "@/app/q/[token]/model";
 import { createInvoiceFromEstimate } from "../../invoices/actions";
 import { deleteEstimate, duplicateEstimate, setEstimateStatus } from "../actions";
 import { DocketEditor } from "./docket-editor";
+import { QuoteEngine } from "./quote-engine";
+import { loadSupplierChoices, RoofPlanPanel, RulesLine } from "./engine-data";
+import { QuotePreview } from "../../jobs/quote-preview";
+import { loadQuoteEmail } from "@/lib/quote-email-server";
+import { normaliseStages, type PaymentPlan } from "@/lib/quote-pricing";
 import { EstimateEditor } from "./estimate-editor";
 
 type ItemRow = DraftItem & { id: string; position: number; option_id: string | null };
@@ -29,8 +34,8 @@ type OptionRow = { id: string; position: number; name: string; tier: DraftOption
 
 export default async function EstimatePage({ params, searchParams }: PageProps<"/app/estimates/[id]">) {
   const { id } = await params;
-  const { view } = await searchParams;
-  const { supabase, org } = await requireMoneyAccess();
+  const { view, preview: previewParam } = await searchParams;
+  const { supabase, org, user, memberships, isAdmin } = await requireMoneyAccess();
   const [{ data: e }, { data: catalog }, suppliers] = await Promise.all([
     supabase
       .from("estimates")
@@ -58,6 +63,8 @@ export default async function EstimatePage({ params, searchParams }: PageProps<"
   const offered = usableCatalog((catalog ?? []) as CatalogRow[], org);
   // The docket is the quote's default view; quotes with Good / Better / Best options open in the detailed editor.
   const docket = !options.length && view !== "editor";
+  // The quoting engine is the default for single-price quotes that aren't signed; ?view=docket / editor keep the older views.
+  const engine = !options.length && status !== "accepted" && view !== "editor" && view !== "docket";
 
   const statusBtn = (s: string, text: string, variant: "primary" | "secondary" | "danger" | "ghost" = "secondary", confirm?: string) => (
     <form action={setEstimateStatus}>
@@ -79,6 +86,39 @@ export default async function EstimatePage({ params, searchParams }: PageProps<"
     extra_status: i.extra_status ?? null, blurb: i.blurb ?? null, customer_added: Boolean(i.customer_added),
   }));
 
+  let engineNode: React.ReactNode = null;
+  let previewNode: React.ReactNode = null;
+  if (engine) {
+    const sup = await loadSupplierChoices(supabase, org, (e.org_supplier_id as string | null) ?? null);
+    const site = job.site_address || auAddress({ street: job.customers.address, suburb: job.customers.city, state: job.customers.state, postcode: job.customers.zip }) || "";
+    const plan: PaymentPlan = { mode: e.payment_mode === "instalments" ? "instalments" : "full", when: (["signed", "delivered", "completed"].includes(e.payment_when) ? e.payment_when : "completed") as PaymentPlan["when"], stages: normaliseStages(e.payment_stages as never) };
+    const previewHref = `/app/estimates/${e.id}?preview=1`;
+    engineNode = (
+      <QuoteEngine
+        id={e.id} number={e.number} status={status} firstName={job.customers.name.split(" ")[0] || job.customers.name}
+        party={{ name: job.customers.name, email: job.customers.email ?? "", site, title: job.title }}
+        notes={e.notes ?? ""} terms={e.terms ?? ""}
+        items={draftItems}
+        base={{ measurements: (e.measurements ?? {}) as Record<string, unknown>, measurement_source: e.measurement_source ?? null, option_label: e.option_label === "alternates" ? "alternates" : "options", tax_rate: Number(e.tax_rate), gst_inclusive: Boolean(e.gst_inclusive), discount: Number(e.discount), org_supplier_id: (e.org_supplier_id as string | null) ?? null }}
+        marginPct={e.margin_pct === null || e.margin_pct === undefined ? null : Number(e.margin_pct)}
+        payment={plan}
+        supplier={sup.current} suppliers={sup.choices} nearLabel={sup.nearLabel} canSetDefault={isAdmin}
+        previewHref={previewHref}
+        roofPlan={<RoofPlanPanel estimateId={e.id} measurements={e.measurements} source={e.measurement_source ?? null} />}
+        rules={<RulesLine state={resolved.state} total={contractValue} roofMaterial={profile?.roof_system ?? job.roof_material} jobType={profile?.au_job_type ?? job.job_type} />}
+      />
+    );
+  }
+  if (previewParam === "1" && status !== "accepted") {
+    const me = memberships.find((m) => m.org_id === org.id);
+    const q = await loadQuoteEmail(supabase, org, e.id, { senderName: me?.full_name || user.fullName || org.name, senderPhone: me?.phone ?? org.phone, asSent: true });
+    if (q) previewNode = (
+      <QuotePreview html={q.email.html} subject={q.email.subject} toName={q.to.name} toEmail={q.to.email}
+        fromName={`${org.name} <${(process.env.EMAIL_FROM ?? "hello@ridgeandbeam.com").replace(/^.*<([^>]+)>.*$/, "$1")}>`}
+        estimateId={e.id} closeHref={`/app/estimates/${e.id}`} sent={status === "sent"} />
+    );
+  }
+
   return (
     <>
       {/* Full-screen quoting engine: its own top bar instead of the app menu. */}
@@ -92,8 +132,8 @@ export default async function EstimatePage({ params, searchParams }: PageProps<"
             <p className="truncate text-xs text-slate-500">Quote #{e.number} · {job.title} · Created {date(e.created_at)}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {docket && <PrintButton />}
-            {!docket && !options.length && <LinkButton variant="secondary" href={`/app/estimates/${e.id}`} data-testid="docket-view">Docket view</LinkButton>}
+            {docket && <span className="hidden sm:inline-flex"><PrintButton /></span>}
+            {!docket && !options.length && <LinkButton variant="secondary" href={`/app/estimates/${e.id}?view=docket`} data-testid="docket-view">Docket view</LinkButton>}
             {status === "draft" && !docket && statusBtn("sent", "Mark as sent", "primary")}
             {status !== "draft" && !docket && <CopyLink url={publicUrl} />}
             {status !== "draft" && <LinkButton variant="secondary" href={`/q/${e.public_token}`} target="_blank">Customer view</LinkButton>}
@@ -118,7 +158,7 @@ export default async function EstimatePage({ params, searchParams }: PageProps<"
             )}
           
             {status !== "accepted" && (
-              <Link href={`/app/jobs?job=${job.id}&preview=1`} title="Preview the email the customer gets" aria-label="Preview the email the customer gets" className="grid h-10 w-10 place-items-center rounded-xl text-ink ring-1 ring-slate-300 hover:bg-slate-50">
+              <Link href={`/app/estimates/${e.id}?preview=1`} scroll={false} title="Preview the email the customer gets" aria-label="Preview the email the customer gets" className="grid h-10 w-10 place-items-center rounded-xl text-ink ring-1 ring-slate-300 hover:bg-slate-50">
                 <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6" /></svg>
               </Link>
             )}
@@ -128,6 +168,7 @@ export default async function EstimatePage({ params, searchParams }: PageProps<"
           </div>
         </div>
       </header>
+      {engine ? engineNode : (
       <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
       {!docket && (
         <>
@@ -289,6 +330,8 @@ export default async function EstimatePage({ params, searchParams }: PageProps<"
         </div>
       </Card>
       </div>
+      )}
+      {previewNode}
     </>
   );
 }
