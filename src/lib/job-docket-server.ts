@@ -38,8 +38,18 @@ export type Docket = {
   messages: { id: string; channel: string; direction: string; body: string; at: string; status: string }[];
   compliance: { state: string | null; done: number; total: number; licence: string | null } | null;
   money: { contract: number | null; invoiced: number; paid: number; owing: number; costs: number; profit: number | null; margin: number | null };
+  /** Sold / scheduled only: what's left before the crew can start. */
+  sold: SoldReady | null;
   /** New leads only: what they sent us and the documents on the job. */
   lead: { message: string | null; source: string | null; receivedAt: string | null; docs: LeadDoc[] } | null;
+};
+export type SoldReady = {
+  signedAt: string | null; deposit: { amount: number; on: string; method: string } | null;
+  coolingOff: { applies: boolean; ends: string | null; over: boolean };
+  insurance: { required: boolean; done: boolean; scheme: string | null };
+  orders: { suppliers: string[]; items: number; cost: number; sent: number; confirmed: number; delivered: number; total: number };
+  crew: { name: string | null; start: string | null; end: string | null; locked: boolean };
+  rule: string | null;
 };
 export type LeadDoc = { id: string; name: string; mime: string | null; size: number | null; at: string; viewUrl: string | null; downloadUrl: string | null };
 
@@ -118,12 +128,40 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
   });
 
   let compliance: Docket["compliance"] = null;
+  let compFull: Awaited<ReturnType<typeof loadJobCompliance>> = null;
   if (canSeeMoney) {
     const comp = await loadJobCompliance(supabase, org, jobId);
+    compFull = comp;
     if (comp?.rules) {
       const p = checklistProgress(comp.items);
       compliance = { state: comp.state, done: p.done, total: p.total, licence: comp.licenceNumber };
     }
+  }
+
+  // Sold: the getting-ready checklist (signed + deposit, cooling-off, home warranty, materials, crew).
+  let sold: Docket["sold"] = null;
+  if ((row.stage === "sold" || row.stage === "scheduled") && canSeeMoney) {
+    const { data: mo } = await supabase.from("material_orders").select("status, supplier, material_order_items(quantity, unit, unit_cost, length_m)").eq("job_id", jobId).neq("status", "cancelled").order("created_at");
+    type MO = { status: string; supplier: string; material_order_items: { quantity: number; unit: string; unit_cost: number; length_m: number | null }[] };
+    const orders = ((mo ?? []) as unknown as MO[]).filter((o) => o.material_order_items?.length);
+    const cool = compFull?.items.find((i) => i.key === "cooling_off");
+    const ins = compFull?.items.find((i) => i.key === "insurance_certificate");
+    const r = compFull?.rules;
+    const dep = payments[0] ?? null;
+    sold = {
+      signedAt: quote?.accepted_at ?? null,
+      deposit: dep ? { amount: dep.amount, on: dep.paid_on, method: dep.method } : null,
+      coolingOff: { applies: Boolean(cool), ends: cool?.due ?? null, over: !cool || cool.status === "done" || cool.status === "not_needed" },
+      insurance: { required: Boolean(ins) && ins!.status !== "not_needed", done: !ins || ins.status === "done" || ins.status === "not_needed", scheme: r?.insurance.scheme ?? null },
+      orders: {
+        suppliers: orders.map((o) => o.supplier), items: orders.reduce((a, o) => a + o.material_order_items.length, 0),
+        cost: Math.round(orders.reduce((a, o) => a + o.material_order_items.reduce((b, i) => b + Number(i.quantity) * (i.length_m && ["lm", "m"].includes(i.unit) ? Number(i.length_m) : 1) * Number(i.unit_cost), 0), 0)),
+        sent: orders.filter((o) => o.status !== "draft").length, confirmed: orders.filter((o) => o.status === "confirmed" || o.status === "delivered").length,
+        delivered: orders.filter((o) => o.status === "delivered").length, total: orders.length,
+      },
+      crew: { name: crew?.name ?? null, start: row.scheduled_start, end: row.scheduled_end, locked: Boolean((row as { schedule_locked?: boolean }).schedule_locked) },
+      rule: r && compFull?.value ? `${r.state}, ${compFull.value.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 })}${r.writtenContract.tier ? ` (${r.writtenContract.tier.split(" (")[0]})` : ""}.${r.insurance.required === true ? " Home warranty paid before work starts." : ""}${cool ? " Don't start before cooling-off ends." : ""}` : null,
+    };
   }
 
   // New leads: the documents, with short-lived links to look at or download each one.
@@ -165,6 +203,7 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
     messages: ((msgs ?? []) as { id: string; channel: string; direction: string; body: string; created_at: string; status: string }[]).map((m) => ({ id: m.id, channel: m.channel, direction: m.direction, body: m.body, at: m.created_at, status: m.status })),
     compliance,
     lead,
+    sold,
     money: { contract, invoiced, paid, owing: contract !== null ? Math.max(0, Math.round((contract - paid) * 100) / 100) : invoices.reduce((a, i) => a + i.balance, 0), costs: costs.total, profit, margin: profit !== null && exGst ? Math.round((profit / exGst) * 100) : null },
   };
 }

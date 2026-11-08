@@ -131,7 +131,7 @@ export function useDocketOpen() {
 
 /** The quoting engine (/app/estimates/<id>) takes the whole screen: no menu, its own top bar. */
 export function useFocusPage() {
-  return /^\/app\/estimates\/[0-9a-f-]{36}$/i.test(usePathname() ?? "");
+  return /^\/app\/(estimates|materials)\/[0-9a-f-]{36}$/i.test(usePathname() ?? "");
 }
 
 /** Swaps the full menu for the icon rail and lets the page use the full width while a docket is open. */
