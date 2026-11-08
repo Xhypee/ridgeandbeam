@@ -17,7 +17,7 @@ type Row = NextStepJob & { title: string; site_address: string | null; job_type:
 
 export default async function JobLayout({ children, params }: LayoutProps<"/app/jobs/[id]">) {
   const { id } = await params;
-  const { supabase, canSeeMoney, isCrewLead, crewId } = await requireOrg();
+  const { supabase, canSeeMoney, isCrewLead, crewId, user } = await requireOrg();
   const { data } = await supabase
     .from("jobs")
     .select(`${NEXT_STEP_JOB_COLS}, title, site_address, job_type, crew_id, public_token, customers(id, name, phone)`)
@@ -25,8 +25,11 @@ export default async function JobLayout({ children, params }: LayoutProps<"/app/
     .maybeSingle();
   if (!data) notFound();
   const row = data as unknown as Row;
-  // Crew leads only ever see jobs assigned to their own crew.
-  if (isCrewLead && row.crew_id !== crewId) notFound();
+  // Crew leads see jobs assigned to their crew, or jobs they've been put on.
+  if (isCrewLead && row.crew_id !== crewId) {
+    const { data: member } = await supabase.from("job_members").select("user_id").eq("job_id", id).eq("user_id", user.id).maybeSingle();
+    if (!member) notFound();
+  }
   const job = { ...row, ...asNextStepJob(row) };
   const customer = row.customers;
   const ctx = (await loadNextStepCtx(supabase, [job], { photos: true })).get(job.id)!;

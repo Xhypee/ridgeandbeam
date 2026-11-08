@@ -114,6 +114,7 @@ export async function addNote(_: ActionResult, fd: FormData): Promise<ActionResu
   });
   if (error) return { error: friendly(error) };
   revalidatePath(`/app/jobs/${fd.get("job_id")}`);
+  revalidatePath("/app/jobs");
 }
 
 export async function deleteJob(fd: FormData) {

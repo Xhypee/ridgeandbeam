@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ActionForm, SubmitButton } from "@/components/action-form";
 import { Badge, Card, Empty, cx } from "@/components/ui";
 import { requireMoneyAccess } from "@/lib/dal";
 import { date, label, money, STATUS_TONE } from "@/lib/format";
@@ -8,7 +7,6 @@ import { CHECK_KIND_LABEL, PAYER_GROUP_LABEL, PAYER_GROUP_TONE, PAYER_GROUPS, pa
 import { BILL_TO_LABEL, INVOICE_KIND_LABEL, INVOICE_KIND_TONE, planSchedule, TRIGGER_LABEL, validateSchedule, type BillTo, type InvoiceKind } from "@/lib/claims-billing";
 import { acceptedEstimateTotal } from "@/lib/estimate-totals";
 import { invoiceTotalsFor, type ClaimCheck } from "@/lib/claims-server";
-import { createPaymentScheduleAction } from "../../../invoices/actions";
 
 export const metadata: Metadata = { title: "Billing" };
 
@@ -116,16 +114,16 @@ export default async function BillingPage({ params }: PageProps<"/app/jobs/[id]/
         )}
       </Card>
 
-      {!hasSchedule && (
-        <Card title="Payment schedule">
-          {!est ? (
-            <p className="text-sm text-slate-600">Once the homeowner accepts a quote, create milestone {gstName}s here (deposit, materials delivered, completion).</p>
-          ) : !sched.ok ? (
-            <p className="text-sm text-amber-800">{sched.error}</p>
-          ) : (
-            <>
-              <p className="mb-3 text-sm text-slate-600">Split the {money(est.total)} contract price (inc GST) into milestone {gstName}s using your payment schedule:</p>
-              <ul className="mb-4 space-y-1 text-sm">
+      <Card title="Payment plan" actions={<Link href={`/app/jobs/${id}/billing/plan`} data-plan-link className="inline-flex min-h-10 items-center rounded-xl bg-brand-500 px-4 text-sm font-semibold text-white hover:bg-brand-600">{hasSchedule ? "Open payment plan" : "Set up a payment plan"}</Link>}>
+        {!est ? (
+          <p className="text-sm text-slate-600">Once the homeowner accepts a quote, split the price into {gstName}s here: a deposit within your state&apos;s limit, milestones, and monthly or fortnightly payments by card, PayID, bank transfer or cash.</p>
+        ) : hasSchedule ? (
+          <p className="text-sm text-slate-600">Change dates and amounts, send the next payment, or record cash on the payment plan page.</p>
+        ) : (
+          <>
+            <p className="mb-3 text-sm text-slate-600">Your usual schedule for the {money(est.total)} contract price (inc GST). Open the plan to keep the deposit within your state&apos;s limit, add monthly payments and choose how the customer pays:</p>
+            {sched.ok && (
+              <ul className="space-y-1 text-sm">
                 {preview!.map((p, i) => (
                   <li key={i} className="flex justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2">
                     <span><b>{p.label}</b> <span className="text-slate-500">· {p.pct}% · {TRIGGER_LABEL[p.trigger]}</span></span>
@@ -133,15 +131,10 @@ export default async function BillingPage({ params }: PageProps<"/app/jobs/[id]/
                   </li>
                 ))}
               </ul>
-              <p className="mb-3 text-xs text-slate-500">Deposit limits and progress-payment rules differ by state — check the state rules shown on the quote before issuing a deposit invoice.</p>
-              <ActionForm action={createPaymentScheduleAction}>
-                <input type="hidden" name="job_id" value={id} />
-                <SubmitButton className="min-h-11">Create payment schedule</SubmitButton>
-              </ActionForm>
-            </>
-          )}
-        </Card>
-      )}
+            )}
+          </>
+        )}
+      </Card>
 
       <section>
         <h2 className="mb-2 font-display text-lg font-semibold text-ink">Expected vs received, by who pays</h2>

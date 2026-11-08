@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { cx } from "@/components/ui";
 
 /**
@@ -89,5 +89,63 @@ export function SectionTabs({ canSeeMoney = true }: { canSeeMoney?: boolean }) {
         </Link>
       ))}
     </nav>
+  );
+}
+
+/** Icons-only menu, shown while a job's docket is open on the Jobs board (keeps room for the board + docket). */
+export function NavRail({ canSeeMoney = true, crewLead = false, unread = 0 }: { canSeeMoney?: boolean; crewLead?: boolean; unread?: number }) {
+  const path = usePathname();
+  const current = groupFor(path);
+  const items = GROUPS.filter((g) => (crewLead ? g.crew : canSeeMoney || !g.money));
+  return (
+    <aside data-nav-rail className="no-print sticky top-0 hidden h-screen w-[72px] shrink-0 flex-col items-center gap-1 border-r border-slate-200 bg-white py-4 lg:flex">
+      <Link href="/app" aria-label="Ridge & Beam home" className="mb-4">
+        <svg viewBox="0 0 32 32" className="h-10 w-10" aria-hidden>
+          <rect width="32" height="32" rx="8" fill="#1f5f3f" />
+          <path d="M6 17 16 8l10 9" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M10 15.5V24h12v-8.5" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinejoin="round" />
+        </svg>
+      </Link>
+      <nav aria-label="Main" className="flex flex-col items-center gap-1">
+        {items.map((i) => (
+          <Link key={i.href} href={i.href} title={i.label} aria-label={i.label} aria-current={current === i ? "page" : undefined}
+            className={cx("grid h-11 w-11 place-items-center rounded-xl", current === i ? "bg-brand-50 text-brand-700" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900")}>
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={i.icon} /></svg>
+          </Link>
+        ))}
+      </nav>
+      <Link href="/app/notifications" title="Notifications" aria-label={`Notifications${unread ? ` (${unread} unread)` : ""}`} className="relative mt-auto grid h-11 w-11 place-items-center rounded-xl text-slate-500 hover:bg-slate-100">
+        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 004 0" /></svg>
+        {unread ? <span className="absolute right-1 top-1 min-w-4 rounded-full bg-brand-500 px-1 text-center text-[10px] font-semibold leading-4 text-white">{unread > 99 ? "99+" : unread}</span> : null}
+      </Link>
+    </aside>
+  );
+}
+
+/** True on the Jobs board while a job's docket is open (?job=…). */
+export function useDocketOpen() {
+  const path = usePathname();
+  const sp = useSearchParams();
+  return path === "/app/jobs" && sp.has("job");
+}
+
+/** Swaps the full menu for the icon rail and lets the page use the full width while a docket is open. */
+export function AppFrame({ full, rail, header, tabs, children }: { full: React.ReactNode; rail: React.ReactNode; header: React.ReactNode; tabs: React.ReactNode; children: React.ReactNode }) {
+  const docket = useDocketOpen();
+  return (
+    <div className="flex min-h-screen">
+      {docket ? rail : full}
+      <div className="flex min-w-0 flex-1 flex-col">
+        {header}
+        {docket ? (
+          <main className="min-w-0 flex-1">{children}</main>
+        ) : (
+          <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-8 lg:py-8">
+            {tabs}
+            {children}
+          </main>
+        )}
+      </div>
+    </div>
   );
 }

@@ -7,6 +7,9 @@ import { ageTone, dollars, nextStep, pipelineColumn, type NextStepJob, type Pipe
 import { asNextStepJob, loadNextStepCtx, NEXT_STEP_JOB_COLS } from "@/lib/next-step-server";
 import { isoDate } from "@/lib/format";
 import { displayName, initials, orgPeople } from "./people";
+import { SectionTabs } from "@/components/nav";
+import { loadDocket } from "@/lib/job-docket-server";
+import { JobDocket } from "./job-docket";
 
 export const metadata: Metadata = { title: "Jobs" };
 
@@ -37,7 +40,7 @@ const DAY = 86400000;
 const STATE_TAIL = /,?\s+(NSW|VIC|QLD|WA|SA|TAS|ACT|NT)(\s+\d{4})?\s*$/;
 
 export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">) {
-  const { supabase, org, user, isSalesRep } = await requireOrg();
+  const { supabase, org, user, isSalesRep, canSeeMoney, isCrewLead } = await requireOrg();
   const sp = await searchParams;
   // ?mine=1 / ?mine=0 still work (older links).
   const raw = typeof sp.filter === "string" ? sp.filter : sp.mine === "1" ? "mine" : sp.mine === "0" ? "all" : undefined;
@@ -66,9 +69,14 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
     })
     .filter((x) => x.col !== null);
   const shownValue = cards.reduce((s, c) => s + (c.value ?? 0), 0);
+  // ?job=<id> opens that job's docket in the right sidebar.
+  const openId = typeof sp.job === "string" && /^[0-9a-f-]{36}$/i.test(sp.job) ? sp.job : null;
+  const docket = openId ? await loadDocket(supabase, org, openId, { canSeeMoney }) : null;
+  const filterQs = filter === (isSalesRep ? "mine" : "all") ? "" : `filter=${filter}`;
+  const hrefFor = (id: string | null) => `/app/jobs${[filterQs, id ? `job=${id}` : ""].filter(Boolean).length ? `?${[filterQs, id ? `job=${id}` : ""].filter(Boolean).join("&")}` : ""}`;
   const waiting = cards.filter((c) => c.j.stage === "lead" && !c.j.first_contacted_at).length;
 
-  return (
+  const board = (
     <>
       <header className="mb-6 flex flex-wrap items-center gap-4">
         <div className="min-w-0 flex-1 basis-56">
@@ -80,7 +88,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
         </div>
         <nav aria-label="Filter jobs" className="flex flex-wrap gap-1.5">
           {FILTERS.map((f) => (
-            <Link key={f.key} href={`/app/jobs?filter=${f.key}`} aria-current={filter === f.key ? "true" : undefined}
+            <Link key={f.key} href={`/app/jobs?filter=${f.key}${docket ? `&job=${docket.job.id}` : ""}`} scroll={false} aria-current={filter === f.key ? "true" : undefined}
               className={cx("inline-flex min-h-11 items-center rounded-full px-4 text-[15px] font-semibold ring-1 ring-inset transition",
                 filter === f.key ? "bg-ink text-white ring-ink" : "bg-white text-slate-700 ring-slate-300 hover:ring-slate-400")}>
               {f.label}
@@ -91,8 +99,8 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
       </header>
 
       {/* All five columns fit from 1280px; below that the board scrolls inside itself, never the page. */}
-      <div data-pipeline-scroll className="-mx-4 overflow-x-auto px-4 pb-4 sm:-mx-8 sm:px-8 xl:mx-0 xl:px-0">
-        <div className="grid min-w-[940px] grid-cols-[repeat(5,minmax(0,1fr))] gap-3">
+      <div data-pipeline-scroll className={docket ? "overflow-x-auto pb-4" : "-mx-4 overflow-x-auto px-4 pb-4 sm:-mx-8 sm:px-8 xl:mx-0 xl:px-0"}>
+        <div className={cx("grid grid-cols-[repeat(5,minmax(0,1fr))] gap-3", docket ? "min-w-[780px]" : "min-w-[940px]")}>
           {COLUMNS.map((col) => {
             const list = cards
               .filter((c) => c.col === col.key)
@@ -120,8 +128,8 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
                     : null;
                   const tone = buildDay ? "ok" : ageTone(col.key, { days });
                   return (
-                    <Link key={j.id} href={`/app/jobs/${j.id}`} data-job-card={j.id}
-                      className="flex min-w-0 flex-col gap-1.5 rounded-2xl bg-white p-3.5 ring-1 ring-slate-200 transition hover:ring-brand-400">
+                    <Link key={j.id} href={hrefFor(j.id)} scroll={false} data-job-card={j.id} aria-current={docket?.job.id === j.id ? "true" : undefined}
+                      className={cx("flex min-w-0 flex-col gap-1.5 rounded-2xl bg-white p-3.5 transition", docket?.job.id === j.id ? "ring-2 ring-ink" : "ring-1 ring-slate-200 hover:ring-brand-400")}>
                       <span className="flex items-start gap-2">
                         <span className="font-display min-w-0 flex-1 truncate text-[15px] font-bold leading-snug text-ink">{j.customer_name ?? j.title}</span>
                         {uncontacted && j.lead_received_at ? (
@@ -160,5 +168,18 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
         </p>
       )}
     </>
+  );
+
+  if (!docket) return board;
+  return (
+    <div className="lg:flex lg:h-screen">
+      <div className="min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:py-7">
+        <SectionTabs canSeeMoney={canSeeMoney} />
+        {board}
+      </div>
+      <aside aria-label={`Job docket: ${docket.customer.name}`} className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-screen lg:w-[440px] lg:shrink-0 lg:border-l lg:border-slate-200 xl:w-[460px]">
+        <JobDocket d={docket} org={org} canSeeMoney={canSeeMoney} isCrewLead={isCrewLead} closeHref={hrefFor(null)} />
+      </aside>
+    </div>
   );
 }

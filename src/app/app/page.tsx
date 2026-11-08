@@ -91,7 +91,12 @@ export default async function Today({ searchParams }: PageProps<"/app">) {
   if (!canSeeMoney) {
     let cq = supabase.from("jobs").select("id, title, site_address, stage, scheduled_start, scheduled_end, customers(name), crews(name, color)")
       .not("stage", "in", "(lost,paid)").gte("scheduled_end", today).lte("scheduled_start", shiftIso(today, 14)).order("scheduled_start").limit(30);
-    if (crewId) cq = cq.eq("crew_id", crewId);
+    if (crewId) {
+      // Their crew's jobs, plus jobs they've been put on.
+      const { data: mine } = await supabase.from("job_members").select("job_id").eq("user_id", user.id);
+      const extra = (mine ?? []).map((m) => m.job_id as string);
+      cq = extra.length ? cq.or(`crew_id.eq.${crewId},id.in.(${extra.join(",")})`) : cq.eq("crew_id", crewId);
+    }
     const { data } = await cq;
     const rows = (data ?? []) as unknown as { id: string; title: string; site_address: string | null; stage: string; scheduled_start: string; scheduled_end: string | null; customers: { name: string } | null; crews: Crew }[];
     const todays = rows.filter((j) => j.scheduled_start <= today && (j.scheduled_end ?? j.scheduled_start) >= today);

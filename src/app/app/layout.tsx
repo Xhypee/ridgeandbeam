@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
-import { Nav, SectionTabs } from "@/components/nav";
+import { AppFrame, Nav, NavRail, SectionTabs } from "@/components/nav";
 import { requireOrg, ROLE_LABEL } from "@/lib/dal";
 import { switchOrg } from "./actions";
 
@@ -24,7 +24,10 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
     );
 
   return (
-    <div className="flex min-h-screen">
+    <AppFrame
+      rail={<NavRail canSeeMoney={canSeeMoney} crewLead={isCrewLead} unread={unread ?? 0} />}
+      tabs={<SectionTabs canSeeMoney={canSeeMoney} />}
+      full={
       <aside className="no-print sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-slate-200 bg-white p-4 lg:flex">
         <div className="mb-1 flex items-center justify-between px-2">
           <Link href="/app"><Logo /></Link>
@@ -42,8 +45,8 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
             <button className="mt-2 text-xs font-medium text-slate-500 hover:text-slate-900">Sign out</button>
           </form>
         </div>
-      </aside>
-      <div className="flex min-w-0 flex-1 flex-col">
+      </aside>}
+      header={
         <header className="no-print sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur lg:hidden">
           <div className="flex items-center justify-between gap-3 px-4 py-3">
             <Link href="/app"><Logo /></Link>
@@ -59,12 +62,9 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
           </div>
           <div className="px-4 pb-2">{orgSwitcher}</div>
           <Nav mobile canSeeMoney={canSeeMoney} crewLead={isCrewLead} />
-        </header>
-        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-8 lg:py-8">
-          <SectionTabs canSeeMoney={canSeeMoney} />
-          {children}
-        </main>
-      </div>
-    </div>
+        </header>}
+    >
+      {children}
+    </AppFrame>
   );
 }

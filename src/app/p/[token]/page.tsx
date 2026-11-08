@@ -10,6 +10,8 @@ import { claimProgress, deriveMilestones, headlineMilestone, type PublicJob } fr
 import { signPaths } from "@/lib/field-server";
 import { date, money } from "@/lib/format";
 import { anonClient } from "@/lib/public";
+import { PublicPayPlan, type PublicPlan } from "@/components/pay-plan-public";
+import { stripeConfigured } from "@/lib/stripe";
 
 export const metadata: Metadata = { title: "Your roof project", robots: { index: false } };
 
@@ -17,8 +19,12 @@ const INVOICE_LABEL: Record<string, string> = { deposit: "Deposit invoice", prog
 
 export default async function Portal({ params }: PageProps<"/p/[token]">) {
   const { token } = await params;
-  const { data } = await anonClient().rpc("get_public_job", { p_token: token });
+  const [{ data }, { data: planData }] = await Promise.all([
+    anonClient().rpc("get_public_job", { p_token: token }),
+    anonClient().rpc("get_public_payment_plan", { p_token: token }),
+  ]);
   if (!data) notFound();
+  const plan = planData as PublicPlan | null;
   const job = data as PublicJob;
   const milestones = deriveMilestones(job);
   const current = headlineMilestone(milestones);
@@ -164,6 +170,8 @@ export default async function Portal({ params }: PageProps<"/p/[token]">) {
           </ul>
         </section>
       )}
+
+      {plan && plan.parts.length > 1 && <div className="mt-4"><PublicPayPlan plan={plan} cardOnline={stripeConfigured()} /></div>}
 
       <section className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200" aria-labelledby="docs-h">
         <h2 id="docs-h" className="mb-2 font-bold">Documents</h2>

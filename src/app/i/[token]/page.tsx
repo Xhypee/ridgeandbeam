@@ -11,22 +11,30 @@ import { stripeConfigured } from "@/lib/stripe";
 import { payInvoice } from "./actions";
 import { CopyValue, PayButtons } from "./pay-buttons";
 import type { PublicTaxInvoice } from "./pay-info";
+import { PublicPayPlan, type PublicPlan } from "@/components/pay-plan-public";
 
 export const metadata: Metadata = { title: "Your invoice", robots: { index: false } };
 
 export default async function PublicInvoice({ params, searchParams }: PageProps<"/i/[token]">) {
   const { token } = await params;
   const sp = await searchParams;
-  const { data } = await anonClient().rpc("get_public_tax_invoice", { p_token: token });
+  const [{ data }, { data: planData }] = await Promise.all([
+    anonClient().rpc("get_public_tax_invoice", { p_token: token }),
+    anonClient().rpc("get_public_payment_plan", { p_token: token }),
+  ]);
   if (!data) notFound();
+  const plan = planData as PublicPlan | null;
+  const allowed = plan?.methods ?? ["bank", "card", "cash"];
   const inv = data as PublicTaxInvoice;
   const pay = inv.pay;
   const balance = Number(inv.totals.balance);
-  const online = pay.online_ready && stripeConfigured() && balance > 0;
-  const bank = Boolean(pay.bank_bsb && pay.bank_account_number);
+  const online = allowed.includes("card") && pay.online_ready && stripeConfigured() && balance > 0;
+  const bankOk = allowed.includes("bank");
+  const bank = bankOk && Boolean(pay.bank_bsb && pay.bank_account_number);
+  const cash = allowed.includes("cash");
   const ref = bankReference(inv.number);
   const lenders = pay.financing.enabled ? (pay.financing.lenders ?? []).filter((l) => l.url?.startsWith("https://")) : [];
-  const payIdText = pay.payid ? (pay.payid_type === "abn" ? formatAbn(pay.payid) : pay.payid) : null;
+  const payIdText = bankOk && pay.payid ? (pay.payid_type === "abn" ? formatAbn(pay.payid) : pay.payid) : null;
 
   return (
     <main className="min-h-screen bg-cream py-6 sm:py-10">
@@ -46,7 +54,7 @@ export default async function PublicInvoice({ params, searchParams }: PageProps<
             {sp.paid === "1" && <p className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800" role="status">Thank you! Your payment is processing. This page updates once it clears (direct debits take a few business days).</p>}
             <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200 sm:p-6">
               <h2 className="font-display text-lg font-semibold text-ink">Pay {money(balance)}</h2>
-              <p className="text-sm text-slate-600">Bank transfer or PayID is quickest and free for you.</p>
+              <p className="text-sm text-slate-600">{bank || payIdText ? "Bank transfer or PayID is quickest and free for you." : online ? "Pay securely online." : "How to pay this invoice."}</p>
 
               {(bank || payIdText) && (
                 <div className="mt-4 space-y-2" data-pay-instructions>
@@ -71,7 +79,13 @@ export default async function PublicInvoice({ params, searchParams }: PageProps<
                 </div>
               )}
 
-              {!bank && !payIdText && !online && (
+              {cash && (
+                <p className="mt-4 rounded-lg bg-slate-50 px-3 py-2.5 text-sm text-slate-700" data-pay-cash>
+                  <b>Paying cash?</b> Hand it to {inv.seller.name} or the crew and you&apos;ll get a receipt. Quote reference <b>{ref}</b>.
+                </p>
+              )}
+
+              {!bank && !payIdText && !online && !cash && (
                 <p className="mt-3 text-sm text-slate-700" data-pay-instructions>
                   Contact {inv.seller.name}{inv.seller.phone ? ` on ${inv.seller.phone}` : ""}{inv.seller.email ? ` or ${inv.seller.email}` : ""} for payment details, quoting reference <b>{ref}</b>.
                 </p>
@@ -92,6 +106,7 @@ export default async function PublicInvoice({ params, searchParams }: PageProps<
             )}
           </>
         )}
+        {plan && plan.parts.length > 1 && <PublicPayPlan plan={plan} current={token} cardOnline={stripeConfigured() && pay.online_ready} />}
         {inv.claim && <ClaimExplainer excess={inv.claim.excess} settlementPath={inv.claim.settlement_path} insurer={inv.claim.insurer} orgName={inv.seller.name} />}
       </section>
     </main>

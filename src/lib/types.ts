@@ -27,6 +27,7 @@ export type Organization = {
   card_fee_pct: number;
   pass_card_fee: boolean;
   stripe_account_id: string | null;
+  stripe_charges_enabled?: boolean | null;
   plan: string;
   subscription_status: "trialing" | "active" | "cancelled";
   cancel_at: string | null;
