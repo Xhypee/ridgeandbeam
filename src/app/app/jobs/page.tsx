@@ -178,7 +178,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
         {board}
       </div>
       <aside aria-label={`Job docket: ${docket.customer.name}`} className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-screen lg:w-[440px] lg:shrink-0 lg:border-l lg:border-slate-200 xl:w-[460px]">
-        <JobDocket d={docket} org={org} canSeeMoney={canSeeMoney} isCrewLead={isCrewLead} closeHref={hrefFor(null)} />
+        <JobDocket key={docket.job.id} d={docket} org={org} canSeeMoney={canSeeMoney} isCrewLead={isCrewLead} closeHref={hrefFor(null)} />
       </aside>
     </div>
   );
