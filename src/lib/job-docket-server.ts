@@ -1,5 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { loadBuild, type BuildData } from "./build-stage-server";
 import { signPaths } from "./field-server";
 import { checklistProgress } from "./job-compliance";
 import { loadJobCompliance } from "./job-compliance-server";
@@ -42,6 +43,10 @@ export type Docket = {
   sold: SoldReady | null;
   /** New leads only: what they sent us and the documents on the job. */
   lead: { message: string | null; source: string | null; receivedAt: string | null; docs: LeadDoc[] } | null;
+  /** Every document on the job (quote, plans, supplier invoices…), newest first. */
+  docs: LeadDoc[];
+  /** Building only: the quote's payments and each supplier's delivery + invoice. */
+  build: BuildData | null;
 };
 export type SoldReady = {
   signedAt: string | null; deposit: { amount: number; on: string; method: string } | null;
@@ -68,7 +73,7 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
     canSeeMoney ? supabase.from("job_costs").select("category, amount").eq("job_id", jobId) : empty,
     supabase.from("claims").select("carrier, claim_number, stage, excess, approved_amount, adjuster_name").eq("job_id", jobId).maybeSingle(),
     supabase.from("job_files").select("id, kind, category, caption, storage_path, mime_type, size_bytes, created_at").eq("job_id", jobId).order("created_at", { ascending: false }).limit(300),
-    supabase.from("job_notes").select("id, body, created_at, author_name").eq("job_id", jobId).order("created_at", { ascending: false }).limit(5),
+    supabase.from("job_notes").select("id, body, created_at, author_name").eq("job_id", jobId).order("created_at", { ascending: false }).limit(20),
     supabase.from("messages").select("id, channel, direction, body, created_at, status").eq("job_id", jobId).order("created_at", { ascending: false }).limit(5),
   ]);
   if (!row) return null;
@@ -164,21 +169,25 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
     };
   }
 
-  // New leads: the documents, with short-lived links to look at or download each one.
+  // Documents (every stage), with short-lived links to look at or download each one.
+  const docRows = fileRows.filter((f) => f.kind === "document").slice(0, 30);
+  const views = docRows.length ? await signPaths(supabase, docRows.map((f) => f.storage_path), 3600) : new Map<string, string>();
+  const downloads = await Promise.all(docRows.map(async (f) => {
+    const { data } = await supabase.storage.from("job-files").createSignedUrl(f.storage_path, 3600, { download: docName(f) });
+    return data?.signedUrl ?? null;
+  }));
+  const docs: LeadDoc[] = docRows.map((f, i) => ({ id: f.id, name: docName(f), mime: f.mime_type, size: f.size_bytes === null ? null : Number(f.size_bytes), at: f.created_at, viewUrl: views.get(f.storage_path) ?? null, downloadUrl: downloads[i] }));
   let lead: Docket["lead"] = null;
   if (row.stage === "lead") {
-    const docs = fileRows.filter((f) => f.kind === "document").slice(0, 20);
-    const views = docs.length ? await signPaths(supabase, docs.map((f) => f.storage_path), 3600) : new Map<string, string>();
-    const downloads = await Promise.all(docs.map(async (f) => {
-      const { data } = await supabase.storage.from("job-files").createSignedUrl(f.storage_path, 3600, { download: docName(f) });
-      return data?.signedUrl ?? null;
-    }));
     lead = {
       message: ((row as { notes?: string | null }).notes ?? c.notes ?? null)?.trim() || null,
       source: row.lead_source, receivedAt: row.lead_received_at,
-      docs: docs.map((f, i) => ({ id: f.id, name: docName(f), mime: f.mime_type, size: f.size_bytes === null ? null : Number(f.size_bytes), at: f.created_at, viewUrl: views.get(f.storage_path) ?? null, downloadUrl: downloads[i] })),
+      docs: docs.slice(0, 20),
     };
   }
+  const build = row.stage === "in_progress" && canSeeMoney
+    ? await loadBuild(supabase, org, jobId, { state: row.state, scheduled_end: row.scheduled_end, completed_at: row.completed_at, stage: row.stage }, contract)
+    : null;
 
   const addr = [c.address, c.city, [c.state, c.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
   return {
@@ -204,6 +213,8 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
     compliance,
     lead,
     sold,
+    docs,
+    build,
     money: { contract, invoiced, paid, owing: contract !== null ? Math.max(0, Math.round((contract - paid) * 100) / 100) : invoices.reduce((a, i) => a + i.balance, 0), costs: costs.total, profit, margin: profit !== null && exGst ? Math.round((profit / exGst) * 100) : null },
   };
 }

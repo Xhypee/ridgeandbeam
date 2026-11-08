@@ -11,6 +11,8 @@ import { SectionTabs } from "@/components/nav";
 import { loadDocket } from "@/lib/job-docket-server";
 import { JobDocket } from "./job-docket";
 import { QuotePreview } from "./quote-preview";
+import { PaymentRequestSheet, Sheet, SupplierPayForm } from "./build-sheets";
+import { loadSupplierPay, paymentRequestPreview } from "@/lib/build-stage-server";
 import { loadQuoteEmail } from "@/lib/quote-email-server";
 import { aiEnabled } from "@/lib/ai";
 
@@ -83,6 +85,11 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
     ? await loadQuoteEmail(supabase, org, docket.quote.id, { senderName: me?.full_name || user.fullName || org.name, senderPhone: me?.phone ?? org.phone, asSent: true })
     : null;
   const previewHref = docket ? `${hrefFor(docket.job.id)}&preview=1`.replace("/app/jobs&", "/app/jobs?") : "";
+  const withParam = (q: string) => (docket ? `${hrefFor(docket.job.id)}&${q}`.replace("/app/jobs&", "/app/jobs?") : "");
+  // Building: ?ask=1 previews the next payment request; ?pay=<order id> pays a supplier's invoice.
+  const ask = docket?.build && sp.ask === "1" ? await paymentRequestPreview(supabase, org, docket.job.id) : null;
+  const payId = docket?.build && typeof sp.pay === "string" && /^[0-9a-f-]{36}$/i.test(sp.pay) ? sp.pay : null;
+  const pay = payId ? await loadSupplierPay(supabase, payId) : null;
   const waiting = cards.filter((c) => c.j.stage === "lead" && !c.j.first_contacted_at).length;
 
   const board = (
@@ -132,10 +139,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
                   const owner = people.byId.get(j.assigned_to ?? j.sales_rep_id ?? "");
                   const uncontacted = j.stage === "lead" && !j.first_contacted_at;
                   const days = Math.max(0, Math.floor((now.getTime() - new Date(j.stage_changed_at ?? now).getTime()) / DAY));
-                  const buildDay = j.stage === "in_progress" && j.scheduled_start
-                    ? Math.max(1, Math.floor((now.getTime() - new Date(j.scheduled_start + "T00:00:00").getTime()) / DAY) + 1)
-                    : null;
-                  const tone = buildDay ? "ok" : ageTone(col.key, { days });
+                  const tone = ageTone(col.key, { days });
                   return (
                     <Link key={j.id} href={hrefFor(j.id)} scroll={false} data-job-card={j.id} aria-current={docket?.job.id === j.id ? "true" : undefined}
                       className={cx("flex min-w-0 flex-col gap-1.5 rounded-2xl bg-white p-3.5 transition", docket?.job.id === j.id ? "ring-2 ring-ink" : "ring-1 ring-slate-200 hover:ring-brand-400")}>
@@ -144,9 +148,9 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
                         {uncontacted && j.lead_received_at ? (
                           <WaitTimer since={j.lead_received_at} className="px-2 py-0.5 text-xs" />
                         ) : (
-                          <span data-age data-tone={tone} title={buildDay ? "Day of the build" : "Days in this stage"}
+                          <span data-age data-tone={tone} title="Days in this stage"
                             className={cx("shrink-0 rounded-full px-2 py-0.5 text-xs font-bold tabular-nums", AGE_CLS[tone])}>
-                            {buildDay ? `Day ${buildDay}` : `${days} d`}
+                            {`${days} d`}
                           </span>
                         )}
                       </span>
@@ -187,12 +191,23 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
         {board}
       </div>
       <aside aria-label={`Job docket: ${docket.customer.name}`} className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-screen lg:w-[440px] lg:shrink-0 lg:border-l lg:border-slate-200 xl:w-[460px]">
-        <JobDocket key={docket.job.id} d={docket} org={org} canSeeMoney={canSeeMoney} isCrewLead={isCrewLead} closeHref={hrefFor(null)} previewHref={previewHref} aiReady={aiEnabled()} />
+        <JobDocket key={docket.job.id} d={docket} org={org} canSeeMoney={canSeeMoney} isCrewLead={isCrewLead} closeHref={hrefFor(null)} previewHref={previewHref}
+          askHref={withParam("ask=1")} payHref={(id) => withParam(`pay=${id}`)} aiReady={aiEnabled()} />
       </aside>
       {preview && (
         <QuotePreview html={preview.email.html} subject={preview.email.subject} toName={preview.to.name} toEmail={preview.to.email}
           fromName={`${org.name} <${(process.env.EMAIL_FROM ?? "hello@ridgeandbeam.com").replace(/^.*<([^>]+)>.*$/, "$1")}>`}
           estimateId={preview.estimate.id} closeHref={hrefFor(docket.job.id)} sent={preview.estimate.status === "sent"} />
+      )}
+      {ask && (
+        <PaymentRequestSheet jobId={docket.job.id} closeHref={hrefFor(docket.job.id)} asked={ask.asked}
+          title={`${ask.row.label}${ask.row.pct < 100 ? ` · ${ask.row.pct}%` : ""} · ${ask.row.amount.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 })}`}
+          toEmail={ask.to.email} toPhone={ask.to.phone} subject={ask.msg.subject} html={ask.msg.html} sms={ask.msg.sms} />
+      )}
+      {pay && !pay.paid && (
+        <Sheet data="pay" kicker="Pay the supplier" title={`${pay.supplier}${pay.branch ? ` ${pay.branch}` : ""}`} closeHref={hrefFor(docket.job.id)} footer={null}>
+          <SupplierPayForm orgId={org.id} jobId={docket.job.id} orderId={pay.id} supplier={pay.supplier} orderCode={pay.code} orderItems={pay.items} orderCost={pay.cost} inv={pay.inv} read={pay.read} closeHref={hrefFor(docket.job.id)} />
+        </Sheet>
       )}
     </div>
   );

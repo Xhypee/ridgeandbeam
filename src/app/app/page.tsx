@@ -108,7 +108,7 @@ export default async function Today({ searchParams }: PageProps<"/app">) {
           <Section id="h-roofs" title="On roofs today">
             {todays.length === 0 ? <EmptyLine>No jobs on the roof today.</EmptyLine> : (
               <div className="grid gap-4 md:grid-cols-2" data-on-roofs>
-                {todays.map((j) => <RoofCard key={j.id} href={`/app/jobs/${j.id}/field`} name={j.customers?.name ?? j.title} address={j.site_address} crew={j.crews} status={j.title} day={dayOf(j, today)} />)}
+                {todays.map((j) => <RoofCard key={j.id} href={`/app/jobs/${j.id}/field`} name={j.customers?.name ?? j.title} address={j.site_address} crew={j.crews} status={j.title} />)}
               </div>
             )}
           </Section>
@@ -306,7 +306,7 @@ export default async function Today({ searchParams }: PageProps<"/app">) {
                 const status = e
                   ? `${EVENT_LABEL[e.kind] ?? e.kind.replace(/_/g, " ")} ${new Date(e.created_at).toLocaleTimeString("en-AU", { timeZone: tz, hour: "numeric", minute: "2-digit" })}`
                   : j.stage === "in_progress" ? "On the roof" : j.schedule_locked ? "Booked, not started" : "Tentative";
-                return <RoofCard key={j.id} href={`/app/jobs/${j.id}`} name={lastName(j.customers?.name) || j.title} address={j.site_address} crew={j.crews} status={status} day={dayOf(j, today)} />;
+                return <RoofCard key={j.id} href={`/app/jobs/${j.id}`} name={lastName(j.customers?.name) || j.title} address={j.site_address} crew={j.crews} status={status} />;
               })}
             </div>
           )}
@@ -316,22 +316,14 @@ export default async function Today({ searchParams }: PageProps<"/app">) {
   );
 }
 
-function dayOf(j: { scheduled_start?: string | null; scheduled_end?: string | null }, today: string) {
-  if (!j.scheduled_start) return null;
-  const end = j.scheduled_end ?? j.scheduled_start;
-  const n = Math.round((new Date(end + "T12:00:00Z").getTime() - new Date(j.scheduled_start + "T12:00:00Z").getTime()) / 86400000) + 1;
-  const i = Math.round((new Date(today + "T12:00:00Z").getTime() - new Date(j.scheduled_start + "T12:00:00Z").getTime()) / 86400000) + 1;
-  return `Day ${i} of ${n}`;
-}
 
-function RoofCard({ href, name, address, crew, status, day }: { href: string; name: string; address: string | null; crew: Crew; status: string; day: string | null }) {
+function RoofCard({ href, name, address, crew, status }: { href: string; name: string; address: string | null; crew: Crew; status: string }) {
   return (
     <Link href={href} data-roof-job className="flex gap-4 rounded-2xl bg-white p-5 ring-1 ring-slate-200 transition hover:ring-brand-400">
       <span className="w-1.5 shrink-0 rounded-full" style={{ background: crew?.color ?? "#cbd5e1" }} aria-hidden />
       <span className="min-w-0">
         <span className="block truncate text-[17px] font-semibold text-ink">{name}{address ? ` · ${street(address)}` : ""}</span>
         <span className="block truncate text-sm text-slate-500">{[crew?.name ?? "No crew yet", status].join(" · ")}</span>
-        {day && <span className="mt-2 inline-block rounded-full bg-blue-50 px-2.5 py-0.5 text-[13px] font-semibold text-blue-700">{day}</span>}
       </span>
     </Link>
   );

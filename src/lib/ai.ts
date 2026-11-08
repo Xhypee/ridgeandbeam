@@ -104,3 +104,44 @@ export async function chatReply(opts: { system: string; messages: ChatTurn[]; ma
     throw new AiError("Claude couldn't answer right now.");
   }
 }
+
+export type ReadInvoice = {
+  invoice_no: string | null; invoice_date: string | null; due_date: string | null; ex_gst: number | null; gst: number | null; total: number | null;
+  abn: string | null; bank_name: string | null; bsb: string | null; account: string | null;
+};
+
+/**
+ * Read a supplier's tax invoice (PDF or photo) into fields for the person to check before paying.
+ * Returns null when AI isn't set up or the document can't be read; never guesses a value it can't see.
+ */
+export async function readSupplierInvoice(data: Buffer, mediaType: string): Promise<ReadInvoice | null> {
+  if (!aiEnabled() || data.length > 20 * 1024 * 1024) return null;
+  const doc: Anthropic.Beta.BetaContentBlockParam | null = mediaType === "application/pdf"
+    ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: data.toString("base64") } }
+    : asImageBlock(data, mediaType);
+  if (!doc) return null;
+  try {
+    const res = await anthropic().beta.messages.create({
+      model: AI_MODEL,
+      max_tokens: 2000,
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      output_config: { effort: "low" },
+      system: "You read Australian supplier tax invoices for a roofing business. Reply with one JSON object only, no other text. Use null for anything not clearly printed on the invoice. Never guess.",
+      messages: [{ role: "user", content: [doc, { type: "text", text: 'Fields: {"invoice_no": string, "invoice_date": "YYYY-MM-DD", "due_date": "YYYY-MM-DD", "ex_gst": number, "gst": number, "total": number, "abn": string (the supplier\'s ABN), "bank_name": string (account name to pay), "bsb": string, "account": string (account number)}' }] }],
+    });
+    const text = res.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text").map((b) => b.text).join("");
+    const m = /\{[\s\S]*\}/.exec(text);
+    if (!m) return null;
+    const j = JSON.parse(m[0]) as Record<string, unknown>;
+    const str = (v: unknown, max: number) => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null);
+    const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v * 100) / 100 : typeof v === "string" && /^\$?[\d,]+(\.\d+)?$/.test(v.trim()) ? Math.round(Number(v.replace(/[$,]/g, "")) * 100) / 100 : null);
+    const date = (v: unknown) => (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
+    return {
+      invoice_no: str(j.invoice_no, 60), invoice_date: date(j.invoice_date), due_date: date(j.due_date), ex_gst: num(j.ex_gst), gst: num(j.gst), total: num(j.total),
+      abn: str(j.abn, 20), bank_name: str(j.bank_name, 120), bsb: str(j.bsb, 10), account: str(j.account, 20),
+    };
+  } catch {
+    return null;
+  }
+}

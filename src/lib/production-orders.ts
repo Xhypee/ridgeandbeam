@@ -12,8 +12,9 @@ export type OrderHeader = {
   delivery_date: string | null; delivery_type: string; notes: string | null;
 };
 
-export const orderTotal = (items: { quantity: number; unit_cost: number }[]) =>
-  round2(items.reduce((s, i) => s + round2((Number(i.quantity) || 0) * (Number(i.unit_cost) || 0)), 0));
+/** Order cost ex GST. Per-metre lines with a cut length cost qty × length × rate (43 sheets × 6.5 m at $/m). */
+export const orderTotal = (items: { quantity: number; unit_cost: number; unit?: string | null; length_m?: number | null }[]) =>
+  round2(items.reduce((s, i) => s + round2((Number(i.quantity) || 0) * (i.length_m && ["lm", "m"].includes(i.unit ?? "") ? Number(i.length_m) : 1) * (Number(i.unit_cost) || 0)), 0));
 
 /** Credit that actually comes back: credit minus restocking fee. */
 export const netCredit = (r: { credit_amount: number; restocking_fee: number }) => round2(Math.max(0, (Number(r.credit_amount) || 0) - (Number(r.restocking_fee) || 0)));
