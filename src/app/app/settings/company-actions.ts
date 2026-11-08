@@ -49,10 +49,14 @@ export async function updateCompanySettings(_: ActionResult, fd: FormData): Prom
   const minMargin = num(fd, "min_margin_pct", 25);
   if (minMargin < 0 || minMargin > 90) return { error: "Minimum margin must be between 0 and 90%." };
 
+  const years = num(fd, "workmanship_years", 7);
+  if (!Number.isInteger(years) || years < 0 || years > 25) return { error: "Workmanship warranty should be 0 to 25 whole years." };
+
   const { error } = await supabase
     .from("organizations")
     .update({
       name,
+      workmanship_years: years,
       phone: str(fd, "phone"),
       email: str(fd, "email"),
       address: str(fd, "address"),
@@ -76,4 +80,17 @@ export async function updateCompanySettings(_: ActionResult, fd: FormData): Prom
   if (error) return { error: friendly(error) };
   revalidatePath("/app", "layout");
   return { ok: "Saved." };
+}
+
+/** Paste the Google review link from the Wrapping up sidebar (owners/admins). */
+export async function saveReviewLink(_: ActionResult, fd: FormData): Promise<ActionResult> {
+  let ctx;
+  try { ctx = await requireAdmin(); } catch (e) { return { error: (e as Error).message }; }
+  const v = url(str(fd, "google_review_url"));
+  if (!v) return { error: "Paste the link Google gives you (Ask for reviews → copy link)." };
+  if (!/(^https:\/\/(g\.page|maps\.app\.goo\.gl|goo\.gl|search\.google\.com|www\.google\.com|google\.com|business\.google\.com)\/)/i.test(v)) return { error: "That doesn't look like a Google review link. In your Google Business Profile, tap Ask for reviews and copy the link." };
+  const { error } = await ctx.supabase.from("organizations").update({ google_review_url: v }).eq("id", ctx.org.id);
+  if (error) return { error: friendly(error) };
+  revalidatePath("/app", "layout");
+  return { ok: "Saved. It's also in Settings → Company." };
 }

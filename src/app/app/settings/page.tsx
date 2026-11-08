@@ -38,7 +38,8 @@ export default async function Page() {
                 <Field label="Postcode"><Input name="zip" inputMode="numeric" maxLength={4} defaultValue={org.zip ?? ""} /></Field>
               </div>
               <Field label="Website"><Input name="website" inputMode="url" defaultValue={org.website ?? ""} placeholder="https://yourroofing.com.au" /></Field>
-              <Field label="Google review link" hint="Sent with review requests after the job"><Input name="google_review_url" inputMode="url" defaultValue={org.google_review_url ?? ""} /></Field>
+              <Field label="Google review link" hint="Google Business Profile → Ask for reviews → copy the link. Sent with review requests after the job."><Input name="google_review_url" inputMode="url" defaultValue={org.google_review_url ?? ""} placeholder="https://g.page/r/…/review" /></Field>
+              <Field label="Workmanship warranty (years)" hint="On the warranty certificate in each job's handover pack"><Input name="workmanship_years" type="number" inputMode="numeric" min={0} max={25} step={1} defaultValue={String(org.workmanship_years ?? 7)} /></Field>
               <Field label="Insurance certificate link" hint="Public liability certificate shown on quotes"><Input name="insurance_certificate_url" inputMode="url" defaultValue={org.insurance_certificate_url ?? ""} /></Field>
             </div>
           </Card>
