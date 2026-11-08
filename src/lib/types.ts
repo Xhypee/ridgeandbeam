@@ -37,6 +37,7 @@ export type Organization = {
   calc_defaults: Record<string, unknown>;
   abn: string | null;
   gst_registered: boolean;
+  workmanship_years?: number;
   prices_include_gst: boolean;
   country: "AU";
   licences: Record<string, { number?: string; classes?: string[] }>;

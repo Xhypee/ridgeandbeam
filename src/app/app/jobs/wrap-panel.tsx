@@ -5,6 +5,7 @@ import { ActionForm, SubmitButton } from "@/components/action-form";
 import { cx } from "@/components/ui";
 import type { Docket } from "@/lib/job-docket-server";
 import { requestReview } from "./[id]/closeout/actions";
+import { saveReviewLink } from "../settings/company-actions";
 import { Icon } from "./job-sections";
 import { closeJob, sendHandover } from "./wrap-actions";
 
@@ -21,7 +22,7 @@ const METHOD: Record<string, string> = { bank_transfer: "bank transfer", payid: 
 const COST: Record<string, string> = { materials: "Materials (supplier invoices)", labor: "Crew", dumpster: "Skip", equipment: "Scaffold & equipment", permit: "Permits", other: "Other" };
 
 type State = "done" | "now" | "wait" | "todo";
-type Step = { key: string; icon: string; label: string; detail: string; state: State; action?: React.ReactNode; href?: string; actionLabel?: string };
+type Step = { key: string; icon: string; label: string; detail: string; state: State; action?: React.ReactNode; href?: string; actionLabel?: string; wide?: React.ReactNode };
 
 export function WrapPanel({ d, askHref, payHref }: { d: Docket; askHref: string; payHref: (orderId: string) => string }) {
   const b = d.build!;
@@ -69,7 +70,12 @@ export function WrapPanel({ d, askHref, payHref }: { d: Docket; askHref: string;
   steps.push(w.reviewRequestedAt
     ? { key: "review", icon: STAR, label: "Ask for a Google review", detail: `Sent ${wkday(w.reviewRequestedAt)}`, state: "done" }
     : !allPaid ? { key: "review", icon: STAR, label: "Ask for a Google review", detail: "Sent once they've paid", state: "wait" }
-    : !w.reviewUrl ? { key: "review", icon: STAR, label: "Ask for a Google review", detail: "Add your Google review link first", state: "todo", href: "/app/settings", actionLabel: "Settings" }
+    : !w.reviewUrl ? { key: "review", icon: STAR, label: "Ask for a Google review", detail: "Paste your Google review link once and it's used on every job", state: "todo", wide: (
+      <ActionForm action={saveReviewLink} className="mt-2">
+        <div className="flex gap-2"><input name="google_review_url" inputMode="url" placeholder="https://g.page/r/…/review" aria-label="Google review link" className="min-h-9 min-w-0 flex-1 rounded-lg bg-white px-2.5 text-xs ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          <SubmitButton variant="secondary" className="min-h-9 px-3 text-xs">Save</SubmitButton></div>
+        <p className="mt-1 text-[11px] text-slate-500">Google Business Profile → Ask for reviews → copy the link.</p>
+      </ActionForm>) }
     : { key: "review", icon: STAR, label: "Ask for a Google review", detail: `Text ${first} the link to your Google reviews`, state: "todo", action: <ActionForm action={requestReview}><input type="hidden" name="job_id" value={j.id} /><SubmitButton className="min-h-8 px-3 text-xs">Send</SubmitButton></ActionForm> });
 
   const nowIx = steps.findIndex((s) => s.state === "todo");
@@ -100,6 +106,7 @@ export function WrapPanel({ d, askHref, payHref }: { d: Docket; askHref: string;
               <span className="min-w-0 flex-1">
                 <span className={cx("block text-sm font-semibold", s.state === "todo" ? "text-slate-600" : "text-ink")}>{s.label}</span>
                 <span className="block text-xs leading-snug text-slate-500">{s.detail}</span>
+                {s.wide}
               </span>
               {s.action ?? (s.href && s.actionLabel && <Link href={s.href} scroll={false} className={cx("shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold", s.state === "now" ? "bg-brand-500 text-white hover:bg-brand-600" : "bg-white text-ink ring-1 ring-slate-300 hover:bg-slate-50")}>{s.actionLabel}</Link>)}
             </li>
