@@ -10,6 +10,8 @@ import { avatarColour, JOB_ROLE_LABEL, JOB_ROLES } from "@/lib/job-team";
 import type { Organization } from "@/lib/types";
 import { initials } from "./people";
 import { addJobMembers, removeJobMember } from "./team-actions";
+import { LeadPanel } from "./lead-panel";
+import { ClaudeBar } from "./claude-bar";
 
 const STAGES = ["New lead", "Quoting", "Sold", "Building", "Wrapping up"];
 const STAGE_INDEX: Record<string, number> = { lead: 0, inspection: 1, estimate_sent: 1, sold: 2, scheduled: 2, in_progress: 3, completed: 4, paid: 4 };
@@ -50,7 +52,7 @@ function stageClock(d: Docket, now = new Date()) {
   return `Since ${shortDate(j.created_at)}`;
 }
 
-export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref }: { d: Docket; org: Organization; canSeeMoney: boolean; isCrewLead: boolean; closeHref: string }) {
+export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, aiReady }: { d: Docket; org: Organization; canSeeMoney: boolean; isCrewLead: boolean; closeHref: string; previewHref: string; aiReady: boolean }) {
   const j = d.job;
   const base = `/app/jobs/${j.id}`;
   const lost = j.stage === "lost";
@@ -95,6 +97,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref }: { d: Docket
           {/* Tear line */}
           <div className="relative h-5" aria-hidden><span className="absolute -left-2.5 top-0 h-5 w-5 rounded-full bg-cream" /><span className="absolute -right-2.5 top-0 h-5 w-5 rounded-full bg-cream" /><span className="absolute inset-x-4 top-2.5 border-t-2 border-dashed border-slate-200" /></div>
 
+          {d.lead && canSeeMoney ? <LeadPanel d={d} previewHref={previewHref} /> : (<>
           <div className="px-5">
             {!isCrewLead && (
               <div data-docket-now>
@@ -129,10 +132,11 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref }: { d: Docket
             {d.claim && canSeeMoney && <Row href={`${base}/claim`} title="Insurance claim" value={human(d.claim.stage)} />}
             <Row href={base} title="Everything else" value="Notes, build, compliance" />
           </ul>
+          </>)}
         </div>
 
         {/* Team + call */}
-        <div className="flex items-center gap-2 border-t border-slate-100 px-5 py-3" data-docket-team>
+        {!(d.lead && canSeeMoney) && <div className="flex items-center gap-2 border-t border-slate-100 px-5 py-3" data-docket-team>
           {d.team.length > 0 ? (
             <span className="flex -space-x-1.5">{d.team.map((t) => <span key={t.user_id} title={`${t.name} · ${JOB_ROLE_LABEL[t.role]}`} data-team-member={t.role} className="grid h-8 w-8 place-items-center rounded-full text-[11px] font-bold text-white ring-2 ring-white" style={{ background: avatarColour(t.user_id) }}>{initials({ full_name: t.name })}</span>)}</span>
           ) : null}
@@ -182,7 +186,8 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref }: { d: Docket
             {sms && <a href={sms} aria-label={`Text ${d.customer.name}`} title="Text" className="grid h-10 w-10 place-items-center rounded-xl text-ink ring-1 ring-slate-300 hover:bg-slate-50"><Icon d="M4 5h16v11H9l-5 4z" /></a>}
             {tel && <a href={tel} aria-label={`Call ${d.customer.name}`} title="Call" className="grid h-10 w-10 place-items-center rounded-xl text-ink ring-1 ring-slate-300 hover:bg-slate-50"><Icon d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2" /></a>}
           </span>
-        </div>
+        </div>}
+        {!isCrewLead && <ClaudeBar jobId={j.id} firstName={d.customer.name.split(" ")[0] || d.customer.name} ready={aiReady} />}
       </div>
     </div>
   );

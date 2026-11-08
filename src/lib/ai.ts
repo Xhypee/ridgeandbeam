@@ -76,3 +76,31 @@ export function asImageBlock(data: Buffer, mediaType: string): Anthropic.Beta.Be
   if (!mt || data.length > 4.5 * 1024 * 1024) return null;
   return { type: "image", source: { type: "base64", media_type: mt, data: data.toString("base64") } };
 }
+
+export type ChatTurn = { role: "user" | "assistant"; content: string };
+
+/** A chat reply for the in-app assistant (business context goes in `system`). Throws AiError with a user-facing message. */
+export async function chatReply(opts: { system: string; messages: ChatTurn[]; maxTokens?: number }): Promise<string> {
+  if (!aiEnabled()) throw new AiError("Claude isn't connected yet. Add ANTHROPIC_API_KEY in Vercel to turn it on.");
+  try {
+    const res = await anthropic().beta.messages.create({
+      model: AI_MODEL,
+      max_tokens: opts.maxTokens ?? 4000,
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      output_config: { effort: "low" },
+      system: opts.system,
+      messages: opts.messages,
+    });
+    if (res.stop_reason === "refusal") throw new AiError("Claude can't help with that one.");
+    const text = res.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text").map((b) => b.text).join("\n").trim();
+    if (!text) throw new AiError("Claude didn't reply. Try again.");
+    return text;
+  } catch (e) {
+    if (e instanceof AiError) throw e;
+    if (e instanceof Anthropic.RateLimitError) throw new AiError("Claude is busy right now. Try again in a minute.");
+    if (e instanceof Anthropic.AuthenticationError) throw new AiError("The Claude key is invalid. Check ANTHROPIC_API_KEY.");
+    if (e instanceof Anthropic.APIError) throw new AiError(`Claude couldn't answer (error ${e.status ?? "network"}).`);
+    throw new AiError("Claude couldn't answer right now.");
+  }
+}

@@ -59,7 +59,7 @@ export async function sendSms(db: SupabaseClient, m: Base & { to: string | null 
   return { status, error };
 }
 
-export async function sendEmail(db: SupabaseClient, m: Base & { to: string | null | undefined; subject: string; html: string; text?: string }) {
+export async function sendEmail(db: SupabaseClient, m: Base & { to: string | null | undefined; subject: string; html: string; text?: string; replyTo?: string | null; fromName?: string | null }) {
   let status = "not_configured";
   let providerRef: string | null = null;
   let error: string | null = null;
@@ -71,7 +71,7 @@ export async function sendEmail(db: SupabaseClient, m: Base & { to: string | nul
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from: process.env.EMAIL_FROM, to: [m.to], subject: m.subject, html: m.html, text: m.text }),
+        body: JSON.stringify({ from: fromWithName(process.env.EMAIL_FROM!, m.fromName), to: [m.to], subject: m.subject, html: m.html, text: m.text, ...(m.replyTo ? { reply_to: m.replyTo } : {}) }),
       });
       const json = (await res.json()) as { id?: string; message?: string };
       if (res.ok) { status = "sent"; providerRef = json.id ?? null; } else { status = "failed"; error = json.message ?? `HTTP ${res.status}`; }
@@ -86,6 +86,14 @@ export async function sendEmail(db: SupabaseClient, m: Base & { to: string | nul
     subject: m.subject, body: m.text ?? m.html.replace(/<[^>]+>/g, " "), status, provider_ref: providerRef, error,
   });
   return { status, error };
+}
+
+/** "Ridge & Beam <hello@x>" + "Bbang Roofing" → "Bbang Roofing <hello@x>" (the customer sees the business's name). */
+export function fromWithName(from: string, name: string | null | undefined): string {
+  const clean = (name ?? "").replace(/[<>"\r\n]/g, "").trim().slice(0, 80);
+  if (!clean) return from;
+  const addr = /<([^>]+)>/.exec(from)?.[1] ?? from.trim();
+  return `"${clean}" <${addr}>`;
 }
 
 /** In-app notification for one user (or the whole org when userId is null). */

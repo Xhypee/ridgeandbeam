@@ -10,6 +10,9 @@ import { displayName, initials, orgPeople } from "./people";
 import { SectionTabs } from "@/components/nav";
 import { loadDocket } from "@/lib/job-docket-server";
 import { JobDocket } from "./job-docket";
+import { QuotePreview } from "./quote-preview";
+import { loadQuoteEmail } from "@/lib/quote-email-server";
+import { aiEnabled } from "@/lib/ai";
 
 export const metadata: Metadata = { title: "Jobs" };
 
@@ -40,7 +43,7 @@ const DAY = 86400000;
 const STATE_TAIL = /,?\s+(NSW|VIC|QLD|WA|SA|TAS|ACT|NT)(\s+\d{4})?\s*$/;
 
 export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">) {
-  const { supabase, org, user, isSalesRep, canSeeMoney, isCrewLead } = await requireOrg();
+  const { supabase, org, user, isSalesRep, canSeeMoney, isCrewLead, memberships } = await requireOrg();
   const sp = await searchParams;
   // ?mine=1 / ?mine=0 still work (older links).
   const raw = typeof sp.filter === "string" ? sp.filter : sp.mine === "1" ? "mine" : sp.mine === "0" ? "all" : undefined;
@@ -74,6 +77,12 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
   const docket = openId ? await loadDocket(supabase, org, openId, { canSeeMoney }) : null;
   const filterQs = filter === (isSalesRep ? "mine" : "all") ? "" : `filter=${filter}`;
   const hrefFor = (id: string | null) => `/app/jobs${[filterQs, id ? `job=${id}` : ""].filter(Boolean).length ? `?${[filterQs, id ? `job=${id}` : ""].filter(Boolean).join("&")}` : ""}`;
+  // ?preview=1 shows the quote email for the open job, exactly as the customer will get it.
+  const me = memberships.find((m) => m.org_id === org.id);
+  const preview = docket?.quote && canSeeMoney && sp.preview === "1"
+    ? await loadQuoteEmail(supabase, org, docket.quote.id, { senderName: me?.full_name || user.fullName || org.name, senderPhone: me?.phone ?? org.phone, asSent: true })
+    : null;
+  const previewHref = docket ? `${hrefFor(docket.job.id)}&preview=1`.replace("/app/jobs&", "/app/jobs?") : "";
   const waiting = cards.filter((c) => c.j.stage === "lead" && !c.j.first_contacted_at).length;
 
   const board = (
@@ -178,8 +187,13 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
         {board}
       </div>
       <aside aria-label={`Job docket: ${docket.customer.name}`} className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-screen lg:w-[440px] lg:shrink-0 lg:border-l lg:border-slate-200 xl:w-[460px]">
-        <JobDocket key={docket.job.id} d={docket} org={org} canSeeMoney={canSeeMoney} isCrewLead={isCrewLead} closeHref={hrefFor(null)} />
+        <JobDocket key={docket.job.id} d={docket} org={org} canSeeMoney={canSeeMoney} isCrewLead={isCrewLead} closeHref={hrefFor(null)} previewHref={previewHref} aiReady={aiEnabled()} />
       </aside>
+      {preview && (
+        <QuotePreview html={preview.email.html} subject={preview.email.subject} toName={preview.to.name} toEmail={preview.to.email}
+          fromName={`${org.name} <${(process.env.EMAIL_FROM ?? "hello@ridgeandbeam.com").replace(/^.*<([^>]+)>.*$/, "$1")}>`}
+          estimateId={preview.estimate.id} closeHref={hrefFor(docket.job.id)} sent={preview.estimate.status === "sent"} />
+      )}
     </div>
   );
 }
