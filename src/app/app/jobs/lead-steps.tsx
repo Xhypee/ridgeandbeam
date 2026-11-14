@@ -23,6 +23,7 @@ const CHECK = "M5 12l5 5L20 7";
 const CAL = "M4 6h16v14H4zM4 10h16M8 3v5M16 3v5";
 const PEN = "M4 20l4-1 11-11-3-3L5 16zM14 6l3 3";
 const SEND = "M4 12l16-8-6 16-2.5-6.5z";
+const EYE = "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6z";
 const XCIRCLE = "M12 21a9 9 0 100-18 9 9 0 000 18M9 9l6 6M15 9l-6 6";
 const BIN = "M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3";
 const aud = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: n % 1 ? 2 : 0 });
@@ -36,8 +37,9 @@ const TORN = (() => {
 })();
 
 /** The quote as a little receipt torn off under the plan sheet: the biggest items (monospace, with their icons),
- *  how many more, a dashed rule and the total; then Send quote with Edit (opens the whole quote) beside it. */
-function QuoteSummary({ q, first }: { q: NonNullable<LeadStepsProps["quote"]>; first: string }) {
+ *  how many more, a dashed rule and the total; then Send quote with Edit (opens the whole quote) and Preview (the
+ *  email exactly as the customer gets it) beside it. */
+function QuoteSummary({ q, first, previewHref }: { q: NonNullable<LeadStepsProps["quote"]>; first: string; previewHref: string | null }) {
   return (
     <div className="border-t border-brand-200 bg-cream px-3 pt-3" data-lead-quote-summary>
       <div className="bg-white px-4 pb-6 pt-3.5 ring-1 ring-slate-200" style={{ clipPath: TORN }} data-lead-receipt>
@@ -66,6 +68,7 @@ function QuoteSummary({ q, first }: { q: NonNullable<LeadStepsProps["quote"]>; f
         <div className="flex gap-2" data-lead-send>
           <SubmitButton className="min-h-12 flex-1 gap-2 text-[15px]"><Icon d={SEND} />{q.status === "sent" ? "Send quote again" : `Send quote to ${first}`}</SubmitButton>
           <Link href={`/app/estimates/${q.id}`} title="Edit the quote" aria-label="Edit the quote" className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white text-ink ring-1 ring-slate-300 hover:bg-slate-50" data-lead-quote-edit><Icon d={PEN} className="h-5 w-5" /></Link>
+          {previewHref && <Link href={previewHref} scroll={false} title={`Preview what ${first} will get`} aria-label={`Preview what ${first} will get`} className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white text-ink ring-1 ring-slate-300 hover:bg-slate-50" data-lead-quote-preview><Icon d={EYE} className="h-5 w-5" /></Link>}
         </div>
       </ActionForm>
     </div>
@@ -122,6 +125,8 @@ export type LeadStepsProps = {
   roof: RoofSheet | null;
   /** Under the sheet: the site address, if there is one. */
   caption: string | null;
+  /** Opens the quote email exactly as the customer will get it. */
+  previewHref?: string | null;
 };
 
 function OwnerPicker({ jobId, owner, people, meId }: { jobId: string; owner: string; people: LeadStepsProps["people"]; meId: string }) {
@@ -166,7 +171,7 @@ export function LeadSteps(p: LeadStepsProps) {
         <DocumentDrop jobId={p.jobId} variant="plans" compact={!planless} measured={Boolean(p.roof)} joined={!planless && Boolean(p.quote)}
           estimateId={p.quote?.status === "draft" ? p.quote.id : undefined}
           sheet={p.roof ? <RoofDrawing labels={p.roof} /> : undefined} caption={p.caption ?? undefined} />
-        {!planless && p.quote && <QuoteSummary q={p.quote} first={p.first} />}
+        {!planless && p.quote && <QuoteSummary q={p.quote} first={p.first} previewHref={p.previewHref ?? null} />}
       </div>
       {!planless && !p.quote && (
         <form action={createEstimate} className="mt-3"><input type="hidden" name="job_id" value={p.jobId} /><button className={cx(btn, "bg-brand-500 text-white hover:bg-brand-600")} data-lead-quote><Icon d="M12 5v14M5 12h14" className="h-5 w-5" />Start the quote</button></form>

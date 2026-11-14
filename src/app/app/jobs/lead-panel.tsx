@@ -50,7 +50,7 @@ export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: st
         name={d.customer.name} otherJobs={lead.customerOtherJobs}
         plans={lead.docs.length}
         quote={q ? { id: q.id, number: q.number, status: q.status, total: q.total, lines: topLines, more: Math.max(0, included.length - topLines.length) } : null}
-        roof={d.roof ? roofSheet(d.roof.summary, d.roof.m) : null} caption={d.job.site_address}
+        roof={d.roof ? roofSheet(d.roof.summary, d.roof.m) : null} caption={d.job.site_address} previewHref={previewHref}
       />
       <JobContact d={d} />
       <JobNotes d={d} leadNote={lead.message ? { by: sourceLabel, at: lead.receivedAt, body: lead.message } : null} />
