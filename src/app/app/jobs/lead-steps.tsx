@@ -14,6 +14,7 @@ import { createEstimate } from "../estimates/actions";
 import { sendQuoteEmail } from "./quote-actions";
 import { BookingCalendar } from "./booking-calendar";
 import { DocumentDrop, RoofDrawing } from "./document-drop";
+import type { RoofSheet } from "@/lib/roof-sheet";
 import { deleteLead, markLeadLost, setLeadOwner } from "./lead-actions";
 import { LeadTimer } from "./lead-timer";
 
@@ -110,8 +111,8 @@ export type LeadStepsProps = {
   plans: number;
   /** The lead's quote, if there is one: its biggest lines (already cut to a few), how many more, the total. */
   quote: { id: string; number: number; status: string; total: number; lines: { description: string; amount: number }[]; more: number } | null;
-  /** The measured roof's numbers for the blueprint ("214 m²", "ridge & hips 24 m · 22.5°", "eave 58 m"). */
-  roof: { area: string; mid: string | null; foot: string | null } | null;
+  /** The measured roof's numbers for the dimensioned drawing on the plan sheet (see roof-sheet.ts). */
+  roof: RoofSheet | null;
   /** Under the sheet: the site address, if there is one. */
   caption: string | null;
   /** Opens the quote email exactly as the customer will get it. */
