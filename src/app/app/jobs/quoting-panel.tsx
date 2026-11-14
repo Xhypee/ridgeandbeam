@@ -82,7 +82,7 @@ export function QuotingPanel({ d, previewHref, remindHref }: { d: Docket; previe
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Heard back another way?</p>
           <div className="mt-2 grid grid-cols-2 gap-2">
             <ActionForm action={settleQuote}><input type="hidden" name="id" value={q.id} /><input type="hidden" name="status" value="accepted" />
-              <SubmitButton variant="secondary" className="min-h-11 w-full gap-2" confirm={`Mark quote #${q.number} as signed on paper? ${first}'s job moves to Sold.`}><Icon d={PEN} />Signed on paper</SubmitButton></ActionForm>
+              <SubmitButton variant="secondary" className="min-h-11 w-full gap-2" confirm={`Mark quote #${q.number} as signed on paper? ${first}'s job moves to Signed & Prepping.`}><Icon d={PEN} />Signed on paper</SubmitButton></ActionForm>
             <ActionForm action={settleQuote}><input type="hidden" name="id" value={q.id} /><input type="hidden" name="status" value="declined" />
               <SubmitButton variant="secondary" className="min-h-11 w-full text-slate-600" confirm={`Mark that ${first} didn't go ahead? The job moves to Lost.`}>Didn&apos;t go ahead</SubmitButton></ActionForm>
           </div>

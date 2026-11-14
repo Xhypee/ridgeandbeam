@@ -18,7 +18,7 @@ import { QuotingPanel } from "./quoting-panel";
 import { JobContact, JobDocuments, JobNotes } from "./job-sections";
 import { ClaudeBar } from "./claude-bar";
 
-const STAGES = ["New lead", "Quoting", "Sold", "Building", "Wrapping up"];
+const STAGES = ["New lead", "Quoting", "Signed & Prepping", "Building", "Wrapping up"];
 const STAGE_INDEX: Record<string, number> = { lead: 0, inspection: 1, estimate_sent: 1, sold: 2, scheduled: 2, in_progress: 3, completed: 4, paid: 4 };
 const shortDate = (iso: string) => new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T12:00:00` : iso).toLocaleDateString("en-AU", { day: "numeric", month: "short" });
 const whole = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 });
@@ -76,7 +76,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
   return (
     <div className="flex h-full flex-col bg-cream p-4" data-job-docket={j.id}>
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200">
-        <div className="min-h-0 flex-1 overflow-y-auto" data-docket-scroll>
+        <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden" data-docket-scroll>
           {/* Ticket top */}
           <div className={cx("px-5 pb-5 pt-4 text-white", lost ? "bg-slate-600" : "bg-brand-500")} data-docket-stages>
             <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-200">
@@ -88,7 +88,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
             <h2 className="mt-2 font-display text-2xl font-bold leading-tight">{d.customer.name}</h2>
             <p className="truncate text-sm text-white/70">{j.site_address ?? d.customer.address ?? j.title}</p>
             <div className="mt-5 flex items-end justify-between gap-2">
-              <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-200">Now</p><p className="truncate font-display text-[28px] font-bold leading-none">{lost ? "Lost" : done ? "Paid ✓" : STAGES[at]}</p></div>
+              <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-200">Now</p><p className={cx("truncate font-display font-bold leading-none", !lost && !done && STAGES[at].length > 12 ? "text-[22px]" : "text-[28px]")}>{lost ? "Lost" : done ? "Paid ✓" : STAGES[at]}</p></div>
               {!lost && !done && at <= 4 && (
                 <>
                   <svg viewBox="0 0 80 20" className="mb-1 h-5 w-16 shrink-0 text-brand-300" aria-hidden><path d="M2 10h70M64 3l8 7-8 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="4 4" /></svg>

@@ -47,7 +47,7 @@ export default async function LeadSourcesReport({ searchParams }: PageProps<"/ap
     <>
       <PageHeader
         title="Lead sources"
-        subtitle="What each channel costs per lead and per sold job, and how fast you call back."
+        subtitle="What each channel costs per lead and per signed job, and how fast you call back."
         actions={<LinkButton variant="secondary" href="/app/reports">All reports</LinkButton>}
       />
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
@@ -65,7 +65,7 @@ export default async function LeadSourcesReport({ searchParams }: PageProps<"/ap
             ["Leads", String(total.leads)],
             ["Called within 1 hour", total.contactedPct === null ? "—" : `${total.contactedPct}%`],
             ["Median response", durationLabel(total.medianResponseMin)],
-            ["Cost per sold job", total.costPerSold === null ? "—" : money(total.costPerSold)],
+            ["Cost per signed job", total.costPerSold === null ? "—" : money(total.costPerSold)],
           ].map(([l, v]) => (
             <div key={l} className="rounded-xl bg-white p-4 ring-1 ring-slate-200"><p className="text-xs text-slate-500">{l}</p><p className="mt-1 text-2xl font-semibold tabular-nums">{v}</p></div>
           ))}
@@ -77,8 +77,8 @@ export default async function LeadSourcesReport({ searchParams }: PageProps<"/ap
           <tr>
             <th className={th}>Source</th><th className={th}>{byMonth ? "Month" : "Period"}</th><th className={`${th} text-right`}>Leads</th>
             <th className={`${th} text-right`}>Called &lt; 1h</th><th className={`${th} text-right`}>Median response</th>
-            <th className={`${th} text-right`}>Inspections</th><th className={`${th} text-right`}>Sold</th><th className={`${th} text-right`}>Revenue</th>
-            <th className={`${th} text-right`}>Spend</th><th className={`${th} text-right`}>Cost / lead</th><th className={`${th} text-right`}>Cost / sold job</th>
+            <th className={`${th} text-right`}>Inspections</th><th className={`${th} text-right`}>Signed</th><th className={`${th} text-right`}>Revenue</th>
+            <th className={`${th} text-right`}>Spend</th><th className={`${th} text-right`}>Cost / lead</th><th className={`${th} text-right`}>Cost / signed job</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100" data-lead-report>
@@ -100,7 +100,7 @@ export default async function LeadSourcesReport({ searchParams }: PageProps<"/ap
           ))}
         </tbody>
       </Table>
-      <p className="mt-2 text-xs text-slate-500">Inspections = leads that reached the Inspection stage or later. Revenue = accepted estimate totals. Cost per sold job = spend ÷ sold — the number that matters more than cost per lead.</p>
+      <p className="mt-2 text-xs text-slate-500">Inspections = leads that reached the Inspection stage or later. Revenue = accepted estimate totals. Cost per signed job = spend ÷ signed — the number that matters more than cost per lead.</p>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         {isAdmin && (

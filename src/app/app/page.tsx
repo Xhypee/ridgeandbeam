@@ -81,7 +81,7 @@ export default async function Today({ searchParams }: PageProps<"/app">) {
       {withActions && (
         <>
           <SearchBox q={q} />
-          <LinkButton href="/app/customers/new" className="h-12 rounded-xl px-5 text-[15px]">+ New lead</LinkButton>
+          <LinkButton href="/app/jobs?new=1" className="h-12 rounded-xl px-5 text-[15px]">+ New lead</LinkButton>
         </>
       )}
     </header>

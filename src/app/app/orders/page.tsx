@@ -50,7 +50,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/app/order
         <form action={createOrder} className="flex flex-wrap items-end gap-2">
           <Field label="Job" className="min-w-56 flex-1">
             <Select name="job_id" required defaultValue="">
-              <option value="" disabled>Choose a sold job…</option>
+              <option value="" disabled>Choose a signed job…</option>
               {((jobs ?? []) as unknown as { id: string; title: string; customers: { name: string } | null }[]).map((j) => <option key={j.id} value={j.id}>{j.customers?.name} — {j.title}</option>)}
             </Select>
           </Field>

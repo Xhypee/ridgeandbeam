@@ -47,5 +47,5 @@ export async function settleQuote(_: ActionResult, fd: FormData): Promise<Action
   if (!e) return { error: "Quote not found." };
   try { await setEstimateStatus(fd); } catch (err) { return { error: (err as Error).message }; }
   touch(e.job_id);
-  return { ok: status === "accepted" ? "Marked signed. It's in Sold now." : "Marked as not going ahead." };
+  return { ok: status === "accepted" ? "Marked signed. It's in Signed & Prepping now." : "Marked as not going ahead." };
 }

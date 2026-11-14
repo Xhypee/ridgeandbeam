@@ -6,14 +6,15 @@ import { cx } from "@/components/ui";
 
 /**
  * Five places, each a group of related pages (research: fewer menu items, one primary action per screen).
- *  Today · Jobs (pipeline, customers, claims, canvassing) · Schedule (calendar, material orders)
+ *  Today · Jobs (pipeline, claims, canvassing) · Customers · Schedule (calendar, material orders)
  *  Money (invoices, estimates, reports) · Settings
  */
 type Group = { href: string; label: string; icon: string; match: string[]; money?: boolean; crew?: boolean };
 
 export const GROUPS: Group[] = [
   { href: "/app", label: "Today", icon: "M3 12l9-8 9 8M5 10v10h14V10", match: ["/app", "/app/notifications"] },
-  { href: "/app/jobs", label: "Jobs", icon: "M4 7h16v12H4zM9 7V5h6v2", match: ["/app/jobs", "/app/customers", "/app/claims", "/app/canvass", "/app/measure"] },
+  { href: "/app/jobs", label: "Jobs", icon: "M4 7h16v12H4zM9 7V5h6v2", match: ["/app/jobs", "/app/claims", "/app/canvass", "/app/measure"] },
+  { href: "/app/customers", label: "Customers", icon: "M16 20v-1.5a3.5 3.5 0 00-3.5-3.5h-5A3.5 3.5 0 004 18.5V20M10 12a3.5 3.5 0 100-7 3.5 3.5 0 000 7M20 20v-1.5a3.5 3.5 0 00-2.6-3.4M15.5 5.1a3.5 3.5 0 010 6.8", match: ["/app/customers"] },
   { href: "/app/schedule", label: "Schedule", icon: "M4 6h16v14H4zM4 10h16M8 3v5M16 3v5", match: ["/app/schedule", "/app/orders"], crew: true },
   { href: "/app/invoices", label: "Money", icon: "M3 7h18v11H3zM3 10h18M7 15h3", match: ["/app/invoices", "/app/estimates", "/app/reports"], money: true },
   { href: "/app/settings", label: "Settings", icon: "M12 15a3 3 0 100-6 3 3 0 000 6M19 12a7 7 0 00-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 00-2-1.2L14 3h-4l-.5 2.6a7 7 0 00-2 1.2l-2.4-1-2 3.4 2 1.6a7 7 0 000 2.4l-2 1.6 2 3.4 2.4-1a7 7 0 002 1.2L10 21h4l.5-2.6a7 7 0 002-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2" , match: ["/app/settings"], money: true },
@@ -117,11 +118,12 @@ export function NavRail({ canSeeMoney = true, crewLead = false, unread = 0 }: { 
   );
 }
 
-/** True on the Jobs board while a job's docket is open (?job=…). */
+/** True while a right sidebar is open: a job's docket (?job=…) or New lead (?new=1) on the Jobs board; a customer (?customer=…) or New customer (?new=1) on Customers. */
 export function useDocketOpen() {
   const path = usePathname();
   const sp = useSearchParams();
-  return path === "/app/jobs" && sp.has("job");
+  if (path === "/app/customers") return sp.has("customer") || sp.get("new") === "1";
+  return path === "/app/jobs" && (sp.has("job") || sp.get("new") === "1");
 }
 
 /** The quoting engine (/app/estimates/<id>) takes the whole screen: no menu, its own top bar. */
