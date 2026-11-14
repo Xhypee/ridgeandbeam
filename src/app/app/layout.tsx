@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { AppFrame, Nav, NavRail, SectionTabs } from "@/components/nav";
 import { requireOrg, ROLE_LABEL } from "@/lib/dal";
+import { outboundPaused } from "@/lib/notify";
 import { switchOrg } from "./actions";
 
 export default async function AppLayout({ children }: LayoutProps<"/app">) {
@@ -38,6 +39,12 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
         </div>
         <div className="mb-6 px-2">{orgSwitcher}</div>
         <Nav canSeeMoney={canSeeMoney} crewLead={isCrewLead} />
+        {outboundPaused() && (
+          <div className="mx-2 mt-4 rounded-xl bg-amber-50 px-3 py-2.5 text-xs leading-snug text-amber-900 ring-1 ring-amber-200" data-test-mode>
+            <p className="font-semibold">Test mode</p>
+            <p className="mt-0.5">Emails, texts and online payments are off. Everything is saved; nothing is sent.</p>
+          </div>
+        )}
         <div className="mt-auto border-t border-slate-100 px-2 pt-4">
           <p className="truncate text-sm font-medium text-slate-800">{me?.full_name || user.fullName || user.email}</p>
           <p className="truncate text-xs text-slate-500">{ROLE_LABEL[role] ?? role} · {user.email}</p>

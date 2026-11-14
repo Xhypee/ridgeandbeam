@@ -59,7 +59,7 @@ export async function sendHandover(_: ActionResult, fd: FormData): Promise<Actio
   const me = ctx.memberships.find((m) => m.org_id === org.id)?.full_name || user.fullName || user.email;
   await supabase.from("job_notes").insert({ org_id: org.id, job_id: jobId, body: `Sent the handover pack to ${c.name.split(" ")[0]}: ${doc.workmanshipYears}-year workmanship warranty${picks.length ? ` and ${picks.length} photos` : ""}.`, author_id: user.id, author_name: me });
   touch(jobId);
-  return { ok: r.status === "sent" ? `Handover pack sent to ${c.name.split(" ")[0]}.` : "Handover pack saved (email isn't set up here)." };
+  return { ok: r.status === "sent" ? `Handover pack sent to ${c.name.split(" ")[0]}.` : r.status === "paused" ? "Handover pack saved (test mode: not emailed)." : "Handover pack saved (email isn't set up here)." };
 }
 
 /** Close the job: marked paid and off the Jobs board. */

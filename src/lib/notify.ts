@@ -10,6 +10,13 @@ import { auPhoneE164 } from "@/lib/au";
  * status "not_configured" so the office still sees what would have been sent.
  */
 
+/**
+ * Test mode (OUTBOUND_PAUSED=1 in Vercel): nothing leaves the app. Emails and texts are logged as "paused"
+ * instead of sent, online card payments are off and the daily payment-plan job does nothing. Sign-in and
+ * sign-up emails (sent by Supabase Auth) still work.
+ */
+export const outboundPaused = () => process.env.OUTBOUND_PAUSED === "1";
+
 export const smsConfigured = () => Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM_NUMBER);
 export const emailConfigured = () => Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
 
@@ -33,6 +40,8 @@ export async function sendSms(db: SupabaseClient, m: Base & { to: string | null 
   if (!to) {
     status = "failed";
     error = "No valid phone number";
+  } else if (outboundPaused()) {
+    status = "paused";
   } else if (smsConfigured()) {
     try {
       const sid = process.env.TWILIO_ACCOUNT_SID!;
@@ -66,6 +75,8 @@ export async function sendEmail(db: SupabaseClient, m: Base & { to: string | nul
   if (!m.to) {
     status = "failed";
     error = "No email address";
+  } else if (outboundPaused()) {
+    status = "paused";
   } else if (emailConfigured()) {
     try {
       const res = await fetch("https://api.resend.com/emails", {
