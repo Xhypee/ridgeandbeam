@@ -15,6 +15,7 @@ import { date, label, siteUrl, STATUS_TONE } from "@/lib/format";
 import { AU_STATE_TZ } from "@/lib/au";
 import { listOrgSuppliers } from "@/lib/suppliers";
 import { roofShape } from "@/lib/docket-shape";
+import { normalizeMeasurements, summarize } from "@/lib/roof";
 import { quotePriceBook, usableCatalog } from "@/lib/docket-server";
 import { abnText, licenceFor } from "@/lib/business";
 import { PrintButton } from "@/components/print-button";
@@ -104,6 +105,7 @@ export default async function EstimatePage({ params, searchParams }: PageProps<"
         payment={plan}
         supplier={sup.current} suppliers={sup.choices} nearLabel={sup.nearLabel} canSetDefault={isAdmin}
         previewHref={previewHref}
+        roofMeasured={summarize(normalizeMeasurements(e.measurements)).trueArea > 0}
         roofPlan={<RoofPlanPanel estimateId={e.id} measurements={e.measurements} source={e.measurement_source ?? null} />}
         rules={<RulesLine state={resolved.state} total={contractValue} roofMaterial={profile?.roof_system ?? job.roof_material} jobType={profile?.au_job_type ?? job.job_type} />}
       />

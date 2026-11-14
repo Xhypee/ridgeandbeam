@@ -2,7 +2,8 @@
 // The quoting engine: one column that reads like the quote the customer gets.
 // 01 Roof plan (our roof report, done first) · 02 Who it's for · 03 The job · 04 Price (supplier, lines, extras, You make / they pay)
 // · 05 Payment (Full by default, or Instalments) · 06 Terms. Everything saves as you type; the bar at the bottom
-// always shows the total with Preview and Send.
+// always shows the total with Preview and Send. Steps open one at a time: the next appears once the one before is done
+// (a quote that already has lines opens fully).
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -31,6 +32,7 @@ export type EngineProps = {
   canSetDefault: boolean;
   previewHref: string;
   roofPlan: ReactNode;
+  roofMeasured: boolean;
   rules: ReactNode;
 };
 
@@ -76,6 +78,22 @@ export function QuoteEngine(p: EngineProps) {
   const extras = items.filter((i) => i.extra_status === "offered");
   const money = useMemo(() => quoteMoney(items, tax, inclusive, p.base.discount), [items, tax, inclusive, p.base.discount]);
   const shownMargin = margin ?? (money.cost > 0 ? Math.round(money.marginPct) : null);
+
+  // ---- one step at a time: 1 roof plan → 2 who it's for → 3 the job → 4 price → 5 payment + 6 terms ----
+  const [roofSkipped, setRoofSkipped] = useState(false);
+  const done = [
+    p.roofMeasured || roofSkipped,
+    Boolean(party.name.trim() && party.site.trim()),
+    Boolean(notes.trim()),
+    main.some((i) => i.description.trim() && i.quantity * i.unit_price > 0),
+  ];
+  let next = 1;
+  while (next <= 4 && done[next - 1]) next++;
+  const computed = next > 4 ? 6 : next;
+  // Never closes a step again once it's open (clearing a field shouldn't hide what's below it).
+  const [reached, setReached] = useState(() => (p.items.some((i) => i.extra_status !== "offered") ? 6 : computed));
+  if (computed > reached) setReached(computed);
+  const shows = (n: number) => reached >= n;
 
   // ---- saving (debounced; three independent saves) ----
   const dirty = useRef({ party: false, content: false, money: false });
@@ -152,24 +170,27 @@ export function QuoteEngine(p: EngineProps) {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-cream" data-quote-engine>
       <main className="mx-auto max-w-[780px] px-4 pb-6 pt-4 sm:px-6">
-        <Block n={1} title="Roof plan" hint="start here · our roof report">{p.roofPlan}</Block>
+        <Block n={1} title="Roof plan" hint="start here · our roof report"
+          right={!p.roofMeasured && reached === 1 ? <button type="button" onClick={() => setRoofSkipped(true)} className="text-sm font-semibold text-slate-500 underline-offset-2 hover:text-ink hover:underline" data-skip-roof>No measuring needed</button> : null}>
+          {p.roofPlan}
+        </Block>
 
-        <Block n={2} title="Who it's for">
+        {shows(2) && <Block n={2} title="Who it's for">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">Customer</span><input className={field} value={party.name} onChange={(e) => editParty("name", e.target.value)} onBlur={() => void flush()} data-field="customer" /></label>
             <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">Email</span><input type="email" className={field} value={party.email} placeholder="Where the quote goes" onChange={(e) => editParty("email", e.target.value)} onBlur={() => void flush()} data-field="email" /></label>
             <label className="block sm:col-span-2"><span className="mb-1 block text-xs font-semibold text-slate-500">Site</span><input className={field} value={party.site} placeholder="Street, suburb, state, postcode" onChange={(e) => editParty("site", e.target.value)} onBlur={() => void flush()} data-field="site" /></label>
           </div>
-        </Block>
+        </Block>}
 
-        <Block n={3} title="The job">
+        {shows(3) && <Block n={3} title="The job">
           <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">Title</span><input className={cx(field, "font-display text-lg font-bold")} value={party.title} onChange={(e) => editParty("title", e.target.value)} onBlur={() => void flush()} data-field="title" /></label>
           <label className="mt-3 block"><span className="mb-1 block text-xs font-semibold text-slate-500">What we&apos;ll do</span>
             <textarea className={cx(field, "min-h-28 leading-relaxed")} value={notes} placeholder="In plain words: what you'll do, in the order it happens." onChange={(e) => { setNotes(e.target.value); touch("content"); }} onBlur={() => void flush()} data-field="notes" />
           </label>
-        </Block>
+        </Block>}
 
-        <Block n={4} title="Price" hint={inclusive ? "inc GST" : "ex GST"} right={<SupplierPicker p={p} current={orgSupplierId} onChosen={(id) => { setOrgSupplierId(id); router.refresh(); }} flush={flush} />}>
+        {shows(4) && <Block n={4} title="Price" hint={inclusive ? "inc GST" : "ex GST"} right={<SupplierPicker p={p} current={orgSupplierId} onChosen={(id) => { setOrgSupplierId(id); router.refresh(); }} flush={flush} />}>
           <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
             <div className="hidden grid-cols-[minmax(0,1fr)_64px_64px_120px_20px] gap-3 border-b border-slate-100 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400 sm:grid">
               <span>Item</span><span className="text-right">Qty</span><span>Unit</span><span className="text-right">Price</span><span />
@@ -215,9 +236,9 @@ export function QuoteEngine(p: EngineProps) {
               <p className="mt-4 text-sm text-slate-500">{aud(money.exGst)} + GST {aud(money.gst)}</p>
             </div>
           </div>
-        </Block>
+        </Block>}
 
-        <Block n={5} title="Payment" right={
+        {shows(5) && <Block n={5} title="Payment" right={
           <span className="flex rounded-xl bg-white p-1 text-sm font-semibold ring-1 ring-slate-300" role="radiogroup" aria-label="How they pay">
             {(["full", "instalments"] as const).map((m) => (
               <button key={m} type="button" role="radio" aria-checked={payment.mode === m} onClick={() => setPlan({ ...payment, mode: m })} data-pay-mode={m}
@@ -235,12 +256,12 @@ export function QuoteEngine(p: EngineProps) {
             </div>
           ) : <Stages stages={payment.stages} total={money.total} onChange={(stages) => setPlan({ ...payment, stages })} />}
           <p className="mt-2 text-xs text-slate-500">How they can pay (bank transfer, PayID, card, cash) is set on the job. No card surcharge.</p>
-        </Block>
+        </Block>}
 
-        <Block n={6} title="Terms">
+        {shows(6) && <Block n={6} title="Terms">
           <textarea className={cx(field, "min-h-20 text-sm leading-relaxed")} value={terms} onChange={(e) => { setTerms(e.target.value); touch("content"); }} onBlur={() => void flush()} data-field="terms" />
           <div className="mt-3">{p.rules}</div>
-        </Block>
+        </Block>}
       </main>
 
       <div className="sticky bottom-0 z-30 border-t border-slate-200 bg-white" data-engine-bar>
