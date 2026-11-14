@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { LinkButton, cx } from "@/components/ui";
 import { WaitTimer } from "@/components/wait-timer";
-import { requireOrg } from "@/lib/dal";
+import { requireMoneyAccess, requireOrg } from "@/lib/dal";
 import { ageTone, dollars, nextStep, pipelineColumn, type NextStepJob, type PipelineColumn } from "@/lib/next-step";
 import { asNextStepJob, loadNextStepCtx, NEXT_STEP_JOB_COLS } from "@/lib/next-step-server";
 import { isoDate } from "@/lib/format";
@@ -11,7 +11,8 @@ import { SectionTabs } from "@/components/nav";
 import { loadDocket } from "@/lib/job-docket-server";
 import { JobDocket } from "./job-docket";
 import { QuotePreview } from "./quote-preview";
-import { PaymentRequestSheet, Sheet, SupplierPayForm } from "./build-sheets";
+import { PaymentRequestSheet, ReminderBody, RemindFooter, Sheet, SupplierPayForm } from "./build-sheets";
+import { loadReminder } from "@/lib/quote-remind-server";
 import { loadSupplierPay, paymentRequestPreview } from "@/lib/build-stage-server";
 import { loadQuoteEmail } from "@/lib/quote-email-server";
 import { aiEnabled } from "@/lib/ai";
@@ -90,6 +91,8 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
   const ask = docket?.build && sp.ask === "1" ? await paymentRequestPreview(supabase, org, docket.job.id) : null;
   const payId = docket?.build && typeof sp.pay === "string" && /^[0-9a-f-]{36}$/i.test(sp.pay) ? sp.pay : null;
   const pay = payId ? await loadSupplierPay(supabase, payId) : null;
+  // Quoting: ?remind=1 previews the check-in about a sent quote.
+  const remind = docket?.quoting && docket.quote?.status === "sent" && sp.remind === "1" && canSeeMoney ? await loadReminder(await requireMoneyAccess(), docket.quote.id) : null;
   const waiting = cards.filter((c) => c.j.stage === "lead" && !c.j.first_contacted_at).length;
 
   const board = (
@@ -192,12 +195,18 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
       </div>
       <aside aria-label={`Job docket: ${docket.customer.name}`} className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-screen lg:w-[440px] lg:shrink-0 lg:border-l lg:border-slate-200 xl:w-[460px]">
         <JobDocket key={docket.job.id} d={docket} org={org} canSeeMoney={canSeeMoney} isCrewLead={isCrewLead} closeHref={hrefFor(null)} previewHref={previewHref}
-          askHref={withParam("ask=1")} payHref={(id) => withParam(`pay=${id}`)} aiReady={aiEnabled()} />
+          askHref={withParam("ask=1")} payHref={(id) => withParam(`pay=${id}`)} remindHref={withParam("remind=1")} aiReady={aiEnabled()} />
       </aside>
       {preview && (
         <QuotePreview html={preview.email.html} subject={preview.email.subject} toName={preview.to.name} toEmail={preview.to.email}
           fromName={`${org.name} <${(process.env.EMAIL_FROM ?? "hello@ridgeandbeam.com").replace(/^.*<([^>]+)>.*$/, "$1")}>`}
           estimateId={preview.estimate.id} closeHref={hrefFor(docket.job.id)} sent={preview.estimate.status === "sent"} />
+      )}
+      {remind && (
+        <Sheet data="remind" kicker="Remind about the quote" title={`Quote #${docket.quote!.number} · ${docket.customer.name}`} closeHref={hrefFor(docket.job.id)}
+          footer={<RemindFooter estimateId={docket.quote!.id} back={hrefFor(docket.job.id)} hasContact={Boolean(remind.to.email || remind.to.phone)} />}>
+          <ReminderBody toEmail={remind.to.email} toPhone={remind.to.phone} subject={remind.msg.subject} html={remind.msg.html} sms={remind.msg.sms} />
+        </Sheet>
       )}
       {ask && (
         <PaymentRequestSheet jobId={docket.job.id} closeHref={hrefFor(docket.job.id)} asked={ask.asked}

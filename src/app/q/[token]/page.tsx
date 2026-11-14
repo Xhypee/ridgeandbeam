@@ -6,6 +6,7 @@ import { QuoteBusiness } from "@/components/quote-business";
 import { StateNotices, type StateNotice } from "@/components/state-notices";
 import { date, money } from "@/lib/format";
 import { anonClient } from "@/lib/public";
+import { createClient } from "@/lib/supabase/server";
 import { AcceptForm, OptionCards } from "./accept-form";
 import { CustomerDocket } from "./customer-docket";
 import { roofFacts, roofTitle, sectionsProfile } from "@/lib/docket";
@@ -21,10 +22,16 @@ export const metadata: Metadata = { title: "Your quote", robots: { index: false 
 const UNIT: Record<string, string> = { m2: "m²" };
 const unit = (u: string) => UNIT[u] ?? u;
 
-export default async function PublicEstimatePage({ params }: PageProps<"/q/[token]">) {
+export default async function PublicEstimatePage({ params, searchParams }: PageProps<"/q/[token]">) {
   const { token } = await params;
+  const sp = await searchParams;
   const { data } = await anonClient().rpc("get_public_estimate", { p_token: token });
   if (!data) notFound();
+  // Count the customer opening their quote (shown as OPENED on the Jobs sidebar). Not when the office looks.
+  if (sp.office !== "1") {
+    const { data: { user } } = await (await createClient()).auth.getUser();
+    if (!user) await anonClient().rpc("log_estimate_view", { p_token: token });
+  }
   const doc = data as PublicEstimate;
   const p = buildProposal(doc);
   const word = doc.option_label === "alternates" ? "alternate" : "option";
