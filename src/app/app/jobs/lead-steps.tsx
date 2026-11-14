@@ -30,19 +30,15 @@ const aud = (n: number) => n.toLocaleString("en-AU", { style: "currency", curren
 function QuoteSummary({ q, first }: { q: NonNullable<LeadStepsProps["quote"]>; first: string }) {
   return (
     <div className="border-t border-brand-200 bg-white" data-lead-quote-summary>
-      <div className="flex items-center gap-2 py-2 pl-3.5 pr-2">
-        <span className="text-sm font-semibold text-ink">Quote #{q.number}</span>
-        <span className="text-xs text-slate-500">{q.status === "sent" ? "sent" : "draft"}</span>
-      </div>
       {q.lines.length ? (
-        <ul className="border-t border-slate-100 px-3.5 py-2 text-[13px]">
+        <ul className="px-3.5 py-2.5 text-[13px]">
           {q.lines.map((l, i) => (
             <li key={i} className="flex justify-between gap-3 py-0.5"><span className="min-w-0 truncate text-slate-600">{l.description}</span><span className="shrink-0 tabular-nums text-ink">{aud(l.amount)}</span></li>
           ))}
           {q.more > 0 && <li className="py-0.5 text-slate-400">and {q.more} more</li>}
         </ul>
       ) : (
-        <p className="border-t border-slate-100 px-3.5 py-2 text-[13px] text-slate-500">No prices yet. Tap Edit to price it.</p>
+        <p className="px-3.5 py-2.5 text-[13px] text-slate-500">No prices yet. Tap Edit to price it.</p>
       )}
       <div className="flex items-baseline justify-between border-t border-slate-100 px-3.5 py-2.5">
         <span className="text-sm font-semibold text-ink">Total <span className="font-normal text-slate-500">inc GST</span></span>
