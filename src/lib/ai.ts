@@ -8,7 +8,7 @@ import { DOC_TYPES, type DocRead } from "./doc-intake";
  */
 export const aiEnabled = (): boolean => Boolean(process.env.ANTHROPIC_API_KEY);
 
-export const AI_MODEL = "claude-opus-5-5";
+export const AI_MODEL = "claude-sonnet-5-5";
 
 const HONESTY = [
   "You write for a residential roofing contractor. Your text is a draft that a company rep reviews before anyone else sees it.",
