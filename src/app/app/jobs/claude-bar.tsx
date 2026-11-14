@@ -2,7 +2,9 @@
 // At the bottom of every sidebar (jobs, contacts, suppliers, New lead): ask Claude anything about what's open or
 // the business, by typing or by talking (the mic starts a "call": it listens, answers out loud, then listens
 // again until you hang up). Pass jobId / contactId / supplierId so Claude sees that record in full.
-import { useEffect, useRef, useState, type FormEvent } from "react";
+// While chatting, the chat takes the bottom 70% of the sidebar and the rest blurs, so it's clear what has focus.
+// Tap the blurred part (or Esc, or Minimise) to go back; the conversation stays.
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { cx } from "@/components/ui";
 
 type Turn = { role: "user" | "assistant"; content: string; error?: boolean };
@@ -29,11 +31,30 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready }: { 
   const rec = useRef<Recognition | null>(null);
   const log = useRef<HTMLDivElement>(null);
   const history = useRef<Turn[]>([]);
+  const root = useRef<HTMLDivElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const [focused, setFocused] = useState(false); // chat has the sidebar's attention
+  const [barH, setBarH] = useState(68);
+
+  // The chat sits over the sidebar card it's in: make that card the frame.
+  useLayoutEffect(() => {
+    const parent = root.current?.parentElement;
+    if (parent && getComputedStyle(parent).position === "static") parent.style.position = "relative";
+  }, []);
+  useEffect(() => {
+    if (!focused) return;
+    panel.current?.animate([{ transform: "translateY(24px)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }], { duration: 220, easing: "cubic-bezier(.3,.7,.2,1)" });
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setFocused(false); };
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [focused]);
 
   useEffect(() => { log.current?.scrollTo({ top: log.current.scrollHeight }); }, [turns, busy]);
   useEffect(() => () => { callOn.current = false; rec.current?.abort(); if (typeof window !== "undefined") window.speechSynthesis?.cancel(); }, []);
 
   async function ask(q: string): Promise<string | null> {
+    setFocused(true);
     const next = [...history.current, { role: "user" as const, content: q }];
     history.current = next;
     setTurns(next);
@@ -105,34 +126,64 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready }: { 
     if (call !== "off") return hangUp();
     if (!getRecognition()) { history.current = [...history.current, { role: "assistant", content: "Talking to Claude needs Chrome, Edge or Safari. You can still type.", error: true }]; setTurns(history.current); return; }
     callOn.current = true;
+    setFocused(true);
     listen();
   }
 
-  const open = turns.length > 0 || call !== "off";
+  const open = focused || call !== "off";
+  // The chat panel runs from 30% down to the top of the input bar, so chat + bar = the bottom 70%.
+  useLayoutEffect(() => { if (open && root.current) setBarH(root.current.offsetHeight); }, [open]);
   const status = call === "listening" ? "Listening… say what you need" : call === "thinking" ? "Thinking…" : call === "speaking" ? "Claude is talking. Tap to hang up" : null;
+  // Somewhere to start: a few questions for what's open.
+  const starters = firstName && jobId ? ["What should I do next?", `Draft a text to ${firstName}`, "What should I charge for this?"]
+    : firstName ? [`What's happening with ${firstName}?`, `Draft a message to ${firstName}`, "Who should I follow up today?"]
+    : ["What needs doing today?", "Which quotes need a follow-up?", "How's this month looking?"];
+  const clear = () => { hangUp(); history.current = []; setTurns([]); };
   return (
-    <div className="border-t border-slate-200 bg-white" data-claude-bar>
-      {open && (
-        <div ref={log} className="max-h-[360px] space-y-3 overflow-y-auto px-4 pb-2 pt-4 text-sm" aria-live="polite">
-          <div className="flex items-center justify-between">
+    <div ref={root} className="border-t border-slate-200 bg-white" data-claude-bar data-focused={open ? "true" : "false"}>
+      {open && (<>
+        {/* Everything above the chat blurs; tap it to go back to the job. */}
+        <button type="button" aria-label="Back to the sidebar" onClick={() => { if (call === "off") setFocused(false); }} data-claude-dim
+          className="absolute inset-x-0 top-0 z-20 h-[30%] cursor-default bg-white/40 backdrop-blur-[3px]" />
+        <div ref={panel} className="absolute inset-x-0 top-[30%] z-30 flex flex-col rounded-t-[22px] border-t border-slate-200 bg-white" style={{ bottom: barH }} data-claude-panel>
+          <div className="flex items-center justify-between px-4 pb-1 pt-3">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Claude · knows your jobs</p>
-            <button type="button" onClick={() => { hangUp(); history.current = []; setTurns([]); }} className="text-xs font-semibold text-slate-500 hover:text-ink">Clear</button>
+            <span className="flex items-center gap-3">
+              {turns.length > 0 && <button type="button" onClick={clear} className="text-xs font-semibold text-slate-500 hover:text-ink">Clear</button>}
+              <button type="button" onClick={() => { if (call !== "off") hangUp(); setFocused(false); }} className="text-xs font-semibold text-slate-500 hover:text-ink" data-claude-minimise>Minimise</button>
+            </span>
           </div>
-          {turns.map((t, i) => t.role === "user" ? (
-            <div key={i} className="ml-10 whitespace-pre-wrap rounded-2xl rounded-br-sm bg-slate-100 px-3.5 py-2.5 text-ink">{t.content}</div>
-          ) : (
-            <div key={i} className="flex gap-2.5">
-              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#d97757] text-white"><Spark className="h-3.5 w-3.5" /></span>
-              <p className={cx("min-w-0 whitespace-pre-wrap pt-1", t.error ? "text-slate-500" : "text-ink")}>{t.content}</p>
-            </div>
-          ))}
-          {busy && <div className="flex gap-2.5"><span className="grid h-7 w-7 shrink-0 animate-pulse place-items-center rounded-full bg-[#d97757] text-white"><Spark className="h-3.5 w-3.5" /></span><p className="pt-1 text-slate-400">Thinking…</p></div>}
+          <div ref={log} className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 pb-3 pt-2 text-sm" aria-live="polite">
+            {turns.length === 0 && call === "off" && (
+              <div className="space-y-2 pt-1" data-claude-starters>
+                <p className="text-sm text-slate-500">Ask anything about {firstName ?? "your business"}. Try:</p>
+                {starters.map((q) => (
+                  <button key={q} type="button" disabled={!ready} onMouseDown={(e) => e.preventDefault()} onClick={() => void ask(q)}
+                    className="block w-full rounded-xl bg-cream px-3.5 py-2.5 text-left text-sm font-medium text-ink ring-1 ring-slate-200 hover:ring-brand-400 disabled:opacity-50">{q}</button>
+                ))}
+              </div>
+            )}
+            {turns.map((t, i) => t.role === "user" ? (
+              <div key={i} className="ml-10 whitespace-pre-wrap rounded-2xl rounded-br-sm bg-slate-100 px-3.5 py-2.5 text-ink">{t.content}</div>
+            ) : (
+              <div key={i} className="flex gap-2.5">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#d97757] text-white"><Spark className="h-3.5 w-3.5" /></span>
+                <p className={cx("min-w-0 whitespace-pre-wrap pt-1", t.error ? "text-slate-500" : "text-ink")}>{t.content}</p>
+              </div>
+            ))}
+            {busy && <div className="flex gap-2.5"><span className="grid h-7 w-7 shrink-0 animate-pulse place-items-center rounded-full bg-[#d97757] text-white"><Spark className="h-3.5 w-3.5" /></span><p className="pt-1 text-slate-400">Thinking…</p></div>}
+          </div>
         </div>
+      </>)}
+      {!open && turns.length > 0 && (
+        <button type="button" onClick={() => setFocused(true)} className="flex w-full items-center gap-2 border-b border-slate-100 px-4 py-2 text-left text-xs text-slate-500 hover:bg-slate-50" data-claude-resume>
+          <Spark className="h-3.5 w-3.5 text-[#d97757]" /><span className="min-w-0 flex-1 truncate">{turns[turns.length - 1].content}</span><span className="font-semibold text-brand-700">Open chat</span>
+        </button>
       )}
       <form onSubmit={onSubmit} className="flex items-center gap-2 px-3 py-3">
         <label className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-2xl bg-cream px-3 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-brand-500">
           <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#d97757] text-white"><Spark className="h-3.5 w-3.5" /></span>
-          <input value={text} onChange={(e) => setText(e.target.value)} disabled={call !== "off"} aria-label="Ask Claude"
+          <input ref={input} value={text} onChange={(e) => setText(e.target.value)} onFocus={() => { if (ready) setFocused(true); }} disabled={call !== "off"} aria-label="Ask Claude"
             placeholder={status ?? (!ready ? "Claude isn't connected yet" : turns.length ? "Reply to Claude…" : firstName ? `Ask Claude about ${firstName} or your business…` : "Ask Claude about your business…")}
             className="min-w-0 flex-1 bg-transparent text-sm text-ink placeholder:text-slate-400 focus:outline-none" />
         </label>
