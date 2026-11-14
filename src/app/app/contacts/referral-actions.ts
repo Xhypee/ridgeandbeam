@@ -8,7 +8,12 @@ import type { Referrer } from "@/lib/referrals-server";
 export async function searchReferrers(q: string): Promise<Referrer[]> {
   const { supabase } = await requireOrg();
   const term = q.trim().replace(/[%,()*\\]/g, " ").slice(0, 80);
-  if (term.length < 2) return [];
+  const KIND: Record<string, string> = { customer: "Customer", builder: "Builder", contractor: "Contractor", other: "Contact" };
+  if (term.length < 2) {
+    // Nothing typed yet: the people who usually refer work (builders, contractors, others), newest first.
+    const { data } = await supabase.from("customers").select("id, name, kind, phone, city, company").neq("kind", "customer").order("created_at", { ascending: false }).limit(5);
+    return (data ?? []).map((c) => ({ id: c.id, type: "contact" as const, name: c.name, detail: [KIND[c.kind as string] ?? "Contact", c.company, c.phone, c.city].filter(Boolean).join(" · ") }));
+  }
   const digits = term.replace(/\D/g, "");
   const ors = [`name.ilike.%${term}%`, `email.ilike.%${term}%`, `company.ilike.%${term}%`];
   if (digits.length >= 3) ors.push(`phone.ilike.%${digits.replace(/^61/, "").split("").join("%")}%`);
@@ -16,7 +21,6 @@ export async function searchReferrers(q: string): Promise<Referrer[]> {
     supabase.from("customers").select("id, name, kind, phone, city, company").or(ors.join(",")).order("created_at", { ascending: false }).limit(6),
     supabase.from("org_suppliers").select("id, custom_name, branch_name, suppliers(name)").limit(200),
   ]);
-  const KIND: Record<string, string> = { customer: "Customer", builder: "Builder", contractor: "Contractor", other: "Contact" };
   const t = term.toLowerCase();
   const suppliers: Referrer[] = (sups ?? []).flatMap((s) => {
     const sup = Array.isArray(s.suppliers) ? s.suppliers[0] : s.suppliers;

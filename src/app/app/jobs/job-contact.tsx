@@ -2,7 +2,10 @@
 // The Contact section on every job sidebar: mobile (text / call), email, site (Google Maps). "Edit" in the
 // header swaps the rows for a small form — mobile, email and site address (lookup first) — saved in one go.
 import { startTransition, useActionState, useState, type FormEvent, type MouseEvent } from "react";
+import Link from "next/link";
 import { AddressLookup } from "@/components/address-lookup";
+import { ContactPicker } from "@/components/contact-picker";
+import type { Referrer } from "@/lib/referrals-server";
 import { Field, Input, Button } from "@/components/ui";
 import { parseAuAddress } from "@/lib/address-parse";
 import type { ActionResult } from "@/components/action-form";
@@ -10,9 +13,12 @@ import { updateJobContact } from "./actions";
 import { ContactRow, Icon, MAIL, PHONE, PIN, Section, iconBtn } from "./job-section-ui";
 
 type Customer = { id: string; name: string; phone: string | null; email: string | null };
+const GIFT = "M4 11h16v9H4zM3 7h18v4H3zM12 7v13M12 7c-1.5-3-5-3-5-1s3 1 5 1c2 0 5 1 5-1s-3.5-2-5 1";
 const PENCIL = "M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4";
 
-export function ContactSection({ jobId, customer: c, site, state }: { jobId: string; customer: Customer; site: string | null; state: string | null }) {
+export function ContactSection({ jobId, customer: c, site, state, referredBy }: {
+  jobId: string; customer: Customer; site: string | null; state: string | null; referredBy: (Referrer & { href: string }) | null;
+}) {
   const [editing, setEditing] = useState(false);
   const [res, save, pending] = useActionState<ActionResult, FormData>(async (prev, fd) => {
     const r = await updateJobContact(prev, fd);
@@ -50,6 +56,11 @@ export function ContactSection({ jobId, customer: c, site, state }: { jobId: str
           <Field label="Mobile"><Input name="phone" type="tel" inputMode="tel" defaultValue={c.phone ?? ""} placeholder="04xx xxx xxx" autoComplete="off" /></Field>
           <Field label="Email"><Input name="email" type="email" defaultValue={c.email ?? ""} placeholder="name@email.com" autoComplete="off" /></Field>
           <AddressLookup initial={initial} defaultState={state} />
+          <input type="hidden" name="referral_edit" value="1" />
+          <div data-referred-by-edit>
+            <span className="mb-1 block text-xs font-medium text-slate-600">Referred by <span className="font-normal text-slate-400">(optional)</span></span>
+            <ContactPicker name="referred_by" initial={referredBy ? { id: referredBy.id, type: referredBy.type, name: referredBy.name, detail: referredBy.detail } : null} placeholder="Search your contacts and suppliers" />
+          </div>
           {res?.error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{res.error}</p>}
           <div className="flex gap-2 pt-1">
             <Button type="submit" disabled={pending} className="flex-1">{pending ? "Saving…" : "Save"}</Button>
@@ -71,6 +82,11 @@ export function ContactSection({ jobId, customer: c, site, state }: { jobId: str
             <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden><path d="M12 2a7 7 0 00-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 00-7-7z" fill="#ea4335" /><circle cx="12" cy="9" r="2.6" fill="#fff" /></svg>
           </a>}
         </ContactRow>
+        {referredBy && (
+          <ContactRow icon={GIFT} label="Referred by" value={<Link href={referredBy.href} className="hover:text-brand-700 hover:underline" data-contact-referred>{referredBy.name}</Link>}>
+            <Link href={referredBy.href} aria-label={`Open ${referredBy.name}`} title={`Open ${referredBy.name}`} className={iconBtn}><Icon d="M9 6l6 6-6 6" /></Link>
+          </ContactRow>
+        )}
       </>)}
     </Section>
   );

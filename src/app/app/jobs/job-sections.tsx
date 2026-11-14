@@ -2,6 +2,7 @@
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { cx } from "@/components/ui";
 import type { Docket, LeadDoc } from "@/lib/job-docket-server";
+import { referrerHref } from "@/lib/referrals-server";
 import { addNote } from "./actions";
 import { DocumentDrop } from "./document-drop";
 
@@ -37,7 +38,9 @@ export function NoteCard({ by, at, body, tone }: { by: string; at: string | null
 
 export function JobContact({ d }: { d: Docket }) {
   const c = d.customer;
-  return <ContactSection jobId={d.job.id} customer={{ id: c.id, name: c.name, phone: c.phone, email: c.email }} site={d.job.site_address ?? c.address} state={d.job.state} />;
+  const r = d.job.referredBy;
+  return <ContactSection jobId={d.job.id} customer={{ id: c.id, name: c.name, phone: c.phone, email: c.email }} site={d.job.site_address ?? c.address} state={d.job.state}
+    referredBy={r ? { ...r, href: referrerHref(r) } : null} />;
 }
 
 /** Notes: what the lead sent (new leads), then the team's notes, newest first, and a box to add one. */
