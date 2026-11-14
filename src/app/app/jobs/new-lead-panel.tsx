@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { Field, Input, Select, Textarea } from "@/components/ui";
 import { AddressLookup } from "@/components/address-lookup";
+import { CustomerLookup } from "@/components/customer-lookup";
 import { label } from "@/lib/format";
 import { CUSTOMER_SOURCES } from "@/lib/types";
 import { createCustomer } from "../customers/actions";
@@ -49,11 +50,7 @@ export function NewLeadPanel({ closeHref, filter = null, defaultState, variant =
             </div>
 
             <Section title="Contact">
-              <Field label="Name"><Input name="name" required autoFocus autoComplete="off" placeholder="e.g. Priya Sharma" /></Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Mobile"><Input name="phone" type="tel" inputMode="tel" placeholder="04xx xxx xxx" /></Field>
-                <Field label="Email"><Input name="email" type="email" /></Field>
-              </div>
+              <CustomerLookup />
             </Section>
 
             <Section title="Site">

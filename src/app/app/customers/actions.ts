@@ -31,8 +31,26 @@ function coords(fd: FormData): { lat?: number; lng?: number } {
   return lat >= -45 && lat <= -9 && lng >= 112 && lng <= 155 ? { lat, lng } : {};
 }
 
+export type CustomerMatch = { id: string; name: string; phone: string | null; email: string | null; address: string | null; city: string | null; state: string | null; zip: string | null; jobs: number };
+
+/** Contact lookup on New lead / New customer: existing customers by name, email or mobile (spaces in numbers ignored). */
+export async function searchCustomers(q: string): Promise<CustomerMatch[]> {
+  const { supabase } = await requireOrg();
+  const term = q.trim().replace(/[%,()*\\]/g, " ").slice(0, 80);
+  if (term.length < 2) return [];
+  const digits = term.replace(/\D/g, "");
+  const ors = [`name.ilike.%${term}%`, `email.ilike.%${term}%`];
+  // "0491570" also finds "0491 570 313"; +61 numbers match from their local part.
+  if (digits.length >= 3) ors.push(`phone.ilike.%${digits.replace(/^61/, "").split("").join("%")}%`);
+  const { data } = await supabase.from("customers").select("id, name, phone, email, address, city, state, zip, jobs(id)").or(ors.join(",")).order("created_at", { ascending: false }).limit(6);
+  return (data ?? []).map((c) => ({ id: c.id, name: c.name, phone: c.phone, email: c.email, address: c.address, city: c.city, state: c.state, zip: c.zip, jobs: Array.isArray(c.jobs) ? c.jobs.length : 0 }));
+}
+
 export async function createCustomer(_: ActionResult, fd: FormData): Promise<ActionResult> {
   const { supabase, org, user } = await requireOrg();
+  // Picked an existing customer in the lookup: open the job for them instead of adding a duplicate.
+  const existingId = str(fd, "customer_id");
+  if (existingId) return jobForExisting(existingId, fd);
   const f = fields(fd);
   if (!f.name) return { error: "Name is required." };
   const claim = {
@@ -100,4 +118,32 @@ export async function deleteCustomer(fd: FormData) {
   if (error) throw new Error(friendly(error));
   revalidatePath("/app", "layout");
   redirect("/app/contacts");
+}
+
+async function jobForExisting(customerId: string, fd: FormData): Promise<ActionResult> {
+  const { supabase, org, user } = await requireOrg();
+  const { data: c } = await supabase.from("customers").select("id, name, address, city, state, zip").eq("id", customerId).maybeSingle();
+  if (!c) return { error: "That customer isn't in your list any more. Search again." };
+  if (fd.get("create_job") !== "on") return { error: `${c.name} is already a customer. Tick “Also open a job” to start a new job for them.` };
+  const claim = { carrier: str(fd, "insurance_company"), claim_number: str(fd, "claim_number"), adjuster_name: str(fd, "adjuster_name"), adjuster_phone: str(fd, "adjuster_phone") };
+  const insurance = fd.get("job_kind") === "insurance" || Boolean(claim.carrier || claim.claim_number);
+  // The site is what they entered, else the customer's own address.
+  const typed = { address: str(fd, "address"), city: str(fd, "city"), state: str(fd, "state")?.toUpperCase() ?? null, zip: str(fd, "zip") };
+  const site = typed.address ? typed : { address: c.address, city: c.city, state: c.state, zip: c.zip };
+  const { data: job, error } = await supabase.from("jobs").insert({
+    org_id: org.id, customer_id: c.id,
+    title: str(fd, "job_title") ?? (insurance ? "Insurance roof inspection" : "Roof inspection"),
+    site_address: [site.address, site.city, site.state, site.zip].filter(Boolean).join(", ") || null,
+    state: site.state, zip: site.zip, is_insurance: insurance, created_by: user.id,
+    notes: str(fd, "notes"),
+    ...(typed.address ? coords(fd) : {}),
+  }).select("id").single();
+  if (error) return { error: friendly(error) };
+  if (insurance) {
+    const { error: claimErr } = await supabase.from("claims").insert({ org_id: org.id, job_id: job.id, ...claim });
+    if (claimErr) return { error: friendly(claimErr) };
+  }
+  revalidatePath("/app", "layout");
+  const filter = str(fd, "filter");
+  redirect(fd.get("return_to") === "board" ? `/app/jobs?${filter && /^[a-z]+$/.test(filter) ? `filter=${filter}&` : ""}job=${job.id}` : `/app/jobs/${job.id}`);
 }
