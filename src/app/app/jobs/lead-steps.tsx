@@ -167,8 +167,9 @@ export function LeadSteps(p: LeadStepsProps) {
 
       {/* One box: the plan sheet, and once the plans are in, the quote right under it. The sheet keeps its place in
           both states, so Claude's summary survives the refresh. */}
-      <div className={cx("mt-3", !planless && p.quote && "overflow-hidden rounded-2xl ring-1 ring-brand-200")} data-lead-drop>
-        <DocumentDrop jobId={p.jobId} variant="plans" compact={!planless} measured={Boolean(p.roof)} joined={!planless && Boolean(p.quote)}
+      {/* Full bleed: the sheet (and receipt) run the whole width of the sidebar, lines top and bottom only. */}
+      <div className="-mx-5 mt-3 border-y border-brand-200" data-lead-drop>
+        <DocumentDrop jobId={p.jobId} variant="plans" compact={!planless} measured={Boolean(p.roof)} joined
           estimateId={p.quote?.status === "draft" ? p.quote.id : undefined}
           sheet={p.roof ? <RoofDrawing labels={p.roof} /> : undefined} caption={p.caption ?? undefined} />
         {!planless && p.quote && <QuoteSummary q={p.quote} first={p.first} previewHref={p.previewHref ?? null} />}

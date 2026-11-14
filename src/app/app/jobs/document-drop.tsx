@@ -8,7 +8,7 @@
 // variant "plans" (a new lead's Next up): the same, and the quote it fills in is found or made on the fly
 // (quoteForPlans), so dropping the plans is the whole first step. `compact` once the plans are in.
 import { useRouter } from "next/navigation";
-import { useRef, useState, type DragEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
 import { cx } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { attachJobFile, prepareJobUpload, readUploadedDocument, type DocIntakeResult } from "./[id]/files/actions";
@@ -16,6 +16,26 @@ import { quoteForPlans } from "./lead-actions";
 import type { RoofSheet } from "@/lib/roof-sheet";
 
 const MAX = 50 * 1024 * 1024;
+
+/** What Claude is doing while it reads plans, one step at a time, so the wait feels like work being done. */
+const READ_STEPS = ["Reading the plans", "Finding the roof plan", "Calculating total roof area", "Working out the pitch", "Measuring ridges and hips", "Measuring gutters and eaves", "Pricing the quote"];
+
+function ReadingSteps({ done, total }: { done: number; total: number }) {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setStep((s) => Math.min(s + 1, READ_STEPS.length - 1)), 2200);
+    return () => clearInterval(t);
+  }, []);
+  // The bar creeps forward with the steps and jumps with each file read, but never reaches the end until it's done.
+  const pct = Math.min(92, Math.max(((step + 1) / READ_STEPS.length) * 88, total ? (done / total) * 100 : 0));
+  return (
+    <>
+      <p className="rounded-md px-2 text-sm font-semibold text-ink" style={{ background: SHEET }} data-reading aria-live="polite">{READ_STEPS[step]}…</p>
+      <p className="rounded-md px-2 text-xs text-slate-500" style={{ background: SHEET }}>Claude is reading {total === 1 ? "the plans" : `file ${Math.min(done + 1, total)} of ${total}`}</p>
+      <div className="mt-1.5 h-1.5 w-44 overflow-hidden rounded-full bg-white"><div className="h-full rounded-full bg-brand-500 transition-[width] duration-700" style={{ width: `${pct}%` }} /></div>
+    </>
+  );
+}
 const SHEET = "#eef4f0";
 
 /**
@@ -217,11 +237,7 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
             {compact && sheet && !reading && !busy ? sheet : <RoofDrawing />}
             {!(compact && sheet && !reading && !busy) && (
               <div className="absolute inset-0 grid place-content-center justify-items-center gap-1 px-6 text-center">
-                {reading ? (<>
-                  <p className="rounded-md px-2 text-sm font-semibold text-ink" style={{ background: SHEET }} data-reading>Claude is reading {reading.total === 1 ? "the plans" : `${Math.min(reading.done + 1, reading.total)} of ${reading.total}`}…</p>
-                  <p className="rounded-md px-2 text-xs text-slate-500" style={{ background: SHEET }}>Drawing the roof and measuring it</p>
-                  <div className="mt-1.5 h-1.5 w-44 overflow-hidden rounded-full bg-white"><div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${reading.total ? Math.max(8, (reading.done / reading.total) * 100) : 0}%` }} /></div>
-                </>) : busy ? (<>
+                {reading ? <ReadingSteps done={reading.done} total={reading.total} /> : busy ? (<>
                   <p className="rounded-md px-2 text-sm font-semibold text-ink" style={{ background: SHEET }}>Uploading {Math.min(busy.done + 1, busy.total)} of {busy.total}…</p>
                   <div className="mt-1.5 h-1.5 w-44 overflow-hidden rounded-full bg-white"><div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${busy.total ? (busy.done / busy.total) * 100 : 0}%` }} /></div>
                 </>) : compact ? (<>
