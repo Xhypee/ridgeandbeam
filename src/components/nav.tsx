@@ -122,11 +122,11 @@ export function NavRail({ canSeeMoney = true, crewLead = false, unread = 0 }: { 
   );
 }
 
-/** True while a right sidebar is open: a job's docket (?job=…) or New lead on the Jobs board, New customer on Customers (?new=1). */
+/** True while a right sidebar is open: a job's docket (?job=…) or New lead (?new=1) on the Jobs board; a customer (?customer=…) or New customer (?new=1) on Customers. */
 export function useDocketOpen() {
   const path = usePathname();
   const sp = useSearchParams();
-  if (path === "/app/customers") return sp.get("new") === "1";
+  if (path === "/app/customers") return sp.has("customer") || sp.get("new") === "1";
   return path === "/app/jobs" && (sp.has("job") || sp.get("new") === "1");
 }
 
