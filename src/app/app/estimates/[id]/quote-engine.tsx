@@ -1,6 +1,6 @@
 "use client";
 // The quoting engine: one column that reads like the quote the customer gets.
-// 01 Who it's for · 02 The job · 03 Roof plan (our roof report) · 04 Price (supplier, lines, extras, You make / they pay)
+// 01 Roof plan (our roof report, done first) · 02 Who it's for · 03 The job · 04 Price (supplier, lines, extras, You make / they pay)
 // · 05 Payment (Full by default, or Instalments) · 06 Terms. Everything saves as you type; the bar at the bottom
 // always shows the total with Preview and Send.
 import Link from "next/link";
@@ -152,7 +152,9 @@ export function QuoteEngine(p: EngineProps) {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-cream" data-quote-engine>
       <main className="mx-auto max-w-[780px] px-4 pb-6 pt-4 sm:px-6">
-        <Block n={1} title="Who it's for">
+        <Block n={1} title="Roof plan" hint="start here · our roof report">{p.roofPlan}</Block>
+
+        <Block n={2} title="Who it's for">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">Customer</span><input className={field} value={party.name} onChange={(e) => editParty("name", e.target.value)} onBlur={() => void flush()} data-field="customer" /></label>
             <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">Email</span><input type="email" className={field} value={party.email} placeholder="Where the quote goes" onChange={(e) => editParty("email", e.target.value)} onBlur={() => void flush()} data-field="email" /></label>
@@ -160,14 +162,12 @@ export function QuoteEngine(p: EngineProps) {
           </div>
         </Block>
 
-        <Block n={2} title="The job">
+        <Block n={3} title="The job">
           <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">Title</span><input className={cx(field, "font-display text-lg font-bold")} value={party.title} onChange={(e) => editParty("title", e.target.value)} onBlur={() => void flush()} data-field="title" /></label>
           <label className="mt-3 block"><span className="mb-1 block text-xs font-semibold text-slate-500">What we&apos;ll do</span>
             <textarea className={cx(field, "min-h-28 leading-relaxed")} value={notes} placeholder="In plain words: what you'll do, in the order it happens." onChange={(e) => { setNotes(e.target.value); touch("content"); }} onBlur={() => void flush()} data-field="notes" />
           </label>
         </Block>
-
-        <Block n={3} title="Roof plan" hint="our roof report">{p.roofPlan}</Block>
 
         <Block n={4} title="Price" hint={inclusive ? "inc GST" : "ex GST"} right={<SupplierPicker p={p} current={orgSupplierId} onChosen={(id) => { setOrgSupplierId(id); router.refresh(); }} flush={flush} />}>
           <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
