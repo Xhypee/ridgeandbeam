@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Empty, Input, LinkButton, PageHeader, Table, td, th } from "@/components/ui";
+import { NewLeadPanel } from "../jobs/new-lead-panel";
 import { requireOrg } from "@/lib/dal";
 import { date, isoDate, label } from "@/lib/format";
 import type { Customer } from "@/lib/types";
@@ -10,8 +11,8 @@ export const metadata: Metadata = { title: "Customers" };
 const PER_PAGE = 100;
 
 export default async function CustomersPage({ searchParams }: PageProps<"/app/customers">) {
-  const { supabase } = await requireOrg();
-  const { q, page: pageParam } = await searchParams;
+  const { supabase, org } = await requireOrg();
+  const { q, page: pageParam, new: adding } = await searchParams;
   const query = typeof q === "string" ? q.trim() : "";
   const page = Math.max(1, Math.floor(Number(pageParam)) || 1);
   const from = (page - 1) * PER_PAGE;
@@ -28,11 +29,13 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cu
   const today = isoDate(new Date());
   const total = count ?? customers.length;
   const pages = Math.max(1, Math.ceil(total / PER_PAGE));
-  const pageHref = (n: number) => `/app/customers?${new URLSearchParams({ ...(query ? { q: query } : {}), ...(n > 1 ? { page: String(n) } : {}) })}`;
+  const pageHref = (n: number, extra: Record<string, string> = {}) => `/app/customers?${new URLSearchParams({ ...(query ? { q: query } : {}), ...(n > 1 ? { page: String(n) } : {}), ...extra })}`.replace(/\?$/, "");
+  // ?new=1 opens the New customer form in a right sidebar, like New lead on the Jobs board.
+  const open = adding === "1";
 
-  return (
+  const list = (
     <>
-      <PageHeader title="Customers" subtitle={total ? `${total} ${total === 1 ? "customer" : "customers"}${query ? ` matching “${query}”` : ""}` : "Homeowners, property managers, and leads."} actions={<LinkButton href="/app/customers/new">New customer</LinkButton>} />
+      <PageHeader title="Customers" subtitle={total ? `${total} ${total === 1 ? "customer" : "customers"}${query ? ` matching “${query}”` : ""}` : "Homeowners, property managers, and leads."} actions={<LinkButton href={pageHref(page, { new: "1" })} scroll={false} aria-current={open ? "true" : undefined}>New customer</LinkButton>} />
       <form action="/app/customers" className="mb-4 max-w-sm">
         <Input name="q" defaultValue={query} placeholder="Search name, phone, email, address…" />
       </form>
@@ -76,5 +79,17 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cu
         </nav>
       )}
     </>
+  );
+
+  if (!open) return list;
+  return (
+    <div className="lg:flex lg:h-screen">
+      <div className="no-scrollbar min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:py-7">
+        {list}
+      </div>
+      <aside aria-label="New customer" className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-screen lg:w-[440px] lg:shrink-0 lg:border-l lg:border-slate-200 xl:w-[460px]">
+        <NewLeadPanel variant="customer" closeHref={pageHref(page)} defaultState={org.state ?? null} />
+      </aside>
+    </div>
   );
 }

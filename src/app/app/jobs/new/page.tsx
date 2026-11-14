@@ -18,7 +18,7 @@ export default async function NewJobPage({ searchParams }: PageProps<"/app/jobs/
       <>
         <PageHeader title="New job" />
         <Empty title="Add a customer first">
-          <LinkButton href="/app/customers/new" className="mt-3">New customer</LinkButton>
+          <LinkButton href="/app/customers?new=1" className="mt-3">New customer</LinkButton>
         </Empty>
       </>
     );
