@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyMargin, normaliseStages, planSchedule, priceFromCost, quoteMoney, stageAmounts, stagesProblem } from "./quote-pricing";
+import { applyMargin, dueOnSigning, normaliseStages, planSchedule, priceFromCost, quoteMoney, stageAmounts, stagesProblem } from "./quote-pricing";
 
 describe("quote margin", () => {
   it("prices from cost at a true margin, GST inclusive", () => {
@@ -48,5 +48,15 @@ describe("payment plan", () => {
   it("splits dollars exactly", () => {
     const a = stageAmounts(1531.23, [{ label: "D", pct: 10, trigger: "signed" }, { label: "M", pct: 40, trigger: "delivered" }, { label: "C", pct: 50, trigger: "completed" }]);
     expect(a).toEqual([153.12, 612.49, 765.62]);
+  });
+});
+
+describe("dueOnSigning", () => {
+  it("is true for instalments, pay-on-acceptance and older quotes; false for paying later in full", () => {
+    expect(dueOnSigning("instalments", "completed")).toBe(true);
+    expect(dueOnSigning("full", "signed")).toBe(true);
+    expect(dueOnSigning(null, null)).toBe(true);
+    expect(dueOnSigning("full", "completed")).toBe(false);
+    expect(dueOnSigning("full", "delivered")).toBe(false);
   });
 });

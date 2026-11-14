@@ -21,8 +21,10 @@ import { reopenLead } from "./lead-actions";
 import { referrerHref } from "@/lib/referrals-server";
 import { inspectionLabel, LOST_REASON_LABEL } from "@/lib/lead-steps";
 
-const STAGES = ["New lead", "Quoting", "Signed & Prepping", "Building", "Wrapping up"];
-const STAGE_INDEX: Record<string, number> = { lead: 0, inspection: 1, estimate_sent: 1, sold: 2, scheduled: 2, in_progress: 3, completed: 4, paid: 4 };
+const STAGES = ["New lead", "Quoted", "Signed & Prepping", "Building", "Wrapping up"];
+// Matches the board's columns (lib/next-step pipelineColumn), so the ticket says the same as the column.
+const COLUMN_INDEX: Record<string, number> = { new: 0, quoted: 1, sold: 2, building: 3, wrapping: 4 };
+const STAGE_INDEX: Record<string, number> = { lead: 0, inspection: 0, estimate_sent: 1, sold: 2, scheduled: 2, in_progress: 3, completed: 4, paid: 4 };
 const shortDate = (iso: string) => new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T12:00:00` : iso).toLocaleDateString("en-AU", { day: "numeric", month: "short" });
 const whole = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 });
 
@@ -67,7 +69,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
   const j = d.job;
   const base = `/app/jobs/${j.id}`;
   const lost = j.stage === "lost";
-  const at = STAGE_INDEX[j.stage] ?? 0;
+  const at = d.column ? COLUMN_INDEX[d.column] : STAGE_INDEX[j.stage] ?? 0;
   const done = j.stage === "paid";
   const quote = d.quote;
   const signed = quote?.status === "accepted";

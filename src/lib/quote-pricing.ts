@@ -80,3 +80,12 @@ export function stageAmounts(total: number, stages: Stage[]): number[] {
   if (out.length) out[out.length - 1] += diff;
   return out.map((c) => c / 100);
 }
+
+/**
+ * Does this quote's payment plan take money when the customer signs (a deposit, or payment in full on
+ * acceptance)? Instalments always start with a deposit on acceptance. No plan saved (older quotes) counts as yes.
+ */
+export function dueOnSigning(mode: string | null | undefined, when: string | null | undefined): boolean {
+  if (mode === "full") return when === "signed";
+  return true;
+}

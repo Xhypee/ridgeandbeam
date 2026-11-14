@@ -28,7 +28,7 @@ export type NextStepJob = Partial<ReadinessJob> & {
   customer_phone?: string | null;
 };
 
-export type NextStepEstimate = { id: string; number: number; status: string; total: number; sent_at: string | null; accepted_at: string | null };
+export type NextStepEstimate = { id: string; number: number; status: string; total: number; sent_at: string | null; accepted_at: string | null; depositDue?: boolean };
 export type NextStepClaim = { id: string; stage: string; stage_changed_at: string | null; carrier: string | null; claim_number?: string | null };
 /** An insurer variation request (stored as a claim supplement). */
 export type NextStepVariation = { id: string; status: string; submitted_on: string | null; next_follow_up_on: string | null; requested_amount: number };
@@ -401,14 +401,28 @@ export function jobSteps(job: NextStepJob, ctx: NextStepCtx, opts: { crewLead?: 
 }
 
 /** Pipeline column for a job, or null when hidden (lost; paid more than 30 days ago). */
-export type PipelineColumn = "new" | "quoting" | "sold" | "building" | "wrapping";
-export function pipelineColumn(job: { stage: string; stage_changed_at?: string | null }, now = new Date()): PipelineColumn | null {
+export type PipelineColumn = "new" | "quoted" | "sold" | "building" | "wrapping";
+/**
+ * Signed, but the deposit (money due when they accept) hasn't come in yet. Insurance jobs never wait on one:
+ * the insurer pays. Needs the job's quote and invoice totals.
+ */
+export function depositPending(job: { is_insurance?: boolean }, ctx: Pick<NextStepCtx, "estimate" | "invoices"> | null | undefined): boolean {
+  if (!ctx?.estimate || ctx.estimate.status !== "accepted" || job.is_insurance) return false;
+  if (ctx.estimate.depositDue === false) return false;
+  return (ctx.invoices?.paid ?? 0) <= 0;
+}
+
+/**
+ * The Jobs board column. New leads: not quoted yet (lead, inspection). Quoted: the quote is out, or it's signed
+ * and waiting on the deposit. Signed & Prepping: signed and the deposit is in (or none is due).
+ */
+export function pipelineColumn(job: { stage: string; stage_changed_at?: string | null; is_insurance?: boolean }, now = new Date(), ctx?: Pick<NextStepCtx, "estimate" | "invoices"> | null): PipelineColumn | null {
   switch (job.stage) {
-    case "lead": return "new";
-    case "inspection":
-    case "estimate_sent": return "quoting";
+    case "lead":
+    case "inspection": return "new";
+    case "estimate_sent": return "quoted";
     case "sold":
-    case "scheduled": return "sold";
+    case "scheduled": return depositPending(job, ctx) ? "quoted" : "sold";
     case "in_progress": return "building";
     case "completed": return "wrapping";
     case "paid": return daysBetween(job.stage_changed_at, now) <= 30 ? "wrapping" : null;
@@ -420,6 +434,6 @@ export function pipelineColumn(job: { stage: string; stage_changed_at?: string |
 export function ageTone(col: PipelineColumn, opts: { minutes?: number; days?: number }): "ok" | "amber" | "red" {
   if (opts.minutes !== undefined) return opts.minutes < 5 ? "ok" : opts.minutes < 60 ? "amber" : "red";
   const d = opts.days ?? 0;
-  const [amber, red] = ({ new: [1, 3], quoting: [5, 10], sold: [7, 14], building: [5, 10], wrapping: [7, 21] } as Record<PipelineColumn, [number, number]>)[col];
+  const [amber, red] = ({ new: [1, 3], quoted: [5, 10], sold: [7, 14], building: [5, 10], wrapping: [7, 21] } as Record<PipelineColumn, [number, number]>)[col];
   return d >= red ? "red" : d >= amber ? "amber" : "ok";
 }

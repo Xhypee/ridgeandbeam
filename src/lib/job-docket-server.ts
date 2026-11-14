@@ -10,7 +10,7 @@ import { daysLeft, validUntil } from "./quote-remind";
 import { checklistProgress } from "./job-compliance";
 import { loadJobCompliance } from "./job-compliance-server";
 import { defaultJobRole, type JobRole } from "./job-team";
-import { nextStep, type NextStep } from "./next-step";
+import { nextStep, pipelineColumn, type NextStep, type PipelineColumn } from "./next-step";
 import { asNextStepJob, loadNextStepCtx, NEXT_STEP_JOB_COLS } from "./next-step-server";
 import { normalizeMeasurements, summarize, type Measurements, type RoofSummary } from "./roof";
 import type { Organization } from "./types";
@@ -29,6 +29,8 @@ export type Docket = {
   };
   customer: { id: string; name: string; phone: string | null; email: string | null; address: string | null; notes: string | null };
   next: NextStep;
+  /** The Jobs board column this job is in (same rule as the board). */
+  column: PipelineColumn | null;
   team: { user_id: string; role: JobRole; name: string; email: string | null; phone: string | null; memberRole: string }[];
   people: (Person & { suggested: JobRole })[];
   quote: {
@@ -268,6 +270,7 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
     },
     customer: { id: c.id!, name: c.name ?? "", phone: c.phone, email: c.email, address: addr || null, notes: c.notes },
     next: nextStep(j as never, ctx),
+    column: pipelineColumn({ stage: row.stage, stage_changed_at: (row as { stage_changed_at?: string | null }).stage_changed_at, is_insurance: row.is_insurance }, new Date(), ctx),
     team,
     people: peopleList.map((p) => ({ ...p, suggested: defaultJobRole(p.role) })),
     quote,

@@ -148,7 +148,7 @@ export async function setLeadOwner(_: ActionResult, fd: FormData): Promise<Actio
   return { ok: `${(person.full_name || person.email || "").split(" ")[0]} has it.` };
 }
 
-/** Book the roof inspection: saves the time, moves the job to Quoting, optionally texts the homeowner. */
+/** Book the roof inspection: saves the time, moves the job to the inspection stage (still in New leads), optionally texts the homeowner. */
 export async function bookInspection(_: ActionResult, fd: FormData): Promise<ActionResult> {
   const ctx = await requireOrg();
   if (ctx.isCrewLead) return { error: "Crew leads can't book inspections." };
