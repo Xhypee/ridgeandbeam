@@ -95,17 +95,15 @@ export function CustomerLookup({ search = searchCustomers }: { search?: (q: stri
   };
 
   if (mode === "picked" && picked) {
-    const addr = [picked.address, [picked.city, picked.state, picked.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+    // Kept to the essentials: who, and how to reach them.
     return (
       <div className="space-y-2" data-contact-mode="picked">
         <input type="hidden" name="customer_id" value={picked.id} />
-        <div className="flex items-start gap-3 rounded-xl bg-brand-50 px-3.5 py-3 ring-1 ring-brand-200" data-contact-picked>
+        <div className="flex items-center gap-3 rounded-xl bg-brand-50 px-3.5 py-3 ring-1 ring-brand-200" data-contact-picked>
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white text-brand-700 ring-1 ring-brand-200"><Icon d={PERSON} /></span>
           <span className="min-w-0 flex-1">
             <span className="block font-semibold text-ink">{picked.name}</span>
-            <span className="block truncate text-xs text-slate-600">{[picked.phone, picked.email].filter(Boolean).join(" · ") || "No contact details"}</span>
-            {addr && <span className="block truncate text-xs text-slate-500">{addr}</span>}
-            <span className="mt-1 block text-xs font-medium text-brand-700">Existing customer · {picked.jobs} {picked.jobs === 1 ? "job" : "jobs"}. The new job goes on their record.</span>
+            {(picked.phone || picked.email) && <span className="block truncate text-sm text-slate-600">{picked.phone || picked.email}</span>}
           </span>
         </div>
         <button type="button" onClick={backToSearch} className={linkCls}>Choose someone else</button>
