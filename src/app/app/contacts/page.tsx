@@ -7,6 +7,7 @@ import { date, isoDate } from "@/lib/format";
 import { orgSupplierName } from "@/lib/suppliers";
 import { ClaudeBar } from "../jobs/claude-bar";
 import { aiEnabled } from "@/lib/ai";
+import { ClaudeSidebar } from "../jobs/claude-sidebar";
 import { ContactDocket, loadContactDocket, loadSupplierDocket, SupplierDocket } from "./contact-docket";
 import { NewContactPanel } from "./contact-form";
 
@@ -157,7 +158,15 @@ export default async function ContactsPage({ searchParams }: PageProps<"/app/con
   const side = docket ? <ContactDocket key={docket.customer.id} d={docket} closeHref={closeHref} canSeeMoney={canSeeMoney} today={today} />
     : supplier ? <SupplierDocket key={supplier.s.id} d={supplier} closeHref={closeHref} canSeeMoney={canSeeMoney} canEdit={isAdmin || role === "member"} />
     : adding ? <NewContactPanel closeHref={closeHref} initial={type ?? "customer"} defaultState={org.state ?? null} claude={<ClaudeBar ready={aiEnabled()} />} /> : null;
-  if (!side) return content;
+  // Nothing open: Claude's chat takes the right side (computer only).
+  if (!side) {
+    return (
+      <div className="lg:flex lg:h-full">
+        <div className="no-scrollbar min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:py-7">{content}</div>
+        <ClaudeSidebar ready={aiEnabled()} />
+      </div>
+    );
+  }
   return (
     <div className="lg:flex lg:h-full">
       <div className="no-scrollbar min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:py-7">{content}</div>

@@ -5,8 +5,11 @@
 // While chatting, the chat takes the bottom 70% of the sidebar and the rest blurs, so it's clear what has focus.
 // Click the blur or anywhere else in the app (or Esc, or Minimise) and it shrinks back to the single chat bar;
 // the conversation stays and comes back when you click into the bar again.
+// Every chat is saved (chat-actions.ts) like Claude does: History lists your past chats for where you are (this
+// job / contact / supplier, or general), New chat starts afresh.
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { cx } from "@/components/ui";
+import { deleteChat, listChats, loadChat, saveChat, type ChatSummary } from "./chat-actions";
 
 type Turn = { role: "user" | "assistant"; content: string; error?: boolean };
 type Recognition = { lang: string; interimResults: boolean; continuous: boolean; start(): void; stop(): void; abort(): void; onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null; onend: (() => void) | null; onerror: ((e: { error: string }) => void) | null };
@@ -16,6 +19,18 @@ const Spark = ({ className = "h-4 w-4" }: { className?: string }) => (
 );
 const iconBtn = "grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-ink";
 const MIC = "M12 4a3 3 0 00-3 3v5a3 3 0 006 0V7a3 3 0 00-3-3zM6 11a6 6 0 0012 0M12 17v3";
+const CLOCK = "M12 21a9 9 0 100-18 9 9 0 000 18M12 7v5l3 2";
+const NEW = "M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z";
+
+/** "just now", "5 min ago", "3:20 pm", "Mon", "12 Nov". */
+function ago(iso: string): string {
+  const t = new Date(iso), mins = Math.round((Date.now() - t.getTime()) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  if (t.toDateString() === new Date().toDateString()) return t.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" }).replace(/\s/g, " ");
+  if (Date.now() - t.getTime() < 6 * 864e5) return t.toLocaleDateString("en-AU", { weekday: "short" });
+  return t.toLocaleDateString("en-AU", { day: "numeric", month: "short" });
+}
 
 function getRecognition(): Recognition | null {
   if (typeof window === "undefined") return null;
@@ -24,7 +39,8 @@ function getRecognition(): Recognition | null {
   return C ? new C() : null;
 }
 
-export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready }: { jobId?: string; contactId?: string; supplierId?: string; firstName?: string; ready: boolean }) {
+/** `docked`: the chat is the whole sidebar (Jobs and Contacts with nothing else open), always open, no blur or minimise. */
+export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready, docked = false }: { jobId?: string; contactId?: string; supplierId?: string; firstName?: string; ready: boolean; docked?: boolean }) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -37,6 +53,9 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready }: { 
   const panel = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false); // chat has the sidebar's attention
+  const chatId = useRef<string | null>(null); // the saved chat this conversation belongs to
+  const [view, setView] = useState<"chat" | "history">("chat");
+  const [chats, setChats] = useState<ChatSummary[] | null>(null);
   const [barH, setBarH] = useState(68);
 
   // The chat sits over the sidebar card it's in: make that card the frame.
@@ -45,7 +64,7 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready }: { 
     if (parent && getComputedStyle(parent).position === "static") parent.style.position = "relative";
   }, []);
   useEffect(() => {
-    if (!focused) return;
+    if (!focused || docked) return;
     panel.current?.animate([{ transform: "translateY(24px)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }], { duration: 220, easing: "cubic-bezier(.3,.7,.2,1)" });
     const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setFocused(false); };
     // Anywhere outside the chat (the panel and the blur are inside it; the blur minimises on its own).
@@ -53,13 +72,14 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready }: { 
     window.addEventListener("keydown", esc);
     document.addEventListener("pointerdown", away, true);
     return () => { window.removeEventListener("keydown", esc); document.removeEventListener("pointerdown", away, true); };
-  }, [focused]);
+  }, [focused, docked]);
 
   useEffect(() => { log.current?.scrollTo({ top: log.current.scrollHeight }); }, [turns, busy]);
   useEffect(() => () => { callOn.current = false; rec.current?.abort(); if (typeof window !== "undefined") window.speechSynthesis?.cancel(); }, []);
 
   async function ask(q: string): Promise<string | null> {
     setFocused(true);
+    setView("chat");
     const next = [...history.current, { role: "user" as const, content: q }];
     history.current = next;
     setTurns(next);
@@ -73,6 +93,11 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready }: { 
       const turn: Turn = json.text ? { role: "assistant", content: json.text } : { role: "assistant", content: json.error ?? "Claude couldn't answer right now.", error: true };
       history.current = [...next, turn];
       setTurns(history.current);
+      if (!turn.error) {
+        // Keep it in History (quietly; a failed save doesn't get in the way of the chat).
+        const keep = history.current.filter((t) => !t.error).map(({ role, content }) => ({ role, content }));
+        void saveChat({ id: chatId.current, context: { jobId, contactId, supplierId }, turns: keep }).then((r) => { if (r.id) chatId.current = r.id; }).catch(() => {});
+      }
       return turn.error ? null : turn.content;
     } catch {
       history.current = [...next, { role: "assistant", content: "Couldn't reach Claude. Check your connection.", error: true }];
@@ -135,7 +160,7 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready }: { 
     listen();
   }
 
-  const open = focused; // a voice call carries on minimised; the bar shows its status
+  const open = docked || focused; // a voice call carries on minimised; the bar shows its status
   // The chat panel runs from 30% down to the top of the input bar, so chat + bar = the bottom 70%.
   useLayoutEffect(() => { if (open && root.current) setBarH(root.current.offsetHeight); }, [open]);
   const status = call === "listening" ? "Listening… say what you need" : call === "thinking" ? "Thinking…" : call === "speaking" ? "Claude is talking. Tap to hang up" : null;
@@ -143,31 +168,76 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready }: { 
   const starters = firstName && jobId ? ["What should I do next?", `Draft a text to ${firstName}`, "What should I charge for this?"]
     : firstName ? [`What's happening with ${firstName}?`, `Draft a message to ${firstName}`, "Who should I follow up today?"]
     : ["What needs doing today?", "Which quotes need a follow-up?", "How's this month looking?"];
-  const clear = () => { hangUp(); history.current = []; setTurns([]); };
+  const newChat = () => { hangUp(); history.current = []; chatId.current = null; setTurns([]); setView("chat"); input.current?.focus(); };
+  async function showHistory() {
+    if (view === "history") { setView("chat"); return; }
+    setView("history");
+    setChats(null);
+    setChats(await listChats({ jobId, contactId, supplierId }).catch(() => []));
+  }
+  async function openChat(id: string) {
+    const t = await loadChat(id).catch(() => null);
+    if (!t) return;
+    hangUp();
+    history.current = t;
+    chatId.current = id;
+    setTurns(t);
+    setView("chat");
+  }
+  async function removeChat(id: string) {
+    setChats((c) => c?.filter((x) => x.id !== id) ?? null);
+    if (chatId.current === id) newChat();
+    await deleteChat(id).catch(() => {});
+  }
   return (
     <div ref={root} className="border-t border-slate-200 bg-white" data-claude-bar data-focused={open ? "true" : "false"}>
       {open && (<>
         {/* Everything above the chat blurs; tap it to go back to the job. */}
-        <button type="button" aria-label="Back to the sidebar" onClick={() => setFocused(false)} data-claude-dim
-          className="absolute inset-x-0 top-0 z-20 h-[30%] cursor-default bg-white/60 backdrop-blur-md" />
-        <div ref={panel} className="absolute inset-x-0 top-[30%] z-30 flex flex-col rounded-t-[22px] border-t border-slate-200 bg-white" style={{ bottom: barH }} data-claude-panel>
-          <div className="flex items-center justify-between px-4 pb-1 pt-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Claude · knows your jobs</p>
+        {!docked && <button type="button" aria-label="Back to the sidebar" onClick={() => setFocused(false)} data-claude-dim
+          className="absolute inset-x-0 top-0 z-20 h-[30%] cursor-default bg-white/60 backdrop-blur-md" />}
+        <div ref={panel} className={cx("absolute inset-x-0 z-30 flex flex-col bg-white", docked ? "top-0" : "top-[30%] rounded-t-[22px] border-t border-slate-200")} style={{ bottom: barH }} data-claude-panel>
+          <div className={cx("flex items-center justify-between px-4 pb-1", docked ? "pt-6" : "pt-3")}>
+            {docked
+              ? <p className="flex items-center gap-2 font-display text-xl font-bold text-ink"><span className="grid h-7 w-7 place-items-center rounded-full bg-[#d97757] text-white"><Spark className="h-3.5 w-3.5" /></span>Ask Claude</p>
+              : <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Claude · knows your jobs</p>}
             <span className="flex items-center gap-1">
-              {turns.length > 0 && (
-                <button type="button" onClick={clear} title="Clear chat" aria-label="Clear chat" className={iconBtn} data-claude-clear>
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 12a8 8 0 108-8 8.5 8.5 0 00-6 2.5L4 8M4 3v5h5" /></svg>
+              <button type="button" onClick={() => void showHistory()} title="History" aria-label="History" aria-pressed={view === "history"} className={cx(iconBtn, view === "history" && "bg-slate-100 text-ink")} data-claude-history>
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={CLOCK} /></svg>
+              </button>
+              {(turns.length > 0 || view === "history") && (
+                <button type="button" onClick={newChat} title="New chat" aria-label="New chat" className={iconBtn} data-claude-new>
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={NEW} /></svg>
                 </button>
               )}
-              <button type="button" onClick={() => setFocused(false)} title="Minimise" aria-label="Minimise" className={iconBtn} data-claude-minimise>
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 9l6 6 6-6" /></svg>
-              </button>
+              {!docked && (
+                <button type="button" onClick={() => setFocused(false)} title="Minimise" aria-label="Minimise" className={iconBtn} data-claude-minimise>
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+              )}
             </span>
           </div>
+          {view === "history" ? (
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-3 pt-1 text-sm" data-claude-chats>
+              <p className="px-2 pb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Your chats{firstName ? ` about ${firstName}` : ""}</p>
+              {chats === null ? <p className="px-2 py-2 text-slate-400">Loading…</p>
+                : chats.length === 0 ? <p className="px-2 py-2 text-slate-500">No past chats yet. They'll show here once you ask Claude something.</p>
+                : chats.map((c) => (
+                  <div key={c.id} className={cx("group flex items-center gap-1 rounded-xl", chatId.current === c.id ? "bg-slate-100" : "hover:bg-slate-50")} data-claude-chat>
+                    <button type="button" onClick={() => void openChat(c.id)} className="flex min-w-0 flex-1 items-baseline justify-between gap-3 px-3 py-2.5 text-left">
+                      <span className="min-w-0 truncate font-medium text-ink">{c.title}</span>
+                      <span className="shrink-0 text-xs text-slate-400">{ago(c.updatedAt)}</span>
+                    </button>
+                    <button type="button" onClick={() => void removeChat(c.id)} title="Delete chat" aria-label={`Delete chat: ${c.title}`} className="mr-1 grid h-7 w-7 shrink-0 place-items-center rounded-lg text-slate-300 opacity-0 hover:bg-white hover:text-red-600 focus-visible:opacity-100 group-hover:opacity-100">
+                      <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg>
+                    </button>
+                  </div>
+                ))}
+            </div>
+          ) : (
           <div ref={log} className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 pb-3 pt-2 text-sm" aria-live="polite">
             {turns.length === 0 && call === "off" && (
               <div className="space-y-2 pt-1" data-claude-starters>
-                <p className="text-sm text-slate-500">Ask anything about {firstName ?? "your business"}. Try:</p>
+                <p className="text-sm text-slate-500">{docked ? "Claude knows your jobs, quotes and customers. Try:" : <>Ask anything about {firstName ?? "your business"}. Try:</>}</p>
                 {starters.map((q) => (
                   <button key={q} type="button" disabled={!ready} onMouseDown={(e) => e.preventDefault()} onClick={() => void ask(q)}
                     className="block w-full rounded-xl bg-cream px-3.5 py-2.5 text-left text-sm font-medium text-ink ring-1 ring-slate-200 hover:ring-brand-400 disabled:opacity-50">{q}</button>
@@ -184,6 +254,7 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready }: { 
             ))}
             {busy && <div className="flex gap-2.5"><span className="grid h-7 w-7 shrink-0 animate-pulse place-items-center rounded-full bg-[#d97757] text-white"><Spark className="h-3.5 w-3.5" /></span><p className="pt-1 text-slate-400">Thinking…</p></div>}
           </div>
+          )}
         </div>
       </>)}
       <form onSubmit={onSubmit} className="flex items-center gap-2 px-3 py-3">
