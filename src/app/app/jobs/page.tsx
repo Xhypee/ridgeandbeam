@@ -17,6 +17,7 @@ import { loadReminder } from "@/lib/quote-remind-server";
 import { loadSupplierPay, paymentRequestPreview } from "@/lib/build-stage-server";
 import { loadQuoteEmail } from "@/lib/quote-email-server";
 import { aiEnabled } from "@/lib/ai";
+import { StageMotion } from "./stage-motion";
 
 export const metadata: Metadata = { title: "Jobs" };
 
@@ -119,6 +120,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
       <div data-pipeline-scroll className={side ? "no-scrollbar -mx-1 overflow-x-auto px-1 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col" : "-mx-4 overflow-x-auto px-4 pb-4 sm:-mx-8 sm:px-8 xl:mx-0 xl:px-0"}>
         {/* With a sidebar open the five columns share whatever width is left (nothing hides under the sidebar). */}
         <div className={cx("grid grid-cols-[repeat(5,minmax(0,1fr))]", side ? "gap-2.5 lg:min-h-0 lg:min-w-0 lg:flex-1" : "min-w-[940px] gap-3")}>
+          <StageMotion>
           {COLUMNS.map((col) => {
             const list = cards
               .filter((c) => c.col === col.key)
@@ -132,7 +134,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
               <section key={col.key} aria-label={col.name} data-pipeline-col={col.key} className="flex min-h-0 min-w-0 flex-col gap-2.5">
                 <header className={cx("px-1", side && "min-h-[3.4rem]")}>
                   <div className="flex items-baseline justify-between gap-2">
-                    <h2 className={cx("text-[15px] font-bold leading-tight text-ink", side ? "min-w-0 [overflow-wrap:anywhere]" : "truncate")}>{col.name} <span className="font-medium text-slate-500">{list.length}</span></h2>
+                    <h2 className={cx("text-[15px] font-bold leading-tight text-ink", side ? "min-w-0 [overflow-wrap:anywhere]" : "truncate")}>{col.name} <span data-col-count className="font-medium text-slate-500">{list.length}</span></h2>
                     {total > 0 && !side && <span className="shrink-0 text-[13px] text-slate-500">{dollars(total)}</span>}
                   </div>
                   <p className="mt-0.5 truncate text-xs text-slate-500">{col.hint}</p>
@@ -178,6 +180,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
               </section>
             );
           })}
+          </StageMotion>
         </div>
       </div>
       {cards.length === 0 && (
