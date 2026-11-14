@@ -132,6 +132,8 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
                   </div>
                   <p className="mt-0.5 truncate text-xs text-slate-500">{col.hint}</p>
                 </header>
+                {/* On a computer each column scrolls on its own; the page and the other columns stay put. */}
+                <div data-col-scroll className="no-scrollbar -mx-1 flex min-h-0 flex-col gap-2.5 px-1 py-0.5 lg:max-h-[calc(100dvh-14rem)] lg:overflow-y-auto lg:overscroll-contain">
                 {list.map(({ j, value, next }) => {
                   const owner = people.byId.get(j.assigned_to ?? j.sales_rep_id ?? "");
                   const uncontacted = j.stage === "lead" && !j.first_contacted_at;
@@ -167,6 +169,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
                   );
                 })}
                 {list.length === 0 && <div className="rounded-2xl border border-dashed border-slate-200 px-3 py-6 text-center text-xs text-slate-400">Nothing here</div>}
+                </div>
               </section>
             );
           })}
