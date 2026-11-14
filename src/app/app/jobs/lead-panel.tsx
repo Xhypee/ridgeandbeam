@@ -39,7 +39,7 @@ export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: st
         jobId={d.job.id} first={first} phone={d.customer.phone} receivedAt={d.job.first_contacted_at ? null : d.job.lead_received_at}
         contacted={d.job.first_contacted_at ? { at: d.job.first_contacted_at, label: when(d.job.first_contacted_at), by: lead.contactedBy } : null}
         noAnswer={{ count: lead.noAnswer.count, lastLabel: lead.noAnswer.last ? when(lead.noAnswer.last) : null }}
-        owner={d.job.assigned_to} meId={meId}
+        owner={d.job.assigned_to ?? d.people.find((p) => p.role === "owner")?.user_id ?? meId} meId={meId}
         people={d.people.filter((p) => p.role !== "crew_lead").map((p) => ({ user_id: p.user_id, name: p.full_name || p.email || "Someone" }))}
         dates={{ min: dateIn(tz), suggested }}
       />

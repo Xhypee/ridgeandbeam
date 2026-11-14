@@ -132,19 +132,19 @@ export async function setLeadOwner(_: ActionResult, fd: FormData): Promise<Actio
   const id = String(fd.get("job_id") ?? "");
   const want = str(fd, "assigned_to");
   const { data: members } = await ctx.supabase.from("memberships").select("user_id, full_name, email").eq("org_id", ctx.org.id);
-  const person = want ? (members ?? []).find((m) => m.user_id === want) : null;
-  if (want && !person) return { error: "They're not on your team." };
+  const person = (members ?? []).find((m) => m.user_id === want);
+  if (!person) return { error: "Pick someone on your team." };
   const { data: job } = await ctx.supabase.from("jobs").select("assigned_to, title").eq("id", id).maybeSingle();
   if (!job) return { error: "Job not found." };
-  if ((job.assigned_to ?? null) === (person?.user_id ?? null)) return { ok: "No change." };
-  const { error } = await ctx.supabase.from("jobs").update({ assigned_to: person?.user_id ?? null }).eq("id", id);
+  if (job.assigned_to === person.user_id) return { ok: "No change." };
+  const { error } = await ctx.supabase.from("jobs").update({ assigned_to: person.user_id }).eq("id", id);
   if (error) return { error: friendly(error) };
-  await note(ctx, id, person ? `${person.full_name || person.email} is looking after this lead.` : "No one is looking after this lead now.");
-  if (person && person.user_id !== ctx.user.id) {
+  await note(ctx, id, `${person.full_name || person.email} is looking after this lead.`);
+  if (person.user_id !== ctx.user.id) {
     await notifyUser(ctx.supabase, { orgId: ctx.org.id, userId: person.user_id, kind: "job_assigned", title: `New lead for you: ${job.title}`, url: `/app/jobs?job=${id}` });
   }
   touch(id);
-  return { ok: person ? `${(person.full_name || person.email || "").split(" ")[0]} has it.` : "Unassigned." };
+  return { ok: `${(person.full_name || person.email || "").split(" ")[0]} has it.` };
 }
 
 /** Book the roof inspection: saves the time, moves the job to Quoting, optionally texts the homeowner. */

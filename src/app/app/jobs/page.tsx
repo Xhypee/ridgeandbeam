@@ -113,7 +113,8 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
 
       {/* All five columns fit from 1280px; below that the board scrolls inside itself, never the page. */}
       <div data-pipeline-scroll className={side ? "overflow-x-auto pb-4" : "-mx-4 overflow-x-auto px-4 pb-4 sm:-mx-8 sm:px-8 xl:mx-0 xl:px-0"}>
-        <div className={cx("grid grid-cols-[repeat(5,minmax(0,1fr))] gap-3", side ? "min-w-[840px]" : "min-w-[940px]")}>
+        {/* With a sidebar open the five columns share whatever width is left (nothing hides under the sidebar). */}
+        <div className={cx("grid grid-cols-[repeat(5,minmax(0,1fr))]", side ? "gap-2.5 lg:min-w-0" : "min-w-[940px] gap-3")}>
           {COLUMNS.map((col) => {
             const list = cards
               .filter((c) => c.col === col.key)
@@ -125,10 +126,10 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
             const total = list.reduce((s, c) => s + (c.value ?? 0), 0);
             return (
               <section key={col.key} aria-label={col.name} data-pipeline-col={col.key} className="flex min-w-0 flex-col gap-2.5">
-                <header className="px-1">
+                <header className={cx("px-1", side && "min-h-[3.4rem]")}>
                   <div className="flex items-baseline justify-between gap-2">
-                    <h2 className="truncate text-[15px] font-bold text-ink">{col.name} <span className="font-medium text-slate-500">{list.length}</span></h2>
-                    {total > 0 && <span className="shrink-0 text-[13px] text-slate-500">{dollars(total)}</span>}
+                    <h2 className={cx("text-[15px] font-bold leading-tight text-ink", side ? "min-w-0 [overflow-wrap:anywhere]" : "truncate")}>{col.name} <span className="font-medium text-slate-500">{list.length}</span></h2>
+                    {total > 0 && !side && <span className="shrink-0 text-[13px] text-slate-500">{dollars(total)}</span>}
                   </div>
                   <p className="mt-0.5 truncate text-xs text-slate-500">{col.hint}</p>
                 </header>

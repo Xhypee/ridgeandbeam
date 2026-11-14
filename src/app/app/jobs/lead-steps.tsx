@@ -25,7 +25,7 @@ export type LeadStepsProps = {
   receivedAt: string | null;
   contacted: { at: string; label: string; by: string | null } | null;
   noAnswer: { count: number; lastLabel: string | null };
-  owner: string | null;
+  owner: string;
   people: { user_id: string; name: string }[];
   meId: string;
   dates: { min: string; suggested: string };
@@ -49,16 +49,15 @@ function Step({ n, state, title, detail, children, k }: { n: number; state: "don
   );
 }
 
-function OwnerPicker({ jobId, owner, people, meId }: { jobId: string; owner: string | null; people: LeadStepsProps["people"]; meId: string }) {
+function OwnerPicker({ jobId, owner, people, meId }: { jobId: string; owner: string; people: LeadStepsProps["people"]; meId: string }) {
   const form = useRef<HTMLDivElement>(null);
   const submit = () => form.current?.querySelector<HTMLButtonElement>("button[type=submit]")?.click();
   return (
     <div ref={form}>
       <ActionForm action={setLeadOwner}>
         <input type="hidden" name="job_id" value={jobId} />
-        <select name="assigned_to" defaultValue={owner ?? ""} onChange={submit} aria-label="Who's looking after this lead"
+        <select name="assigned_to" defaultValue={owner} onChange={submit} aria-label="Who's looking after this lead"
           className="h-11 w-full rounded-xl bg-white px-3 text-sm font-semibold text-ink ring-1 ring-slate-300 focus:outline-2 focus:outline-brand-500">
-          <option value="">No one yet</option>
           {people.map((p) => <option key={p.user_id} value={p.user_id}>{p.user_id === meId ? `${p.name} (me)` : p.name}</option>)}
         </select>
         <span className="sr-only"><SubmitButton>Save</SubmitButton></span>
@@ -70,7 +69,6 @@ function OwnerPicker({ jobId, owner, people, meId }: { jobId: string; owner: str
 export function LeadSteps(p: LeadStepsProps) {
   const [lostOpen, setLostOpen] = useState(false);
   const [reason, setReason] = useState<string>("");
-  const ownerName = p.people.find((x) => x.user_id === p.owner)?.name ?? null;
   const tel = p.phone ? `tel:${p.phone.replace(/\s+/g, "")}` : null;
   const sms = p.phone ? `sms:${p.phone.replace(/\s+/g, "")}` : null;
   const headline = !p.contacted ? `Call ${p.first}` : "Book the inspection";
@@ -130,8 +128,7 @@ export function LeadSteps(p: LeadStepsProps) {
           )}
         </Step>
 
-        <Step k="owner" n={2} state={p.owner ? "done" : p.contacted ? "now" : "todo"} title="Who's looking after it"
-          detail={ownerName ? (p.owner === p.meId ? `${ownerName} (you)` : ownerName) : "Pick someone so it doesn't fall through the cracks"}>
+        <Step k="owner" n={2} state="done" title="Who's looking after it" detail="They get the reminders for this lead">
           <OwnerPicker jobId={p.jobId} owner={p.owner} people={p.people} meId={p.meId} />
         </Step>
 
