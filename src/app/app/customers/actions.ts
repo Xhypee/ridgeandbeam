@@ -47,10 +47,11 @@ export async function searchCustomers(q: string): Promise<CustomerMatch[]> {
 }
 
 /** "Referred by" from the New lead sidebar: the referring contact, and the lead source says referral. */
-function referral(fd: FormData, customerId?: string): { referred_by?: string; lead_source?: string } {
+function referral(fd: FormData, customerId?: string): { referred_by?: string; referred_by_type?: "contact" | "supplier"; lead_source?: string } {
   const id = str(fd, "referred_by");
-  if (!id || !/^[0-9a-f-]{36}$/i.test(id) || id === customerId) return {};
-  return { referred_by: id, lead_source: "referral" };
+  const type = fd.get("referred_by_type") === "supplier" ? "supplier" : "contact";
+  if (!id || !/^[0-9a-f-]{36}$/i.test(id) || (type === "contact" && id === customerId)) return {};
+  return { referred_by: id, referred_by_type: type, lead_source: "referral" };
 }
 
 export async function createCustomer(_: ActionResult, fd: FormData): Promise<ActionResult> {

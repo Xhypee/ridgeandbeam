@@ -9,6 +9,8 @@ import type { Customer } from "@/lib/types";
 import { Icon, Section } from "../jobs/job-sections";
 import { updateCustomer } from "./actions";
 import { ClaudeBar } from "../jobs/claude-bar";
+import { loadReferrals, type Referrals } from "@/lib/referrals-server";
+import { ReferralsSection } from "../contacts/referrals-section";
 import { aiEnabled } from "@/lib/ai";
 import { CustomerFields } from "./customer-fields";
 
@@ -16,17 +18,15 @@ type DB = Awaited<ReturnType<typeof createClient>>;
 const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
 
 export type CustomerDocketJob = { id: string; title: string; stage: string; is_insurance: boolean; created_at: string; value: number | null; owing: number };
-export type ReferredJob = { id: string; title: string; stage: string; created_at: string; customer: string; value: number | null; signed: boolean };
-export type CustomerDocketData = { customer: Customer; jobs: CustomerDocketJob[]; contract: number; paid: number; owing: number; referred: ReferredJob[]; referredSigned: number };
+export type CustomerDocketData = { customer: Customer; jobs: CustomerDocketJob[]; contract: number; paid: number; owing: number } & Referrals;
 
 export async function loadCustomerDocket(supabase: DB, id: string, { canSeeMoney }: { canSeeMoney: boolean }): Promise<CustomerDocketData | null> {
   const money = canSeeMoney ? ", estimates(status, created_at, estimate_totals(total)), invoices(status, invoice_totals(total, paid, balance))" : "";
-  const refMoney = canSeeMoney ? ", estimates(status, created_at, estimate_totals(total))" : "";
-  const [{ data: c }, { data: rows }, { data: refRows }] = await Promise.all([
+  const [{ data: c }, { data: rows }, refs] = await Promise.all([
     supabase.from("customers").select("*").eq("id", id).maybeSingle(),
     supabase.from("jobs").select(`id, title, stage, is_insurance, created_at${money}`).eq("customer_id", id).order("created_at", { ascending: false }),
-    // Jobs this contact sent us (jobs.referred_by).
-    supabase.from("jobs").select(`id, title, stage, created_at, customers(name)${refMoney}`).eq("referred_by", id).order("created_at", { ascending: false }).limit(100),
+    // Jobs this contact sent us.
+    loadReferrals(supabase, "contact", id, { canSeeMoney }),
   ]);
   if (!c) return null;
   type E = { status: string; created_at: string; estimate_totals: unknown };
@@ -49,17 +49,7 @@ export async function loadCustomerDocket(supabase: DB, id: string, { canSeeMoney
     owing += jobOwing;
     return { id: j.id, title: j.title, stage: j.stage, is_insurance: j.is_insurance, created_at: j.created_at, value, owing: jobOwing };
   });
-  type RR = { id: string; title: string; stage: string; created_at: string; customers: unknown; estimates?: E[] };
-  let referredSigned = 0;
-  const referred = ((refRows ?? []) as unknown as RR[]).map((j) => {
-    const ests = (j.estimates ?? []).slice().sort((a, b) => b.created_at.localeCompare(a.created_at));
-    const accepted = ests.find((e) => e.status === "accepted");
-    const shown = accepted ?? ests.find((e) => e.status === "sent");
-    const value = shown ? Number(one(shown.estimate_totals as { total: number })?.total ?? 0) : null;
-    if (accepted) referredSigned += value ?? 0;
-    return { id: j.id, title: j.title, stage: j.stage, created_at: j.created_at, customer: one(j.customers as { name: string })?.name ?? "Customer", value, signed: Boolean(accepted) };
-  });
-  return { customer: c as Customer, jobs, contract, paid, owing, referred, referredSigned };
+  return { customer: c as Customer, jobs, contract, paid, owing, ...refs };
 }
 
 const PHONE = "M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2";
@@ -69,44 +59,6 @@ const PIN = "M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 
 const aud = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 });
 const since = (iso: string) => new Date(iso).toLocaleDateString("en-AU", { month: "short", year: "numeric", timeZone: "Australia/Brisbane" });
 const dayMonth = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString("en-AU", { day: "numeric", month: "short" });
-
-const GIFT = "M4 11h16v9H4zM3 7h18v4H3zM12 7v13M12 7c-1.5-3-5-3-5-1s3 1 5 1c2 0 5 1 5-1s-3.5-2-5 1";
-
-/** "Referred": the jobs a contact sent us, what's signed, and a button to log another. On every contact's sidebar. */
-export function ReferralsSection({ d, canSeeMoney }: { d: CustomerDocketData; canSeeMoney: boolean }) {
-  const first = d.customer.name.split(" ")[0] || d.customer.name;
-  const won = d.referred.filter((j) => j.signed || ["sold", "scheduled", "in_progress", "completed", "paid"].includes(j.stage)).length;
-  return (
-    <Section title="Referred" count={d.referred.length}>
-      {d.referred.length === 0 ? (
-        <p className="text-sm text-slate-500">No jobs from {first} yet. Log one when they send someone your way.</p>
-      ) : (
-        <>
-          <p className="mb-2 rounded-xl bg-brand-50 px-3 py-2 text-sm text-brand-700" data-referral-summary>
-            <b>{d.referred.length}</b> {d.referred.length === 1 ? "job" : "jobs"} referred · <b>{won}</b> won{canSeeMoney && d.referredSigned > 0 ? <> · <b>{aud(d.referredSigned)}</b> signed</> : null}
-          </p>
-          <ul className="-mx-2 divide-y divide-slate-100" data-referred-jobs>
-            {d.referred.map((j) => (
-              <li key={j.id}>
-                <Link href={`/app/jobs?job=${j.id}`} className="flex items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-slate-50">
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold text-ink">{j.customer}</span>
-                    <span className="block truncate text-xs text-slate-500">{j.title} · {STAGE_LABEL[j.stage] ?? label(j.stage)}</span>
-                  </span>
-                  {canSeeMoney && <span className="shrink-0 text-sm font-semibold tabular-nums text-ink">{j.value === null ? <span className="font-normal text-slate-400">Not quoted</span> : aud(j.value)}</span>}
-                  <Icon d="M9 6l6 6-6 6" className="h-4 w-4 text-slate-400" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-      <Link href={`/app/jobs?new=1&referred_by=${d.customer.id}`} className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700" data-log-referral>
-        <Icon d={GIFT} className="h-4 w-4" />Log a referral from {first}
-      </Link>
-    </Section>
-  );
-}
 
 function Row({ icon, k, v, href }: { icon: string; k: string; v: React.ReactNode; href?: string }) {
   const inner = (
@@ -188,7 +140,7 @@ export function CustomerDocket({ d, closeHref, canSeeMoney, today, edit }: { d: 
             <Link href={`/app/jobs/new?customer=${c.id}`} className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700">+ New job for {c.name.split(" ")[0]}</Link>
           </Section>
 
-          <ReferralsSection d={d} canSeeMoney={canSeeMoney} />
+          <ReferralsSection who={{ id: c.id, type: "contact", name: c.name }} r={d} canSeeMoney={canSeeMoney} />
 
           <Section title="Notes">
             {c.notes ? <p className="whitespace-pre-wrap rounded-xl bg-amber-50 px-3 py-2.5 text-sm text-ink [overflow-wrap:anywhere]">{c.notes}</p> : <p className="text-sm text-slate-500">No notes. Add some under Edit details.</p>}

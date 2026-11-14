@@ -1,19 +1,21 @@
 "use client";
 
-// "Referred by" on New lead: search any contact (customer, builder, contractor, other) and pick one.
-// Posts the contact's id under `name`. Starts filled when the lead came from "Log a referral" on a contact.
+// "Referred by" on New lead: search contacts (customer, builder, contractor, other) and suppliers together and
+// pick one. Posts `${name}` (the id) and `${name}_type` ("contact" | "supplier"). Starts filled when the lead came
+// from "Log a referral" on a contact or supplier.
 import { useEffect, useId, useRef, useState } from "react";
 import { Input, cx } from "@/components/ui";
-import { searchCustomers, type CustomerMatch } from "@/app/app/customers/actions";
+import { searchReferrers } from "@/app/app/contacts/referral-actions";
+import type { Referrer } from "@/lib/referrals-server";
 
-type Picked = { id: string; name: string; detail?: string | null };
+type Picked = Referrer;
 
-export function ContactPicker({ name, initial = null, placeholder = "Search contacts", search = searchCustomers }: {
-  name: string; initial?: Picked | null; placeholder?: string; search?: (q: string) => Promise<CustomerMatch[]>;
+export function ContactPicker({ name, initial = null, placeholder = "Search contacts and suppliers", search = searchReferrers }: {
+  name: string; initial?: Picked | null; placeholder?: string; search?: (q: string) => Promise<Referrer[]>;
 }) {
   const [picked, setPicked] = useState<Picked | null>(initial);
   const [q, setQ] = useState("");
-  const [res, setRes] = useState<{ q: string; items: CustomerMatch[] } | null>(null);
+  const [res, setRes] = useState<{ q: string; items: Referrer[] } | null>(null);
   const [active, setActive] = useState(0);
   const [open, setOpen] = useState(false);
   const seq = useRef(0);
@@ -31,12 +33,13 @@ export function ContactPicker({ name, initial = null, placeholder = "Search cont
   }, [term, picked, search]);
 
   const items = term.length >= 2 && res?.q === term ? res.items : [];
-  const choose = (c: CustomerMatch) => { setPicked({ id: c.id, name: c.name, detail: [c.phone, c.city].filter(Boolean).join(" · ") }); setOpen(false); setQ(""); };
+  const choose = (c: Referrer) => { setPicked(c); setOpen(false); setQ(""); };
 
   if (picked) {
     return (
       <div className="flex items-center gap-3 rounded-xl bg-brand-50 px-3 py-2.5 ring-1 ring-brand-200" data-contact-picker-picked>
         <input type="hidden" name={name} value={picked.id} />
+        <input type="hidden" name={`${name}_type`} value={picked.type} />
         <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-ink">{picked.name}</span>{picked.detail && <span className="block truncate text-xs text-slate-500">{picked.detail}</span>}</span>
         <button type="button" onClick={() => setPicked(null)} aria-label={`Remove ${picked.name}`} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-500 hover:bg-white hover:text-ink">✕</button>
       </div>
@@ -54,12 +57,12 @@ export function ContactPicker({ name, initial = null, placeholder = "Search cont
         }} />
       {open && term.length >= 2 && res?.q === term && (
         <ul id={listId} role="listbox" className="absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-xl bg-white py-1 ring-1 ring-slate-300">
-          {items.length === 0 && <li className="px-3 py-2.5 text-sm text-slate-500">No contact matches &ldquo;{term}&rdquo;. Add them in Contacts first.</li>}
+          {items.length === 0 && <li className="px-3 py-2.5 text-sm text-slate-500">No contact or supplier matches &ldquo;{term}&rdquo;. Add them in Contacts first.</li>}
           {items.map((c, i) => (
-            <li key={c.id} role="option" aria-selected={i === active} onMouseDown={(e) => { e.preventDefault(); choose(c); }} onMouseEnter={() => setActive(i)}
+            <li key={`${c.type}-${c.id}`} role="option" aria-selected={i === active} onMouseDown={(e) => { e.preventDefault(); choose(c); }} onMouseEnter={() => setActive(i)}
               className={cx("cursor-pointer px-3 py-2.5", i === active && "bg-brand-50")}>
               <span className="block truncate text-sm font-semibold text-ink">{c.name}</span>
-              <span className="block truncate text-xs text-slate-500">{[c.phone, c.email, c.city].filter(Boolean).join(" · ")}</span>
+              <span className="block truncate text-xs text-slate-500">{c.detail}</span>
             </li>
           ))}
         </ul>

@@ -81,7 +81,7 @@ export async function POST(req: Request) {
     const [{ data: c }, { data: own }, { data: sent }, { data: ppl }, { data: on }] = await Promise.all([
       supabase.from("customers").select("*").eq("id", contactId).maybeSingle(),
       supabase.from("jobs").select("title, stage, site_address, created_at, estimates(status, estimate_totals(total))").eq("customer_id", contactId).order("created_at", { ascending: false }).limit(30),
-      supabase.from("jobs").select("title, stage, created_at, customers(name), estimates(status, estimate_totals(total))").eq("referred_by", contactId).order("created_at", { ascending: false }).limit(30),
+      supabase.from("jobs").select("title, stage, created_at, customers(name), estimates(status, estimate_totals(total))").eq("referred_by", contactId).eq("referred_by_type", "contact").order("created_at", { ascending: false }).limit(30),
       supabase.from("contact_people").select("name, role, phone, email").eq("contact_id", contactId),
       supabase.from("job_contacts").select("role, jobs(title, stage, customers(name))").eq("contact_id", contactId).limit(30),
     ]);
@@ -100,16 +100,18 @@ export async function POST(req: Request) {
       ].filter(Boolean).join("\n");
     }
   } else if (supplierId) {
-    const [{ data: sup }, { data: orders }] = await Promise.all([
-      supabase.from("org_suppliers").select("*, suppliers(name, category), supplier_branches(name, phone, email)").eq("id", supplierId).maybeSingle(),
+    const [{ data: sup }, { data: orders }, { data: sent }] = await Promise.all([
+      supabase.from("org_suppliers").select("*, suppliers(name, category), supplier_branches(name, phone)").eq("id", supplierId).maybeSingle(),
       supabase.from("material_orders").select("status, created_at, delivery_date, paid_at, invoice_ex, invoice_gst, jobs(title, customers(name))").eq("org_supplier_id", supplierId).order("created_at", { ascending: false }).limit(20),
+      supabase.from("jobs").select("title, stage, created_at, customers(name)").eq("referred_by", supplierId).eq("referred_by_type", "supplier").order("created_at", { ascending: false }).limit(30),
     ]);
     if (sup) {
       const sp = one(sup.suppliers as { name: string; category: string | null });
-      const br = one(sup.supplier_branches as { name: string; phone: string | null; email: string | null });
+      const br = one(sup.supplier_branches as { name: string; phone: string | null });
       thisRecord = [
         `THE SUPPLIER OPEN ON SCREEN: ${sp?.name ?? "Supplier"}${br ? ` · ${br.name} branch` : ""}${sup.account_number ? ` · account ${sup.account_number}` : ""}${sup.rep_name ? ` · rep ${sup.rep_name} ${sup.rep_phone ?? ""}` : ""}`,
         `Recent orders (${orders?.length ?? 0}):${(orders ?? []).length ? "\n" + (orders as { status: string; created_at: string; delivery_date: string | null; paid_at: string | null; invoice_ex: number | null; invoice_gst: number | null; jobs: unknown }[]).map((o) => { const j = one(o.jobs as { title: string; customers: unknown }); return `- ${one(j?.customers as { name: string })?.name ?? ""} ${j?.title ?? ""} · ${o.status} · ordered ${day(o.created_at)}${o.delivery_date ? ` · delivery ${day(o.delivery_date)}` : ""}${o.invoice_ex ? ` · invoice ${aud(Number(o.invoice_ex) + Number(o.invoice_gst ?? 0))} ${o.paid_at ? "paid" : "to pay"}` : ""}`; }).join("\n") : " none"}`,
+        `Jobs they referred to us (${sent?.length ?? 0}):${(sent ?? []).length ? "\n" + (sent as { title: string; stage: string; created_at: string; customers: unknown }[]).map((j) => `- ${one(j.customers as { name: string })?.name ?? "?"} · ${j.title} · ${STAGE_LABEL[j.stage] ?? j.stage} · ${day(j.created_at)}`).join("\n") : " none"}`,
         sup.notes ? `Notes: ${sup.notes}` : null,
       ].filter(Boolean).join("\n");
     }

@@ -9,7 +9,9 @@ import type { createClient } from "@/lib/supabase/server";
 import { label, STAGE_LABEL } from "@/lib/format";
 import { orgSupplierName, SUPPLIER_CATEGORY_LABEL } from "@/lib/suppliers";
 import { Icon, Section } from "../jobs/job-sections";
-import { CustomerDocket, loadCustomerDocket, ReferralsSection, type CustomerDocketData } from "../customers/customer-docket";
+import { CustomerDocket, loadCustomerDocket, type CustomerDocketData } from "../customers/customer-docket";
+import { ReferralsSection } from "./referrals-section";
+import { loadReferrals, type Referrals } from "@/lib/referrals-server";
 import { ClaudeBar } from "../jobs/claude-bar";
 import { aiEnabled } from "@/lib/ai";
 import { addPerson, addToJob, removeFromJob, removePerson } from "./actions";
@@ -180,7 +182,7 @@ function BuilderDocket({ d, closeHref, canSeeMoney }: { d: ContactDocketData; cl
           <div><dt className="text-[11px] text-slate-500">Retention</dt><dd className="font-medium text-ink">{c.retention_pct ? `${Number(c.retention_pct)}%` : "None"}</dd></div>
         </dl>
       </Section>
-      <ReferralsSection d={d} canSeeMoney={canSeeMoney} />
+      <ReferralsSection who={{ id: c.id, type: "contact", name: c.name }} r={d} canSeeMoney={canSeeMoney} />
       <Notes notes={c.notes} />
       <EditDetails><EditContact c={c} /></EditDetails>
     </Shell>
@@ -250,7 +252,7 @@ function ContractorDocket({ d, closeHref, today, canSeeMoney }: { d: ContactDock
           <div><dt className="text-[11px] text-slate-500">Bank</dt><dd className="font-medium text-ink">{c.bank_account ? `${c.bank_bsb ? `${c.bank_bsb} · ` : ""}Acc ••• ${c.bank_account.slice(-4)}` : "–"}</dd></div>
         </dl>
       </Section>
-      <ReferralsSection d={d} canSeeMoney={canSeeMoney} />
+      <ReferralsSection who={{ id: c.id, type: "contact", name: c.name }} r={d} canSeeMoney={canSeeMoney} />
       <Notes notes={c.notes} />
       <EditDetails><EditContact c={c} /></EditDetails>
     </Shell>
@@ -268,7 +270,7 @@ function OtherDocket({ d, closeHref, canSeeMoney }: { d: ContactDocketData; clos
         {address && <Row icon={PIN} k="Address" v={address} />}
         {!c.phone && !c.email && !address && <p className="text-sm text-slate-500">No details yet. Add them under Edit details.</p>}
       </Section>
-      <ReferralsSection d={d} canSeeMoney={canSeeMoney} />
+      <ReferralsSection who={{ id: c.id, type: "contact", name: c.name }} r={d} canSeeMoney={canSeeMoney} />
       <Notes notes={c.notes} />
       <EditDetails><EditContact c={c} /></EditDetails>
     </Shell>
@@ -285,13 +287,14 @@ export function ContactDocket({ d, closeHref, canSeeMoney, today }: { d: Contact
 
 // ---------- suppliers ----------
 export type SupplierOrder = { id: string; who: string; status: string; total: number | null; invoiced: boolean; paid_at: string | null; created_at: string; job_id: string };
-export type SupplierDocketData = { s: SupplierEdit & { category: string | null; created_at: string; is_default: boolean }; orders: SupplierOrder[]; toPay: number; thisMonth: number; orderCount: number; priceList: { name: string | null; effective_date: string | null } | null };
+export type SupplierDocketData = { s: SupplierEdit & { category: string | null; created_at: string; is_default: boolean }; orders: SupplierOrder[]; toPay: number; thisMonth: number; orderCount: number; priceList: { name: string | null; effective_date: string | null } | null } & Referrals;
 
 export async function loadSupplierDocket(supabase: DB, id: string): Promise<SupplierDocketData | null> {
-  const [{ data: row }, { data: orders, count }, { data: list }] = await Promise.all([
+  const [{ data: row }, { data: orders, count }, { data: list }, refs] = await Promise.all([
     supabase.from("org_suppliers").select("*, suppliers(name, category)").eq("id", id).maybeSingle(),
     supabase.from("material_orders").select("id, status, invoice_no, invoice_ex, invoice_gst, paid_at, created_at, job_id, jobs(site_address, customers(name))", { count: "exact" }).eq("org_supplier_id", id).order("created_at", { ascending: false }).limit(12),
     supabase.from("supplier_price_lists").select("name, effective_date").eq("org_supplier_id", id).eq("is_active", true).eq("status", "ready").maybeSingle(),
+    loadReferrals(supabase, "supplier", id, { canSeeMoney: true }),
   ]);
   if (!row) return null;
   const r = row as Record<string, unknown> & { suppliers: { name: string; category: string } | null };
@@ -312,7 +315,7 @@ export async function loadSupplierDocket(supabase: DB, id: string): Promise<Supp
     abn: (r.abn as string) ?? null, rep_name: (r.rep_name as string) ?? null, rep_phone: (r.rep_phone as string) ?? null, bank_name: (r.bank_name as string) ?? null, bank_bsb: (r.bank_bsb as string) ?? null,
     bank_account: (r.bank_account as string) ?? null, notes: (r.notes as string) ?? null, created_at: String(r.created_at), is_default: Boolean(r.is_default),
   };
-  return { s, orders: list2, toPay, thisMonth, orderCount: count ?? list2.length, priceList: (list as { name: string | null; effective_date: string | null } | null) ?? null };
+  return { s, orders: list2, toPay, thisMonth, orderCount: count ?? list2.length, priceList: (list as { name: string | null; effective_date: string | null } | null) ?? null, ...refs };
 }
 
 const ORDER_STATUS: Record<string, string> = { draft: "Draft", sent: "Sent", confirmed: "Confirmed", delivered: "Delivered", cancelled: "Cancelled" };
@@ -360,6 +363,7 @@ export function SupplierDocket({ d, closeHref, canSeeMoney, canEdit }: { d: Supp
           <Link href={`/app/settings/suppliers/${s.id}/import`} className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-brand-600 hover:text-brand-700">{d.priceList ? "Upload a new price list" : "Upload their price list"}</Link>
         </Section>
       )}
+      <ReferralsSection who={{ id: s.id, type: "supplier", name: s.name }} r={d} canSeeMoney={canSeeMoney} />
       <Notes notes={s.notes} />
       {canEdit && <EditDetails><EditSupplier s={s} /></EditDetails>}
       <p className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">Suppliers you order from in Materials show up here automatically.</p>

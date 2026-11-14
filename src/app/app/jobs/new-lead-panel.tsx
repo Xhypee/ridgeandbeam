@@ -7,6 +7,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui";
 import { AddressLookup } from "@/components/address-lookup";
 import { CustomerLookup } from "@/components/customer-lookup";
 import { ContactPicker } from "@/components/contact-picker";
+import type { Referrer } from "@/lib/referrals-server";
 import { label } from "@/lib/format";
 import { CUSTOMER_SOURCES } from "@/lib/types";
 import { createCustomer } from "../customers/actions";
@@ -32,8 +33,6 @@ const COPY = {
   lead: { kicker: "New lead", title: "Who\u2019s the lead?", sub: "It lands in New leads. Call within 5 minutes.", save: "Add lead" },
   customer: { kicker: "New customer", title: "Add a customer", sub: "Homeowner, property manager or lead.", save: "Save customer" },
 };
-
-export type Referrer = { id: string; name: string; detail?: string | null };
 
 export function NewLeadPanel({ closeHref, filter = null, defaultState, variant = "lead", referrer = null }: { closeHref: string; filter?: string | null; defaultState: string | null; variant?: "lead" | "customer"; referrer?: Referrer | null }) {
   const t = COPY[variant];
@@ -77,7 +76,7 @@ export function NewLeadPanel({ closeHref, filter = null, defaultState, variant =
               {variant === "lead" && (
                 <div data-referred-by>
                   <span className="mb-1 block text-xs font-medium text-slate-600">Referred by <span className="font-normal text-slate-400">(optional)</span></span>
-                  <ContactPicker name="referred_by" initial={referrer} placeholder="A customer, builder or contractor who sent them" />
+                  <ContactPicker name="referred_by" initial={referrer} placeholder="A customer, builder, contractor or supplier" />
                 </div>
               )}
               <div className="grid grid-cols-2 gap-3">

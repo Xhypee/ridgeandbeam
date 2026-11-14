@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { loadBuild, type BuildData } from "./build-stage-server";
 import { asAuState, AU_STATE_TZ } from "./au";
+import { isReferrerType, loadReferrer, type Referrer } from "./referrals-server";
 import { calendarDate } from "./au-business-days";
 import { signPaths } from "./field-server";
 import { validDays } from "./quote-email";
@@ -21,7 +22,7 @@ export type Docket = {
     id: string; title: string; stage: string; job_type: string; site_address: string | null; state: string | null; is_insurance: boolean;
     lead_source: string | null; lead_received_at: string | null; first_contacted_at: string | null; created_at: string;
     assigned_to: string | null; inspection_at: string | null; lost_reason: string | null; tz: string;
-    referredBy: { id: string; name: string } | null;
+    referredBy: Referrer | null;
     scheduled_start: string | null; scheduled_end: string | null; completed_at: string | null; materials_status: string; dumpster_status: string;
     gate_code: string | null; site_hazards: string | null; delivery_type: string | null; public_token: string; pay_methods: string[]; roof_material: string | null;
     crew: { name: string; phone: string | null } | null;
@@ -80,7 +81,7 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
   const { canSeeMoney } = opts;
   const empty = Promise.resolve({ data: [] as never[] });
   const [{ data: row }, { data: members }, { data: people }, { data: ests }, { data: invs }, { data: costRows }, { data: claim }, { data: files }, { data: notes }, { data: msgs }] = await Promise.all([
-    supabase.from("jobs").select(`${NEXT_STEP_JOB_COLS}, title, job_type, site_address, state, lead_source, notes, created_at, assigned_to, inspection_at, lost_reason, referred_by, completed_at, dumpster_status, gate_code, site_hazards, delivery_type, public_token, pay_methods, roof_material, crews(name, phone), customers(id, name, phone, email, address, city, state, zip, notes)`).eq("id", jobId).maybeSingle(),
+    supabase.from("jobs").select(`${NEXT_STEP_JOB_COLS}, title, job_type, site_address, state, lead_source, notes, created_at, assigned_to, inspection_at, lost_reason, referred_by, referred_by_type, completed_at, dumpster_status, gate_code, site_hazards, delivery_type, public_token, pay_methods, roof_material, crews(name, phone), customers(id, name, phone, email, address, city, state, zip, notes)`).eq("id", jobId).maybeSingle(),
     supabase.from("job_members").select("user_id, role, created_at").eq("job_id", jobId).order("created_at"),
     supabase.from("memberships").select("user_id, full_name, email, role, phone").eq("org_id", org.id).order("full_name"),
     supabase.from("estimates").select("id, number, status, public_token, sent_at, accepted_at, accepted_name, roof_profile, roof_colour, measurements, measurement_source, created_at, estimate_totals(total, tax), estimate_items(description, quantity, unit, unit_price, extra_status, position)").eq("job_id", jobId).neq("status", "declined").order("created_at", { ascending: false }).limit(5),
@@ -249,9 +250,8 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
     };
   }
 
-  const refId = (row as { referred_by?: string | null }).referred_by ?? null;
-  const { data: refRow } = refId ? await supabase.from("customers").select("id, name").eq("id", refId).maybeSingle() : { data: null };
-  const referredBy = refRow ? { id: refRow.id as string, name: refRow.name as string } : null;
+  const refRow = row as { referred_by?: string | null; referred_by_type?: string | null };
+  const referredBy = refRow.referred_by && isReferrerType(refRow.referred_by_type) ? await loadReferrer(supabase, refRow.referred_by_type, refRow.referred_by) : null;
   const addr = [c.address, c.city, [c.state, c.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
   return {
     job: {
