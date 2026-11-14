@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { partsFromComponents } from "./address-lookup";
+import { partsFromComponents } from "./address-parts";
 
 const c = (types: string[], longText: string, shortText = longText) => ({ types, longText, shortText });
 
