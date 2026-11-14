@@ -20,6 +20,7 @@ export type Docket = {
   job: {
     id: string; title: string; stage: string; job_type: string; site_address: string | null; state: string | null; is_insurance: boolean;
     lead_source: string | null; lead_received_at: string | null; first_contacted_at: string | null; created_at: string;
+    assigned_to: string | null; inspection_at: string | null; lost_reason: string | null; tz: string;
     scheduled_start: string | null; scheduled_end: string | null; completed_at: string | null; materials_status: string; dumpster_status: string;
     gate_code: string | null; site_hazards: string | null; delivery_type: string | null; public_token: string; pay_methods: string[]; roof_material: string | null;
     crew: { name: string; phone: string | null } | null;
@@ -46,7 +47,7 @@ export type Docket = {
   /** Sold / scheduled only: what's left before the crew can start. */
   sold: SoldReady | null;
   /** New leads only: what they sent us and the documents on the job. */
-  lead: { message: string | null; source: string | null; receivedAt: string | null; docs: LeadDoc[] } | null;
+  lead: { message: string | null; source: string | null; receivedAt: string | null; docs: LeadDoc[]; noAnswer: { count: number; last: string | null }; contactedBy: string | null } | null;
   /** Every document on the job (quote, plans, supplier invoices…), newest first. */
   docs: LeadDoc[];
   /** Building + Wrapping up: the quote's payments and each supplier's delivery + invoice. */
@@ -78,7 +79,7 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
   const { canSeeMoney } = opts;
   const empty = Promise.resolve({ data: [] as never[] });
   const [{ data: row }, { data: members }, { data: people }, { data: ests }, { data: invs }, { data: costRows }, { data: claim }, { data: files }, { data: notes }, { data: msgs }] = await Promise.all([
-    supabase.from("jobs").select(`${NEXT_STEP_JOB_COLS}, title, job_type, site_address, state, lead_source, notes, created_at, completed_at, dumpster_status, gate_code, site_hazards, delivery_type, public_token, pay_methods, roof_material, crews(name, phone), customers(id, name, phone, email, address, city, state, zip, notes)`).eq("id", jobId).maybeSingle(),
+    supabase.from("jobs").select(`${NEXT_STEP_JOB_COLS}, title, job_type, site_address, state, lead_source, notes, created_at, assigned_to, inspection_at, lost_reason, completed_at, dumpster_status, gate_code, site_hazards, delivery_type, public_token, pay_methods, roof_material, crews(name, phone), customers(id, name, phone, email, address, city, state, zip, notes)`).eq("id", jobId).maybeSingle(),
     supabase.from("job_members").select("user_id, role, created_at").eq("job_id", jobId).order("created_at"),
     supabase.from("memberships").select("user_id, full_name, email, role, phone").eq("org_id", org.id).order("full_name"),
     supabase.from("estimates").select("id, number, status, public_token, sent_at, accepted_at, accepted_name, roof_profile, roof_colour, measurements, measurement_source, created_at, estimate_totals(total, tax), estimate_items(description, quantity, unit, unit_price, extra_status, position)").eq("job_id", jobId).neq("status", "declined").order("created_at", { ascending: false }).limit(5),
@@ -192,10 +193,17 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
   const docs: LeadDoc[] = docRows.map((f, i) => ({ id: f.id, name: docName(f), mime: f.mime_type, size: f.size_bytes === null ? null : Number(f.size_bytes), at: f.created_at, viewUrl: views.get(f.storage_path) ?? null, downloadUrl: downloads[i] }));
   let lead: Docket["lead"] = null;
   if (row.stage === "lead") {
+    // "No answer" tries (job_events) and who made the first contact (its job note), for the First call step.
+    const [{ data: tries }, { data: firstNote }] = await Promise.all([
+      supabase.from("job_events").select("created_at").eq("job_id", jobId).eq("kind", "call_no_answer").order("created_at", { ascending: false }).limit(50),
+      row.first_contacted_at ? supabase.from("job_notes").select("author_name").eq("job_id", jobId).like("body", "First contact made%").order("created_at").limit(1).maybeSingle() : Promise.resolve({ data: null }),
+    ]);
     lead = {
       message: ((row as { notes?: string | null }).notes ?? c.notes ?? null)?.trim() || null,
       source: row.lead_source, receivedAt: row.lead_received_at,
       docs: docs.slice(0, 20),
+      noAnswer: { count: tries?.length ?? 0, last: tries?.[0]?.created_at ?? null },
+      contactedBy: (firstNote as { author_name?: string | null } | null)?.author_name ?? null,
     };
   }
   let quoting: Docket["quoting"] = null;
@@ -245,6 +253,8 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
     job: {
       id: row.id, title: row.title, stage: row.stage, job_type: row.job_type, site_address: row.site_address, state: row.state, is_insurance: row.is_insurance,
       lead_source: row.lead_source, lead_received_at: row.lead_received_at, first_contacted_at: row.first_contacted_at, created_at: row.created_at,
+      assigned_to: (row as { assigned_to?: string | null }).assigned_to ?? null, inspection_at: (row as { inspection_at?: string | null }).inspection_at ?? null,
+      lost_reason: (row as { lost_reason?: string | null }).lost_reason ?? null, tz: AU_STATE_TZ[asAuState(row.state) ?? asAuState(org.state) ?? "NSW"],
       scheduled_start: row.scheduled_start, scheduled_end: row.scheduled_end, completed_at: row.completed_at, materials_status: row.materials_status, dumpster_status: row.dumpster_status,
       gate_code: row.gate_code, site_hazards: row.site_hazards, delivery_type: row.delivery_type, public_token: row.public_token, pay_methods: row.pay_methods ?? [], roof_material: row.roof_material, crew,
     },

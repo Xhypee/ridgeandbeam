@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { Field, Input, Select, Textarea } from "@/components/ui";
-import { AU_STATES } from "@/lib/au";
+import { AddressLookup } from "@/components/address-lookup";
 import { label } from "@/lib/format";
 import { CUSTOMER_SOURCES } from "@/lib/types";
 import { createCustomer } from "../customers/actions";
@@ -57,17 +57,7 @@ export function NewLeadPanel({ closeHref, filter = null, defaultState, variant =
             </Section>
 
             <Section title="Site">
-              <Field label="Street address"><Input name="address" placeholder="9 Bay Tce" /></Field>
-              <div className="grid grid-cols-[1fr_6.5rem_5.5rem] gap-3">
-                <Field label="Suburb"><Input name="city" /></Field>
-                <Field label="State">
-                  <Select name="state" defaultValue={defaultState ?? ""}>
-                    <option value="">–</option>
-                    {AU_STATES.map((st) => <option key={st} value={st}>{st}</option>)}
-                  </Select>
-                </Field>
-                <Field label="Postcode"><Input name="zip" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} /></Field>
-              </div>
+              <AddressLookup defaultState={defaultState} />
             </Section>
 
             <Section title="The job">

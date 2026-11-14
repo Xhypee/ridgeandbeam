@@ -7,20 +7,42 @@ import { label as human } from "@/lib/format";
 import { sendQuoteEmail } from "./quote-actions";
 import { createEstimate } from "../estimates/actions";
 import { EYE, Icon, JobContact, JobDocuments, JobNotes } from "./job-sections";
+import { LeadSteps } from "./lead-steps";
+import { dateIn } from "@/lib/lead-steps";
 
 export { EYE, noteFacts } from "./job-sections";
 const SEND = "M4 12l16-8-6 16-2.5-6.5z";
 const PEN = "M4 20l4-1 11-11-3-3L5 16zM14 6l3 3";
 const SOURCE: Record<string, string> = { website: "From your website", instant_quote: "From your instant quote", gmail: "From Gmail", email: "From email", manual: "Added by hand" };
 
-export function LeadPanel({ d, previewHref }: { d: Docket; previewHref: string }) {
+export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: string; meId: string }) {
   const lead = d.lead!;
   const first = d.customer.name.split(" ")[0] || "them";
   const q = d.quote;
   const sourceLabel = SOURCE[lead.source ?? ""] ?? (lead.source ? `From ${human(lead.source)}` : "Lead");
 
+  const tz = d.job.tz;
+  const when = (iso: string) => {
+    const t = new Date(iso);
+    const sameDay = t.toLocaleDateString("en-CA", { timeZone: tz }) === dateIn(tz);
+    const time = t.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: tz }).replace(/\s?(am|pm)$/i, (m) => m.trim().toLowerCase());
+    return sameDay ? `today ${time}` : `${t.toLocaleDateString("en-AU", { day: "numeric", month: "short", timeZone: tz })} ${time}`;
+  };
+  // Tomorrow, or Monday if tomorrow is a weekend.
+  const tomorrow = dateIn(tz, 1);
+  const dow = new Date(`${tomorrow}T12:00:00Z`).getUTCDay();
+  const suggested = dow === 6 ? dateIn(tz, 3) : dow === 0 ? dateIn(tz, 2) : tomorrow;
+
   return (
     <>
+      <LeadSteps
+        jobId={d.job.id} first={first} phone={d.customer.phone} receivedAt={d.job.first_contacted_at ? null : d.job.lead_received_at}
+        contacted={d.job.first_contacted_at ? { at: d.job.first_contacted_at, label: when(d.job.first_contacted_at), by: lead.contactedBy } : null}
+        noAnswer={{ count: lead.noAnswer.count, lastLabel: lead.noAnswer.last ? when(lead.noAnswer.last) : null }}
+        owner={d.job.assigned_to ?? d.people.find((p) => p.role === "owner")?.user_id ?? meId} meId={meId}
+        people={d.people.filter((p) => p.role !== "crew_lead").map((p) => ({ user_id: p.user_id, name: p.full_name || p.email || "Someone" }))}
+        dates={{ min: dateIn(tz), suggested }}
+      />
       <JobContact d={d} />
       <JobNotes d={d} leadNote={lead.message ? { by: sourceLabel, at: lead.receivedAt, body: lead.message } : null} />
       <JobDocuments jobId={d.job.id} docs={lead.docs} />
@@ -44,7 +66,7 @@ export function LeadPanel({ d, previewHref }: { d: Docket; previewHref: string }
           <form action={createEstimate}>
             <input type="hidden" name="job_id" value={d.job.id} />
             <button className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-500 font-semibold text-white hover:bg-brand-600"><Icon d="M12 5v14M5 12h14" />Start a quote</button>
-            <p className="mt-2 text-xs text-slate-500">Measure from plans, satellite or by hand, then send it from here.</p>
+            <p className="mt-2 text-xs text-slate-500">No inspection needed? Measure from plans or satellite, then send it from here.</p>
           </form>
         )}
       </div>

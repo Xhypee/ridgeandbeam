@@ -24,6 +24,13 @@ function fields(fd: FormData) {
   };
 }
 
+/** lat/lng from the address lookup, only when both are real Australian-ish coordinates. */
+function coords(fd: FormData): { lat?: number; lng?: number } {
+  const lat = Number(fd.get("lat")), lng = Number(fd.get("lng"));
+  if (!fd.get("lat") || !fd.get("lng") || !Number.isFinite(lat) || !Number.isFinite(lng)) return {};
+  return lat >= -45 && lat <= -9 && lng >= 112 && lng <= 155 ? { lat, lng } : {};
+}
+
 export async function createCustomer(_: ActionResult, fd: FormData): Promise<ActionResult> {
   const { supabase, org, user } = await requireOrg();
   const f = fields(fd);
@@ -52,6 +59,8 @@ export async function createCustomer(_: ActionResult, fd: FormData): Promise<Act
         site_address: [f.address, f.city, f.state, f.zip].filter(Boolean).join(", ") || null,
         state: f.state,
         zip: f.zip,
+        // From the Google Maps address lookup, when they picked a result.
+        ...coords(fd),
         is_insurance: insurance,
         created_by: user.id,
       })
