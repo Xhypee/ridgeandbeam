@@ -28,7 +28,7 @@ type Row = NextStepJob & {
 const COLUMNS: { key: PipelineColumn; name: string; hint: string }[] = [
   { key: "new", name: "New leads", hint: "Call within 5 minutes" },
   { key: "quoting", name: "Quoting", hint: "Inspect, measure, send options" },
-  { key: "sold", name: "Sold", hint: "Get it ready to build" },
+  { key: "sold", name: "Signed & Prepping", hint: "Get it ready to build" },
   { key: "building", name: "Building", hint: "Crew on the roof" },
   { key: "wrapping", name: "Wrapping up", hint: "Close out and get paid" },
 ];
@@ -119,7 +119,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
 
       {/* All five columns fit from 1280px; below that the board scrolls inside itself, never the page. */}
       <div data-pipeline-scroll className={docket ? "overflow-x-auto pb-4" : "-mx-4 overflow-x-auto px-4 pb-4 sm:-mx-8 sm:px-8 xl:mx-0 xl:px-0"}>
-        <div className={cx("grid grid-cols-[repeat(5,minmax(0,1fr))] gap-3", docket ? "min-w-[780px]" : "min-w-[940px]")}>
+        <div className={cx("grid grid-cols-[repeat(5,minmax(0,1fr))] gap-3", docket ? "min-w-[840px]" : "min-w-[940px]")}>
           {COLUMNS.map((col) => {
             const list = cards
               .filter((c) => c.col === col.key)

@@ -217,7 +217,7 @@ async function seed(orgId, ownerId) {
     const cols = page.locator("[data-pipeline-col]");
     check((await cols.count()) === 5, "five columns");
     const names = await cols.locator("h2").allTextContents();
-    check(["New leads", "Quoting", "Sold", "Building", "Wrapping up"].every((n, i) => names[i].startsWith(n)), "column names in order");
+    check(["New leads", "Quoting", "Signed & Prepping", "Building", "Wrapping up"].every((n, i) => names[i].startsWith(n)), "column names in order");
     const colText = async (k) => page.locator(`[data-pipeline-col="${k}"]`).textContent();
     check((await colText("new")).includes("Sophie Tran") && (await colText("new")).includes("Gloria Reyes"), "leads in New leads");
     check((await colText("quoting")).includes("Maria Ortiz") && (await colText("quoting")).includes("Ken Brooks") && (await colText("quoting")).includes("Ann Wu"), "inspection + estimate_sent in Quoting");
