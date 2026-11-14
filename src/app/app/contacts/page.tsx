@@ -17,7 +17,7 @@ const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ?
 type Row = { key: string; href: string; type: ContactType; name: string; sub: string | null; phone: string | null; email: string | null; where: string; now: string; tone: "red" | "amber" | null; created_at: string; current: boolean };
 
 export default async function ContactsPage({ searchParams }: PageProps<"/app/contacts">) {
-  const { supabase, canSeeMoney, role, isAdmin } = await requireOrg();
+  const { supabase, org, canSeeMoney, role, isAdmin } = await requireOrg();
   const sp = await searchParams;
   const query = typeof sp.q === "string" ? sp.q.trim() : "";
   const type: ContactType | null = isContactType(sp.type) ? sp.type : null;
@@ -154,7 +154,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/app/con
 
   const side = docket ? <ContactDocket key={docket.customer.id} d={docket} closeHref={closeHref} canSeeMoney={canSeeMoney} today={today} />
     : supplier ? <SupplierDocket key={supplier.s.id} d={supplier} closeHref={closeHref} canSeeMoney={canSeeMoney} canEdit={isAdmin || role === "member"} />
-    : adding ? <NewContactPanel closeHref={closeHref} initial={type ?? "customer"} /> : null;
+    : adding ? <NewContactPanel closeHref={closeHref} initial={type ?? "customer"} defaultState={org.state ?? null} /> : null;
   if (!side) return content;
   return (
     <div className="lg:flex lg:h-screen">
