@@ -189,7 +189,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
   if (!docket) return board;
   return (
     <div className="lg:flex lg:h-screen">
-      <div className="min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:py-7">
+      <div className="no-scrollbar min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:py-7">
         <SectionTabs canSeeMoney={canSeeMoney} />
         {board}
       </div>

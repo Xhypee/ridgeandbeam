@@ -76,7 +76,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
   return (
     <div className="flex h-full flex-col bg-cream p-4" data-job-docket={j.id}>
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200">
-        <div className="min-h-0 flex-1 overflow-y-auto" data-docket-scroll>
+        <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden" data-docket-scroll>
           {/* Ticket top */}
           <div className={cx("px-5 pb-5 pt-4 text-white", lost ? "bg-slate-600" : "bg-brand-500")} data-docket-stages>
             <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-200">

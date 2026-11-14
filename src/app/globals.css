@@ -49,3 +49,12 @@ h1, h2, h3, .font-display {
   .no-print { display: none !important; }
   @page { margin: 14mm; }
 }
+
+/* Scrolls by wheel, touch and keyboard, but draws no scrollbar (board column and job docket). */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
