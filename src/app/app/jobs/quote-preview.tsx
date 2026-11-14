@@ -36,21 +36,3 @@ export function QuotePreview({ html, subject, toName, toEmail, fromName, estimat
   );
 }
 
-/** The same email, docked beside the quoting engine (wide screens) so they see what lands in the inbox while they write it. */
-export function QuoteEmailPane({ html, subject, toName, toEmail, fromName }: { html: string; subject: string; toName: string; toEmail: string | null; fromName: string }) {
-  const first = toName.split(" ")[0] || "them";
-  return (
-    <div className="flex h-full flex-col bg-white" data-quote-email-pane>
-      <div className="border-b border-slate-100 px-5 py-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Preview · updates as you type</p>
-        <p className="font-display text-lg font-bold text-ink">What {first} will get</p>
-      </div>
-      <div className="space-y-0.5 border-b border-slate-100 px-5 py-2.5 text-[13px]">
-        <p className="truncate"><span className="inline-block w-16 text-slate-500">From</span>{fromName}</p>
-        <p className="truncate"><span className="inline-block w-16 text-slate-500">To</span>{toName}{toEmail ? ` <${toEmail}>` : <span className="font-semibold text-red-700"> · no email address yet</span>}</p>
-        <p className="truncate"><span className="inline-block w-16 text-slate-500">Subject</span><b className="text-ink">{subject}</b></p>
-      </div>
-      <iframe title="Quote email preview" srcDoc={html} sandbox="allow-popups allow-popups-to-escape-sandbox" className="min-h-0 w-full flex-1 bg-[#eef0ea]" />
-    </div>
-  );
-}
