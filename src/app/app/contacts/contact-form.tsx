@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ActionForm, SubmitButton } from "@/components/action-form";
+import { AddressLookup } from "@/components/address-lookup";
 import { Field, Input, Select, Textarea, cx } from "@/components/ui";
 import { AU_STATES } from "@/lib/au";
 import { CONTACT_TYPES, TYPE_LABEL, type ContactType } from "@/lib/contacts";
@@ -15,6 +16,8 @@ export type SupplierEdit = { id: string; name: string; fromDirectory: boolean; b
 const v = (x: string | number | null | undefined) => (x === null || x === undefined ? "" : String(x));
 
 function Address({ c }: { c?: Partial<Customer> }) {
+  // New contacts get the Google address lookup (falls back to the four fields without a Maps key).
+  if (!c?.id) return <AddressLookup defaultState={c?.state ?? null} />;
   return (
     <>
       <Field label="Street address"><Input name="address" defaultValue={v(c?.address)} /></Field>
@@ -134,7 +137,7 @@ function SupplierFields({ s, fromDirectory }: { s?: Partial<SupplierEdit>; fromD
 }
 
 /** Right-sidebar New contact form. */
-export function NewContactPanel({ closeHref, initial, claude }: { closeHref: string; initial: ContactType; claude?: React.ReactNode }) {
+export function NewContactPanel({ closeHref, initial, defaultState, claude }: { closeHref: string; initial: ContactType; defaultState?: string | null; claude?: React.ReactNode }) {
   const [type, setType] = useState<ContactType>(initial);
   return (
     <div className="flex h-full flex-col bg-cream p-4" data-new-contact>
@@ -153,7 +156,7 @@ export function NewContactPanel({ closeHref, initial, claude }: { closeHref: str
           </div>
           <ActionForm action={createContact} className="mt-5 space-y-3" key={type}>
             <input type="hidden" name="type" value={type} />
-            {type === "supplier" ? <SupplierFields /> : <ContactFields type={type} />}
+            {type === "supplier" ? <SupplierFields /> : <ContactFields type={type} c={defaultState ? { state: defaultState } : undefined} />}
             {type === "supplier" && <p className="text-xs text-slate-500">Suppliers are shared with Materials: you can order from them straight away. Upload their price list from the supplier&apos;s page.</p>}
             <SubmitButton className="min-h-12 w-full text-[15px]">Save {TYPE_LABEL[type].toLowerCase()}</SubmitButton>
           </ActionForm>
