@@ -67,10 +67,12 @@ async function walk(entry: FsEntry, prefix = ""): Promise<Item[]> {
   return nested.flat();
 }
 
-export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured = false, compact = false, sheet, caption }: {
+export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured = false, compact = false, sheet, caption, joined = false }: {
   jobId: string; estimateId?: string; variant?: "sidebar" | "measure" | "plans"; measured?: boolean;
   /** plans: once the plans are in (the sheet shows `sheet`, the roof drawn with its numbers, when there is one). */
   compact?: boolean; sheet?: ReactNode; caption?: string;
+  /** plans: the top of a box that carries on below (the quote), so no outline or rounding of its own. */
+  joined?: boolean;
 }) {
   const plans = variant === "plans";
   const measure = variant === "measure" || plans;
@@ -166,7 +168,7 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
           onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(false); }}
           onDrop={onDrop}
           data-plan-sheet={compact && sheet ? "drawn" : "blank"}
-          className={cx("overflow-hidden rounded-2xl transition", over ? "ring-2 ring-brand-500" : "ring-1 ring-brand-200")}
+          className={cx("overflow-hidden transition", joined ? (over ? "ring-2 ring-inset ring-brand-500" : "") : cx("rounded-2xl", over ? "ring-2 ring-brand-500" : "ring-1 ring-brand-200"))}
           style={{ backgroundColor: SHEET, backgroundImage: "linear-gradient(rgba(31,95,63,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(31,95,63,.08) 1px, transparent 1px)", backgroundSize: "22px 22px", backgroundPosition: "-1px -1px" }}>
           <div className="relative">
             {compact && sheet && !reading && !busy ? sheet : <RoofDrawing />}
@@ -237,7 +239,7 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
         <input ref={folder} type="file" multiple className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => fromInput(e.target.files)} {...{ webkitdirectory: "", directory: "" }} />
       </div>
       )}
-      {msg && <p role={msg.error ? "alert" : "status"} className={cx("mt-2 rounded-lg px-3 py-2 text-sm", msg.error ? "bg-amber-50 text-amber-900" : "bg-green-50 text-green-700")}>{msg.error ?? msg.ok}</p>}
+      {msg && <p role={msg.error ? "alert" : "status"} className={cx(joined ? "border-t border-brand-200 px-3.5 py-2 text-[13px]" : "mt-2 rounded-lg px-3 py-2 text-sm", msg.error ? "bg-amber-50 text-amber-900" : "bg-green-50 text-green-700")}>{msg.error ?? msg.ok}</p>}
     </div>
   );
 }

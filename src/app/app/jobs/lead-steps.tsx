@@ -23,10 +23,11 @@ const CAL = "M4 6h16v14H4zM4 10h16M8 3v5M16 3v5";
 const PEN = "M4 20l4-1 11-11-3-3L5 16zM14 6l3 3";
 const aud = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: n % 1 ? 2 : 0 });
 
-/** The quote in a few lines: the biggest items, how many more, the total, and Edit (opens the whole quote). */
+/** The quote in a few lines: the biggest items, how many more, the total, and Edit (opens the whole quote).
+ *  The bottom half of one box with the plan sheet above it. */
 function QuoteSummary({ q }: { q: NonNullable<LeadStepsProps["quote"]> }) {
   return (
-    <div className="rounded-xl ring-1 ring-slate-200" data-lead-quote-summary>
+    <div className="border-t border-brand-200 bg-white" data-lead-quote-summary>
       <div className="flex items-center gap-2 py-2 pl-3.5 pr-2">
         <span className="text-sm font-semibold text-ink">Quote #{q.number}</span>
         <span className="text-xs text-slate-500">{q.status === "sent" ? "sent" : "draft"}</span>
@@ -152,17 +153,16 @@ export function LeadSteps(p: LeadStepsProps) {
       </div>
       <p className="font-display text-[26px] font-bold leading-tight text-ink" data-lead-headline>{headline}</p>
 
-      {/* The sheet keeps its place in both states, so Claude's summary survives the refresh. */}
-      <div className="mt-3" data-lead-drop>
-        <DocumentDrop jobId={p.jobId} variant="plans" compact={!planless} measured={Boolean(p.roof)}
+      {/* One box: the plan sheet, and once the plans are in, the quote right under it. The sheet keeps its place in
+          both states, so Claude's summary survives the refresh. */}
+      <div className={cx("mt-3", !planless && p.quote && "overflow-hidden rounded-2xl ring-1 ring-brand-200")} data-lead-drop>
+        <DocumentDrop jobId={p.jobId} variant="plans" compact={!planless} measured={Boolean(p.roof)} joined={!planless && Boolean(p.quote)}
           estimateId={p.quote?.status === "draft" ? p.quote.id : undefined}
           sheet={p.roof ? <RoofDrawing labels={p.roof} /> : undefined} caption={p.caption ?? undefined} />
+        {!planless && p.quote && <QuoteSummary q={p.quote} />}
       </div>
-      {!planless && (
-        <div className="mt-3">
-          {p.quote ? <QuoteSummary q={p.quote} />
-            : <form action={createEstimate}><input type="hidden" name="job_id" value={p.jobId} /><button className={cx(btn, "bg-brand-500 text-white hover:bg-brand-600")} data-lead-quote><Icon d="M12 5v14M5 12h14" className="h-5 w-5" />Start the quote</button></form>}
-        </div>
+      {!planless && !p.quote && (
+        <form action={createEstimate} className="mt-3"><input type="hidden" name="job_id" value={p.jobId} /><button className={cx(btn, "bg-brand-500 text-white hover:bg-brand-600")} data-lead-quote><Icon d="M12 5v14M5 12h14" className="h-5 w-5" />Start the quote</button></form>
       )}
 
       {/* Six actions as icon buttons; the label shows on hover (and keyboard focus). */}
