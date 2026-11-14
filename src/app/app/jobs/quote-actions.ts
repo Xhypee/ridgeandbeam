@@ -36,6 +36,7 @@ export async function sendQuoteEmail(_prev: ActionResult, fd: FormData): Promise
   });
   revalidatePath("/app/jobs", "layout");
   if (r.status === "sent") return { ok: `Quote sent to ${q.to.email}.` };
+  if (r.status === "redirected") return { ok: `Quote marked sent. Test mode: the email went to you, not ${q.to.email}.` };
   if (r.status === "paused") return { ok: "Quote marked sent. Test mode is on, so it wasn't emailed." };
   if (r.status === "not_configured") return { ok: "Quote marked sent. Email isn't set up here, so it wasn't emailed." };
   return { error: `Couldn't email it: ${r.error ?? "unknown error"}. The quote is marked sent; copy the link from the quote page.` };
