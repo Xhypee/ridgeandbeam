@@ -124,3 +124,28 @@ export async function deleteJob(fd: FormData) {
   revalidatePath("/app", "layout");
   redirect("/app/jobs");
 }
+
+/** The job sidebar's Contact section → Edit: mobile, email and site address in one save. */
+export async function updateJobContact(_: ActionResult, fd: FormData): Promise<ActionResult> {
+  const { supabase } = await requireOrg();
+  const jobId = String(fd.get("job_id") ?? ""), customerId = String(fd.get("customer_id") ?? "");
+  if (!jobId || !customerId) return { error: "Couldn't find this job." };
+  const email = str(fd, "email");
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "That email doesn't look right." };
+  const a = { address: str(fd, "address"), city: str(fd, "city"), state: str(fd, "state")?.toUpperCase() ?? null, zip: str(fd, "zip") };
+  const site = [a.address, a.city, a.state, a.zip].filter(Boolean).join(", ") || null;
+  const lat = Number(fd.get("lat")), lng = Number(fd.get("lng"));
+  const at = fd.get("lat") && fd.get("lng") && lat >= -45 && lat <= -9 && lng >= 112 && lng <= 155 ? { lat, lng } : {};
+
+  const { data: job } = await supabase.from("jobs").select("site_address").eq("id", jobId).maybeSingle();
+  const { error: cErr } = await supabase.from("customers").update({
+    phone: str(fd, "phone"), email,
+    // The site was the customer's own address (no separate site on the job) → keep the two in step.
+    ...(job && !job.site_address ? a : {}),
+  }).eq("id", customerId);
+  if (cErr) return { error: friendly(cErr) };
+  const { error: jErr } = await supabase.from("jobs").update({ site_address: site, ...(a.state ? { state: a.state } : {}), ...(a.zip ? { zip: a.zip } : {}), ...at }).eq("id", jobId);
+  if (jErr) return { error: friendly(jErr) };
+  revalidatePath("/app", "layout");
+  return { ok: "Saved." };
+}
