@@ -1,8 +1,9 @@
 "use client";
 
+import { AddressLookup } from "@/components/address-lookup";
 import { useActionState, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { asAuState, AU_STATES, auPhoneE164, stateFromPostcode } from "@/lib/au";
+import { asAuState, auPhoneE164 } from "@/lib/au";
 import { instantQuoteRange, QUOTE_PITCHES, QUOTE_ROOF_TYPES, type QuotePitch, type QuoteRoofType } from "@/lib/roof";
 import { submitInstantQuote, type QuoteState } from "./actions";
 import type { QuoteRates } from "./rates";
@@ -40,13 +41,9 @@ export function QuoteForm({ intakeKey, orgName, rates, phone, defaultState }: { 
   const [roofM2, setRoofM2] = useState("");
   const [pitch, setPitch] = useState<QuotePitch>("medium");
   const [roofType, setRoofType] = useState<QuoteRoofType>("metal");
-  const [postcode, setPostcode] = useState("");
-  const [auState, setAuState] = useState<string>(asAuState(defaultState) ?? "");
-  const [stateTouched, setStateTouched] = useState(false);
+  const auState = asAuState(defaultState) ?? "";
   const [mobile, setMobile] = useState("");
   // Controlled so nothing is lost when the server sends the form back with an error (React resets uncontrolled fields).
-  const [street, setStreet] = useState("");
-  const [suburb, setSuburb] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [current, setCurrent] = useState("tile");
@@ -87,23 +84,7 @@ export function QuoteForm({ intakeKey, orgName, rates, phone, defaultState }: { 
 
       <section className="space-y-2">
         <h2 className="text-base font-semibold text-slate-900">1. Where is the home?</h2>
-        <input name="address" required autoComplete="address-line1" placeholder="Street address" className={input} aria-label="Street address" value={street} onChange={(e) => setStreet(e.target.value)} />
-        <div className="grid grid-cols-[1fr_5.5rem] gap-2 sm:grid-cols-[1fr_6rem_6rem]">
-          <input name="city" required autoComplete="address-level2" placeholder="Suburb" className={`${input} col-span-2 sm:col-span-1`} aria-label="Suburb" value={suburb} onChange={(e) => setSuburb(e.target.value)} />
-          <select name="state" value={auState} onChange={(e) => { setAuState(e.target.value); setStateTouched(true); }} className={input} aria-label="State" required>
-            <option value="">State</option>
-            {AU_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
-          <input
-            name="zip" inputMode="numeric" maxLength={4} required autoComplete="postal-code" placeholder="Postcode" className={input} aria-label="Postcode" value={postcode}
-            onChange={(e) => {
-              const pc = e.target.value.replace(/\D/g, "").slice(0, 4);
-              setPostcode(pc);
-              const guess = pc.length === 4 ? stateFromPostcode(pc) : null;
-              if (guess && !stateTouched) setAuState(guess);
-            }}
-          />
-        </div>
+        <AddressLookup label="Street address" known={false} required defaultState={auState || null} />
       </section>
 
       <section className="space-y-2">

@@ -5,7 +5,6 @@ import { useState } from "react";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { AddressLookup } from "@/components/address-lookup";
 import { Field, Input, Select, Textarea, cx } from "@/components/ui";
-import { AU_STATES } from "@/lib/au";
 import { CONTACT_TYPES, TYPE_LABEL, type ContactType } from "@/lib/contacts";
 import { label } from "@/lib/format";
 import { CUSTOMER_SOURCES, type Customer } from "@/lib/types";
@@ -16,18 +15,9 @@ export type SupplierEdit = { id: string; name: string; fromDirectory: boolean; b
 const v = (x: string | number | null | undefined) => (x === null || x === undefined ? "" : String(x));
 
 function Address({ c }: { c?: Partial<Customer> }) {
-  // New contacts get the Google address lookup (falls back to the four fields without a Maps key).
-  if (!c?.id) return <AddressLookup defaultState={c?.state ?? null} />;
-  return (
-    <>
-      <Field label="Street address"><Input name="address" defaultValue={v(c?.address)} /></Field>
-      <div className="grid grid-cols-[1fr_88px_96px] gap-2">
-        <Field label="Suburb"><Input name="city" defaultValue={v(c?.city)} /></Field>
-        <Field label="State"><Select name="state" defaultValue={v(c?.state)}><option value="">–</option>{AU_STATES.map((s) => <option key={s} value={s}>{s}</option>)}</Select></Field>
-        <Field label="Postcode"><Input name="zip" defaultValue={v(c?.zip)} inputMode="numeric" pattern="[0-9]{4}" maxLength={4} /></Field>
-      </div>
-    </>
-  );
+  // Google address lookup (or manual input); editing starts from the address on file.
+  return <AddressLookup label="Address" defaultState={c?.state ?? null}
+    initial={c?.address ? { address: c.address, city: c.city ?? "", state: c.state ?? "", zip: c.zip ?? "", lat: null, lng: null } : null} />;
 }
 function Bank({ c }: { c?: { bank_name?: string | null; bank_bsb?: string | null; bank_account?: string | null } }) {
   return (

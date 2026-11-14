@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { cx } from "@/components/ui";
+import { AddressLookup } from "@/components/address-lookup";
 import type { DraftItem } from "@/lib/estimating";
 import { applyMargin, normaliseStages, priceFromCost, quoteMoney, stageAmounts, stagesProblem, STAGE_TRIGGER_LABEL, type PaymentPlan, type Stage, type StageTrigger } from "@/lib/quote-pricing";
 import { saveEstimate } from "../actions";
@@ -40,6 +41,10 @@ export type EngineProps = {
 
 const aud = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD" });
 const LOCK = "M7 11V8a5 5 0 0110 0v3M5 11h14v10H5z";
+const MAIL = "M4 6h16v12H4zM4 7l8 6 8-6";
+const PIN = "M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5";
+const PENCIL = "M4 20h4L19 9l-4-4L4 16zM14 6l4 4";
+const initials = (n: string) => n.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("") || "?";
 const UNITS = ["ea", "m", "lm", "m2", "job", "hr", "sheet", "box", "roll", "pack", "lot"];
 const newId = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
 
@@ -83,6 +88,7 @@ export function QuoteEngine(p: EngineProps) {
 
   // ---- one step at a time: 1 roof plan → 2 who it's for → 3 the job → 4 price → 5 payment + 6 terms ----
   const [roofSkipped, setRoofSkipped] = useState(false);
+  const [editingParty, setEditingParty] = useState(() => !p.party.name.trim() || !p.party.site.trim());
   const done = [
     p.roofMeasured || roofSkipped,
     Boolean(party.name.trim() && party.site.trim()),
@@ -180,11 +186,32 @@ export function QuoteEngine(p: EngineProps) {
         </Block>
 
         {shows(2) && <Block n={2} title="Who it's for">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">Customer</span><input className={field} value={party.name} onChange={(e) => editParty("name", e.target.value)} onBlur={() => void flush()} data-field="customer" /></label>
-            <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">Email</span><input type="email" className={field} value={party.email} placeholder="Where the quote goes" onChange={(e) => editParty("email", e.target.value)} onBlur={() => void flush()} data-field="email" /></label>
-            <label className="block sm:col-span-2"><span className="mb-1 block text-xs font-semibold text-slate-500">Site</span><input className={field} value={party.site} placeholder="Street, suburb, state, postcode" onChange={(e) => editParty("site", e.target.value)} onBlur={() => void flush()} data-field="site" /></label>
-          </div>
+          {!editingParty ? (
+            // A saved contact by now: their card, with a pencil to change the details.
+            <div className="flex items-start gap-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200" data-party-card>
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-50 font-display text-[15px] font-bold text-brand-700 ring-1 ring-brand-200" aria-hidden>{initials(party.name)}</span>
+              <div className="min-w-0 flex-1 space-y-1">
+                <p className="truncate font-display text-lg font-bold leading-tight text-ink" data-field="customer">{party.name}</p>
+                <p className="flex min-w-0 items-center gap-2 text-sm text-slate-600"><Icon d={MAIL} className="h-4 w-4 text-slate-400" />{party.email ? <span className="truncate">{party.email}</span> : <span className="font-semibold text-red-700">No email yet: add one to send the quote</span>}</p>
+                <p className="flex min-w-0 items-center gap-2 text-sm text-slate-600"><Icon d={PIN} className="h-4 w-4 text-slate-400" /><span className="truncate">{party.site}</span></p>
+              </div>
+              <button type="button" onClick={() => setEditingParty(true)} aria-label="Edit customer details" title="Edit customer details" data-edit-party
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-slate-500 ring-1 ring-slate-200 hover:bg-slate-50 hover:text-ink">
+                <Icon d={PENCIL} className="h-[18px] w-[18px]" />
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3 rounded-2xl bg-white p-4 ring-1 ring-slate-200" data-party-edit>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">Customer</span><input className={field} value={party.name} onChange={(e) => editParty("name", e.target.value)} onBlur={() => void flush()} data-field="customer" /></label>
+                <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">Email</span><input type="email" className={field} value={party.email} placeholder="Where the quote goes" onChange={(e) => editParty("email", e.target.value)} onBlur={() => void flush()} data-field="email" /></label>
+              </div>
+              <AddressLookup label="Site" initialLine={party.site || null} onChange={(_, line) => editParty("site", line)} />
+              {party.name.trim() && party.site.trim() && (
+                <div className="flex justify-end"><button type="button" onClick={() => { void flush(); setEditingParty(false); }} className="min-h-10 rounded-xl bg-ink px-4 text-sm font-semibold text-white hover:bg-ink/90" data-party-done>Done</button></div>
+              )}
+            </div>
+          )}
         </Block>}
 
         {shows(3) && <Block n={3} title="The job">

@@ -1,11 +1,11 @@
 "use client";
 
+import { AddressLookup } from "@/components/address-lookup";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import type * as Leaflet from "leaflet";
 import { Button, Field, Input, Select, cx } from "@/components/ui";
 import { MapCanvas, type MapApi } from "@/components/map/map-canvas";
-import { AU_STATES } from "@/lib/au";
 import { geojsonRings, type LatLng } from "@/lib/geo";
 import { convertKnock, createKnock, createTerritory, deleteKnock, deleteTerritory, updateKnock } from "./actions";
 import { CsvImport } from "./csv-import";
@@ -264,7 +264,7 @@ function KnockSheet({ sheet, knock, setterName, onClose, onQueued, onDone }: {
         </div>
       )}
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <Field label="Address"><Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="12 Banksia St" autoComplete="off" /></Field>
+        <AddressLookup label="Address" initialLine={address || null} onChange={(_, line) => setAddress(line)} />
         <Field label="Notes"><Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Hail dents on gutters, cracked tiles, call after 5…" /></Field>
       </div>
       {err && <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{err}</p>}
@@ -284,17 +284,7 @@ function KnockSheet({ sheet, knock, setterName, onClose, onQueued, onDone }: {
               <Field label="Name"><Input name="name" required autoComplete="off" /></Field>
               <Field label="Phone"><Input name="phone" type="tel" inputMode="tel" /></Field>
               <Field label="Email"><Input name="email" type="email" /></Field>
-              <Field label="Street"><Input name="address" defaultValue={address} /></Field>
-              <Field label="Suburb"><Input name="city" /></Field>
-              <div className="grid grid-cols-2 gap-2">
-                <Field label="State">
-                  <Select name="state" defaultValue="">
-                    <option value="">—</option>
-                    {AU_STATES.map((st) => <option key={st} value={st}>{st}</option>)}
-                  </Select>
-                </Field>
-                <Field label="Postcode"><Input name="zip" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} /></Field>
-              </div>
+              <div className="sm:col-span-3"><AddressLookup label="Address" initialLine={address || null} /></div>
             </div>
             <input type="hidden" name="notes" value={notes} />
             <Button type="submit" disabled={pending} className="min-h-12">{pending ? "Creating…" : "Create customer & lead"}</Button>
