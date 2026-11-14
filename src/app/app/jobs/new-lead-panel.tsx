@@ -5,11 +5,11 @@ import Link from "next/link";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { Field, Input, Select, Textarea } from "@/components/ui";
 import { AddressLookup } from "@/components/address-lookup";
+import { JobTypeCards } from "./job-type-cards";
 import { CustomerLookup } from "@/components/customer-lookup";
 import { label } from "@/lib/format";
 import { CUSTOMER_SOURCES } from "@/lib/types";
 import { createCustomer } from "../customers/actions";
-import { JobKind } from "../customers/new/job-kind";
 
 function Icon({ d }: { d: string }) {
   return <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={d} /></svg>;
@@ -64,8 +64,7 @@ export function NewLeadPanel({ closeHref, filter = null, defaultState, variant =
                   Also open a job for this customer
                 </label>
               )}
-              <Field label="What do they need?"><Input name="job_title" placeholder="Roof inspection" /></Field>
-              <div className="-mt-1"><JobKind /></div>
+              <JobTypeCards />
             </Section>
 
             <Section title="Notes">

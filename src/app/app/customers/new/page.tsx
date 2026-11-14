@@ -3,7 +3,6 @@ import { ActionForm, SubmitButton } from "@/components/action-form";
 import { Card, Field, Input, LinkButton, PageHeader } from "@/components/ui";
 import { createCustomer } from "../actions";
 import { CustomerFields } from "../customer-fields";
-import { JobKind } from "./job-kind";
 
 export const metadata: Metadata = { title: "New customer" };
 
@@ -20,7 +19,6 @@ export default function NewCustomerPage() {
               Also open a job for this customer
             </label>
             <Field label="Job title" className="mt-3 max-w-sm"><Input name="job_title" placeholder="Roof inspection" /></Field>
-            <JobKind />
           </div>
           <div className="flex gap-2">
             <SubmitButton>Save customer</SubmitButton>

@@ -5,6 +5,16 @@ import { redirect } from "next/navigation";
 import { requireOrg } from "@/lib/dal";
 import { friendly, oneOf, str } from "@/lib/form";
 import { CUSTOMER_SOURCES } from "@/lib/types";
+import { AU_JOB_TYPES, AU_JOB_TYPE_LABEL, type AuJobType } from "@/lib/job-types";
+
+// New lead's job cards: the picked type names the job ("Re-roof"); nothing picked keeps the old default.
+const pickedType = (fd: FormData) => { const t = String(fd.get("job_type") ?? ""); return (AU_JOB_TYPES as readonly string[]).includes(t) ? (t as AuJobType) : null; };
+const jobType = (fd: FormData) => { const t = pickedType(fd); return t ? { job_type: t } : {}; };
+const jobTitle = (fd: FormData, insurance: boolean) => {
+  const t = pickedType(fd), typed = str(fd, "job_title")?.slice(0, 120);
+  if (typed && (!t || t === "other")) return typed; // "Other" (or an older form) names the job in their words
+  return t && t !== "other" ? `${insurance ? "Insurance · " : ""}${AU_JOB_TYPE_LABEL[t]}` : insurance ? "Insurance roof inspection" : "Roof inspection";
+};
 import type { ActionResult } from "@/components/action-form";
 
 // Insurance details now live on the job's claim (claims table). The legacy customer columns
@@ -73,7 +83,7 @@ export async function createCustomer(_: ActionResult, fd: FormData): Promise<Act
       .insert({
         org_id: org.id,
         customer_id: data.id,
-        title: str(fd, "job_title") ?? (insurance ? "Insurance roof inspection" : "Roof inspection"),
+        title: jobTitle(fd, insurance), ...jobType(fd),
         site_address: [f.address, f.city, f.state, f.zip].filter(Boolean).join(", ") || null,
         state: f.state,
         zip: f.zip,
@@ -132,7 +142,7 @@ async function jobForExisting(customerId: string, fd: FormData): Promise<ActionR
   const site = typed.address ? typed : { address: c.address, city: c.city, state: c.state, zip: c.zip };
   const { data: job, error } = await supabase.from("jobs").insert({
     org_id: org.id, customer_id: c.id,
-    title: str(fd, "job_title") ?? (insurance ? "Insurance roof inspection" : "Roof inspection"),
+    title: jobTitle(fd, insurance), ...jobType(fd),
     site_address: [site.address, site.city, site.state, site.zip].filter(Boolean).join(", ") || null,
     state: site.state, zip: site.zip, is_insurance: insurance, created_by: user.id,
     notes: str(fd, "notes"),
