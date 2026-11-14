@@ -10,7 +10,7 @@ export default async function ReportsPage() {
   const reports = [
     { href: "/app/reports/profitability", title: "Job profitability", body: isSalesRep ? "Contract value, costs, gross profit and margin on your jobs." : "Contract value, costs, gross profit and margin per job. Sort and filter by date and rep." },
     { href: "/app/reports/commissions", title: isAdmin ? "Commissions" : "My commission statement", body: isAdmin ? "Every rep's statement: earned, paid, pending supplements and payable now. Record payouts and chargebacks." : "Every cost line, commission earned, paid to date and payable now on your jobs." },
-    { href: "/app/reports/leads", title: "Lead sources", body: "Cost per lead and per sold job by source." },
+    { href: "/app/reports/leads", title: "Lead sources", body: "Cost per lead and per signed job by source." },
     { href: "/app/reports/tpar", title: "Taxable payments (TPAR)", body: "Payments to contractors for the financial year (1 Jul – 30 Jun) with their ABNs. CSV for the ATO report due 28 August." },
   ];
   return (

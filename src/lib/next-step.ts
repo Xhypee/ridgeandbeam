@@ -248,7 +248,7 @@ export function nextStep(job: NextStepJob, ctx: NextStepCtx): NextStep {
     if (est.status === "accepted") {
       return mk({
         key: "mark_sold", title: "Mark the job sold", listTitle: `Mark ${the("job")} sold`,
-        detail: `Quote signed${est.accepted_at ? ` ${dayMonth(est.accepted_at)}` : ""}. Move it to Sold to start getting it ready to build.`,
+        detail: `Quote signed${est.accepted_at ? ` ${dayMonth(est.accepted_at)}` : ""}. Move it to Signed & Prepping to start getting it ready to build.`,
         actionLabel: "Open job", href: `${base}#stage`, tag: "Quote", waiting: true,
       });
     }

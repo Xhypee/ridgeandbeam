@@ -16,7 +16,7 @@ export const STAGE_LABEL: Record<string, string> = {
   lead: "Lead",
   inspection: "Inspection",
   estimate_sent: "Estimate sent",
-  sold: "Sold",
+  sold: "Signed & Prepping",
   scheduled: "Scheduled",
   in_progress: "In progress",
   completed: "Completed",

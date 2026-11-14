@@ -56,9 +56,9 @@ export default async function ProfitabilityPage({ searchParams }: PageProps<"/ap
 
   return (
     <>
-      <PageHeader title="Job profitability" subtitle={`${rows.length} sold job${rows.length === 1 ? "" : "s"} · ${money(tot.contract)} contract · ${money(tm.gp)} GP · ${tm.pct}% margin`} actions={<LinkButton variant="secondary" href="/app/reports">All reports</LinkButton>} />
+      <PageHeader title="Job profitability" subtitle={`${rows.length} signed job${rows.length === 1 ? "" : "s"} · ${money(tot.contract)} contract · ${money(tm.gp)} GP · ${tm.pct}% margin`} actions={<LinkButton variant="secondary" href="/app/reports">All reports</LinkButton>} />
       <form method="get" className="mb-4 flex flex-wrap items-end gap-2">
-        <Field label="Sold from"><Input type="date" name="from" defaultValue={from ?? ""} /></Field>
+        <Field label="Signed from"><Input type="date" name="from" defaultValue={from ?? ""} /></Field>
         <Field label="to"><Input type="date" name="to" defaultValue={to ?? ""} /></Field>
         {!isSalesRep && (
           <Field label="Rep">
@@ -71,9 +71,9 @@ export default async function ProfitabilityPage({ searchParams }: PageProps<"/ap
         <input type="hidden" name="sort" value={sort} /><input type="hidden" name="dir" value={dir} />
         <button className="min-h-9 rounded-lg bg-white px-3.5 py-2 text-sm font-medium ring-1 ring-slate-300">Filter</button>
       </form>
-      {rows.length === 0 ? <p className="text-sm text-slate-500">No sold jobs match.</p> : (
+      {rows.length === 0 ? <p className="text-sm text-slate-500">No signed jobs match.</p> : (
         <Table>
-          <thead><tr>{sortTh("date", "Sold")}<th className={th}>Job</th>{isAdmin && <th className={th}>Rep</th>}{sortTh("contract", "Contract", true)}{sortTh("cost", "Costs", true)}{sortTh("gp", "GP", true)}{sortTh("margin", "Margin", true)}</tr></thead>
+          <thead><tr>{sortTh("date", "Signed")}<th className={th}>Job</th>{isAdmin && <th className={th}>Rep</th>}{sortTh("contract", "Contract", true)}{sortTh("cost", "Costs", true)}{sortTh("gp", "GP", true)}{sortTh("margin", "Margin", true)}</tr></thead>
           <tbody className="divide-y divide-slate-100">
             {rows.map((r) => (
               <tr key={r.id}>

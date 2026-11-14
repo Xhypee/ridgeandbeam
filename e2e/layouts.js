@@ -221,7 +221,7 @@ async function seed(orgId, ownerId) {
     const colText = async (k) => page.locator(`[data-pipeline-col="${k}"]`).textContent();
     check((await colText("new")).includes("Sophie Tran") && (await colText("new")).includes("Gloria Reyes"), "leads in New leads");
     check((await colText("quoting")).includes("Maria Ortiz") && (await colText("quoting")).includes("Ken Brooks") && (await colText("quoting")).includes("Ann Wu"), "inspection + estimate_sent in Quoting");
-    check((await colText("sold")).includes("Raj Patel") && (await colText("sold")).includes("Lisa Moore"), "sold + scheduled in Sold");
+    check((await colText("sold")).includes("Raj Patel") && (await colText("sold")).includes("Lisa Moore"), "sold + scheduled in Signed & Prepping");
     check((await colText("building")).includes("Wei Chen"), "in_progress in Building");
     const wrap = await colText("wrapping");
     check(wrap.includes("Sam Nguyen") && wrap.includes("Tom Hart") && !wrap.includes("Olive Grant"), "completed + recently paid in Wrapping up (old paid hidden)");

@@ -183,9 +183,9 @@ export default async function SchedulePage({ searchParams }: PageProps<"/app/sch
       </ol>
 
       {!isCrewLead && (
-        <Card className="mt-6" title={`Sold, waiting to be scheduled (${waiting.length})`}>
+        <Card className="mt-6" title={`Signed & Prepping, waiting to be scheduled (${waiting.length})`}>
           {waiting.length === 0 ? (
-            <p className="text-sm text-slate-500">Nothing waiting. Sold jobs without dates show up here.</p>
+            <p className="text-sm text-slate-500">Nothing waiting. Signed jobs without dates show up here.</p>
           ) : (
             <ul className="divide-y divide-slate-100">
               {waiting.map((j) => {

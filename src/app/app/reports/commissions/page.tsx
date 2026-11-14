@@ -30,7 +30,7 @@ function StatementView({ s, isAdmin }: { s: Statement; isAdmin: boolean }) {
         Plan: {s.plan ? <b>{s.plan.name} — {COMMISSION_KIND_LABEL[s.plan.kind]} {s.plan.rate}%{s.plan.draw_amount ? `, draw ${money(s.plan.draw_amount)}` : ""}</b> : <span className="text-amber-700">no commission plan assigned{isAdmin && <> — set one in <Link className="underline" href="/app/settings/team">Settings → Team</Link></>}</span>}
         {s.totals.pendingSupplements > 0 && <> · <span className="text-violet-700">{money(s.totals.pendingSupplements)} in variation requests waiting on insurers</span></>}
       </p>
-      {s.jobs.length === 0 && <p className="text-sm text-slate-500">No sold jobs with this rep assigned yet.</p>}
+      {s.jobs.length === 0 && <p className="text-sm text-slate-500">No signed jobs with this rep assigned yet.</p>}
       {s.jobs.map((j) => (
         <Card key={j.id} title={<span><Link href={`/app/jobs/${j.id}`} className="hover:text-brand-600">{j.customer} · {j.title}</Link> <Badge tone="slate">{STAGE_LABEL[j.stage]}</Badge></span>} actions={<span className={cx("text-sm font-semibold", j.payable < 0 ? "text-red-700" : "text-slate-900")} data-testid="job-payable">{money(j.payable)} payable</span>}>
           <div className="grid gap-4 lg:grid-cols-2">

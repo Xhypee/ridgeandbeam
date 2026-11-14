@@ -110,7 +110,7 @@ function check(cond, msg) {
   check(true, "customer accepted estimate");
 
   await page.goto(jobUrl);
-  check(await page.locator("h1 + div").getByText("Sold").isVisible(), "job stage moved to Sold");
+  check(await page.locator("h1 + div").getByText("Signed & Prepping").isVisible(), "job stage moved to Signed & Prepping");
 
   console.log("6. Invoice from estimate, payments");
   await page.goto(estUrl);
