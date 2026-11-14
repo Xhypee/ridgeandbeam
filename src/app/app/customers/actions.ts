@@ -99,5 +99,5 @@ export async function deleteCustomer(fd: FormData) {
   const { error } = await supabase.from("customers").delete().eq("id", String(fd.get("id")));
   if (error) throw new Error(friendly(error));
   revalidatePath("/app", "layout");
-  redirect("/app/customers");
+  redirect("/app/contacts");
 }

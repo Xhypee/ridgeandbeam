@@ -88,7 +88,28 @@ export type Customer = {
   notes: string | null;
   follow_up_on: string | null;
   created_at: string;
+  // Contacts: what this contact is, and the fields builders / contractors use.
+  kind: ContactKind;
+  company: string | null;
+  trade: string | null;
+  abn: string | null;
+  licence_no: string | null;
+  licence_class: string | null;
+  licence_expiry: string | null;
+  pl_cover: string | null;
+  pl_expiry: string | null;
+  workcover_expiry: string | null;
+  payment_terms: string | null;
+  retention_pct: number | null;
+  rate: string | null;
+  gst_registered: boolean | null;
+  bank_name: string | null;
+  bank_bsb: string | null;
+  bank_account: string | null;
 };
+
+export const CONTACT_KINDS = ["customer", "builder", "contractor", "other"] as const;
+export type ContactKind = (typeof CONTACT_KINDS)[number];
 
 export type Crew = { id: string; name: string; color: string };
 
