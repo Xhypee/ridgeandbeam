@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { intakeNote, NO_ROOF, planDocUpdates, roofMeasurementsFromDoc, sameValue, type Current, type DocRead } from "./doc-intake";
+import { normalizeMeasurements, summarize } from "./roof";
+import { intakeNote, NO_ROOF, planDocUpdates, roofAreaDiff, roofMeasurementsFromDoc, sameValue, type Current, type DocRead } from "./doc-intake";
 
 const read = (over: Partial<DocRead>): DocRead => ({
   doc_type: "other", summary: null,
@@ -85,9 +86,27 @@ describe("roofMeasurementsFromDoc", () => {
     expect(sec.area).toBeCloseTo(212 * Math.cos((22.5 * Math.PI) / 180), 1);
     expect(r.label).toBe("roof area 212 m² at 22.5° (pitch assumed)");
   });
+  it("reads back as metric on the quote (not as old imperial data)", () => {
+    const r = roofMeasurementsFromDoc({ ...NO_ROOF, area_m2: 212, pitch_deg: 22.5, ridge_m: 14 }, "Colorbond", {})!;
+    const s = summarize(normalizeMeasurements(r.measurements));
+    expect(s.trueArea).toBeCloseTo(212, 0);
+    expect(s.maxPitch).toBe(22.5);
+    expect(normalizeMeasurements(r.measurements).ridge).toBe(14);
+  });
   it("gives nothing without a believable area", () => {
     expect(roofMeasurementsFromDoc(NO_ROOF, null, null)).toBeNull();
     expect(roofMeasurementsFromDoc({ ...NO_ROOF, area_m2: 2 }, null, null)).toBeNull();
     expect(roofMeasurementsFromDoc(null, null, null)).toBeNull();
+  });
+});
+
+describe("roofAreaDiff", () => {
+  it("flags a document whose roof area is 5% or more off the quote's", () => {
+    expect(roofAreaDiff({ ...NO_ROOF, area_m2: 212 }, 195)).toBe("roof area on the quote is 195 m², the document says 212 m²");
+  });
+  it("stays quiet when they're close, or there's nothing to compare", () => {
+    expect(roofAreaDiff({ ...NO_ROOF, area_m2: 200 }, 195)).toBeNull();
+    expect(roofAreaDiff(NO_ROOF, 195)).toBeNull();
+    expect(roofAreaDiff({ ...NO_ROOF, area_m2: 212 }, 0)).toBeNull();
   });
 });

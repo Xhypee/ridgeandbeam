@@ -68,7 +68,7 @@ export function RoofPlanPanel({ estimateId, jobId, measurements, source, canDrop
   const chip = (href: string, label: string, on: boolean) => <Link href={href} className={on ? "rounded-full bg-ink px-2.5 py-1 font-semibold text-white" : "rounded-full px-2.5 py-1 font-semibold text-ink ring-1 ring-slate-300 hover:bg-white"}>{label}</Link>;
   return (
     <div data-roof-plan>
-      {measured ? (
+      {measured ? (<>
         <div className="grid overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200 sm:grid-cols-[minmax(0,1fr)_250px]">
           <div className="grid place-items-center border-b border-slate-100 bg-[#f4f7f4] p-4 sm:border-b-0 sm:border-r">
             <ColourRoof shape={shape} hex="#e3e6df" className="h-56 w-full" />
@@ -82,7 +82,8 @@ export function RoofPlanPanel({ estimateId, jobId, measurements, source, canDrop
             </dl>
           </div>
         </div>
-      ) : (
+        {canDrop && <div className="mt-2"><DocumentDrop jobId={jobId} estimateId={estimateId} variant="measure" measured /></div>}
+      </>) : (
         canDrop ? <DocumentDrop jobId={jobId} estimateId={estimateId} variant="measure" /> : (
         <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-white px-5 py-6 text-center">
           <p className="font-semibold text-ink">Not measured yet</p>
