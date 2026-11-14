@@ -24,7 +24,7 @@ export default function NewCustomerPage() {
           </div>
           <div className="flex gap-2">
             <SubmitButton>Save customer</SubmitButton>
-            <LinkButton href="/app/customers" variant="ghost">Cancel</LinkButton>
+            <LinkButton href="/app/contacts" variant="ghost">Cancel</LinkButton>
           </div>
         </ActionForm>
       </Card>

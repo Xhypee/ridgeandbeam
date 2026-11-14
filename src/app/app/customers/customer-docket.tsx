@@ -64,7 +64,7 @@ function Row({ icon, k, v, href }: { icon: string; k: string; v: React.ReactNode
   return href ? <a href={href} className="flex items-center gap-3 rounded-lg py-1.5 hover:bg-slate-50">{inner}</a> : <div className="flex items-center gap-3 py-1.5">{inner}</div>;
 }
 
-export function CustomerDocket({ d, closeHref, canSeeMoney, today }: { d: CustomerDocketData; closeHref: string; canSeeMoney: boolean; today: string }) {
+export function CustomerDocket({ d, closeHref, canSeeMoney, today, edit }: { d: CustomerDocketData; closeHref: string; canSeeMoney: boolean; today: string; edit?: React.ReactNode }) {
   const c = d.customer;
   const address = [c.address, [c.city, c.state, c.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
   const insurance = d.jobs.some((j) => j.is_insurance);
@@ -144,11 +144,13 @@ export function CustomerDocket({ d, closeHref, canSeeMoney, today }: { d: Custom
               <Icon d="M6 9l6 6 6-6" className="ml-auto h-4 w-4 text-slate-400 transition-transform group-open:rotate-180" />
             </summary>
             <div className="px-5 pb-5">
-              <ActionForm action={updateCustomer} className="space-y-4">
-                <input type="hidden" name="id" value={c.id} />
-                <CustomerFields c={c} />
-                <SubmitButton className="min-h-12 w-full text-[15px]">Save changes</SubmitButton>
-              </ActionForm>
+              {edit ?? (
+                <ActionForm action={updateCustomer} className="space-y-4">
+                  <input type="hidden" name="id" value={c.id} />
+                  <CustomerFields c={c} />
+                  <SubmitButton className="min-h-12 w-full text-[15px]">Save changes</SubmitButton>
+                </ActionForm>
+              )}
             </div>
           </details>
         </div>

@@ -184,7 +184,7 @@ function check(cond, msg) {
   await bob.click('button[type="submit"]');
   await bob.waitForURL(BASE + "/app");
   await bob.goto(BASE + "/app/customers");
-  check(await bob.getByText("No customers yet").isVisible(), "other company sees no customers");
+  check((await bob.locator('[data-contact-row="customer"]').count()) === 0, "other company sees no customers");
   const r = await bob.goto(jobUrl);
   check(r.status() === 404, "other company gets 404 on Summit's job URL");
 
