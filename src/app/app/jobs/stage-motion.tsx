@@ -4,10 +4,11 @@
 // while the rest of the board dims, lands with a squash and a puff of dust, and a "+1" floats up from the new
 // column's count. Works on whatever the server re-renders: it remembers where every card was and, after each
 // update, animates any card whose column changed. The flying card is a copy in a fixed layer, so the columns'
-// own scroll boxes can't clip it. Reduce Motion: the card just fades in.
+// own scroll boxes can't clip it. When a job gets signed, a burst of roof tiles goes off over its card.
+// Reduce Motion: the card just fades in, no burst.
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 
-type Spot = { col: string; rect: DOMRect };
+type Spot = { col: string; rect: DOMRect; signed: boolean };
 
 // Kept outside the component: opening or closing a sidebar can rebuild the board, and the move should still play.
 // Only trusted for a few seconds, so coming back to Jobs later doesn't replay old moves.
@@ -23,7 +24,7 @@ export function StageMotion({ children }: { children: ReactNode }) {
     const el = root.current;
     if (!el) return;
     const next = new Map<string, Spot>();
-    el.querySelectorAll<HTMLElement>("[data-job-card]").forEach((c) => next.set(c.dataset.jobCard!, { col: colOf(c), rect: c.getBoundingClientRect() }));
+    el.querySelectorAll<HTMLElement>("[data-job-card]").forEach((c) => next.set(c.dataset.jobCard!, { col: colOf(c), rect: c.getBoundingClientRect(), signed: c.dataset.signed === "1" }));
     last = { at: Date.now(), spots: next };
   };
 
@@ -42,21 +43,26 @@ export function StageMotion({ children }: { children: ReactNode }) {
     if (!el) return;
     const prev = last && Date.now() - last.at < FRESH_MS ? last.spots : null;
     if (!prev) { snapshot(); return; }
-    const moved: { card: HTMLElement; from: DOMRect; col: string }[] = [];
+    const moved: { card: HTMLElement; from: DOMRect; col: string; signed: boolean }[] = [];
+    const signedHere: HTMLElement[] = [];
     el.querySelectorAll<HTMLElement>("[data-job-card]").forEach((card) => {
       const before = prev.get(card.dataset.jobCard!);
+      if (!before) return;
       const col = colOf(card);
-      if (before && before.col && col && before.col !== col) moved.push({ card, from: before.rect, col });
+      const justSigned = !before.signed && card.dataset.signed === "1";
+      if (before.col && col && before.col !== col) moved.push({ card, from: before.rect, col, signed: justSigned });
+      else if (justSigned) signedHere.push(card);
     });
     // A filter switch or a big refresh can shuffle lots of cards; only a handful of moves gets the show.
-    if (moved.length > 0 && moved.length <= 3) moved.forEach((m) => fly(el, m.card, m.from, m.col));
+    if (moved.length > 0 && moved.length <= 3) moved.forEach((m) => fly(el, m.card, m.from, m.col, m.signed));
+    if (signedHere.length > 0 && signedHere.length <= 3) signedHere.forEach((c) => tileBurst(c, 0));
     snapshot();
   });
 
   return <div ref={root} className="contents">{children}</div>;
 }
 
-function fly(board: HTMLElement, card: HTMLElement, from: DOMRect, col: string) {
+function fly(board: HTMLElement, card: HTMLElement, from: DOMRect, col: string, signed = false) {
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   // Bring the card into view inside its column first (new arrivals can sit at the bottom of a long column).
   const scroller = card.closest<HTMLElement>("[data-col-scroll]");
@@ -98,6 +104,8 @@ function fly(board: HTMLElement, card: HTMLElement, from: DOMRect, col: string) 
     { transform: "translate(0,0) scale(1) rotate(0)" },
   ], { duration: D });
   const done = () => { ghost.remove(); card.style.visibility = ""; };
+  // Signed on the way over: the tiles go off as it lands.
+  if (signed) tileBurst(card, D * 0.8);
   hop.finished.then(done, done);
 
   // Dust puff from both bottom corners as it lands.
@@ -127,4 +135,31 @@ function fly(board: HTMLElement, card: HTMLElement, from: DOMRect, col: string) 
     plus.animate([{ transform: "translateY(4px)", opacity: 0 }, { transform: "translateY(0)", opacity: 1, offset: 0.3 }, { transform: "translateY(-18px)", opacity: 0 }],
       { duration: 1000, delay: D * 0.55, fill: "backwards", easing: "ease-out" }).finished.then(() => plus.remove(), () => plus.remove());
   }
+}
+
+/** A burst of little roof tiles (evergreen, amber, terracotta) from the top of a card: a job just got signed. */
+function tileBurst(card: HTMLElement, delay: number) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  window.setTimeout(() => {
+    const r = card.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + 18;
+    const colors = ["#1f5f3f", "#d97706", "#b9d8c3", "#c2410c", "#4f9c72"];
+    for (let i = 0; i < 26; i++) {
+      const t = document.createElement("i");
+      Object.assign(t.style, {
+        position: "fixed", left: `${cx}px`, top: `${cy}px`, width: "10px", height: "6px", borderRadius: "1.5px",
+        background: colors[i % colors.length], pointerEvents: "none", zIndex: "72",
+      });
+      document.body.appendChild(t);
+      const ang = (Math.PI * 2 * i) / 26 + Math.random() * 0.4;
+      const dist = 60 + Math.random() * 70;
+      const dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist * 0.7 - 34;
+      const rot = Math.round(Math.random() * 540 - 270);
+      t.animate([
+        { transform: "translate(-50%,-50%) rotate(0) scale(.6)", opacity: 1 },
+        { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) rotate(${rot / 2}deg) scale(1)`, opacity: 1, offset: 0.45 },
+        { transform: `translate(calc(-50% + ${dx * 1.15}px), calc(-50% + ${dy + 80}px)) rotate(${rot}deg) scale(.9)`, opacity: 0 },
+      ], { duration: 1150 + Math.random() * 350, easing: "cubic-bezier(.2,.7,.3,1)" }).finished.then(() => t.remove(), () => t.remove());
+    }
+  }, delay);
 }

@@ -15,9 +15,17 @@ export type DocRead = {
   customer: { phone: string | null; email: string | null; address: string | null; suburb: string | null; state: string | null; postcode: string | null };
   site: { address: string | null; suburb: string | null; state: string | null; postcode: string | null };
   job: { roof_material: string | null; roof_area_m2: number | null };
+  /** Roof measurements printed on plans or a roof report (Nearmap, Roofr, etc.). */
+  roof: DocRoof;
   insurance: { insurer: string | null; claim_number: string | null; policy_number: string | null; assessor_name: string | null; assessor_phone: string | null; assessor_email: string | null; excess: number | null; date_of_loss: string | null };
   notes: string | null;
 };
+
+export type DocRoof = {
+  area_m2: number | null; plan_area_m2: number | null; pitch_deg: number | null;
+  ridge_m: number | null; hip_m: number | null; valley_m: number | null; gutter_m: number | null; barge_m: number | null; downpipes: number | null;
+};
+export const NO_ROOF: DocRoof = { area_m2: null, plan_area_m2: null, pitch_deg: null, ridge_m: null, hip_m: null, valley_m: null, gutter_m: null, barge_m: null, downpipes: null };
 
 export type Current = {
   customer: { phone: string | null; email: string | null; address: string | null; city: string | null; state: string | null; zip: string | null };
@@ -118,4 +126,32 @@ export function intakeNote(fileName: string, r: DocRead, p: DocPlan): string {
   if (r.notes) parts.push(`Also: ${r.notes.trim().replace(/\.?$/, ".")}`);
   if (!p.filled.length && !p.differs.length && !p.hints.length && !r.notes) parts.push("Nothing new to add to the job.");
   return parts.join(" ");
+}
+
+/**
+ * A roof plan for the quote from what Claude read off plans or a roof report: one "Main roof" section (plan area
+ * and pitch) plus the line lengths it found. Builds on the quote's existing measurements object (keeps its other
+ * settings). Null when there's no usable area. Plan area comes from the document, or from the roof (sloped) area
+ * and pitch; with no pitch given, 22.5°.
+ */
+export function roofMeasurementsFromDoc(roof: DocRoof | null | undefined, roofMaterial: string | null, existing: unknown): { measurements: Record<string, unknown>; label: string } | null {
+  if (!roof) return null;
+  const ok = (v: number | null, min: number, max: number) => (typeof v === "number" && Number.isFinite(v) && v >= min && v <= max ? v : null);
+  const pitch = ok(roof.pitch_deg, 1, 60) ?? 22.5;
+  const sloped = ok(roof.area_m2, 5, 20000);
+  const plan = ok(roof.plan_area_m2, 5, 20000) ?? (sloped ? sloped * Math.cos((pitch * Math.PI) / 180) : null);
+  if (!plan) return null;
+  const base = (existing && typeof existing === "object" ? existing : {}) as Record<string, unknown>;
+  const mat = (roofMaterial ?? "").toLowerCase();
+  const prevSys = Array.isArray(base.sections) ? (base.sections[0] as { system?: string } | undefined)?.system : undefined;
+  const system = /terracotta/.test(mat) ? "terracotta_tile" : /tile/.test(mat) ? "concrete_tile"
+    : /colorbond|metal|zincalume|trimdek|corrugat|klip|spandek|sheet/.test(mat) ? "metal" : prevSys ?? "metal";
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const out: Record<string, unknown> = { ...base, sections: [{ label: "Main roof", area: r2(plan), pitch, system }] };
+  const lens: [keyof DocRoof, string][] = [["ridge_m", "ridge"], ["hip_m", "hip"], ["valley_m", "valley"], ["gutter_m", "eave"], ["barge_m", "barge"]];
+  for (const [from, to] of lens) { const v = ok(roof[from], 0.1, 5000); if (v) out[to] = r2(v); }
+  const dp = ok(roof.downpipes, 1, 100);
+  if (dp) out.downpipes = Math.round(dp);
+  const trueArea = plan / Math.cos((pitch * Math.PI) / 180);
+  return { measurements: out, label: `roof area ${Math.round(trueArea)} m² at ${r2(pitch)}°${ok(roof.pitch_deg, 1, 60) ? "" : " (pitch assumed)"}` };
 }

@@ -4,6 +4,7 @@ import "server-only";
 import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ColourRoof } from "@/components/docket";
+import { DocumentDrop } from "@/app/app/jobs/document-drop";
 import { asAuState, AU_STATE_NAME } from "@/lib/au";
 import { auJobTypeFrom, roofSystemFrom, rulesFor } from "@/lib/au-rules";
 import { roofShape } from "@/lib/docket-shape";
@@ -53,10 +54,10 @@ export async function loadSupplierChoices(supabase: SupabaseClient, org: Organiz
 }
 
 const fmt = (n: number, d = 1) => (Math.round(n * 10 ** d) / 10 ** d).toLocaleString("en-AU");
-const SOURCE: Record<string, string> = { plans: "measured from the plans", satellite: "measured on the satellite map", manual: "measured by hand", import: "imported" };
+const SOURCE: Record<string, string> = { plans: "measured from the plans", satellite: "measured on the satellite map", manual: "measured by hand", import: "imported", documents: "read from your documents by Claude" };
 
 /** 03 Roof plan: the drawing and numbers from our own roof report (plans, satellite or by hand). */
-export function RoofPlanPanel({ estimateId, measurements, source }: { estimateId: string; measurements: unknown; source: string | null }) {
+export function RoofPlanPanel({ estimateId, jobId, measurements, source, canDrop = true }: { estimateId: string; jobId: string; measurements: unknown; source: string | null; canDrop?: boolean }) {
   const m = normalizeMeasurements(measurements);
   const s = summarize(m);
   const { shape, panels } = roofShape(measurements);
@@ -82,10 +83,11 @@ export function RoofPlanPanel({ estimateId, measurements, source }: { estimateId
           </div>
         </div>
       ) : (
+        canDrop ? <DocumentDrop jobId={jobId} estimateId={estimateId} variant="measure" /> : (
         <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-white px-5 py-6 text-center">
           <p className="font-semibold text-ink">Not measured yet</p>
           <p className="mt-1 text-sm text-slate-500">Start here. Measure from the plans, on the satellite map, or type it in by hand.</p>
-        </div>
+        </div>)
       )}
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
         <span className="flex-1">{measured ? <>Roof report · {SOURCE[source ?? ""] ?? "measured"} · <Link href={hasPlans ? `/app/measure/${estimateId}/plans` : `/app/measure/${estimateId}`} className="font-semibold text-brand-700">Open roof report</Link></> : "No roof report yet"}</span>
