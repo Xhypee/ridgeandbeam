@@ -138,12 +138,14 @@ export function AppFrame({ full, rail, header, tabs, children }: { full: React.R
   const focus = useFocusPage();
   if (focus) return <main className="min-h-screen min-w-0">{children}</main>;
   return (
-    <div className="flex min-h-screen">
+    // With a sidebar open the frame is exactly the screen tall on a computer: the board/list and the sidebar
+    // scroll inside it, the page itself never does.
+    <div className={cx("flex min-h-screen", docket && "lg:h-dvh lg:min-h-0 lg:overflow-hidden")}>
       {docket ? rail : full}
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className={cx("flex min-w-0 flex-1 flex-col", docket && "lg:min-h-0")}>
         {header}
         {docket ? (
-          <main className="min-w-0 flex-1">{children}</main>
+          <main className="min-w-0 flex-1 lg:min-h-0">{children}</main>
         ) : (
           <main className="w-full max-w-7xl flex-1 px-4 py-6 sm:px-8 lg:py-8">
             {tabs}
