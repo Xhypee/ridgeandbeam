@@ -49,7 +49,7 @@ export type Docket = {
   /** Sold / scheduled only: what's left before the crew can start. */
   sold: SoldReady | null;
   /** New leads only: what they sent us and the documents on the job. */
-  lead: { message: string | null; source: string | null; receivedAt: string | null; docs: LeadDoc[]; noAnswer: { count: number; last: string | null }; contactedBy: string | null } | null;
+  lead: { message: string | null; source: string | null; receivedAt: string | null; docs: LeadDoc[]; noAnswer: { count: number; last: string | null }; contactedBy: string | null; customerOtherJobs: number } | null;
   /** Every document on the job (quote, plans, supplier invoices…), newest first. */
   docs: LeadDoc[];
   /** Building + Wrapping up: the quote's payments and each supplier's delivery + invoice. */
@@ -196,9 +196,11 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
   let lead: Docket["lead"] = null;
   if (row.stage === "lead") {
     // "No answer" tries (job_events) and who made the first contact (its job note), for the First call step.
-    const [{ data: tries }, { data: firstNote }] = await Promise.all([
+    const [{ data: tries }, { data: firstNote }, { count: otherJobs }] = await Promise.all([
       supabase.from("job_events").select("created_at").eq("job_id", jobId).eq("kind", "call_no_answer").order("created_at", { ascending: false }).limit(50),
       row.first_contacted_at ? supabase.from("job_notes").select("author_name").eq("job_id", jobId).like("body", "First contact made%").order("created_at").limit(1).maybeSingle() : Promise.resolve({ data: null }),
+      // Delete lead: the contact can go too only when this is their one and only job.
+      supabase.from("jobs").select("id", { count: "exact", head: true }).eq("customer_id", c.id).neq("id", jobId),
     ]);
     lead = {
       message: ((row as { notes?: string | null }).notes ?? c.notes ?? null)?.trim() || null,
@@ -206,6 +208,7 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
       docs: docs.slice(0, 20),
       noAnswer: { count: tries?.length ?? 0, last: tries?.[0]?.created_at ?? null },
       contactedBy: (firstNote as { author_name?: string | null } | null)?.author_name ?? null,
+      customerOtherJobs: otherJobs ?? 0,
     };
   }
   let quoting: Docket["quoting"] = null;

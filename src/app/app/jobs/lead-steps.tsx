@@ -6,7 +6,7 @@ import { useRef, useState } from "react";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { cx } from "@/components/ui";
 import { INSPECTION_TIMES, LOST_REASONS } from "@/lib/lead-steps";
-import { bookInspection, logLeadCall, markLeadLost, setLeadOwner } from "./lead-actions";
+import { bookInspection, deleteLead, logLeadCall, markLeadLost, setLeadOwner } from "./lead-actions";
 import { LeadTimer } from "./lead-timer";
 
 const PHONE = "M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2";
@@ -29,6 +29,9 @@ export type LeadStepsProps = {
   people: { user_id: string; name: string }[];
   meId: string;
   dates: { min: string; suggested: string };
+  /** Full name, for the delete confirmation; `otherJobs` > 0 means the contact stays. */
+  name: string;
+  otherJobs: number;
 };
 
 function Step({ n, state, title, detail, children, k }: { n: number; state: "done" | "now" | "todo"; title: string; detail?: React.ReactNode; children?: React.ReactNode; k: string }) {
@@ -68,6 +71,7 @@ function OwnerPicker({ jobId, owner, people, meId }: { jobId: string; owner: str
 
 export function LeadSteps(p: LeadStepsProps) {
   const [lostOpen, setLostOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [reason, setReason] = useState<string>("");
   const tel = p.phone ? `tel:${p.phone.replace(/\s+/g, "")}` : null;
   const sms = p.phone ? `sms:${p.phone.replace(/\s+/g, "")}` : null;
@@ -144,9 +148,7 @@ export function LeadSteps(p: LeadStepsProps) {
       </ol>
 
       <div className="mt-3" data-lead-lost>
-        {!lostOpen ? (
-          <button type="button" onClick={() => setLostOpen(true)} className="text-sm font-semibold text-slate-500 underline-offset-4 hover:text-ink hover:underline">Not going ahead?</button>
-        ) : (
+        {lostOpen ? (
           <ActionForm action={markLeadLost} className="rounded-xl bg-slate-50 p-3.5 ring-1 ring-slate-200">
             <input type="hidden" name="job_id" value={p.jobId} />
             <p className="text-sm font-semibold text-ink">Why isn&rsquo;t it going ahead?</p>
@@ -163,6 +165,29 @@ export function LeadSteps(p: LeadStepsProps) {
               <button type="button" onClick={() => setLostOpen(false)} className="min-h-10 rounded-xl px-4 text-sm font-semibold text-slate-600 ring-1 ring-slate-300 hover:bg-white">Cancel</button>
             </div>
           </ActionForm>
+        ) : deleteOpen ? (
+          // Delete: gone for good (spam, a test, a double-up). Red, and says exactly what goes.
+          <ActionForm action={deleteLead} className="rounded-xl bg-red-50 p-3.5 ring-1 ring-red-200">
+            <input type="hidden" name="job_id" value={p.jobId} />
+            <div data-lead-delete-confirm>
+              <p className="text-sm font-semibold text-red-800">Delete {p.first}&rsquo;s lead?</p>
+              <p className="mt-0.5 text-[13px] text-red-700">The lead, its notes and files go for good. This can&rsquo;t be undone.</p>
+              {p.otherJobs === 0 && (
+                <label className="mt-2.5 flex cursor-pointer items-center gap-2 text-[13px] font-medium text-red-800">
+                  <input type="checkbox" name="remove_contact" defaultChecked className="h-4 w-4 accent-red-600" />Also delete {p.name} from Contacts
+                </label>
+              )}
+            </div>
+            <div className="mt-3 flex gap-2">
+              <SubmitButton variant="danger" className="min-h-10 flex-1">Delete lead</SubmitButton>
+              <button type="button" onClick={() => setDeleteOpen(false)} className="min-h-10 rounded-xl bg-white px-4 text-sm font-semibold text-slate-600 ring-1 ring-slate-300 hover:bg-slate-50">Cancel</button>
+            </div>
+          </ActionForm>
+        ) : (
+          <div className="flex items-center justify-between">
+            <button type="button" onClick={() => setLostOpen(true)} className="text-sm font-semibold text-slate-500 underline-offset-4 hover:text-ink hover:underline">Not going ahead?</button>
+            <button type="button" onClick={() => setDeleteOpen(true)} data-lead-delete className="text-sm font-semibold text-red-600 underline-offset-4 hover:text-red-700 hover:underline">Delete lead</button>
+          </div>
         )}
       </div>
     </div>

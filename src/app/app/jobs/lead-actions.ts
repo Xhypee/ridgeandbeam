@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireMoneyAccess, requireOrg } from "@/lib/dal";
 import { friendly, num, oneOf, str } from "@/lib/form";
 import { notifyUser, sendSms } from "@/lib/notify";
@@ -204,4 +205,24 @@ export async function reopenLead(_: ActionResult, fd: FormData): Promise<ActionR
   await note(ctx, id, "Reopened.");
   touch(id);
   return { ok: "Reopened." };
+}
+
+/** Delete lead: gone for good (spam, a test, a double-up). Only new leads; anything further along uses "Not going ahead".
+ *  "Also delete <name> from Contacts" removes the contact too, but only when this was their only job. */
+export async function deleteLead(_: ActionResult, fd: FormData): Promise<ActionResult> {
+  const ctx = await requireOrg();
+  if (ctx.isCrewLead) return { error: "Crew leads can't delete leads." };
+  const id = String(fd.get("job_id") ?? "");
+  const { data: job } = await ctx.supabase.from("jobs").select("stage, customer_id").eq("id", id).maybeSingle();
+  if (!job) return { error: "That lead is already gone." };
+  if (job.stage !== "lead") return { error: "Only new leads can be deleted. Use “Not going ahead” instead." };
+  const { error } = await ctx.supabase.from("jobs").delete().eq("id", id);
+  if (error) return { error: friendly(error) };
+  if (fd.get("remove_contact") === "on" && job.customer_id) {
+    const { count } = await ctx.supabase.from("jobs").select("id", { count: "exact", head: true }).eq("customer_id", job.customer_id);
+    if (!count) await ctx.supabase.from("customers").delete().eq("id", job.customer_id); // best effort: the lead itself is gone either way
+  }
+  revalidatePath("/app", "layout");
+  const filter = str(fd, "filter");
+  redirect(`/app/jobs${filter && /^[a-z]+$/.test(filter) ? `?filter=${filter}` : ""}`);
 }
