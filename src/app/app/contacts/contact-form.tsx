@@ -134,7 +134,7 @@ function SupplierFields({ s, fromDirectory }: { s?: Partial<SupplierEdit>; fromD
 }
 
 /** Right-sidebar New contact form. */
-export function NewContactPanel({ closeHref, initial }: { closeHref: string; initial: ContactType }) {
+export function NewContactPanel({ closeHref, initial, claude }: { closeHref: string; initial: ContactType; claude?: React.ReactNode }) {
   const [type, setType] = useState<ContactType>(initial);
   return (
     <div className="flex h-full flex-col bg-cream p-4" data-new-contact>
@@ -158,6 +158,7 @@ export function NewContactPanel({ closeHref, initial }: { closeHref: string; ini
             <SubmitButton className="min-h-12 w-full text-[15px]">Save {TYPE_LABEL[type].toLowerCase()}</SubmitButton>
           </ActionForm>
         </div>
+        {claude}
       </div>
     </div>
   );

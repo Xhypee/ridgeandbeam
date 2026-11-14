@@ -80,6 +80,10 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
   const docket = openId ? await loadDocket(supabase, org, openId, { canSeeMoney }) : null;
   // ?new=1 opens the New lead form in the same right sidebar (a job's docket wins if both are set).
   const adding = !docket && sp.new === "1" && !isCrewLead;
+  // ?referred_by=<contact> (from "Log a referral" on a contact) fills Referred by on the New lead form.
+  const refId = adding && typeof sp.referred_by === "string" && /^[0-9a-f-]{36}$/i.test(sp.referred_by) ? sp.referred_by : null;
+  const { data: refRow } = refId ? await supabase.from("customers").select("id, name, phone, city").eq("id", refId).maybeSingle() : { data: null };
+  const referrer = refRow ? { id: refRow.id, name: refRow.name, detail: [refRow.phone, refRow.city].filter(Boolean).join(" · ") } : null;
   const side = Boolean(docket || adding);
   const filterQs = filter === "all" ? "" : `filter=${filter}`;
   const hrefFor = (id: string | null) => `/app/jobs${[filterQs, id ? `job=${id}` : ""].filter(Boolean).length ? `?${[filterQs, id ? `job=${id}` : ""].filter(Boolean).join("&")}` : ""}`;
@@ -192,7 +196,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
           {board}
         </div>
         <aside aria-label="New lead" className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-screen lg:w-[440px] lg:shrink-0 lg:border-l lg:border-slate-200 xl:w-[460px]">
-          <NewLeadPanel closeHref={hrefFor(null)} filter={filterQs ? filter : null} defaultState={org.state ?? null} />
+          <NewLeadPanel key={referrer?.id ?? "new"} closeHref={hrefFor(null)} filter={filterQs ? filter : null} defaultState={org.state ?? null} referrer={referrer} />
         </aside>
       </div>
     );

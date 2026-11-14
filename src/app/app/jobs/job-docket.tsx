@@ -93,6 +93,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
             </div>
             <h2 className="mt-2 font-display text-2xl font-bold leading-tight">{d.customer.name}</h2>
             <p className="truncate text-sm text-white/70">{j.site_address ?? d.customer.address ?? j.title}</p>
+            {j.referredBy && <Link href={`/app/contacts?contact=${j.referredBy.id}`} className="mt-0.5 inline-block truncate text-xs font-semibold text-brand-200 hover:text-white" data-docket-referred>Referred by {j.referredBy.name} →</Link>}
             <div className="mt-5 flex items-end justify-between gap-2">
               <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-200">Now</p><p className={cx("truncate font-display font-bold leading-none", !lost && !done && STAGES[at].length > 12 ? "text-[22px]" : "text-[28px]")}>{lost ? "Lost" : done ? "Paid ✓" : STAGES[at]}</p></div>
               {!lost && !done && at <= 4 && (

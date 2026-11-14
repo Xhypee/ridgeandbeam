@@ -6,6 +6,8 @@ import { STAGE_LABEL } from "@/lib/format";
 
 const Body = z.object({
   jobId: z.string().uuid().optional(),
+  contactId: z.string().uuid().optional(),
+  supplierId: z.string().uuid().optional(),
   messages: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().min(1).max(4000) })).min(1).max(30),
 });
 
@@ -22,7 +24,7 @@ export async function POST(req: Request) {
   if (isCrewLead) return Response.json({ error: "Ask the office to turn this on for you." }, { status: 403 });
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "Say something first." }, { status: 400 });
-  const { jobId, messages } = parsed.data;
+  const { jobId, contactId, supplierId, messages } = parsed.data;
   if (messages.at(-1)?.role !== "user") return Response.json({ error: "Say something first." }, { status: 400 });
 
   const since = new Date(Date.now() - 180 * 86400000).toISOString();
@@ -73,6 +75,46 @@ export async function POST(req: Request) {
     ].filter(Boolean).join("\n");
   }
 
+  // A contact or supplier open in a sidebar: who they are, their jobs, the jobs they referred, people, notes.
+  let thisRecord = "";
+  if (contactId) {
+    const [{ data: c }, { data: own }, { data: sent }, { data: ppl }, { data: on }] = await Promise.all([
+      supabase.from("customers").select("*").eq("id", contactId).maybeSingle(),
+      supabase.from("jobs").select("title, stage, site_address, created_at, estimates(status, estimate_totals(total))").eq("customer_id", contactId).order("created_at", { ascending: false }).limit(30),
+      supabase.from("jobs").select("title, stage, created_at, customers(name), estimates(status, estimate_totals(total))").eq("referred_by", contactId).order("created_at", { ascending: false }).limit(30),
+      supabase.from("contact_people").select("name, role, phone, email").eq("contact_id", contactId),
+      supabase.from("job_contacts").select("role, jobs(title, stage, customers(name))").eq("contact_id", contactId).limit(30),
+    ]);
+    if (c) {
+      type JR = { title: string; stage: string; site_address?: string | null; created_at: string; customers?: unknown; estimates?: { status: string; estimate_totals: unknown }[] };
+      const val = (j: JR) => { const e = (j.estimates ?? []).find((x) => x.status === "accepted") ?? (j.estimates ?? []).find((x) => x.status === "sent"); return e ? `${e.status === "accepted" ? "signed" : "quoted"} ${aud(Number(one(e.estimate_totals as { total: number })?.total ?? 0))}` : "not quoted"; };
+      thisRecord = [
+        `THE CONTACT OPEN ON SCREEN: ${c.name} (${c.kind ?? "customer"})${c.company ? ` · ${c.company}` : ""}${c.trade ? ` · ${c.trade}` : ""}`,
+        `Contact: ${[c.phone, c.email, [c.address, c.city, c.state, c.zip].filter(Boolean).join(" ")].filter(Boolean).join(" · ") || "none"}. Lead source: ${c.source ?? "?"}. Follow up: ${c.follow_up_on ? day(c.follow_up_on) : "none"}. Customer since ${day(c.created_at)}.`,
+        c.abn || c.licence_no || c.licence_expiry || c.pl_expiry || c.workcover_expiry ? `Business: ${[c.abn ? `ABN ${c.abn}` : null, c.licence_no ? `licence ${c.licence_no} ${c.licence_class ?? ""}`.trim() : null, c.licence_expiry ? `licence expires ${day(c.licence_expiry)}` : null, c.pl_expiry ? `public liability expires ${day(c.pl_expiry)}` : null, c.workcover_expiry ? `WorkCover expires ${day(c.workcover_expiry)}` : null, c.payment_terms ? `terms ${c.payment_terms}` : null, c.rate ? `rate ${c.rate}` : null].filter(Boolean).join(" · ")}` : null,
+        `Their own jobs (${own?.length ?? 0}):${(own ?? []).length ? "\n" + (own as JR[]).map((j) => `- ${j.title} · ${STAGE_LABEL[j.stage] ?? j.stage} · ${val(j)} · ${day(j.created_at)}`).join("\n") : " none"}`,
+        `Jobs they referred to us (${sent?.length ?? 0}):${(sent ?? []).length ? "\n" + (sent as JR[]).map((j) => `- ${one(j.customers as { name: string })?.name ?? "?"} · ${j.title} · ${STAGE_LABEL[j.stage] ?? j.stage} · ${val(j)} · ${day(j.created_at)}`).join("\n") : " none"}`,
+        (ppl ?? []).length ? `People there: ${(ppl ?? []).map((x) => `${x.name}${x.role ? ` (${x.role})` : ""}${x.phone ? ` ${x.phone}` : ""}`).join("; ")}` : null,
+        (on ?? []).length ? `Working on: ${(on as { role: string | null; jobs: unknown }[]).map((x) => { const j = one(x.jobs as { title: string; stage: string; customers: unknown }); return j ? `${one(j.customers as { name: string })?.name ?? ""} ${j.title} (${STAGE_LABEL[j.stage] ?? j.stage})${x.role ? ` as ${x.role}` : ""}` : null; }).filter(Boolean).join("; ")}` : null,
+        c.notes ? `Notes: ${c.notes}` : null,
+      ].filter(Boolean).join("\n");
+    }
+  } else if (supplierId) {
+    const [{ data: sup }, { data: orders }] = await Promise.all([
+      supabase.from("org_suppliers").select("*, suppliers(name, category), supplier_branches(name, phone, email)").eq("id", supplierId).maybeSingle(),
+      supabase.from("material_orders").select("status, created_at, delivery_date, paid_at, invoice_ex, invoice_gst, jobs(title, customers(name))").eq("org_supplier_id", supplierId).order("created_at", { ascending: false }).limit(20),
+    ]);
+    if (sup) {
+      const sp = one(sup.suppliers as { name: string; category: string | null });
+      const br = one(sup.supplier_branches as { name: string; phone: string | null; email: string | null });
+      thisRecord = [
+        `THE SUPPLIER OPEN ON SCREEN: ${sp?.name ?? "Supplier"}${br ? ` · ${br.name} branch` : ""}${sup.account_number ? ` · account ${sup.account_number}` : ""}${sup.rep_name ? ` · rep ${sup.rep_name} ${sup.rep_phone ?? ""}` : ""}`,
+        `Recent orders (${orders?.length ?? 0}):${(orders ?? []).length ? "\n" + (orders as { status: string; created_at: string; delivery_date: string | null; paid_at: string | null; invoice_ex: number | null; invoice_gst: number | null; jobs: unknown }[]).map((o) => { const j = one(o.jobs as { title: string; customers: unknown }); return `- ${one(j?.customers as { name: string })?.name ?? ""} ${j?.title ?? ""} · ${o.status} · ordered ${day(o.created_at)}${o.delivery_date ? ` · delivery ${day(o.delivery_date)}` : ""}${o.invoice_ex ? ` · invoice ${aud(Number(o.invoice_ex) + Number(o.invoice_gst ?? 0))} ${o.paid_at ? "paid" : "to pay"}` : ""}`; }).join("\n") : " none"}`,
+        sup.notes ? `Notes: ${sup.notes}` : null,
+      ].filter(Boolean).join("\n");
+    }
+  }
+
   const system = [
     `You are Claude, the assistant inside Ridge & Beam, the job software ${org.name} (an Australian roofing business) uses. You're talking with ${me?.full_name || user.fullName || "a team member"} (${me?.role ?? "team"}).`,
     "Be brief and practical, in plain Australian English, like a sharp office manager who knows every job. Short paragraphs or a few bullets; no headings, no tables, no markdown symbols other than simple dashes for lists.",
@@ -90,6 +132,7 @@ export async function POST(req: Request) {
     ...jobLines,
     "",
     thisJob,
+    thisRecord,
   ].join("\n");
 
   try {
