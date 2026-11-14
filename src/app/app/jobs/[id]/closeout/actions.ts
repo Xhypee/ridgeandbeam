@@ -92,12 +92,12 @@ export async function requestReview(_: ActionResult, fd: FormData): Promise<Acti
   const out: string[] = [];
   if (c?.phone) {
     const r = await sendSms(supabase, { orgId: job.org_id, jobId: job.id, customerId: job.customer_id, to: c.phone, body });
-    out.push(r.status === "sent" ? "texted" : r.status === "not_configured" ? "text logged (SMS not set up)" : `text failed: ${r.error}`);
+    out.push(r.status === "sent" ? "texted" : (r.status === "not_configured" || r.status === "paused") ? "text logged (SMS not set up)" : `text failed: ${r.error}`);
   }
   if (c?.email) {
     const r = await sendEmail(supabase, { orgId: job.org_id, jobId: job.id, customerId: job.customer_id, to: c.email, subject: `How did we do, ${first}?`,
       html: `<p>Hi ${first},</p><p>Thank you for choosing ${o.name}! If you're happy with your new roof, a quick Google review helps a local business a lot.</p><p><a href="${o.google_review_url}">Leave a review</a></p>`, text: body });
-    out.push(r.status === "sent" ? "emailed" : r.status === "not_configured" ? "email logged (email not set up)" : `email failed: ${r.error}`);
+    out.push(r.status === "sent" ? "emailed" : (r.status === "not_configured" || r.status === "paused") ? "email logged (email not set up)" : `email failed: ${r.error}`);
   }
   if (!out.length) return { error: "The customer has no phone or email on file." };
   await supabase.from("jobs").update({ review_requested_at: new Date().toISOString() }).eq("id", job.id);
