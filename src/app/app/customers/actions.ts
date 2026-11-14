@@ -56,6 +56,14 @@ export async function searchCustomers(q: string): Promise<CustomerMatch[]> {
   return (data ?? []).map((c) => ({ id: c.id, name: c.name, phone: c.phone, email: c.email, address: c.address, city: c.city, state: c.state, zip: c.zip, jobs: Array.isArray(c.jobs) ? c.jobs.length : 0 }));
 }
 
+/** "Referred by" from the New lead sidebar: the referring contact, and the lead source says referral. */
+function referral(fd: FormData, customerId?: string): { referred_by?: string; referred_by_type?: "contact" | "supplier"; lead_source?: string } {
+  const id = str(fd, "referred_by");
+  const type = fd.get("referred_by_type") === "supplier" ? "supplier" : "contact";
+  if (!id || !/^[0-9a-f-]{36}$/i.test(id) || (type === "contact" && id === customerId)) return {};
+  return { referred_by: id, referred_by_type: type, lead_source: "referral" };
+}
+
 export async function createCustomer(_: ActionResult, fd: FormData): Promise<ActionResult> {
   const { supabase, org, user } = await requireOrg();
   // Picked an existing customer in the lookup: open the job for them instead of adding a duplicate.
@@ -73,7 +81,7 @@ export async function createCustomer(_: ActionResult, fd: FormData): Promise<Act
   const createJob = fd.get("create_job") === "on";
   if (insurance && !createJob) return { error: "An insurance claim belongs to a job. Tick “Also open a job” or choose Retail." };
 
-  const { data, error } = await supabase.from("customers").insert({ ...f, org_id: org.id, created_by: user.id }).select("id").single();
+  const { data, error } = await supabase.from("customers").insert({ ...f, ...(str(fd, "referred_by") && f.source === "other" ? { source: "referral" as const } : {}), org_id: org.id, created_by: user.id }).select("id").single();
   if (error) return { error: friendly(error) };
 
   // Optionally open a job right away (the common "new lead" flow).
@@ -91,6 +99,7 @@ export async function createCustomer(_: ActionResult, fd: FormData): Promise<Act
         ...coords(fd),
         is_insurance: insurance,
         created_by: user.id,
+        ...referral(fd),
       })
       .select("id")
       .single();
@@ -145,6 +154,7 @@ async function jobForExisting(customerId: string, fd: FormData): Promise<ActionR
     title: jobTitle(fd, insurance), ...jobType(fd),
     site_address: [site.address, site.city, site.state, site.zip].filter(Boolean).join(", ") || null,
     state: site.state, zip: site.zip, is_insurance: insurance, created_by: user.id,
+    ...referral(fd, c.id),
     notes: str(fd, "notes"),
     ...(typed.address ? coords(fd) : {}),
   }).select("id").single();

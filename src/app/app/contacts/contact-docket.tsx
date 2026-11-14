@@ -10,6 +10,10 @@ import { label, STAGE_LABEL } from "@/lib/format";
 import { orgSupplierName, SUPPLIER_CATEGORY_LABEL } from "@/lib/suppliers";
 import { Icon, Section } from "../jobs/job-sections";
 import { CustomerDocket, loadCustomerDocket, type CustomerDocketData } from "../customers/customer-docket";
+import { ReferralsSection } from "./referrals-section";
+import { loadReferrals, type Referrals } from "@/lib/referrals-server";
+import { ClaudeBar } from "../jobs/claude-bar";
+import { aiEnabled } from "@/lib/ai";
 import { addPerson, addToJob, removeFromJob, removePerson } from "./actions";
 import { EditContact, EditSupplier, type SupplierEdit } from "./contact-form";
 
@@ -63,7 +67,7 @@ function Row({ icon, k, v, href }: { icon: string; k: string; v: React.ReactNode
   return href ? <a href={href} className="flex items-center gap-3 rounded-lg py-1.5 hover:bg-slate-50">{inner}</a> : <div className="flex items-center gap-3 py-1.5">{inner}</div>;
 }
 
-function Shell({ id, tag, sinceIso, name, sub, stats, fullHref, closeHref, phone, email, children }: { id: string; tag: string; sinceIso: string; name: string; sub: string; stats: { k: string; v: string; warn?: boolean }[]; fullHref?: string; closeHref: string; phone: string | null; email: string | null; children: React.ReactNode }) {
+function Shell({ id, tag, sinceIso, name, sub, stats, fullHref, closeHref, phone, email, children, claude }: { id: string; tag: string; sinceIso: string; name: string; sub: string; stats: { k: string; v: string; warn?: boolean }[]; fullHref?: string; closeHref: string; phone: string | null; email: string | null; children: React.ReactNode; claude?: React.ReactNode }) {
   const btn = "inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl text-[15px] font-semibold";
   return (
     <div className="flex h-full flex-col bg-cream p-4" data-contact-docket={id}>
@@ -89,6 +93,7 @@ function Shell({ id, tag, sinceIso, name, sub, stats, fullHref, closeHref, phone
           </div>
           {children}
         </div>
+        {claude}
       </div>
     </div>
   );
@@ -138,7 +143,7 @@ function BuilderDocket({ d, closeHref, canSeeMoney }: { d: ContactDocketData; cl
   const c = d.customer;
   const address = fullAddress(c);
   return (
-    <Shell id={c.id} tag={TYPE_LABEL.builder} sinceIso={c.created_at} name={c.name} sub={[c.abn ? `ABN ${c.abn}` : null, c.city].filter(Boolean).join(" · ") || address || "Builder"}
+    <Shell claude={<ClaudeBar contactId={c.id} firstName={c.name.split(" ")[0] || c.name} ready={aiEnabled()} />} id={c.id} tag={TYPE_LABEL.builder} sinceIso={c.created_at} name={c.name} sub={[c.abn ? `ABN ${c.abn}` : null, c.city].filter(Boolean).join(" · ") || address || "Builder"}
       stats={canSeeMoney ? [{ k: "Jobs", v: String(d.jobs.length) }, { k: "Signed", v: aud(d.contract) }, { k: "Owing", v: aud(d.owing), warn: d.owing > 0 }] : [{ k: "Jobs", v: String(d.jobs.length) }]}
       fullHref={`/app/customers/${c.id}`} closeHref={closeHref} phone={c.phone ?? d.people.find((p) => p.phone)?.phone ?? null} email={c.email ?? d.people.find((p) => p.email)?.email ?? null}>
       <Section title="People" count={d.people.length}>
@@ -177,6 +182,7 @@ function BuilderDocket({ d, closeHref, canSeeMoney }: { d: ContactDocketData; cl
           <div><dt className="text-[11px] text-slate-500">Retention</dt><dd className="font-medium text-ink">{c.retention_pct ? `${Number(c.retention_pct)}%` : "None"}</dd></div>
         </dl>
       </Section>
+      <ReferralsSection who={{ id: c.id, type: "contact", name: c.name }} r={d} canSeeMoney={canSeeMoney} />
       <Notes notes={c.notes} />
       <EditDetails><EditContact c={c} /></EditDetails>
     </Shell>
@@ -190,7 +196,7 @@ const TONE: Record<ExpiryState, { box: string; icon: string; text: string }> = {
   missing: { box: "bg-slate-50", icon: "text-slate-400", text: "text-slate-500" },
 };
 
-function ContractorDocket({ d, closeHref, today }: { d: ContactDocketData; closeHref: string; today: string }) {
+function ContractorDocket({ d, closeHref, today, canSeeMoney }: { d: ContactDocketData; closeHref: string; today: string; canSeeMoney: boolean }) {
   const c = d.customer;
   const items = contractorCompliance(c, today);
   const alert = complianceAlert(c, today);
@@ -203,7 +209,7 @@ function ContractorDocket({ d, closeHref, today }: { d: ContactDocketData; close
   ] as const;
   const okCount = items.filter((i) => i.state === "ok").length;
   return (
-    <Shell id={c.id} tag={[TYPE_LABEL.contractor, c.trade].filter(Boolean).join(" · ")} sinceIso={c.created_at} name={c.name} sub={[c.company, c.city].filter(Boolean).join(" · ") || c.trade || "Contractor"}
+    <Shell claude={<ClaudeBar contactId={c.id} firstName={c.name.split(" ")[0] || c.name} ready={aiEnabled()} />} id={c.id} tag={[TYPE_LABEL.contractor, c.trade].filter(Boolean).join(" · ")} sinceIso={c.created_at} name={c.name} sub={[c.company, c.city].filter(Boolean).join(" · ") || c.trade || "Contractor"}
       stats={[{ k: "On jobs", v: String(d.onJobs.length) }, { k: "Licence & ins.", v: alert ? (alert.tone === "red" ? "Expired" : "Due soon") : okCount ? "Current" : "Not set", warn: Boolean(alert) }, { k: "GST", v: c.gst_registered === true ? "Yes" : c.gst_registered === false ? "No" : "–" }]}
       closeHref={closeHref} phone={c.phone} email={c.email}>
       <Section title="Licence & insurance">
@@ -246,23 +252,25 @@ function ContractorDocket({ d, closeHref, today }: { d: ContactDocketData; close
           <div><dt className="text-[11px] text-slate-500">Bank</dt><dd className="font-medium text-ink">{c.bank_account ? `${c.bank_bsb ? `${c.bank_bsb} · ` : ""}Acc ••• ${c.bank_account.slice(-4)}` : "–"}</dd></div>
         </dl>
       </Section>
+      <ReferralsSection who={{ id: c.id, type: "contact", name: c.name }} r={d} canSeeMoney={canSeeMoney} />
       <Notes notes={c.notes} />
       <EditDetails><EditContact c={c} /></EditDetails>
     </Shell>
   );
 }
 
-function OtherDocket({ d, closeHref }: { d: ContactDocketData; closeHref: string }) {
+function OtherDocket({ d, closeHref, canSeeMoney }: { d: ContactDocketData; closeHref: string; canSeeMoney: boolean }) {
   const c = d.customer;
   const address = fullAddress(c);
   return (
-    <Shell id={c.id} tag={TYPE_LABEL.other} sinceIso={c.created_at} name={c.name} sub={[c.company, c.city].filter(Boolean).join(" · ") || "Contact"} stats={[]} closeHref={closeHref} phone={c.phone} email={c.email}>
+    <Shell claude={<ClaudeBar contactId={c.id} firstName={c.name.split(" ")[0] || c.name} ready={aiEnabled()} />} id={c.id} tag={TYPE_LABEL.other} sinceIso={c.created_at} name={c.name} sub={[c.company, c.city].filter(Boolean).join(" · ") || "Contact"} stats={[]} closeHref={closeHref} phone={c.phone} email={c.email}>
       <Section title="Contact">
         {c.phone && <Row icon={PHONE} k="Phone" v={c.phone} href={tel(c.phone)} />}
         {c.email && <Row icon={MAIL} k="Email" v={c.email} href={`mailto:${c.email}`} />}
         {address && <Row icon={PIN} k="Address" v={address} />}
         {!c.phone && !c.email && !address && <p className="text-sm text-slate-500">No details yet. Add them under Edit details.</p>}
       </Section>
+      <ReferralsSection who={{ id: c.id, type: "contact", name: c.name }} r={d} canSeeMoney={canSeeMoney} />
       <Notes notes={c.notes} />
       <EditDetails><EditContact c={c} /></EditDetails>
     </Shell>
@@ -272,20 +280,21 @@ function OtherDocket({ d, closeHref }: { d: ContactDocketData; closeHref: string
 /** Customers keep their docket (with the type picker in Edit details); other kinds get their own. */
 export function ContactDocket({ d, closeHref, canSeeMoney, today }: { d: ContactDocketData; closeHref: string; canSeeMoney: boolean; today: string }) {
   if (d.customer.kind === "builder") return <BuilderDocket d={d} closeHref={closeHref} canSeeMoney={canSeeMoney} />;
-  if (d.customer.kind === "contractor") return <ContractorDocket d={d} closeHref={closeHref} today={today} />;
-  if (d.customer.kind === "other") return <OtherDocket d={d} closeHref={closeHref} />;
+  if (d.customer.kind === "contractor") return <ContractorDocket d={d} closeHref={closeHref} today={today} canSeeMoney={canSeeMoney} />;
+  if (d.customer.kind === "other") return <OtherDocket d={d} closeHref={closeHref} canSeeMoney={canSeeMoney} />;
   return <CustomerDocket d={d} closeHref={closeHref} canSeeMoney={canSeeMoney} today={today} edit={<EditContact c={d.customer} />} />;
 }
 
 // ---------- suppliers ----------
 export type SupplierOrder = { id: string; who: string; status: string; total: number | null; invoiced: boolean; paid_at: string | null; created_at: string; job_id: string };
-export type SupplierDocketData = { s: SupplierEdit & { category: string | null; created_at: string; is_default: boolean }; orders: SupplierOrder[]; toPay: number; thisMonth: number; orderCount: number; priceList: { name: string | null; effective_date: string | null } | null };
+export type SupplierDocketData = { s: SupplierEdit & { category: string | null; created_at: string; is_default: boolean }; orders: SupplierOrder[]; toPay: number; thisMonth: number; orderCount: number; priceList: { name: string | null; effective_date: string | null } | null } & Referrals;
 
 export async function loadSupplierDocket(supabase: DB, id: string): Promise<SupplierDocketData | null> {
-  const [{ data: row }, { data: orders, count }, { data: list }] = await Promise.all([
+  const [{ data: row }, { data: orders, count }, { data: list }, refs] = await Promise.all([
     supabase.from("org_suppliers").select("*, suppliers(name, category)").eq("id", id).maybeSingle(),
     supabase.from("material_orders").select("id, status, invoice_no, invoice_ex, invoice_gst, paid_at, created_at, job_id, jobs(site_address, customers(name))", { count: "exact" }).eq("org_supplier_id", id).order("created_at", { ascending: false }).limit(12),
     supabase.from("supplier_price_lists").select("name, effective_date").eq("org_supplier_id", id).eq("is_active", true).eq("status", "ready").maybeSingle(),
+    loadReferrals(supabase, "supplier", id, { canSeeMoney: true }),
   ]);
   if (!row) return null;
   const r = row as Record<string, unknown> & { suppliers: { name: string; category: string } | null };
@@ -306,7 +315,7 @@ export async function loadSupplierDocket(supabase: DB, id: string): Promise<Supp
     abn: (r.abn as string) ?? null, rep_name: (r.rep_name as string) ?? null, rep_phone: (r.rep_phone as string) ?? null, bank_name: (r.bank_name as string) ?? null, bank_bsb: (r.bank_bsb as string) ?? null,
     bank_account: (r.bank_account as string) ?? null, notes: (r.notes as string) ?? null, created_at: String(r.created_at), is_default: Boolean(r.is_default),
   };
-  return { s, orders: list2, toPay, thisMonth, orderCount: count ?? list2.length, priceList: (list as { name: string | null; effective_date: string | null } | null) ?? null };
+  return { s, orders: list2, toPay, thisMonth, orderCount: count ?? list2.length, priceList: (list as { name: string | null; effective_date: string | null } | null) ?? null, ...refs };
 }
 
 const ORDER_STATUS: Record<string, string> = { draft: "Draft", sent: "Sent", confirmed: "Confirmed", delivered: "Delivered", cancelled: "Cancelled" };
@@ -315,7 +324,7 @@ export function SupplierDocket({ d, closeHref, canSeeMoney, canEdit }: { d: Supp
   const s = d.s;
   const phone = s.rep_phone ?? s.branch_phone;
   return (
-    <Shell id={s.id} tag={[TYPE_LABEL.supplier, s.is_default ? "Default" : null].filter(Boolean).join(" · ")} sinceIso={s.created_at} name={s.name}
+    <Shell claude={<ClaudeBar supplierId={s.id} firstName={s.name} ready={aiEnabled()} />} id={s.id} tag={[TYPE_LABEL.supplier, s.is_default ? "Default" : null].filter(Boolean).join(" · ")} sinceIso={s.created_at} name={s.name}
       sub={[s.category ? SUPPLIER_CATEGORY_LABEL[s.category] ?? null : null, s.branch_name].filter(Boolean).join(" · ") || "Supplier"}
       stats={canSeeMoney ? [{ k: "Orders", v: String(d.orderCount) }, { k: "This month", v: aud(d.thisMonth) }, { k: "To pay", v: aud(d.toPay), warn: d.toPay > 0 }] : [{ k: "Orders", v: String(d.orderCount) }]}
       fullHref={canSeeMoney ? `/app/settings/suppliers/${s.id}` : undefined} closeHref={closeHref} phone={phone} email={s.branch_email}>
@@ -354,6 +363,7 @@ export function SupplierDocket({ d, closeHref, canSeeMoney, canEdit }: { d: Supp
           <Link href={`/app/settings/suppliers/${s.id}/import`} className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-brand-600 hover:text-brand-700">{d.priceList ? "Upload a new price list" : "Upload their price list"}</Link>
         </Section>
       )}
+      <ReferralsSection who={{ id: s.id, type: "supplier", name: s.name }} r={d} canSeeMoney={canSeeMoney} />
       <Notes notes={s.notes} />
       {canEdit && <EditDetails><EditSupplier s={s} /></EditDetails>}
       <p className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">Suppliers you order from in Materials show up here automatically.</p>

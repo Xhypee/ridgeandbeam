@@ -10,6 +10,7 @@ import { displayName, initials, orgPeople } from "./people";
 import { loadDocket } from "@/lib/job-docket-server";
 import { JobDocket } from "./job-docket";
 import { NewLeadPanel } from "./new-lead-panel";
+import { loadReferrer } from "@/lib/referrals-server";
 import { QuotePreview } from "./quote-preview";
 import { PaymentRequestSheet, ReminderBody, RemindFooter, Sheet, SupplierPayForm } from "./build-sheets";
 import { loadReminder } from "@/lib/quote-remind-server";
@@ -80,6 +81,9 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
   const docket = openId ? await loadDocket(supabase, org, openId, { canSeeMoney }) : null;
   // ?new=1 opens the New lead form in the same right sidebar (a job's docket wins if both are set).
   const adding = !docket && sp.new === "1" && !isCrewLead;
+  // ?referred_by=<contact> (from "Log a referral" on a contact) fills Referred by on the New lead form.
+  const refId = adding && typeof sp.referred_by === "string" && /^[0-9a-f-]{36}$/i.test(sp.referred_by) ? sp.referred_by : null;
+  const referrer = refId ? await loadReferrer(supabase, sp.referred_type === "supplier" ? "supplier" : "contact", refId) : null;
   const side = Boolean(docket || adding);
   const filterQs = filter === "all" ? "" : `filter=${filter}`;
   const hrefFor = (id: string | null) => `/app/jobs${[filterQs, id ? `job=${id}` : ""].filter(Boolean).length ? `?${[filterQs, id ? `job=${id}` : ""].filter(Boolean).join("&")}` : ""}`;
@@ -192,7 +196,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
           {board}
         </div>
         <aside aria-label="New lead" className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-screen lg:w-[440px] lg:shrink-0 lg:border-l lg:border-slate-200 xl:w-[460px]">
-          <NewLeadPanel closeHref={hrefFor(null)} filter={filterQs ? filter : null} defaultState={org.state ?? null} />
+          <NewLeadPanel key={referrer ? `${referrer.type}-${referrer.id}` : "new"} closeHref={hrefFor(null)} filter={filterQs ? filter : null} defaultState={org.state ?? null} referrer={referrer} />
         </aside>
       </div>
     );

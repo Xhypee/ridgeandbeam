@@ -8,19 +8,25 @@ import { label, STAGE_LABEL } from "@/lib/format";
 import type { Customer } from "@/lib/types";
 import { Icon, Section } from "../jobs/job-sections";
 import { updateCustomer } from "./actions";
+import { ClaudeBar } from "../jobs/claude-bar";
+import { loadReferrals, type Referrals } from "@/lib/referrals-server";
+import { ReferralsSection } from "../contacts/referrals-section";
+import { aiEnabled } from "@/lib/ai";
 import { CustomerFields } from "./customer-fields";
 
 type DB = Awaited<ReturnType<typeof createClient>>;
 const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
 
 export type CustomerDocketJob = { id: string; title: string; stage: string; is_insurance: boolean; created_at: string; value: number | null; owing: number };
-export type CustomerDocketData = { customer: Customer; jobs: CustomerDocketJob[]; contract: number; paid: number; owing: number };
+export type CustomerDocketData = { customer: Customer; jobs: CustomerDocketJob[]; contract: number; paid: number; owing: number } & Referrals;
 
 export async function loadCustomerDocket(supabase: DB, id: string, { canSeeMoney }: { canSeeMoney: boolean }): Promise<CustomerDocketData | null> {
   const money = canSeeMoney ? ", estimates(status, created_at, estimate_totals(total)), invoices(status, invoice_totals(total, paid, balance))" : "";
-  const [{ data: c }, { data: rows }] = await Promise.all([
+  const [{ data: c }, { data: rows }, refs] = await Promise.all([
     supabase.from("customers").select("*").eq("id", id).maybeSingle(),
     supabase.from("jobs").select(`id, title, stage, is_insurance, created_at${money}`).eq("customer_id", id).order("created_at", { ascending: false }),
+    // Jobs this contact sent us.
+    loadReferrals(supabase, "contact", id, { canSeeMoney }),
   ]);
   if (!c) return null;
   type E = { status: string; created_at: string; estimate_totals: unknown };
@@ -43,7 +49,7 @@ export async function loadCustomerDocket(supabase: DB, id: string, { canSeeMoney
     owing += jobOwing;
     return { id: j.id, title: j.title, stage: j.stage, is_insurance: j.is_insurance, created_at: j.created_at, value, owing: jobOwing };
   });
-  return { customer: c as Customer, jobs, contract, paid, owing };
+  return { customer: c as Customer, jobs, contract, paid, owing, ...refs };
 }
 
 const PHONE = "M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2";
@@ -134,6 +140,8 @@ export function CustomerDocket({ d, closeHref, canSeeMoney, today, edit }: { d: 
             <Link href={`/app/jobs/new?customer=${c.id}`} className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700">+ New job for {c.name.split(" ")[0]}</Link>
           </Section>
 
+          <ReferralsSection who={{ id: c.id, type: "contact", name: c.name }} r={d} canSeeMoney={canSeeMoney} />
+
           <Section title="Notes">
             {c.notes ? <p className="whitespace-pre-wrap rounded-xl bg-amber-50 px-3 py-2.5 text-sm text-ink [overflow-wrap:anywhere]">{c.notes}</p> : <p className="text-sm text-slate-500">No notes. Add some under Edit details.</p>}
           </Section>
@@ -154,6 +162,7 @@ export function CustomerDocket({ d, closeHref, canSeeMoney, today, edit }: { d: 
             </div>
           </details>
         </div>
+        <ClaudeBar contactId={c.id} firstName={c.name.split(" ")[0] || c.name} ready={aiEnabled()} />
       </div>
     </div>
   );

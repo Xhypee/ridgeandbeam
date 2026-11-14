@@ -7,9 +7,13 @@ import { Field, Input, Select, Textarea } from "@/components/ui";
 import { AddressLookup } from "@/components/address-lookup";
 import { JobTypeCards } from "./job-type-cards";
 import { CustomerLookup } from "@/components/customer-lookup";
+import { ContactPicker } from "@/components/contact-picker";
+import type { Referrer } from "@/lib/referrals-server";
 import { label } from "@/lib/format";
 import { CUSTOMER_SOURCES } from "@/lib/types";
 import { createCustomer } from "../customers/actions";
+import { ClaudeBar } from "./claude-bar";
+import { aiEnabled } from "@/lib/ai";
 
 function Icon({ d }: { d: string }) {
   return <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={d} /></svg>;
@@ -30,7 +34,7 @@ const COPY = {
   customer: { kicker: "New customer", title: "Add a customer", sub: "Homeowner, property manager or lead.", save: "Save customer" },
 };
 
-export function NewLeadPanel({ closeHref, filter = null, defaultState, variant = "lead" }: { closeHref: string; filter?: string | null; defaultState: string | null; variant?: "lead" | "customer" }) {
+export function NewLeadPanel({ closeHref, filter = null, defaultState, variant = "lead", referrer = null }: { closeHref: string; filter?: string | null; defaultState: string | null; variant?: "lead" | "customer"; referrer?: Referrer | null }) {
   const t = COPY[variant];
   return (
     <div className="flex h-full flex-col bg-cream p-4" data-new-lead={variant}>
@@ -68,9 +72,15 @@ export function NewLeadPanel({ closeHref, filter = null, defaultState, variant =
             </Section>
 
             <Section title="Notes">
+              {variant === "lead" && (
+                <div data-referred-by>
+                  <span className="mb-1 block text-xs font-medium text-slate-600">Referred by <span className="font-normal text-slate-400">(optional)</span></span>
+                  <ContactPicker name="referred_by" initial={referrer} placeholder="A customer, builder, contractor or supplier" />
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Lead source">
-                  <Select name="source" defaultValue="other">
+                  <Select name="source" defaultValue={referrer ? "referral" : "other"}>
                     {CUSTOMER_SOURCES.map((s) => <option key={s} value={s}>{label(s)}</option>)}
                   </Select>
                 </Field>
@@ -85,6 +95,7 @@ export function NewLeadPanel({ closeHref, filter = null, defaultState, variant =
             <Link href={closeHref} scroll={false} className="inline-flex min-h-12 items-center rounded-xl px-5 text-[15px] font-semibold text-slate-600 ring-1 ring-slate-300 hover:ring-slate-400">Cancel</Link>
           </div>
         </ActionForm>
+        <ClaudeBar ready={aiEnabled()} />
       </div>
     </div>
   );

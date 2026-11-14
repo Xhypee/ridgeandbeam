@@ -5,6 +5,8 @@ import { complianceAlert, CONTACT_TYPES, isContactType, TYPE_BADGE, TYPE_LABEL, 
 import { requireOrg } from "@/lib/dal";
 import { date, isoDate } from "@/lib/format";
 import { orgSupplierName } from "@/lib/suppliers";
+import { ClaudeBar } from "../jobs/claude-bar";
+import { aiEnabled } from "@/lib/ai";
 import { ContactDocket, loadContactDocket, loadSupplierDocket, SupplierDocket } from "./contact-docket";
 import { NewContactPanel } from "./contact-form";
 
@@ -154,7 +156,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/app/con
 
   const side = docket ? <ContactDocket key={docket.customer.id} d={docket} closeHref={closeHref} canSeeMoney={canSeeMoney} today={today} />
     : supplier ? <SupplierDocket key={supplier.s.id} d={supplier} closeHref={closeHref} canSeeMoney={canSeeMoney} canEdit={isAdmin || role === "member"} />
-    : adding ? <NewContactPanel closeHref={closeHref} initial={type ?? "customer"} defaultState={org.state ?? null} /> : null;
+    : adding ? <NewContactPanel closeHref={closeHref} initial={type ?? "customer"} defaultState={org.state ?? null} claude={<ClaudeBar ready={aiEnabled()} />} /> : null;
   if (!side) return content;
   return (
     <div className="lg:flex lg:h-screen">
