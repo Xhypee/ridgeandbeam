@@ -22,20 +22,17 @@ const CHECK = "M5 12l5 5L20 7";
 const CAL = "M4 6h16v14H4zM4 10h16M8 3v5M16 3v5";
 const PEN = "M4 20l4-1 11-11-3-3L5 16zM14 6l3 3";
 const SEND = "M4 12l16-8-6 16-2.5-6.5z";
-const EYE = "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6z";
 const aud = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: n % 1 ? 2 : 0 });
 
-/** The quote in a few lines: the biggest items, how many more, the total, and Edit (opens the whole quote).
+/** The quote in a few lines: the biggest items, how many more, the total, then Send quote with Edit (opens the
+ *  whole quote) beside it.
  *  The bottom half of one box with the plan sheet above it. */
-function QuoteSummary({ q, first, previewHref }: { q: NonNullable<LeadStepsProps["quote"]>; first: string; previewHref: string | null }) {
+function QuoteSummary({ q, first }: { q: NonNullable<LeadStepsProps["quote"]>; first: string }) {
   return (
     <div className="border-t border-brand-200 bg-white" data-lead-quote-summary>
       <div className="flex items-center gap-2 py-2 pl-3.5 pr-2">
         <span className="text-sm font-semibold text-ink">Quote #{q.number}</span>
         <span className="text-xs text-slate-500">{q.status === "sent" ? "sent" : "draft"}</span>
-        <Link href={`/app/estimates/${q.id}`} className="ml-auto inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-brand-700 ring-1 ring-slate-300 hover:bg-slate-50" data-lead-quote-edit>
-          <Icon d={PEN} className="h-3.5 w-3.5" />Edit
-        </Link>
       </div>
       {q.lines.length ? (
         <ul className="border-t border-slate-100 px-3.5 py-2 text-[13px]">
@@ -56,7 +53,7 @@ function QuoteSummary({ q, first, previewHref }: { q: NonNullable<LeadStepsProps
         <input type="hidden" name="estimate_id" value={q.id} />
         <div className="flex gap-2" data-lead-send>
           <SubmitButton className="min-h-12 flex-1 gap-2 text-[15px]"><Icon d={SEND} />{q.status === "sent" ? "Send quote again" : `Send quote to ${first}`}</SubmitButton>
-          {previewHref && <Link href={previewHref} scroll={false} title={`Preview what ${first} will get`} aria-label={`Preview what ${first} will get`} className="grid h-12 w-12 shrink-0 place-items-center rounded-xl text-ink ring-1 ring-slate-300 hover:bg-slate-50"><Icon d={EYE} className="h-5 w-5" /></Link>}
+          <Link href={`/app/estimates/${q.id}`} title="Edit the quote" aria-label="Edit the quote" className="grid h-12 w-12 shrink-0 place-items-center rounded-xl text-ink ring-1 ring-slate-300 hover:bg-slate-50" data-lead-quote-edit><Icon d={PEN} className="h-5 w-5" /></Link>
         </div>
       </ActionForm>
     </div>
@@ -115,8 +112,6 @@ export type LeadStepsProps = {
   roof: RoofSheet | null;
   /** Under the sheet: the site address, if there is one. */
   caption: string | null;
-  /** Opens the quote email exactly as the customer will get it. */
-  previewHref?: string | null;
 };
 
 function OwnerPicker({ jobId, owner, people, meId }: { jobId: string; owner: string; people: LeadStepsProps["people"]; meId: string }) {
@@ -161,7 +156,7 @@ export function LeadSteps(p: LeadStepsProps) {
         <DocumentDrop jobId={p.jobId} variant="plans" compact={!planless} measured={Boolean(p.roof)} joined={!planless && Boolean(p.quote)}
           estimateId={p.quote?.status === "draft" ? p.quote.id : undefined}
           sheet={p.roof ? <RoofDrawing labels={p.roof} /> : undefined} caption={p.caption ?? undefined} />
-        {!planless && p.quote && <QuoteSummary q={p.quote} first={p.first} previewHref={p.previewHref ?? null} />}
+        {!planless && p.quote && <QuoteSummary q={p.quote} first={p.first} />}
       </div>
       {!planless && !p.quote && (
         <form action={createEstimate} className="mt-3"><input type="hidden" name="job_id" value={p.jobId} /><button className={cx(btn, "bg-brand-500 text-white hover:bg-brand-600")} data-lead-quote><Icon d="M12 5v14M5 12h14" className="h-5 w-5" />Start the quote</button></form>
