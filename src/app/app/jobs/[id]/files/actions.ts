@@ -122,7 +122,7 @@ export async function readUploadedDocument(fileId: string, estimateId?: string):
           .eq("id", est.id).or("measurement_source.is.null,measurement_source.neq.documents").select("id");
         if (saved?.length) {
           measured = m.label;
-          if (await priceQuoteFromMeasurements(supabase, org, est.id).catch(() => false)) plan.filled.push("the quote's line items, priced from your price book");
+          if (await priceQuoteFromMeasurements(supabase, org, est.id).catch(() => false)) plan.filled.push("quote priced from your price book");
           plan.filled.push(`${m.label} on the quote`);
           plan.hints = plan.hints.filter((h) => !h.startsWith("Roof area on the plans"));
           revalidatePath(`/app/estimates/${est.id}`);

@@ -160,13 +160,14 @@ export async function readJobDocument(data: Buffer, mediaType: string, fileName:
     : isText ? (data.length > 200_000 ? null : { type: "text", text: `File "${fileName}":\n${data.toString("utf8")}` })
     : asImageBlock(data, mediaType);
   if (!doc) return null;
-  const schema = `{"doc_type": one of ${JSON.stringify(DOC_TYPES)}, "summary": string (one short sentence: what this is), ` +
+  const schema = `{"doc_type": one of ${JSON.stringify(DOC_TYPES)}, "summary": string (what this is, under 12 plain words, e.g. "Plans for a new single-storey house at Lot 214 Grand Ave"), ` +
     `"customer": {"phone": string, "email": string, "address": string, "suburb": string, "state": string (QLD/NSW/...), "postcode": string} (the homeowner / client, not the business, architect, insurer or supplier), ` +
     `"site": {"address": string (street), "suburb": string, "state": string, "postcode": string} (the property the roof work is on), ` +
     `"job": {"roof_material": string (e.g. "Concrete tile", "Colorbond Trimdek"), "roof_area_m2": number}, ` +
     `"roof": {"area_m2": number (total sloped roof area), "plan_area_m2": number (roof area on plan / footprint), "pitch_deg": number, "ridge_m": number, "hip_m": number, "valley_m": number, "gutter_m": number (eaves / gutter length), "barge_m": number (barge / rake length), "downpipes": number} (only measurements printed on plans or a roof report, in metres), ` +
     `"insurance": {"insurer": string, "claim_number": string, "policy_number": string, "assessor_name": string, "assessor_phone": string, "assessor_email": string, "excess": number, "date_of_loss": "YYYY-MM-DD"}, ` +
-    `"notes": string (anything else a roofer must know from it, one sentence, or null)}`;
+    `"details": array of strings (up to 6 key specs a roofer quoting this needs, each under 7 words, e.g. "Hip roof, 600 mm eaves", "Anticon 60 sarking", "115 quad gutter"; [] if none), ` +
+    `"checks": array of strings (up to 3 things still to confirm or watch out for, each under 9 words, e.g. "Wind class N3 to be confirmed"; [] if none)}`;
   try {
     const res = await anthropic().beta.messages.create({
       model: AI_MODEL,
@@ -183,6 +184,7 @@ export async function readJobDocument(data: Buffer, mediaType: string, fileName:
     const j = JSON.parse(m[0]) as Record<string, Record<string, unknown> | unknown>;
     const o = (k: string) => (j[k] && typeof j[k] === "object" ? (j[k] as Record<string, unknown>) : {});
     const s = (v: unknown, max = 200) => (typeof v === "string" && v.trim() && v.trim().toLowerCase() !== "null" ? v.trim().slice(0, max) : null);
+    const list = (v: unknown, max: number, len: number) => (Array.isArray(v) ? v.map((x) => s(x, len)).filter((x): x is string => Boolean(x)).slice(0, max) : []);
     const n = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : typeof v === "string" && /^\$?[\d,]+(\.\d+)?$/.test(v.trim()) ? Number(v.replace(/[$,]/g, "")) : null);
     const c = o("customer"), st = o("site"), jb = o("job"), ins = o("insurance"), rf = o("roof");
     const type = (DOC_TYPES as readonly string[]).includes(String(j.doc_type)) ? (j.doc_type as (typeof DOC_TYPES)[number]) : "other";
@@ -197,6 +199,8 @@ export async function readJobDocument(data: Buffer, mediaType: string, fileName:
       },
       insurance: { insurer: s(ins.insurer, 80), claim_number: s(ins.claim_number, 60), policy_number: s(ins.policy_number, 60), assessor_name: s(ins.assessor_name, 100), assessor_phone: s(ins.assessor_phone, 30), assessor_email: s(ins.assessor_email, 120), excess: n(ins.excess), date_of_loss: s(ins.date_of_loss, 10) },
       notes: s(j.notes, 400),
+      details: list(j.details, 6, 60),
+      checks: list(j.checks, 3, 80),
     };
   } catch {
     return null;

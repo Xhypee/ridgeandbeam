@@ -18,7 +18,12 @@ export type DocRead = {
   /** Roof measurements printed on plans or a roof report (Nearmap, Roofr, etc.). */
   roof: DocRoof;
   insurance: { insurer: string | null; claim_number: string | null; policy_number: string | null; assessor_name: string | null; assessor_phone: string | null; assessor_email: string | null; excess: number | null; date_of_loss: string | null };
+  /** Older reads: one sentence of anything else. New reads use `details` and `checks`. */
   notes: string | null;
+  /** Key specs a roofer quoting it needs, a few words each ("Hip roof, 600 mm eaves"). */
+  details?: string[];
+  /** Things still to confirm or watch out for, a few words each ("Wind class N3 to be confirmed"). */
+  checks?: string[];
 };
 
 export type DocRoof = {
@@ -117,15 +122,32 @@ export function planDocUpdates(r: DocRead, cur: Current): DocPlan {
 }
 
 /** The job note Claude leaves after reading a file. */
+/**
+ * The job note Claude leaves after reading a file, in short sections the Notes list draws as a card (see
+ * claude-note.ts): a title line, a one-line summary, then "Added" (what it filled in), "Check" (differences from
+ * what's on file, hints and things to confirm) and "Details" (key specs). Each item is a "- " line.
+ */
 export function intakeNote(fileName: string, r: DocRead, p: DocPlan): string {
-  const parts = [`Claude read "${fileName}" (${DOC_TYPE_LABEL[r.doc_type]}).`];
-  if (r.summary) parts.push(r.summary.trim().replace(/\.?$/, "."));
-  if (p.filled.length) parts.push(`Filled in: ${p.filled.join(", ")}.`);
-  if (p.differs.length) parts.push(`Different from what's on file (kept yours): ${p.differs.join("; ")}.`);
-  parts.push(...p.hints);
-  if (r.notes) parts.push(`Also: ${r.notes.trim().replace(/\.?$/, ".")}`);
-  if (!p.filled.length && !p.differs.length && !p.hints.length && !r.notes) parts.push("Nothing new to add to the job.");
-  return parts.join(" ");
+  const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+  const dot = (t: string) => t.trim().replace(/[.;,\s]+$/, "");
+  const says = r.doc_type === "plans" ? "the plans say" : "the document says";
+  const differ = (d: string) => {
+    const q = /^roof area on the quote is (.+), the document says (.+)$/i.exec(d);
+    if (q) return `Roof area: the quote has ${q[1]}, ${says} ${q[2]}`;
+    const m = /^(.+?) on file is (.+), the document says (.+)$/i.exec(d);
+    return m ? `${cap(m[1])}: you have ${m[2]}, ${says} ${m[3]}. Kept yours` : cap(d);
+  };
+  const added = p.filled.map((f) => cap(dot(f)));
+  const check = [...p.differs.map((d) => dot(differ(d))), ...p.hints.map(dot), ...(r.checks ?? []).map((c) => cap(dot(c)))];
+  const details = [...(r.details ?? []).map((d) => cap(dot(d))), ...(r.notes && !r.details?.length ? [dot(r.notes)] : [])];
+  const out = [`Read "${fileName}" · ${cap(DOC_TYPE_LABEL[r.doc_type])}`];
+  if (r.summary) out.push(dot(r.summary));
+  const section = (head: string, items: string[]) => { if (items.length) out.push("", head, ...items.map((i) => `- ${i}`)); };
+  section("Added", added);
+  section("Check", check);
+  section("Details", details);
+  if (!added.length && !check.length && !details.length) out.push("Nothing new to add to the job.");
+  return out.join("\n");
 }
 
 /**
