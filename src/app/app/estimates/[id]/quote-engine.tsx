@@ -2,12 +2,14 @@
 // The quoting engine: one column that reads like the quote the customer gets.
 // 01 Roof plan (our roof report, done first) · 02 Who it's for · 03 The job · 04 Price (supplier, lines, extras, You make / they pay)
 // · 05 Payment (Full by default, or Instalments) · 06 Terms. Everything saves as you type; the bar at the bottom
-// always shows the total with Preview and Send. Steps open one at a time: the next appears once the one before is done
-// (a quote that already has lines opens fully).
+// always shows the total with Preview and Send. One step is open at a time: finished steps fold into one-line
+// summaries (with Change), the open step has a Next button, later steps are faint outlines. The email on the right
+// lights up the section that matches the open step. A quote that already has lines opens with everything folded.
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { cx } from "@/components/ui";
+import { EmailPane, type EmailPreview } from "./email-pane";
 import { AddressLookup } from "@/components/address-lookup";
 import type { DraftItem } from "@/lib/estimating";
 import { applyMargin, normaliseStages, priceFromCost, quoteMoney, stageAmounts, stagesProblem, STAGE_TRIGGER_LABEL, type PaymentPlan, type Stage, type StageTrigger } from "@/lib/quote-pricing";
@@ -35,7 +37,9 @@ export type EngineProps = {
   roofPlan: ReactNode;
   roofMeasured: boolean;
   /** The customer's email, docked on the right on wide screens; refreshed after each save. */
-  emailPane?: ReactNode;
+  email?: EmailPreview | null;
+  /** "212 m² · 22° pitch" when measured. */
+  roofSummary?: string | null;
   rules: ReactNode;
 };
 
@@ -94,14 +98,17 @@ export function QuoteEngine(p: EngineProps) {
     Boolean(party.name.trim() && party.site.trim()),
     Boolean(notes.trim()),
     main.some((i) => i.description.trim() && i.quantity * i.unit_price > 0),
+    true, // payment always has a plan
+    true, // terms are optional
   ];
-  let next = 1;
-  while (next <= 4 && done[next - 1]) next++;
-  const computed = next > 4 ? 6 : next;
-  // Never closes a step again once it's open (clearing a field shouldn't hide what's below it).
-  const [reached, setReached] = useState(() => (p.items.some((i) => i.extra_status !== "offered") ? 6 : computed));
-  if (computed > reached) setReached(computed);
-  const shows = (n: number) => reached >= n;
+  // Start on the first unfinished step; a quote that already has lines opens with every step folded (active 0).
+  const [start] = useState(() => {
+    if (p.items.some((i) => i.extra_status !== "offered")) return 0;
+    const i = done.findIndex((d) => !d);
+    return i < 0 ? 0 : i + 1;
+  });
+  const [active, setActive] = useState(start);
+  const [reached, setReached] = useState(start === 0 ? 6 : start);
 
   // ---- saving (debounced; three independent saves) ----
   const dirty = useRef({ party: false, content: false, money: false });
@@ -131,6 +138,10 @@ export function QuoteEngine(p: EngineProps) {
     else router.refresh(); // re-render the email preview from what's now saved
     return !err;
   }, [p.id, p.base, router]);
+
+  const open = (n: number) => { void flush(); setActive(n); if (n === 2) setEditingParty(true); };
+  const goNext = (n: number) => { void flush(); setActive(n === 6 ? 0 : n + 1); setReached((r) => Math.max(r, n === 6 ? 6 : n + 1)); if (n === 2) setEditingParty(false); };
+  useEffect(() => { document.querySelector("[data-step-active]")?.scrollIntoView({ block: "nearest", behavior: "smooth" }); }, [active]);
 
   const touch = useCallback((what: "party" | "content" | "money") => {
     dirty.current[what] = true;
@@ -176,16 +187,53 @@ export function QuoteEngine(p: EngineProps) {
   }
   async function preview() { if (await flush()) router.push(p.previewHref, { scroll: false }); }
 
+  // ---- the step frame: open (with Next), folded summary (with Change), or a faint outline ----
+  const WHEN_LABEL: Record<string, string> = { completed: "on completion", delivered: "when materials arrive", signed: "when they accept" };
+  const summary: Record<number, string> = {
+    1: p.roofMeasured ? (p.roofSummary || "Measured") : roofSkipped ? "No measuring needed" : "Not measured",
+    2: [party.name, party.site].filter((x) => x.trim()).join(" · ") || "Not filled in",
+    3: [party.title, notes.trim()].filter(Boolean).join(" · ") || "Not filled in",
+    4: main.length ? `${main.length} line${main.length === 1 ? "" : "s"} · ${aud(money.total)} · you make ${aud(money.profit)}` : "No lines yet",
+    5: payment.mode === "full" ? `Paid in full ${WHEN_LABEL[payment.when] ?? ""}`.trim() : `${payment.stages.length} instalments`,
+    6: terms.trim() ? terms.trim().split(/\n/)[0] : "No extra terms",
+  };
+  const NEED: Record<number, string> = { 1: "Measure the roof, or choose No measuring needed", 2: "Add their name and the site address", 3: "Say what you'll do", 4: "Add a line with a price" };
+  const STEP_TITLE: Record<number, string> = { 1: "Roof plan", 2: "Who it's for", 3: "The job", 4: "Price", 5: "Payment", 6: "Terms" };
+  const step = (n: number, block: ReactNode) => {
+    if (n === active) return (
+      <div className="my-3 rounded-3xl bg-cream px-5 pb-5 ring-2 ring-brand-500" data-step-active={n}>
+        {block}
+        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-slate-200 pt-4">
+          {!done[n - 1] && <span className="text-sm text-slate-500">{NEED[n]}</span>}
+          <button type="button" disabled={!done[n - 1]} onClick={() => goNext(n)} data-step-next
+            className="min-h-11 rounded-xl bg-ink px-5 text-sm font-semibold text-white hover:bg-ink/90 disabled:opacity-40">
+            {n === 6 ? "Finish" : `Next: ${STEP_TITLE[n + 1]}`}
+          </button>
+        </div>
+      </div>
+    );
+    if (n <= reached) return (
+      <div className="my-2 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200" data-step-folded={n}>
+        <span className={cx("grid h-7 w-7 shrink-0 place-items-center rounded-full", done[n - 1] ? "bg-brand-500 text-white" : "bg-amber-100 text-amber-800")}>
+          <Icon d={done[n - 1] ? "M5 12l5 5 9-10" : "M12 8v5M12 16.5v.5"} className="h-3.5 w-3.5" />
+        </span>
+        <span className="min-w-0 flex-1"><b className="block text-sm text-ink">{STEP_TITLE[n]}</b><span className="block truncate text-xs text-slate-500">{summary[n]}</span></span>
+        <button type="button" onClick={() => open(n)} className="shrink-0 rounded-lg px-2 py-1 text-sm font-semibold text-brand-700 hover:bg-brand-50" data-step-change>Change</button>
+      </div>
+    );
+    return <div className="my-2 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-400 ring-1 ring-dashed ring-slate-300" data-step-later={n}>0{n} {STEP_TITLE[n]}</div>;
+  };
+
   return (
-    <div className={cx("min-h-[calc(100vh-4rem)] bg-cream", Boolean(p.emailPane) && "lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]")} data-quote-engine>
+    <div className={cx("min-h-[calc(100vh-4rem)] bg-cream", Boolean(p.email) && "lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]")} data-quote-engine>
       <div className="min-w-0">
       <main className="mx-auto max-w-[780px] px-4 pb-6 pt-4 sm:px-6">
-        <Block n={1} title="Roof plan" hint="start here · our roof report"
-          right={!p.roofMeasured && reached === 1 ? <button type="button" onClick={() => setRoofSkipped(true)} className="text-sm font-semibold text-slate-500 underline-offset-2 hover:text-ink hover:underline" data-skip-roof>No measuring needed</button> : null}>
+        {step(1, <Block n={1} title="Roof plan" hint="start here · our roof report"
+          right={!p.roofMeasured && !roofSkipped ? <button type="button" onClick={() => { setRoofSkipped(true); goNext(1); }} className="text-sm font-semibold text-slate-500 underline-offset-2 hover:text-ink hover:underline" data-skip-roof>No measuring needed</button> : null}>
           {p.roofPlan}
-        </Block>
+        </Block>)}
 
-        {shows(2) && <Block n={2} title="Who it's for">
+        {step(2, <Block n={2} title="Who it's for">
           {!editingParty ? (
             // A saved contact by now: their card, with a pencil to change the details.
             <div className="flex items-start gap-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200" data-party-card>
@@ -212,16 +260,16 @@ export function QuoteEngine(p: EngineProps) {
               )}
             </div>
           )}
-        </Block>}
+        </Block>)}
 
-        {shows(3) && <Block n={3} title="The job">
+        {step(3, <Block n={3} title="The job">
           <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">Title</span><input className={cx(field, "font-display text-lg font-bold")} value={party.title} onChange={(e) => editParty("title", e.target.value)} onBlur={() => void flush()} data-field="title" /></label>
           <label className="mt-3 block"><span className="mb-1 block text-xs font-semibold text-slate-500">What we&apos;ll do</span>
             <textarea className={cx(field, "min-h-28 leading-relaxed")} value={notes} placeholder="In plain words: what you'll do, in the order it happens." onChange={(e) => { setNotes(e.target.value); touch("content"); }} onBlur={() => void flush()} data-field="notes" />
           </label>
-        </Block>}
+        </Block>)}
 
-        {shows(4) && <Block n={4} title="Price" hint={inclusive ? "inc GST" : "ex GST"} right={<SupplierPicker p={p} current={orgSupplierId} onChosen={(id) => { setOrgSupplierId(id); router.refresh(); }} flush={flush} />}>
+        {step(4, <Block n={4} title="Price" hint={inclusive ? "inc GST" : "ex GST"} right={<SupplierPicker p={p} current={orgSupplierId} onChosen={(id) => { setOrgSupplierId(id); router.refresh(); }} flush={flush} />}>
           <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
             <div className="hidden grid-cols-[minmax(0,1fr)_64px_64px_120px_20px] gap-3 border-b border-slate-100 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400 sm:grid">
               <span>Item</span><span className="text-right">Qty</span><span>Unit</span><span className="text-right">Price</span><span />
@@ -267,9 +315,9 @@ export function QuoteEngine(p: EngineProps) {
               <p className="mt-4 text-sm text-slate-500">{aud(money.exGst)} + GST {aud(money.gst)}</p>
             </div>
           </div>
-        </Block>}
+        </Block>)}
 
-        {shows(5) && <Block n={5} title="Payment" right={
+        {step(5, <Block n={5} title="Payment" right={
           <span className="flex rounded-xl bg-white p-1 text-sm font-semibold ring-1 ring-slate-300" role="radiogroup" aria-label="How they pay">
             {(["full", "instalments"] as const).map((m) => (
               <button key={m} type="button" role="radio" aria-checked={payment.mode === m} onClick={() => setPlan({ ...payment, mode: m })} data-pay-mode={m}
@@ -287,12 +335,12 @@ export function QuoteEngine(p: EngineProps) {
             </div>
           ) : <Stages stages={payment.stages} total={money.total} onChange={(stages) => setPlan({ ...payment, stages })} />}
           <p className="mt-2 text-xs text-slate-500">How they can pay (bank transfer, PayID, card, cash) is set on the job. No card surcharge.</p>
-        </Block>}
+        </Block>)}
 
-        {shows(6) && <Block n={6} title="Terms">
+        {step(6, <Block n={6} title="Terms">
           <textarea className={cx(field, "min-h-20 text-sm leading-relaxed")} value={terms} onChange={(e) => { setTerms(e.target.value); touch("content"); }} onBlur={() => void flush()} data-field="terms" />
           <div className="mt-3">{p.rules}</div>
-        </Block>}
+        </Block>)}
       </main>
 
       <div className="sticky bottom-0 z-30 border-t border-slate-200 bg-white" data-engine-bar>
@@ -303,7 +351,7 @@ export function QuoteEngine(p: EngineProps) {
           </div>
           {msg?.error && <p role="alert" className="w-full rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 sm:order-first">{msg.error}</p>}
           {msg?.ok && <p className="w-full rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 sm:order-first">{msg.ok}</p>}
-          <button type="button" onClick={() => void preview()} className={cx("flex min-h-12 items-center gap-2 rounded-xl px-3.5 font-semibold text-ink ring-1 ring-slate-300 hover:bg-slate-50 sm:px-4", Boolean(p.emailPane) && "lg:hidden")} data-preview aria-label="Preview">
+          <button type="button" onClick={() => void preview()} className={cx("flex min-h-12 items-center gap-2 rounded-xl px-3.5 font-semibold text-ink ring-1 ring-slate-300 hover:bg-slate-50 sm:px-4", Boolean(p.email) && "lg:hidden")} data-preview aria-label="Preview">
             <Icon d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6" className="h-5 w-5" /><span className="hidden sm:inline">Preview</span>
           </button>
           <button type="button" onClick={() => void send()} disabled={sending || main.length === 0} className="flex min-h-12 items-center gap-2 rounded-xl bg-brand-500 px-4 font-semibold text-white sm:px-6 hover:bg-brand-600 disabled:opacity-50" data-send>
@@ -312,8 +360,8 @@ export function QuoteEngine(p: EngineProps) {
         </div>
       </div>
       </div>
-      {p.emailPane && (
-        <aside className="hidden border-l border-slate-200 lg:sticky lg:top-16 lg:block lg:h-[calc(100dvh-4rem)] lg:self-start" aria-label="Email preview">{p.emailPane}</aside>
+      {p.email && (
+        <aside className="hidden border-l border-slate-200 lg:sticky lg:top-16 lg:block lg:h-[calc(100dvh-4rem)] lg:self-start" aria-label="Email preview"><EmailPane email={p.email} active={active} /></aside>
       )}
     </div>
   );

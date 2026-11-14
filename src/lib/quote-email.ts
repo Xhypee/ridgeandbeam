@@ -2,6 +2,7 @@
 // The email IS the quote: business + licence + ABN, customer + site, scope, itemised prices, GST, a single
 // total inc GST as the biggest figure, payment terms within the state's deposit limit, the state's notices
 // (cooling-off, home warranty, etc. from the rules engine) and how to accept. Email-safe HTML: tables + inline styles.
+// data-rb="who|job|price|payment|terms" mark the sections the quoting engine's preview lights up (ignored by mail apps).
 import { formatAbn } from "./au";
 import { licenceFor } from "./business";
 import { buildProposal, type PublicEstimate } from "@/app/q/[token]/model";
@@ -150,7 +151,7 @@ export function buildQuoteEmail(input: QuoteEmailInput): QuoteEmail {
   ];
   const strip = `
 <tr><td style="background:${INK};padding:0">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+  <table data-rb="payment" role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
   ${facts.map(([k, v, s], i) => td(`width:33%;padding:16px 20px;${i ? "border-left:1px solid #2b3a31;" : ""}vertical-align:top`,
     `<div style="${capStyle(MINT)}">${k}</div><div style="margin-top:4px;font-family:${DISPLAY};font-size:21px;font-weight:700;color:#ffffff">${esc(v)}</div><div style="font-family:${SANS};font-size:12px;color:rgba(255,255,255,.55)">${esc(s)}</div>`)).join("")}
   </tr></table>
@@ -165,7 +166,7 @@ export function buildQuoteEmail(input: QuoteEmailInput): QuoteEmail {
     </tr>`).join("");
   const sumBits = [inclusive ? null : `Subtotal ${aud(exGst + 0)}`, discount > 0 ? `Discount −${aud(discount)}` : null, gstOn ? `${inclusive ? "Includes " : "+ "}GST ${aud(gst)}` : "No GST charged"].filter(Boolean).join(" · ");
   const items = `
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px;border:1px solid ${LINE};border-radius:16px;border-collapse:separate;overflow:hidden">
+  <table data-rb="price" role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px;border:1px solid ${LINE};border-radius:16px;border-collapse:separate;overflow:hidden">
     ${lineRows}
     <tr><td colspan="2" style="padding:12px 16px;background:${CREAM};font-family:${SANS};font-size:13px;color:${MUTED}">${esc(sumBits)}</td>
         <td align="right" style="padding:12px 16px;background:${CREAM};font-family:${DISPLAY};font-size:18px;font-weight:700;color:${INK};white-space:nowrap">${aud(total)}</td></tr>
@@ -188,12 +189,12 @@ export function buildQuoteEmail(input: QuoteEmailInput): QuoteEmail {
 
   const body = `
 <tr><td style="padding:26px 36px 0;background:#ffffff">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+  <table data-rb="who" role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
     <td style="font-family:${SANS};font-size:13px;color:${MUTED}"><b style="color:${INK}">For</b> ${esc(doc.customer.name)}${site ? ` · ${esc(site)}` : ""}</td>
     <td align="right" style="font-family:${SANS};font-size:13px;color:${MUTED};white-space:nowrap">Issued ${day(issued)}</td>
   </tr></table>
   ${msg.map((m, i) => `<p style="margin:${i ? 10 : 18}px 0 0;font-family:${SANS};font-size:15px;line-height:1.6;color:${INK}">${esc(m)}</p>`).join("")}
-  ${doc.notes?.trim() ? `<p style="margin:18px 0 0;${capStyle()}">What we'll do</p><p style="margin:6px 0 0;font-family:${SANS};font-size:15px;line-height:1.6;color:${INK}">${br(doc.notes.trim())}</p>` : ""}
+  ${doc.notes?.trim() ? `<div data-rb="job"><p style="margin:18px 0 0;${capStyle()}">What we'll do</p><p style="margin:6px 0 0;font-family:${SANS};font-size:15px;line-height:1.6;color:${INK}">${br(doc.notes.trim())}</p></div>` : ""}
   ${items}
   ${optionsBlock}
   ${extrasBlock}
@@ -216,7 +217,7 @@ export function buildQuoteEmail(input: QuoteEmailInput): QuoteEmail {
     <div style="margin-top:6px;font-family:${SANS};font-size:13px;line-height:1.55;color:${INK}">${br(n.text)}</div>
   </div>`).join("");
   const fine = `
-<tr><td style="padding:28px 31px 0;background:#ffffff">
+<tr><td data-rb="terms" style="padding:28px 31px 0;background:#ffffff">
   <p style="margin:0 5px;${capStyle()}">The fine print, in plain English</p>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:7px">${tileRows.join("")}</table>
   <div style="margin:0 5px">${boxed}</div>
