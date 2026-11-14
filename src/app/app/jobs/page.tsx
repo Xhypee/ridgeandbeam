@@ -10,6 +10,7 @@ import { displayName, initials, orgPeople } from "./people";
 import { SectionTabs } from "@/components/nav";
 import { loadDocket } from "@/lib/job-docket-server";
 import { JobDocket } from "./job-docket";
+import { NewLeadPanel } from "./new-lead-panel";
 import { QuotePreview } from "./quote-preview";
 import { PaymentRequestSheet, ReminderBody, RemindFooter, Sheet, SupplierPayForm } from "./build-sheets";
 import { loadReminder } from "@/lib/quote-remind-server";
@@ -78,6 +79,9 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
   // ?job=<id> opens that job's docket in the right sidebar.
   const openId = typeof sp.job === "string" && /^[0-9a-f-]{36}$/i.test(sp.job) ? sp.job : null;
   const docket = openId ? await loadDocket(supabase, org, openId, { canSeeMoney }) : null;
+  // ?new=1 opens the New lead form in the same right sidebar (a job's docket wins if both are set).
+  const adding = !docket && sp.new === "1" && !isCrewLead;
+  const side = Boolean(docket || adding);
   const filterQs = filter === (isSalesRep ? "mine" : "all") ? "" : `filter=${filter}`;
   const hrefFor = (id: string | null) => `/app/jobs${[filterQs, id ? `job=${id}` : ""].filter(Boolean).length ? `?${[filterQs, id ? `job=${id}` : ""].filter(Boolean).join("&")}` : ""}`;
   // ?preview=1 shows the quote email for the open job, exactly as the customer will get it.
@@ -114,12 +118,12 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
             </Link>
           ))}
         </nav>
-        <LinkButton href="/app/customers/new" className="h-11 px-5 text-[15px]">+ New lead</LinkButton>
+        {!isCrewLead && <LinkButton href={`/app/jobs?${filterQs ? `${filterQs}&` : ""}new=1`} scroll={false} aria-current={adding ? "true" : undefined} className="h-11 px-5 text-[15px]">+ New lead</LinkButton>}
       </header>
 
       {/* All five columns fit from 1280px; below that the board scrolls inside itself, never the page. */}
-      <div data-pipeline-scroll className={docket ? "overflow-x-auto pb-4" : "-mx-4 overflow-x-auto px-4 pb-4 sm:-mx-8 sm:px-8 xl:mx-0 xl:px-0"}>
-        <div className={cx("grid grid-cols-[repeat(5,minmax(0,1fr))] gap-3", docket ? "min-w-[840px]" : "min-w-[940px]")}>
+      <div data-pipeline-scroll className={side ? "overflow-x-auto pb-4" : "-mx-4 overflow-x-auto px-4 pb-4 sm:-mx-8 sm:px-8 xl:mx-0 xl:px-0"}>
+        <div className={cx("grid grid-cols-[repeat(5,minmax(0,1fr))] gap-3", side ? "min-w-[840px]" : "min-w-[940px]")}>
           {COLUMNS.map((col) => {
             const list = cards
               .filter((c) => c.col === col.key)
@@ -186,6 +190,20 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
     </>
   );
 
+  if (!side) return board;
+  if (adding) {
+    return (
+      <div className="lg:flex lg:h-screen">
+        <div className="no-scrollbar min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:py-7">
+          <SectionTabs canSeeMoney={canSeeMoney} />
+          {board}
+        </div>
+        <aside aria-label="New lead" className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-screen lg:w-[440px] lg:shrink-0 lg:border-l lg:border-slate-200 xl:w-[460px]">
+          <NewLeadPanel closeHref={hrefFor(null)} filter={filterQs ? filter : null} defaultState={org.state ?? null} />
+        </aside>
+      </div>
+    );
+  }
   if (!docket) return board;
   return (
     <div className="lg:flex lg:h-screen">

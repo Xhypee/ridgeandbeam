@@ -122,11 +122,11 @@ export function NavRail({ canSeeMoney = true, crewLead = false, unread = 0 }: { 
   );
 }
 
-/** True on the Jobs board while a job's docket is open (?job=…). */
+/** True on the Jobs board while its right sidebar is open: a job's docket (?job=…) or the New lead form (?new=1). */
 export function useDocketOpen() {
   const path = usePathname();
   const sp = useSearchParams();
-  return path === "/app/jobs" && sp.has("job");
+  return path === "/app/jobs" && (sp.has("job") || sp.get("new") === "1");
 }
 
 /** The quoting engine (/app/estimates/<id>) takes the whole screen: no menu, its own top bar. */

@@ -63,6 +63,11 @@ export async function createCustomer(_: ActionResult, fd: FormData): Promise<Act
       if (claimErr) return { error: friendly(claimErr) };
     }
     revalidatePath("/app", "layout");
+    // From the Jobs board's New lead sidebar: open the new job's docket on the board.
+    if (fd.get("return_to") === "board") {
+      const filter = str(fd, "filter");
+      redirect(`/app/jobs?${filter && /^[a-z]+$/.test(filter) ? `filter=${filter}&` : ""}job=${job.id}`);
+    }
     redirect(`/app/jobs/${job.id}`);
   }
   revalidatePath("/app", "layout");
