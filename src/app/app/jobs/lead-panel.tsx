@@ -9,23 +9,12 @@ import { createEstimate } from "../estimates/actions";
 import { EYE, Icon, JobContact, JobDocuments, JobNotes } from "./job-sections";
 import { LeadSteps } from "./lead-steps";
 import { dateIn } from "@/lib/lead-steps";
+import { roofSheet } from "@/lib/roof-sheet";
 
 export { EYE, noteFacts } from "./job-sections";
 const SEND = "M4 12l16-8-6 16-2.5-6.5z";
 const PEN = "M4 20l4-1 11-11-3-3L5 16zM14 6l3 3";
 const SOURCE: Record<string, string> = { website: "From your website", instant_quote: "From your instant quote", gmail: "From Gmail", email: "From email", manual: "Added by hand" };
-
-/** The measured roof's numbers for the blueprint sheet. */
-function roofLabels(roof: Docket["roof"]): { area: string; mid: string | null; foot: string | null } | null {
-  if (!roof) return null;
-  const n = (x: number) => (Math.round(x * 10) / 10).toLocaleString("en-AU");
-  const ridge = roof.summary.ridgeHip, pitch = roof.summary.maxPitch, eave = Number((roof.m as { eave?: number }).eave) || 0;
-  return {
-    area: `${Math.round(roof.summary.trueArea).toLocaleString("en-AU")} m\u00b2`,
-    mid: [ridge > 0 ? `ridge & hips ${n(ridge)} m` : null, pitch > 0 ? `${n(pitch)}\u00b0` : null].filter(Boolean).join(" \u00b7 ") || null,
-    foot: eave > 0 ? `eave ${n(eave)} m` : null,
-  };
-}
 
 export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: string; meId: string }) {
   const lead = d.lead!;
@@ -61,7 +50,7 @@ export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: st
         name={d.customer.name} otherJobs={lead.customerOtherJobs}
         plans={lead.docs.length}
         quote={q ? { id: q.id, number: q.number, status: q.status, total: q.total, lines: topLines, more: Math.max(0, included.length - topLines.length) } : null}
-        roof={roofLabels(d.roof)} caption={d.job.site_address} previewHref={previewHref}
+        roof={d.roof ? roofSheet(d.roof.summary, d.roof.m) : null} caption={d.job.site_address} previewHref={previewHref}
       />
       <JobContact d={d} />
       <JobNotes d={d} leadNote={lead.message ? { by: sourceLabel, at: lead.receivedAt, body: lead.message } : null} />
