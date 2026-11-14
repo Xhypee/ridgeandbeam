@@ -2,11 +2,12 @@
 
 // Drop box in a job sidebar's Documents section: drag in files or whole folders (every file inside is
 // uploaded, subfolders kept in the name, e.g. "Plans/Roof plan.pdf"), or browse for files or a folder.
+// After upload Claude reads each file in the background and fills in the job (see readUploadedDocument).
 import { useRouter } from "next/navigation";
 import { useRef, useState, type DragEvent } from "react";
 import { cx } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
-import { attachJobFile, prepareJobUpload } from "./[id]/files/actions";
+import { attachJobFile, prepareJobUpload, readUploadedDocument } from "./[id]/files/actions";
 
 const MAX = 50 * 1024 * 1024;
 type Item = { file: File; name: string };
@@ -53,6 +54,7 @@ export function DocumentDrop({ jobId }: { jobId: string }) {
     setMsg(null);
     setBusy({ done: 0, total: todo.length });
     const failed: string[] = [];
+    const uploaded: string[] = [];
     const db = createClient();
     for (const [n, it] of todo.entries()) {
       try {
@@ -62,12 +64,20 @@ export function DocumentDrop({ jobId }: { jobId: string }) {
         if (error) throw new Error(error.message);
         const r = await attachJobFile({ jobId, path: prep.path, name: it.name.slice(-200), mime: it.file.type || null, size: it.file.size, category: "document" });
         if (r?.error) throw new Error(r.error);
+        if (r?.id) uploaded.push(r.id);
       } catch {
         failed.push(it.name);
       }
       setBusy({ done: n + 1, total: todo.length });
     }
     setBusy(null);
+    // Quietly, in the background: Claude reads each file and fills in the job, customer and claim (two at a
+    // time), then the sidebar refreshes to show the new details. Nothing is shown about it here.
+    if (uploaded.length) {
+      let next = 0;
+      const worker = async () => { while (next < uploaded.length) await readUploadedDocument(uploaded[next++]).catch(() => null); };
+      void Promise.all([worker(), worker()]).then(() => router.refresh());
+    }
     const ok = todo.length - failed.length;
     const notes = [
       big.length ? `${big.length} over 50 MB skipped (${big.map((b) => b.name).slice(0, 2).join(", ")}${big.length > 2 ? "…" : ""})` : null,
@@ -126,3 +136,4 @@ export function DocumentDrop({ jobId }: { jobId: string }) {
     </div>
   );
 }
+
