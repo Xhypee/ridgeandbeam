@@ -60,7 +60,7 @@ function ClaudeNoteBody({ n }: { n: ClaudeNote }) {
           </div>
         </div>
       )}
-      {n.nothing && <p className="mt-1 text-slate-500">Nothing new to add to the job.</p>}
+      {n.nothing && <p className="mt-1 text-slate-500">Nothing to watch out for.</p>}
     </div>
   );
 }

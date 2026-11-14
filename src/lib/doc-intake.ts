@@ -123,9 +123,10 @@ export function planDocUpdates(r: DocRead, cur: Current): DocPlan {
 
 /** The job note Claude leaves after reading a file. */
 /**
- * The job note Claude leaves after reading a file, in short sections the Notes list draws as a card (see
- * claude-note.ts): a title line, a one-line summary, then "Added" (what it filled in), "Check" (differences from
- * what's on file, hints and things to confirm) and "Details" (key specs). Each item is a "- " line.
+ * The job note Claude leaves after reading a file, drawn as a card in Notes (see claude-note.ts): a title line, a
+ * one-line summary, then "Check": only what the roofer needs to be aware of (differences from what's on file,
+ * hints, things to confirm). What it filled in and material specs stay out of notes; materials are handled with
+ * the quote and the orders. Each item is a "- " line.
  */
 export function intakeNote(fileName: string, r: DocRead, p: DocPlan): string {
   const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
@@ -137,16 +138,11 @@ export function intakeNote(fileName: string, r: DocRead, p: DocPlan): string {
     const m = /^(.+?) on file is (.+), the document says (.+)$/i.exec(d);
     return m ? `${cap(m[1])}: you have ${m[2]}, ${says} ${m[3]}. Kept yours` : cap(d);
   };
-  const added = p.filled.map((f) => cap(dot(f)));
   const check = [...p.differs.map((d) => dot(differ(d))), ...p.hints.map(dot), ...(r.checks ?? []).map((c) => cap(dot(c)))];
-  const details = [...(r.details ?? []).map((d) => cap(dot(d))), ...(r.notes && !r.details?.length ? [dot(r.notes)] : [])];
   const out = [`Read "${fileName}" · ${cap(DOC_TYPE_LABEL[r.doc_type])}`];
   if (r.summary) out.push(dot(r.summary));
-  const section = (head: string, items: string[]) => { if (items.length) out.push("", head, ...items.map((i) => `- ${i}`)); };
-  section("Added", added);
-  section("Check", check);
-  section("Details", details);
-  if (!added.length && !check.length && !details.length) out.push("Nothing new to add to the job.");
+  if (check.length) out.push("", "Check", ...check.map((i) => `- ${i}`));
+  else out.push("Nothing to watch out for.");
   return out.join("\n");
 }
 

@@ -166,8 +166,7 @@ export async function readJobDocument(data: Buffer, mediaType: string, fileName:
     `"job": {"roof_material": string (e.g. "Concrete tile", "Colorbond Trimdek"), "roof_area_m2": number}, ` +
     `"roof": {"area_m2": number (total sloped roof area), "plan_area_m2": number (roof area on plan / footprint), "pitch_deg": number, "ridge_m": number, "hip_m": number, "valley_m": number, "gutter_m": number (eaves / gutter length), "barge_m": number (barge / rake length), "downpipes": number} (only measurements printed on plans or a roof report, in metres), ` +
     `"insurance": {"insurer": string, "claim_number": string, "policy_number": string, "assessor_name": string, "assessor_phone": string, "assessor_email": string, "excess": number, "date_of_loss": "YYYY-MM-DD"}, ` +
-    `"details": array of strings (up to 6 key specs a roofer quoting this needs, each under 7 words, e.g. "Hip roof, 600 mm eaves", "Anticon 60 sarking", "115 quad gutter"; [] if none), ` +
-    `"checks": array of strings (up to 3 things still to confirm or watch out for, each under 9 words, e.g. "Wind class N3 to be confirmed"; [] if none)}`;
+    `"checks": array of strings (up to 3 things the roofer must be aware of before quoting or on site, each under 9 words, e.g. "Wind class N3 to be confirmed", "Drawings not for construction", "Asbestos noted in the eaves"; never materials, products, colours or order details; [] if none)}`;
   try {
     const res = await anthropic().beta.messages.create({
       model: AI_MODEL,
@@ -199,7 +198,6 @@ export async function readJobDocument(data: Buffer, mediaType: string, fileName:
       },
       insurance: { insurer: s(ins.insurer, 80), claim_number: s(ins.claim_number, 60), policy_number: s(ins.policy_number, 60), assessor_name: s(ins.assessor_name, 100), assessor_phone: s(ins.assessor_phone, 30), assessor_email: s(ins.assessor_email, 120), excess: n(ins.excess), date_of_loss: s(ins.date_of_loss, 10) },
       notes: s(j.notes, 400),
-      details: list(j.details, 6, 60),
       checks: list(j.checks, 3, 80),
     };
   } catch {

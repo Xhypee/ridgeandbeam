@@ -24,7 +24,7 @@ export function parseClaudeNote(body: string): ClaudeNote | null {
     if (!l) continue;
     if (l in HEADS) { at = l as keyof typeof HEADS; continue; }
     if (at && l.startsWith("- ")) { note[HEADS[at]].push(l.slice(2)); continue; }
-    if (l === "Nothing new to add to the job.") { note.nothing = true; continue; }
+    if (l === "Nothing new to add to the job." || l === "Nothing to watch out for.") { note.nothing = true; continue; }
     if (!at && note.summary === null) { note.summary = l; continue; }
     return null; // not the shape we write: show it as plain text
   }
