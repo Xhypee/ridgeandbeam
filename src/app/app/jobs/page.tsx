@@ -204,7 +204,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
       </div>
       <aside aria-label={`Job docket: ${docket.customer.name}`} className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-screen lg:w-[440px] lg:shrink-0 lg:border-l lg:border-slate-200 xl:w-[460px]">
         <JobDocket key={docket.job.id} d={docket} org={org} canSeeMoney={canSeeMoney} isCrewLead={isCrewLead} closeHref={hrefFor(null)} previewHref={previewHref}
-          askHref={withParam("ask=1")} payHref={(id) => withParam(`pay=${id}`)} remindHref={withParam("remind=1")} aiReady={aiEnabled()} />
+          askHref={withParam("ask=1")} payHref={(id) => withParam(`pay=${id}`)} remindHref={withParam("remind=1")} aiReady={aiEnabled()} meId={user.id} />
       </aside>
       {preview && (
         <QuotePreview html={preview.email.html} subject={preview.email.subject} toName={preview.to.name} toEmail={preview.to.email}

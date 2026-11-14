@@ -1,6 +1,7 @@
 // Quoting jobs in the Jobs sidebar. Quote sent: the price and how long it's good for, docket stamps (SENT, OPENED,
 // SIGNED waiting), Call and Remind. Not quoted yet: inspection → measure → write the quote, one button.
 // Then Contact · Notes · Documents, and "Heard back another way?" (signed on paper / didn't go ahead).
+import { inspectionLabel } from "@/lib/lead-steps";
 import Link from "next/link";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { cx } from "@/components/ui";
@@ -100,7 +101,7 @@ function GettingToQuote({ d, previewHref }: { d: Docket; previewHref: string }) 
   const steps = [
     qt.inspection.photos > 0
       ? { k: "inspect", label: "Inspection", detail: `${qt.inspection.at ? `Done ${wkday(qt.inspection.at)} ${longDay(qt.inspection.at)} · ` : ""}${qt.inspection.photos} photo${qt.inspection.photos === 1 ? "" : "s"}`, done: true, href: `/app/jobs/${d.job.id}/files` }
-      : { k: "inspect", label: "Inspection", detail: "Get on the roof, take photos", done: false, href: `/app/jobs/${d.job.id}/field` },
+      : { k: "inspect", label: "Inspection", detail: d.job.inspection_at ? `Booked ${inspectionLabel(d.job.inspection_at, d.job.tz)}` : "Get on the roof, take photos", done: false, href: `/app/jobs/${d.job.id}/field` },
     measured
       ? { k: "measure", label: "Measure the roof", detail: `${measured} m²${d.roof?.m ? "" : ""}${d.quote?.measurement_source ? ` from ${d.quote.measurement_source === "plans" ? "plans" : d.quote.measurement_source === "satellite" ? "satellite" : "the roof"}` : ""}`, done: true, href: draft ? `/app/estimates/${draft.id}` : undefined }
       : { k: "measure", label: "Measure the roof", detail: "From plans, satellite or by hand, in the quote", done: false, href: undefined },

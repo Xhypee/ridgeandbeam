@@ -17,6 +17,8 @@ import { WrapPanel } from "./wrap-panel";
 import { QuotingPanel } from "./quoting-panel";
 import { JobContact, JobDocuments, JobNotes } from "./job-sections";
 import { ClaudeBar } from "./claude-bar";
+import { reopenLead } from "./lead-actions";
+import { inspectionLabel, LOST_REASON_LABEL } from "@/lib/lead-steps";
 
 const STAGES = ["New lead", "Quoting", "Signed & Prepping", "Building", "Wrapping up"];
 const STAGE_INDEX: Record<string, number> = { lead: 0, inspection: 1, estimate_sent: 1, sold: 2, scheduled: 2, in_progress: 3, completed: 4, paid: 4 };
@@ -47,6 +49,9 @@ function stageClock(d: Docket, now = new Date()) {
     const h = Math.floor((now.getTime() - new Date(j.lead_received_at).getTime()) / 3600000);
     return h < 1 ? "Just in" : h < 48 ? `Waiting ${h} h` : `Waiting ${Math.floor(h / 24)} d`;
   }
+  if (j.stage === "inspection" && j.inspection_at && new Date(j.inspection_at).getTime() > now.getTime() - 3 * 3600000) {
+    return `Inspection ${inspectionLabel(j.inspection_at, j.tz).split(",")[0]}`;
+  }
   if (["inspection", "estimate_sent"].includes(j.stage)) {
     const ago = (iso: string) => Math.max(0, Math.floor((now.getTime() - new Date(iso).getTime()) / 86400000));
     if (d.quote?.status === "sent" && d.quote.sent_at) { const n = ago(d.quote.sent_at); return n === 0 ? "Sent today" : `Sent ${n} d ago`; }
@@ -57,7 +62,7 @@ function stageClock(d: Docket, now = new Date()) {
   return `Since ${shortDate(j.created_at)}`;
 }
 
-export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, askHref, payHref, remindHref, aiReady }: { d: Docket; org: Organization; canSeeMoney: boolean; isCrewLead: boolean; closeHref: string; previewHref: string; askHref: string; payHref: (orderId: string) => string; remindHref: string; aiReady: boolean }) {
+export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, askHref, payHref, remindHref, aiReady, meId }: { d: Docket; org: Organization; canSeeMoney: boolean; isCrewLead: boolean; closeHref: string; previewHref: string; askHref: string; payHref: (orderId: string) => string; remindHref: string; aiReady: boolean; meId: string }) {
   const j = d.job;
   const base = `/app/jobs/${j.id}`;
   const lost = j.stage === "lost";
@@ -103,14 +108,23 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
           {/* Tear line */}
           <div className="relative h-5" aria-hidden><span className="absolute -left-2.5 top-0 h-5 w-5 rounded-full bg-cream" /><span className="absolute -right-2.5 top-0 h-5 w-5 rounded-full bg-cream" /><span className="absolute inset-x-4 top-2.5 border-t-2 border-dashed border-slate-200" /></div>
 
-          {d.lead && canSeeMoney ? <LeadPanel d={d} previewHref={previewHref} /> : d.quoting && canSeeMoney && !isCrewLead ? <QuotingPanel d={d} previewHref={previewHref} remindHref={remindHref} /> : d.build && !isCrewLead ? (<>
+          {d.lead && canSeeMoney ? <LeadPanel d={d} previewHref={previewHref} meId={meId} /> : d.quoting && canSeeMoney && !isCrewLead ? <QuotingPanel d={d} previewHref={previewHref} remindHref={remindHref} /> : d.build && !isCrewLead ? (<>
             {d.wrap ? <WrapPanel d={d} askHref={askHref} payHref={payHref} /> : <BuildPanel d={d} askHref={askHref} payHref={payHref} />}
             <JobContact d={d} />
             <JobNotes d={d} />
             <JobDocuments jobId={j.id} docs={d.docs} meta={d.build.invoiceDocs} />
           </>) : (<>
           <div className="px-5">
-            {d.sold && !isCrewLead ? <div className="-mx-5"><SoldPanel d={d} /></div> : !isCrewLead && (
+            {lost && !isCrewLead ? (
+              <div className="rounded-xl bg-slate-50 px-4 py-3.5 ring-1 ring-slate-200" data-docket-lost>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Not going ahead</p>
+                <p className="font-display text-lg font-bold leading-snug text-ink">{j.lost_reason ? LOST_REASON_LABEL[j.lost_reason] ?? human(j.lost_reason) : "Marked as lost"}</p>
+                <ActionForm action={reopenLead} className="mt-2">
+                  <input type="hidden" name="job_id" value={j.id} />
+                  <SubmitButton variant="secondary" className="min-h-11 w-full">Reopen</SubmitButton>
+                </ActionForm>
+              </div>
+            ) : d.sold && !isCrewLead ? <div className="-mx-5"><SoldPanel d={d} /></div> : !isCrewLead && (
               <div data-docket-now>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Next step</p>
                 <div className="mt-1 flex items-center gap-3">
