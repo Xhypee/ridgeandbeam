@@ -81,13 +81,13 @@ const daysAgo = (n) => { const d = new Date(); d.setDate(d.getDate() - n); retur
   await page.selectOption('select[name="state"]', "NSW");
   await page.fill('input[name="zip"]', "2750");
   await page.fill('input[name="job_title"]', "Hail re-roof");
-  await page.check('input[name="job_kind"][value="insurance"]');
-  await page.fill('input[name="insurance_company"]', "NRMA");
-  await page.fill('input[name="claim_number"]', "NRMA-26-4471");
   await page.click('button:has-text("Save customer")');
   await page.waitForURL(/\/app\/jobs\/[0-9a-f-]+$/);
   const jobUrl = page.url();
   const jobId = jobUrl.split("/").pop();
+  // New lead / New customer no longer ask Retail vs Insurance (insurance work comes through builders); make it a claim directly.
+  sql(`update jobs set is_insurance = true where id = '${jobId}'`);
+  sql(`insert into claims (org_id, job_id, carrier, claim_number) select org_id, id, 'NRMA', 'NRMA-26-4471' from jobs where id = '${jobId}'`);
   sql(`update jobs set state = 'NSW' where id = '${jobId}'`);
   sql(`update customers set state = 'NSW' where id = (select customer_id from jobs where id = '${jobId}')`); // customer form still caps state at 2 chars (coordinator change request)
 

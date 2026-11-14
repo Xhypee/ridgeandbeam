@@ -51,8 +51,6 @@ function check(cond, msg) {
   await page.fill('input[name="city"]', "Penrith");
   await page.selectOption('select[name="state"]', "NSW");
   await page.fill('input[name="zip"]', "2750");
-  await page.fill('input[name="insurance_company"]', "NRMA");
-  await page.fill('input[name="claim_number"]', "HAIL-2026-889");
   await page.fill('input[name="job_title"]', "Hail damage full replacement");
   await page.click('button:has-text("Save customer")');
   await page.waitForURL(/\/app\/jobs\/[0-9a-f-]+$/);
