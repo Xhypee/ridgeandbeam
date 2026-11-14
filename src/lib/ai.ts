@@ -1,5 +1,6 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
+import { DOC_TYPES, type DocRead } from "./doc-intake";
 
 /**
  * Claude-powered drafting. Everything here produces a DRAFT for a person to review —
@@ -140,6 +141,57 @@ export async function readSupplierInvoice(data: Buffer, mediaType: string): Prom
     return {
       invoice_no: str(j.invoice_no, 60), invoice_date: date(j.invoice_date), due_date: date(j.due_date), ex_gst: num(j.ex_gst), gst: num(j.gst), total: num(j.total),
       abn: str(j.abn, 20), bank_name: str(j.bank_name, 120), bsb: str(j.bsb, 10), account: str(j.account, 20),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Read any file dropped into a job's Documents: what it is and the facts that matter to the job (customer
+ * contact, site, roof, insurance claim). Returns null when AI is off, the file is too big or unreadable.
+ * Only what's printed in the file; null for everything else.
+ */
+export async function readJobDocument(data: Buffer, mediaType: string, fileName: string): Promise<DocRead | null> {
+  if (!aiEnabled() || data.length > 20 * 1024 * 1024) return null;
+  const isText = /^text\//.test(mediaType) || /\.(txt|csv|eml)$/i.test(fileName);
+  const doc: Anthropic.Beta.BetaContentBlockParam | null = mediaType === "application/pdf"
+    ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: data.toString("base64") } }
+    : isText ? (data.length > 200_000 ? null : { type: "text", text: `File "${fileName}":\n${data.toString("utf8")}` })
+    : asImageBlock(data, mediaType);
+  if (!doc) return null;
+  const schema = `{"doc_type": one of ${JSON.stringify(DOC_TYPES)}, "summary": string (one short sentence: what this is), ` +
+    `"customer": {"phone": string, "email": string, "address": string, "suburb": string, "state": string (QLD/NSW/...), "postcode": string} (the homeowner / client, not the business, architect, insurer or supplier), ` +
+    `"site": {"address": string (street), "suburb": string, "state": string, "postcode": string} (the property the roof work is on), ` +
+    `"job": {"roof_material": string (e.g. "Concrete tile", "Colorbond Trimdek"), "roof_area_m2": number}, ` +
+    `"insurance": {"insurer": string, "claim_number": string, "policy_number": string, "assessor_name": string, "assessor_phone": string, "assessor_email": string, "excess": number, "date_of_loss": "YYYY-MM-DD"}, ` +
+    `"notes": string (anything else a roofer must know from it, one sentence, or null)}`;
+  try {
+    const res = await anthropic().beta.messages.create({
+      model: AI_MODEL,
+      max_tokens: 3000,
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      output_config: { effort: "low" },
+      system: "You read files a residential roofing business in Australia attaches to a job: plans, insurance and assessor reports, supplier quotes and invoices, council approvals, contracts, emails and roof photos. Reply with one JSON object only, no other text. Use null for anything not clearly shown in the file. Never guess or infer details that aren't there.",
+      messages: [{ role: "user", content: [doc, { type: "text", text: `File name: ${fileName}\nFields: ${schema}` }] }],
+    });
+    const text = res.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text").map((b) => b.text).join("");
+    const m = /\{[\s\S]*\}/.exec(text);
+    if (!m) return null;
+    const j = JSON.parse(m[0]) as Record<string, Record<string, unknown> | unknown>;
+    const o = (k: string) => (j[k] && typeof j[k] === "object" ? (j[k] as Record<string, unknown>) : {});
+    const s = (v: unknown, max = 200) => (typeof v === "string" && v.trim() && v.trim().toLowerCase() !== "null" ? v.trim().slice(0, max) : null);
+    const n = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : typeof v === "string" && /^\$?[\d,]+(\.\d+)?$/.test(v.trim()) ? Number(v.replace(/[$,]/g, "")) : null);
+    const c = o("customer"), st = o("site"), jb = o("job"), ins = o("insurance");
+    const type = (DOC_TYPES as readonly string[]).includes(String(j.doc_type)) ? (j.doc_type as (typeof DOC_TYPES)[number]) : "other";
+    return {
+      doc_type: type, summary: s(j.summary, 300),
+      customer: { phone: s(c.phone, 30), email: s(c.email, 120), address: s(c.address), suburb: s(c.suburb, 80), state: s(c.state, 10), postcode: s(c.postcode, 10) },
+      site: { address: s(st.address), suburb: s(st.suburb, 80), state: s(st.state, 10), postcode: s(st.postcode, 10) },
+      job: { roof_material: s(jb.roof_material, 80), roof_area_m2: n(jb.roof_area_m2) },
+      insurance: { insurer: s(ins.insurer, 80), claim_number: s(ins.claim_number, 60), policy_number: s(ins.policy_number, 60), assessor_name: s(ins.assessor_name, 100), assessor_phone: s(ins.assessor_phone, 30), assessor_email: s(ins.assessor_email, 120), excess: n(ins.excess), date_of_loss: s(ins.date_of_loss, 10) },
+      notes: s(j.notes, 400),
     };
   } catch {
     return null;
