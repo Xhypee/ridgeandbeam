@@ -5,11 +5,14 @@
 // After upload Claude reads each file in the background and fills in the job (see readUploadedDocument).
 // variant "measure" (a quote's empty roof plan): also fills the roof measurements, and shows Claude reading
 // and what it found, since that's what they're waiting for.
+// variant "plans" (a new lead's Next up): the same, and the quote it fills in is found or made on the fly
+// (quoteForPlans), so dropping the plans is the whole first step. `compact` once the plans are in.
 import { useRouter } from "next/navigation";
 import { useRef, useState, type DragEvent } from "react";
 import { cx } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { attachJobFile, prepareJobUpload, readUploadedDocument, type DocIntakeResult } from "./[id]/files/actions";
+import { quoteForPlans } from "./lead-actions";
 
 const MAX = 50 * 1024 * 1024;
 type Item = { file: File; name: string };
@@ -40,8 +43,9 @@ async function walk(entry: FsEntry, prefix = ""): Promise<Item[]> {
   return nested.flat();
 }
 
-export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured = false }: { jobId: string; estimateId?: string; variant?: "sidebar" | "measure"; measured?: boolean }) {
-  const measure = variant === "measure";
+export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured = false, who, compact = false }: { jobId: string; estimateId?: string; variant?: "sidebar" | "measure" | "plans"; measured?: boolean; who?: string; compact?: boolean }) {
+  const plans = variant === "plans";
+  const measure = variant === "measure" || plans;
   const router = useRouter();
   const files = useRef<HTMLInputElement>(null);
   const folder = useRef<HTMLInputElement>(null);
@@ -80,11 +84,12 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
     if (uploaded.length && measure) {
       // On a quote's roof plan: show Claude reading, then what it found.
       setReading({ done: 0, total: uploaded.length });
+      const quoteId = estimateId ?? (plans ? await quoteForPlans(jobId).catch(() => null) ?? undefined : undefined);
       const results: DocIntakeResult[] = [];
       let next = 0, done = 0;
       const worker = async () => {
         while (next < uploaded.length) {
-          const r = await readUploadedDocument(uploaded[next++], estimateId).catch(() => null);
+          const r = await readUploadedDocument(uploaded[next++], quoteId).catch(() => null);
           if (r) results.push(r);
           setReading({ done: ++done, total: uploaded.length });
         }
@@ -126,14 +131,33 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
 
   return (
     <div className={measure ? "" : "mt-2"} data-document-drop={variant}>
+      {plans && !compact && !reading && !busy ? (
+        <div
+          onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+          onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(false); }}
+          onDrop={onDrop}
+          className={cx("flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-5 py-7 text-center transition", over ? "border-brand-500 bg-brand-100/70" : "border-brand-200 bg-brand-50")}>
+          <span className="grid h-12 w-12 place-items-center rounded-xl bg-white text-brand-600">
+            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" /></svg>
+          </span>
+          <p className="font-semibold text-ink">{over ? "Drop to upload" : `Drop ${who ? `${who}\u2019s` : "the"} plans here`}</p>
+          <p className="text-sm text-slate-500">Claude reads them and measures the roof for the quote.</p>
+          <div className="mt-1 flex gap-2">
+            <button type="button" onClick={() => files.current?.click()} className="inline-flex min-h-10 items-center rounded-xl bg-brand-500 px-4 text-sm font-semibold text-white hover:bg-brand-600" data-plans-browse>Choose files</button>
+            <button type="button" onClick={() => folder.current?.click()} className="inline-flex min-h-10 items-center rounded-xl bg-white px-4 text-sm font-semibold text-ink ring-1 ring-slate-300 hover:bg-slate-50">A folder</button>
+          </div>
+          <input ref={files} type="file" multiple className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => fromInput(e.target.files)} />
+          <input ref={folder} type="file" multiple className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => fromInput(e.target.files)} {...{ webkitdirectory: "", directory: "" }} />
+        </div>
+      ) : (
       <div
         onDragOver={(e) => { e.preventDefault(); if (!busy && !reading) setOver(true); }}
         onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(false); }}
         onDrop={onDrop}
         className={cx("flex flex-col items-center justify-center gap-1 border-2 border-dashed text-center transition",
-          measure && measured ? "rounded-xl px-4 py-3" : measure ? "rounded-2xl px-5 py-6" : "rounded-xl px-4 py-5",
+          (measure && measured) || (plans && compact && !reading && !busy) ? "rounded-xl px-4 py-3" : measure ? "rounded-2xl px-5 py-6" : "rounded-xl px-4 py-5",
           over ? "border-brand-500 bg-brand-50" : measure ? "border-slate-300 bg-white" : "border-slate-300 bg-slate-50/60")}>
-        <svg viewBox="0 0 24 24" className={cx(measure && measured ? "hidden" : "h-7 w-7", over ? "text-brand-600" : "text-slate-400")} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" /></svg>
+        <svg viewBox="0 0 24 24" className={cx((measure && measured) || (plans && compact) ? "hidden" : "h-7 w-7", over ? "text-brand-600" : "text-slate-400")} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" /></svg>
         {reading ? (
           <>
             <p className="text-sm font-semibold text-ink" data-reading>Claude is reading {reading.total === 1 ? "your file" : `${Math.min(reading.done + 1, reading.total)} of ${reading.total}`}…</p>
@@ -147,7 +171,9 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
           </>
         ) : (
           <>
-            {measure && measured ? (
+            {plans ? (
+              <p className="text-sm text-slate-600"><span className="font-semibold text-ink">{over ? "Drop to upload" : "More plans?"}</span> Drop them here. Claude adds them to the job.</p>
+            ) : measure && measured ? (
               <p className="text-sm text-slate-600"><span className="font-semibold text-ink">{over ? "Drop to upload" : "More plans or reports?"}</span> Drop files or folders here. Claude adds them to the job; your measurements stay as they are.</p>
             ) : measure ? (<>
               <p className="font-semibold text-ink">{over ? "Drop to upload" : "Not measured yet"}</p>
@@ -162,6 +188,7 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
         <input ref={files} type="file" multiple className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => fromInput(e.target.files)} />
         <input ref={folder} type="file" multiple className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => fromInput(e.target.files)} {...{ webkitdirectory: "", directory: "" }} />
       </div>
+      )}
       {msg && <p role={msg.error ? "alert" : "status"} className={cx("mt-2 rounded-lg px-3 py-2 text-sm", msg.error ? "bg-amber-50 text-amber-900" : "bg-green-50 text-green-700")}>{msg.error ?? msg.ok}</p>}
     </div>
   );

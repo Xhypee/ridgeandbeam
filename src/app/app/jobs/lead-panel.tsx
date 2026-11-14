@@ -43,12 +43,14 @@ export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: st
         people={d.people.filter((p) => p.role !== "crew_lead").map((p) => ({ user_id: p.user_id, name: p.full_name || p.email || "Someone" }))}
         dates={{ min: dateIn(tz), suggested }} tz={tz}
         name={d.customer.name} otherJobs={lead.customerOtherJobs}
+        plans={lead.docs.length}
+        quote={q ? { id: q.id, status: q.status, measured: d.roof ? `${Math.round(d.roof.summary.trueArea)} m\u00b2 of roof` : null, fromPlans: q.measurement_source === "documents" } : null}
       />
       <JobContact d={d} />
       <JobNotes d={d} leadNote={lead.message ? { by: sourceLabel, at: lead.receivedAt, body: lead.message } : null} />
       <JobDocuments jobId={d.job.id} docs={lead.docs} />
 
-      <div className="border-t border-slate-100 px-5 py-4" data-send-quote>
+      {(q || !lead.docs.length) && <div className="border-t border-slate-100 px-5 py-4" data-send-quote>
         {q ? (
           <>
             <ActionForm action={sendQuoteEmail}>
@@ -67,10 +69,10 @@ export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: st
           <form action={createEstimate}>
             <input type="hidden" name="job_id" value={d.job.id} />
             <button className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-500 font-semibold text-white hover:bg-brand-600"><Icon d="M12 5v14M5 12h14" />Start a quote</button>
-            <p className="mt-2 text-xs text-slate-500">No inspection needed? Measure from plans or satellite, then send it from here.</p>
+            <p className="mt-2 text-xs text-slate-500">No plans? Measure on the satellite map, then send it from here.</p>
           </form>
         )}
-      </div>
+      </div>}
     </>
   );
 }

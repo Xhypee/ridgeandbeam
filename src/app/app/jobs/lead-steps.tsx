@@ -1,12 +1,17 @@
 "use client";
 
-// The New lead sidebar's "Next up": Call, then five icon buttons (Spoke to them · No answer · Book the
+// The New lead sidebar's "Next up". People ring a few roofers and get told "send us your plans", so the first
+// step is the plans: a big drop box (Claude reads them, makes the draft quote and measures the roof). Once
+// they're in: check / write the quote. Under it six icon buttons (Call · Text · Spoke to them · Book the
 // inspection · Not going ahead · Delete lead, labels on hover), then Who's looking after it. Server actions: lead-actions.ts.
+import Link from "next/link";
 import { useRef, useState } from "react";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { cx } from "@/components/ui";
 import { LOST_REASONS, type ScheduleItem } from "@/lib/lead-steps";
+import { createEstimate } from "../estimates/actions";
 import { BookingCalendar } from "./booking-calendar";
+import { DocumentDrop } from "./document-drop";
 import { deleteLead, logLeadCall, markLeadLost, setLeadOwner } from "./lead-actions";
 import { LeadTimer } from "./lead-timer";
 
@@ -14,7 +19,7 @@ const PHONE = "M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0
 const SMS = "M4 5h16v11H9l-5 4z";
 const CHECK = "M5 12l5 5L20 7";
 const CAL = "M4 6h16v14H4zM4 10h16M8 3v5M16 3v5";
-const MISSED = "M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2M15 3l6 6M21 3l-6 6";
+const DOC = "M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6";
 const XCIRCLE = "M12 21a9 9 0 100-18 9 9 0 000 18M9 9l6 6M15 9l-6 6";
 const BIN = "M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3";
 
@@ -43,6 +48,14 @@ function Icon({ d, className = "h-4 w-4" }: { d: string; className?: string }) {
   return <svg viewBox="0 0 24 24" className={cx("shrink-0", className)} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={d} /></svg>;
 }
 
+/** Call / Text as a square icon link in the action row (greyed out with no mobile). */
+function IconLink({ href, label, d, align }: { href: string | null; label: string; d: string; align?: "start" | "center" | "end" }) {
+  const cls = "group relative grid h-12 w-full place-items-center rounded-xl ring-1 ring-inset ring-slate-300";
+  return href
+    ? <a href={href} aria-label={label} className={cx(cls, "bg-white text-ink hover:bg-slate-50")}><Icon d={d} className="h-5 w-5" /><Tip align={align}>{label}</Tip></a>
+    : <span aria-label="No mobile" className={cx(cls, "bg-slate-50 text-slate-300")}><Icon d={d} className="h-5 w-5" /><Tip align={align}>No mobile</Tip></span>;
+}
+
 export type LeadStepsProps = {
   jobId: string;
   first: string;
@@ -60,6 +73,10 @@ export type LeadStepsProps = {
   /** Full name, for the delete confirmation; `otherJobs` > 0 means the contact stays. */
   name: string;
   otherJobs: number;
+  /** Documents on the job so far (plans, reports…). */
+  plans: number;
+  /** The lead's quote, if there is one; `measured` e.g. "214 m² of roof" once the roof is measured. */
+  quote: { id: string; status: string; measured: string | null; fromPlans: boolean } | null;
 };
 
 function OwnerPicker({ jobId, owner, people, meId }: { jobId: string; owner: string; people: LeadStepsProps["people"]; meId: string }) {
@@ -84,48 +101,50 @@ export function LeadSteps(p: LeadStepsProps) {
   const [reason, setReason] = useState<string>("");
   const tel = p.phone ? `tel:${p.phone.replace(/\s+/g, "")}` : null;
   const sms = p.phone ? `sms:${p.phone.replace(/\s+/g, "")}` : null;
-  const headline = !p.contacted ? `Call ${p.first}` : "Book the inspection";
-  const btn = "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold";
+  const planless = p.plans === 0 && !p.quote?.measured;
+  const headline = planless ? `Upload ${p.first}\u2019s plans` : p.quote ? `Check ${p.first}\u2019s quote` : `Write ${p.first}\u2019s quote`;
+  const sub = planless ? null
+    : p.quote?.measured ? `Claude measured ${p.quote.measured}${p.quote.fromPlans ? " from the plans" : ""}. Check it, add your prices and send it.`
+    : p.quote ? "The plans are in. Measure the roof and price it." : "The plans are in. Start the quote and measure from them.";
+  const btn = "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 text-[15px] font-semibold";
   const booking = (
     <BookingCalendar jobId={p.jobId} first={p.first} phone={p.phone} people={p.people} defaultStaff={p.owner} meId={p.meId}
       today={p.dates.min} suggested={p.dates.suggested} tz={p.tz} load={p.loadSchedule} />
   );
 
-  const status = p.contacted
-    ? `Spoke ${p.contacted.label}${p.contacted.by ? ` · ${p.contacted.by.split(" ")[0]}` : ""}`
-    : p.noAnswer.count ? `${p.noAnswer.count} ${p.noAnswer.count === 1 ? "try" : "tries"}, no answer${p.noAnswer.lastLabel ? ` · last ${p.noAnswer.lastLabel}` : ""}`
-    : "The first roofer to call usually wins the job.";
-
   return (
-    <div className="px-5 pb-4" data-lead-steps>
+    <div className="px-5 pb-4" data-lead-steps data-lead-plans={planless ? "none" : "in"}>
       <div className="flex items-center gap-2">
         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Next up</p>
-        {!p.contacted && p.receivedAt && <span className="ml-auto"><LeadTimer since={p.receivedAt} /></span>}
+        {planless && !p.contacted && p.receivedAt && <span className="ml-auto"><LeadTimer since={p.receivedAt} /></span>}
       </div>
-      <p className="font-display text-[26px] font-bold leading-tight text-ink">{headline}</p>
-      <p className="text-sm text-slate-500" data-lead-status>{status}</p>
+      <p className="font-display text-[26px] font-bold leading-tight text-ink" data-lead-headline>{headline}</p>
+      {sub && <p className="text-sm text-slate-500" data-lead-status>{sub}</p>}
 
-      {!p.contacted && (
-        <div className="mt-3 flex gap-2">
-          {tel ? <a href={tel} className={cx(btn, "flex-1 bg-brand-500 text-white hover:bg-brand-600")} data-lead-call><Icon d={PHONE} />Call {p.first}</a>
-            : <span className={cx(btn, "flex-1 bg-slate-100 text-slate-400")}>No mobile</span>}
-          {sms && <a href={sms} aria-label={`Text ${p.first}`} title={`Text ${p.first}`} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-ink ring-1 ring-slate-300 hover:bg-slate-50"><Icon d={SMS} /></a>}
+      {/* The plans drop box keeps its place in both states, so Claude's summary survives the refresh. */}
+      {!planless && (
+        <div className="mt-3">
+          {p.quote
+            ? <Link href={`/app/estimates/${p.quote.id}`} className={cx(btn, "bg-brand-500 text-white hover:bg-brand-600")} data-lead-quote><Icon d={DOC} className="h-5 w-5" />Open the quote</Link>
+            : <form action={createEstimate}><input type="hidden" name="job_id" value={p.jobId} /><button className={cx(btn, "bg-brand-500 text-white hover:bg-brand-600")} data-lead-quote><Icon d="M12 5v14M5 12h14" className="h-5 w-5" />Start the quote</button></form>}
         </div>
       )}
+      <div className="mt-3" data-lead-drop>
+        <DocumentDrop jobId={p.jobId} variant="plans" compact={!planless} measured={Boolean(p.quote?.measured)}
+          estimateId={p.quote?.status === "draft" ? p.quote.id : undefined} />
+      </div>
 
-      {/* Five actions as icon buttons; the label shows on hover (and keyboard focus). */}
+      {/* Six actions as icon buttons; the label shows on hover (and keyboard focus). */}
       <ActionForm action={logLeadCall} className="mt-3">
         <input type="hidden" name="job_id" value={p.jobId} />
-        <div className="grid grid-cols-5 gap-2" data-lead-actions>
+        <div className="grid grid-cols-6 gap-2" data-lead-actions>
+          <IconLink href={tel} label={`Call ${p.first}`} d={PHONE} align="start" />
+          <IconLink href={sms} label={`Text ${p.first}`} d={SMS} />
           <SubmitButton name="outcome" value="spoke" variant={p.contacted ? "primary" : "secondary"} className="group relative h-12 w-full px-0">
-            <Icon d={CHECK} className="h-5 w-5" /><Tip align="start">{p.contacted ? `Spoke ${p.contacted.label}` : "Spoke to them"}</Tip>
+            <Icon d={CHECK} className="h-5 w-5" /><Tip>{p.contacted ? `Spoke ${p.contacted.label}${p.contacted.by ? ` \u00b7 ${p.contacted.by.split(" ")[0]}` : ""}` : "Spoke to them"}</Tip>
           </SubmitButton>
-          <SubmitButton name="outcome" value="no_answer" variant="secondary" className="group relative h-12 w-full px-0">
-            <Icon d={MISSED} className="h-5 w-5" /><Tip>No answer</Tip>
-            {p.noAnswer.count > 0 && <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-amber-500 px-1 text-[11px] font-bold text-white" aria-hidden>{p.noAnswer.count}</span>}
-          </SubmitButton>
-          <IconToggle on={open === "book"} onClick={() => setOpen(open === "book" ? null : "book")} label="Book the inspection" d={CAL} />
-          <IconToggle on={open === "lost"} onClick={() => setOpen(open === "lost" ? null : "lost")} label="Not going ahead" d={XCIRCLE} tone="red" />
+          <IconToggle on={open === "book"} onClick={() => setOpen(open === "book" ? null : "book")} label="No plans? Book an inspection" d={CAL} />
+          <IconToggle on={open === "lost"} onClick={() => setOpen(open === "lost" ? null : "lost")} label="Not going ahead" d={XCIRCLE} tone="red" align="end" />
           <IconToggle on={open === "delete"} onClick={() => setOpen(open === "delete" ? null : "delete")} label="Delete lead" d={BIN} tone="red" align="end" />
         </div>
       </ActionForm>
