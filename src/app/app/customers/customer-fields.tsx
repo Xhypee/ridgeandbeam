@@ -1,5 +1,5 @@
 import { Field, Input, Select, Textarea } from "@/components/ui";
-import { AU_STATES } from "@/lib/au";
+import { AddressLookup } from "@/components/address-lookup";
 import { label } from "@/lib/format";
 import { CUSTOMER_SOURCES, type Customer } from "@/lib/types";
 
@@ -10,16 +10,9 @@ export function CustomerFields({ c }: { c?: Partial<Customer> }) {
         <Field label="Name" className="sm:col-span-2"><Input name="name" defaultValue={c?.name ?? ""} required /></Field>
         <Field label="Phone"><Input name="phone" type="tel" defaultValue={c?.phone ?? ""} /></Field>
         <Field label="Email"><Input name="email" type="email" defaultValue={c?.email ?? ""} /></Field>
-        <Field label="Street address" className="sm:col-span-2"><Input name="address" defaultValue={c?.address ?? ""} /></Field>
-        <div className="grid grid-cols-3 gap-3 sm:col-span-2">
-          <Field label="Suburb"><Input name="city" defaultValue={c?.city ?? ""} /></Field>
-          <Field label="State">
-            <Select name="state" defaultValue={c?.state ?? ""}>
-              <option value="">Choose…</option>
-              {AU_STATES.map((st) => <option key={st} value={st}>{st}</option>)}
-            </Select>
-          </Field>
-          <Field label="Postcode"><Input name="zip" defaultValue={c?.zip ?? ""} inputMode="numeric" pattern="[0-9]{4}" maxLength={4} /></Field>
+        <div className="sm:col-span-2">
+          <AddressLookup label="Address" defaultState={c?.state ?? null}
+            initial={c?.address ? { address: c.address, city: c.city ?? "", state: c.state ?? "", zip: c.zip ?? "", lat: null, lng: null } : null} />
         </div>
         <Field label="Lead source">
           <Select name="source" defaultValue={c?.source ?? "other"}>

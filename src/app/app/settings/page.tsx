@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
 import { ActionForm, SubmitButton } from "@/components/action-form";
-import { Card, Field, Input, Select, Textarea } from "@/components/ui";
+import { Card, Field, Input, Textarea } from "@/components/ui";
 import { AU_STATE_NAME, AU_STATES, formatAbn } from "@/lib/au";
 import { licenceFor } from "@/lib/business";
 import { requireOrg } from "@/lib/dal";
 import { AbnInput } from "./abn-input";
+import { AddressLookup } from "@/components/address-lookup";
+
+/** The business address is stored as "street, suburb": the last part is the suburb. */
+function splitStreetSuburb(a: string): { address: string; city: string } {
+  const parts = a.split(",").map((x) => x.trim()).filter(Boolean);
+  return parts.length > 1 ? { address: parts.slice(0, -1).join(", "), city: parts[parts.length - 1] } : { address: a.trim(), city: "" };
+}
 import { updateCompanySettings } from "./company-actions";
 
 export const metadata: Metadata = { title: "Company settings" };
@@ -27,15 +34,10 @@ export default async function Page() {
               </Field>
               <Field label="Phone"><Input name="phone" type="tel" defaultValue={org.phone ?? ""} placeholder="0412 345 678" /></Field>
               <Field label="Email"><Input name="email" type="email" defaultValue={org.email ?? ""} /></Field>
-              <Field label="Business address" className="sm:col-span-2" hint="Street and suburb"><Input name="address" defaultValue={org.address ?? ""} placeholder="12 Industrial Dr, Smithfield" /></Field>
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="State" hint="Used when a job has no state">
-                  <Select name="state" defaultValue={org.state ?? ""} aria-label="Company state">
-                    <option value="">Choose…</option>
-                    {AU_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </Select>
-                </Field>
-                <Field label="Postcode"><Input name="zip" inputMode="numeric" maxLength={4} defaultValue={org.zip ?? ""} /></Field>
+              <div className="sm:col-span-2">
+                <AddressLookup label="Business address" streetWithSuburb defaultState={org.state ?? null}
+                  initial={org.address || org.zip ? { ...splitStreetSuburb(org.address ?? ""), state: org.state ?? "", zip: org.zip ?? "", lat: null, lng: null } : null} />
+                <p className="mt-1 text-xs text-slate-500">The state is used when a job has no state.</p>
               </div>
               <Field label="Website"><Input name="website" inputMode="url" defaultValue={org.website ?? ""} placeholder="https://yourroofing.com.au" /></Field>
               <Field label="Google review link" hint="Google Business Profile → Ask for reviews → copy the link. Sent with review requests after the job."><Input name="google_review_url" inputMode="url" defaultValue={org.google_review_url ?? ""} placeholder="https://g.page/r/…/review" /></Field>

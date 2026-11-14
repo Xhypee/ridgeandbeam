@@ -84,7 +84,7 @@ export function RoofPlanPanel({ estimateId, measurements, source }: { estimateId
       ) : (
         <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-white px-5 py-6 text-center">
           <p className="font-semibold text-ink">Not measured yet</p>
-          <p className="mt-1 text-sm text-slate-500">Optional for repairs. Measure from the plans, on the satellite map, or type it in by hand.</p>
+          <p className="mt-1 text-sm text-slate-500">Start here. Measure from the plans, on the satellite map, or type it in by hand.</p>
         </div>
       )}
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">

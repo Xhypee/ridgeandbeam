@@ -1,5 +1,6 @@
 "use client";
 
+import { AddressLookup } from "@/components/address-lookup";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
 import { money } from "@/lib/format";
@@ -148,7 +149,11 @@ export function InvoiceEditor({ id, locked, catalog, paid, gstRegistered, custom
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Buyer name"><Input disabled={ro} value={buyerName} placeholder={customerName ?? ""} onChange={(e) => { setBuyerName(e.target.value); touch(); }} /></Field>
           <Field label="Buyer ABN (businesses)"><Input disabled={ro} value={buyerAbn} inputMode="numeric" placeholder="11 digits" onChange={(e) => { setBuyerAbn(e.target.value); touch(); }} /></Field>
-          <Field label="Buyer address" className="sm:col-span-2"><Input disabled={ro} value={buyerAddress} placeholder={customerAddress ?? ""} onChange={(e) => { setBuyerAddress(e.target.value); touch(); }} /></Field>
+          <div className="sm:col-span-2">
+            {ro ? <Field label="Buyer address"><Input disabled value={buyerAddress} placeholder={customerAddress ?? ""} /></Field>
+              : <AddressLookup label="Buyer address" initialLine={buyerAddress || null} onChange={(_, line) => { setBuyerAddress(line); touch(); }} />}
+            {!ro && !buyerAddress && customerAddress && <p className="mt-1 text-xs text-slate-500">Blank uses the customer&apos;s address: {customerAddress}</p>}
+          </div>
         </div>
       </Card>
 

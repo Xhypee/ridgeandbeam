@@ -1,6 +1,7 @@
 import { Field, Input, Select, Textarea } from "@/components/ui";
 import { AU_JOB_TYPES, AU_JOB_TYPE_LABEL } from "@/lib/job-types";
 import type { Job } from "@/lib/types";
+import { AddressLookup } from "@/components/address-lookup";
 
 export function JobFields({ j, defaultAddress }: { j?: Partial<Job>; defaultAddress?: string }) {
   return (
@@ -12,7 +13,7 @@ export function JobFields({ j, defaultAddress }: { j?: Partial<Job>; defaultAddr
         </Select>
       </Field>
       <Field label="Roof material"><Input name="roof_material" defaultValue={j?.roof_material ?? ""} placeholder="COLORBOND Trimdek, concrete tile, terracotta…" /></Field>
-      <Field label="Job site address" className="sm:col-span-2"><Input name="site_address" defaultValue={j?.site_address ?? defaultAddress ?? ""} /></Field>
+      <div className="sm:col-span-2"><AddressLookup label="Job site address" line="site_address" initialLine={j?.site_address ?? defaultAddress ?? null} /></div>
       <label className="flex items-center gap-2 text-sm text-slate-700 sm:col-span-2">
         <input type="checkbox" name="is_insurance" defaultChecked={j?.is_insurance ?? false} className="h-4 w-4 accent-brand-500" />
         Insurance claim job

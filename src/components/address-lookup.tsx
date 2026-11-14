@@ -4,11 +4,15 @@
 // Posts the same fields as the manual form (address, city, state, zip) plus lat/lng when Google found the spot.
 // With no NEXT_PUBLIC_GOOGLE_MAPS_API_KEY it still starts as a lookup, suggesting addresses from the company's own
 // contacts and jobs, with "Enter it manually" always one tap away. If Google fails to load it drops to the manual fields.
+// Every address field in the app uses this. Options: `line` posts one field (e.g. site_address) with the whole
+// address; `streetWithSuburb` posts "street, suburb" as address (no city field); `onChange` for controlled forms;
+// `known={false}` on public pages (no saved-address search; without a Maps key it's just the manual fields).
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Field, Input, Select, cx } from "@/components/ui";
 import { AU_STATES } from "@/lib/au";
 import { partsFromComponents, type AddressParts, type AddrComponent } from "./address-parts";
 import { searchKnownAddresses } from "@/lib/address-search";
+import { parseAuAddress } from "@/lib/address-parse";
 
 const KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 
@@ -42,17 +46,32 @@ export type { AddressParts } from "./address-parts";
 
 type Suggestion = { id: string; main: string; rest: string; prediction?: GPrediction; parts?: AddressParts };
 
-/** `initial`: an address already on file (editing) — starts as the picked card, with "Choose another address" and "Edit". */
-export function AddressLookup({ defaultState, initial }: { defaultState?: string | null; initial?: AddressParts | null }) {
-  const [mode, setMode] = useState<"lookup" | "manual">("lookup");
+/** One line, the way addresses read everywhere: "36 Brownvale St, Logan Central QLD 4114". */
+export function addressLine(p: { address: string; city: string; state: string; zip: string }): string {
+  const tail = [p.city, [p.state, p.zip].filter(Boolean).join(" ")].filter(Boolean).join(" ");
+  return [p.address.trim(), tail].filter(Boolean).join(", ");
+}
+const fromLine = (line: string | null | undefined): AddressParts | null => (line && line.trim() ? { ...parseAuAddress(line), lat: null, lng: null } : null);
+
+/** `initial` / `initialLine`: an address already on file (editing) — starts as the picked card, with "Choose another address" and "Edit". */
+export function AddressLookup({ defaultState, initial, initialLine, label = "Site address", line, streetWithSuburb, known = true, required, onChange }: {
+  defaultState?: string | null; initial?: AddressParts | null; initialLine?: string | null; label?: string;
+  line?: string; streetWithSuburb?: boolean; known?: boolean; required?: boolean;
+  onChange?: (parts: AddressParts, line: string) => void;
+}) {
+  const start = initial ?? fromLine(initialLine);
+  const lookupOk = Boolean(KEY) || known;
+  const [mode, setMode] = useState<"lookup" | "manual">(lookupOk ? "lookup" : "manual");
   const [failed, setFailed] = useState(false);
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<Suggestion[]>([]);
   const [active, setActive] = useState(-1);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [picked, setPicked] = useState<AddressParts | null>(initial ?? null);
-  const [manual, setManual] = useState<AddressParts>(initial ?? { address: "", city: "", state: defaultState ?? "", zip: "", lat: null, lng: null });
+  const [picked, setPicked] = useState<AddressParts | null>(start);
+  const [manual, setManual] = useState<AddressParts>(start ?? { address: "", city: "", state: defaultState ?? "", zip: "", lat: null, lng: null });
+  const emit = (p: AddressParts) => onChange?.(p, addressLine(p));
+  const typed = (q: string): AddressParts => ({ address: q.trim(), city: "", state: line ? "" : defaultState ?? "", zip: "", lat: null, lng: null });
   const lib = useRef<PlacesLib | null>(null);
   const token = useRef<unknown>(null);
   const seq = useRef(0);
@@ -105,7 +124,7 @@ export function AddressLookup({ defaultState, initial }: { defaultState?: string
     setOpen(false);
     setBusy(true);
     setQuery(`${s.main}${s.rest ? `, ${s.rest}` : ""}`);
-    if (s.parts) { setPicked(s.parts); setManual(s.parts); setBusy(false); return; }
+    if (s.parts) { setPicked(s.parts); setManual(s.parts); emit(s.parts); setBusy(false); return; }
     try {
       const place = s.prediction!.toPlace();
       await place.fetchFields({ fields: ["addressComponents", "location"] });
@@ -113,12 +132,14 @@ export function AddressLookup({ defaultState, initial }: { defaultState?: string
       const parts = partsFromComponents(place.addressComponents ?? [], loc);
       setPicked(parts);
       setManual(parts);
+      emit(parts);
     } catch {
       setPicked(null);
     } finally {
       token.current = null; // a pick ends the billing session
       setBusy(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- emit only calls the latest onChange prop
   }, []);
 
   // Suggestions only for 3+ characters; older results for a longer query are hidden, not cleared.
@@ -135,23 +156,34 @@ export function AddressLookup({ defaultState, initial }: { defaultState?: string
   const linkCls = "text-sm font-semibold text-brand-600 underline-offset-4 hover:text-brand-700 hover:underline";
   const toManual = () => { if (!picked && query.trim()) setManual((m) => ({ ...m, address: query.trim() })); setOpen(false); setMode("manual"); };
 
+  // What gets posted, in either mode (the visible fields have no names).
+  const hidden = (p: AddressParts) => line ? <input type="hidden" name={line} value={addressLine(p)} /> : (<>
+    <input type="hidden" name="address" value={streetWithSuburb ? [p.address.trim(), p.city.trim()].filter(Boolean).join(", ") : p.address} />
+    {!streetWithSuburb && <input type="hidden" name="city" value={p.city} />}
+    <input type="hidden" name="state" value={p.state} />
+    <input type="hidden" name="zip" value={p.zip} />
+    {p.lat != null && <input type="hidden" name="lat" value={p.lat} />}
+    {p.lng != null && <input type="hidden" name="lng" value={p.lng} />}
+  </>);
+
   if (mode === "manual") {
-    const set = (k: keyof AddressParts) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setManual((m) => ({ ...m, [k]: e.target.value, lat: null, lng: null }));
+    const set = (k: keyof AddressParts) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => { const next = { ...manual, [k]: e.target.value, lat: null, lng: null }; setManual(next); emit(next); };
     return (
       <div className="space-y-3" data-address-mode="manual">
-        <Field label="Street address"><Input name="address" value={manual.address} onChange={set("address")} placeholder="9 Bay Tce" /></Field>
+        {hidden(manual)}
+        <Field label={label === "Site address" ? "Street address" : label}><Input value={manual.address} onChange={set("address")} placeholder="9 Bay Tce" autoComplete="address-line1" required={required} /></Field>
         <div className="grid grid-cols-[1fr_6.5rem_5.5rem] gap-3">
-          <Field label="Suburb"><Input name="city" value={manual.city} onChange={set("city")} /></Field>
+          <Field label="Suburb"><Input value={manual.city} onChange={set("city")} autoComplete="address-level2" required={required} /></Field>
           <Field label="State">
-            <Select name="state" value={manual.state} onChange={set("state")}>
+            <Select value={manual.state} onChange={set("state")} required={required}>
               <option value="">–</option>
               {AU_STATES.map((st) => <option key={st} value={st}>{st}</option>)}
             </Select>
           </Field>
-          <Field label="Postcode"><Input name="zip" value={manual.zip} onChange={set("zip")} inputMode="numeric" pattern="[0-9]{4}" maxLength={4} /></Field>
+          <Field label="Postcode"><Input value={manual.zip} onChange={set("zip")} autoComplete="postal-code" required={required} inputMode="numeric" pattern="[0-9]{4}" maxLength={4} /></Field>
         </div>
-        {failed ? <p className="text-xs text-slate-500">Google Maps lookup isn&rsquo;t available right now. Type the address in.</p>
-          : <button type="button" className={linkCls} onClick={() => { setPicked(null); setQuery(""); setMode("lookup"); }}>Search for the address</button>}
+        {!lookupOk ? null : failed ? <p className="text-xs text-slate-500">Google Maps lookup isn&rsquo;t available right now. Type the address in.</p>
+          : <button type="button" className={linkCls} onClick={() => { setPicked(null); setQuery(""); emit(typed("")); setMode("lookup"); }}>Search for the address</button>}
       </div>
     );
   }
@@ -160,16 +192,12 @@ export function AddressLookup({ defaultState, initial }: { defaultState?: string
   return (
     <div className="space-y-2" data-address-mode="lookup">
       {/* What gets saved: the picked address, or what they typed if they never picked one. */}
-      <input type="hidden" name="address" value={parts ? parts.address : query.trim()} />
-      <input type="hidden" name="city" value={parts?.city ?? ""} />
-      <input type="hidden" name="state" value={parts?.state ?? defaultState ?? ""} />
-      <input type="hidden" name="zip" value={parts?.zip ?? ""} />
-      {parts?.lat != null && <input type="hidden" name="lat" value={parts.lat} />}
-      {parts?.lng != null && <input type="hidden" name="lng" value={parts.lng} />}
+      {hidden(parts ?? typed(query))}
 
       {parts && !busy ? (
         // Picked: one simple card, like a picked customer.
         <div className="space-y-2">
+          <span className="-mb-1 block text-xs font-medium text-slate-600">{label}</span>
           <div className="flex items-center gap-3 rounded-xl bg-brand-50 px-3.5 py-3 ring-1 ring-brand-200" data-address-picked>
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white text-brand-700 ring-1 ring-brand-200"><svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5" /></svg></span>
             <span className="min-w-0 flex-1">
@@ -178,18 +206,18 @@ export function AddressLookup({ defaultState, initial }: { defaultState?: string
             </span>
           </div>
           <span className="flex gap-4">
-            <button type="button" className={linkCls} onClick={() => { setPicked(null); setQuery(""); }}>Choose another address</button>
+            <button type="button" className={linkCls} onClick={() => { setPicked(null); setQuery(""); emit(typed("")); }}>Choose another address</button>
             <button type="button" className={linkCls} onClick={() => setMode("manual")}>Edit</button>
           </span>
         </div>
       ) : (<>
-      <Field label="Site address">
+      <Field label={label}>
         <div className="relative">
           <Input
             role="combobox" aria-expanded={open && shown.length > 0} aria-controls={listId} aria-autocomplete="list"
             aria-activedescendant={active >= 0 ? `${listId}-${active}` : undefined}
             value={query} autoComplete="off" placeholder="Start typing the address…"
-            onChange={(e) => { setQuery(e.target.value); setPicked(null); }}
+            onChange={(e) => { setQuery(e.target.value); setPicked(null); emit(typed(e.target.value)); }} required={required}
             onKeyDown={onKey} onFocus={() => { if (shown.length && !picked) setOpen(true); }} onBlur={() => setTimeout(() => setOpen(false), 150)}
             className="pl-9"
           />

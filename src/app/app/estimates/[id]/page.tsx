@@ -15,6 +15,7 @@ import { date, label, siteUrl, STATUS_TONE } from "@/lib/format";
 import { AU_STATE_TZ } from "@/lib/au";
 import { listOrgSuppliers } from "@/lib/suppliers";
 import { roofShape } from "@/lib/docket-shape";
+import { normalizeMeasurements, summarize } from "@/lib/roof";
 import { quotePriceBook, usableCatalog } from "@/lib/docket-server";
 import { abnText, licenceFor } from "@/lib/business";
 import { PrintButton } from "@/components/print-button";
@@ -24,7 +25,7 @@ import { deleteEstimate, duplicateEstimate, setEstimateStatus } from "../actions
 import { DocketEditor } from "./docket-editor";
 import { QuoteEngine } from "./quote-engine";
 import { loadSupplierChoices, RoofPlanPanel, RulesLine } from "./engine-data";
-import { QuotePreview } from "../../jobs/quote-preview";
+import { QuoteEmailPane, QuotePreview } from "../../jobs/quote-preview";
 import { loadQuoteEmail } from "@/lib/quote-email-server";
 import { normaliseStages, type PaymentPlan } from "@/lib/quote-pricing";
 import { EstimateEditor } from "./estimate-editor";
@@ -88,6 +89,10 @@ export default async function EstimatePage({ params, searchParams }: PageProps<"
 
   let engineNode: React.ReactNode = null;
   let previewNode: React.ReactNode = null;
+  const me = memberships.find((m) => m.org_id === org.id);
+  const fromName = `${org.name} <${(process.env.EMAIL_FROM ?? "hello@ridgeandbeam.com").replace(/^.*<([^>]+)>.*$/, "$1")}>`;
+  const wantEmail = (engine || previewParam === "1") && status !== "accepted";
+  const q = wantEmail ? await loadQuoteEmail(supabase, org, e.id, { senderName: me?.full_name || user.fullName || org.name, senderPhone: me?.phone ?? org.phone, asSent: true }) : null;
   if (engine) {
     const sup = await loadSupplierChoices(supabase, org, (e.org_supplier_id as string | null) ?? null);
     const site = job.site_address || auAddress({ street: job.customers.address, suburb: job.customers.city, state: job.customers.state, postcode: job.customers.zip }) || "";
@@ -104,17 +109,17 @@ export default async function EstimatePage({ params, searchParams }: PageProps<"
         payment={plan}
         supplier={sup.current} suppliers={sup.choices} nearLabel={sup.nearLabel} canSetDefault={isAdmin}
         previewHref={previewHref}
+        roofMeasured={summarize(normalizeMeasurements(e.measurements)).trueArea > 0}
+        emailPane={q ? <QuoteEmailPane html={q.email.html} subject={q.email.subject} toName={q.to.name} toEmail={q.to.email} fromName={fromName} /> : null}
         roofPlan={<RoofPlanPanel estimateId={e.id} measurements={e.measurements} source={e.measurement_source ?? null} />}
         rules={<RulesLine state={resolved.state} total={contractValue} roofMaterial={profile?.roof_system ?? job.roof_material} jobType={profile?.au_job_type ?? job.job_type} />}
       />
     );
   }
   if (previewParam === "1" && status !== "accepted") {
-    const me = memberships.find((m) => m.org_id === org.id);
-    const q = await loadQuoteEmail(supabase, org, e.id, { senderName: me?.full_name || user.fullName || org.name, senderPhone: me?.phone ?? org.phone, asSent: true });
     if (q) previewNode = (
       <QuotePreview html={q.email.html} subject={q.email.subject} toName={q.to.name} toEmail={q.to.email}
-        fromName={`${org.name} <${(process.env.EMAIL_FROM ?? "hello@ridgeandbeam.com").replace(/^.*<([^>]+)>.*$/, "$1")}>`}
+        fromName={fromName}
         estimateId={e.id} closeHref={`/app/estimates/${e.id}`} sent={status === "sent"} />
     );
   }

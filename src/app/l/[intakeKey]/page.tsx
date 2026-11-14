@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
+import { AddressLookup } from "@/components/address-lookup";
 import { notFound } from "next/navigation";
 import { anonClient } from "@/lib/public";
-import { AU_STATES } from "@/lib/au";
 
 export const metadata: Metadata = { title: "Request a free roof inspection", robots: { index: false } };
 
@@ -41,17 +41,7 @@ export default async function LeadForm({ params, searchParams }: PageProps<"/l/[
               <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">Phone</span><input className={input} name="phone" type="tel" autoComplete="tel" inputMode="tel" /></label>
               <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">Email</span><input className={input} name="email" type="email" autoComplete="email" /></label>
             </div>
-            <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">Street address</span><input className={input} name="address" autoComplete="street-address" /></label>
-            <div className="grid grid-cols-3 gap-3">
-              <label className="col-span-3 block sm:col-span-1"><span className="mb-1 block text-sm font-medium text-slate-700">Suburb</span><input className={input} name="city" autoComplete="address-level2" /></label>
-              <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">State</span>
-                <select className={input} name="state" autoComplete="address-level1" defaultValue="">
-                  <option value="">—</option>
-                  {AU_STATES.map((st) => <option key={st} value={st}>{st}</option>)}
-                </select>
-              </label>
-              <label className="col-span-2 block sm:col-span-1"><span className="mb-1 block text-sm font-medium text-slate-700">Postcode</span><input className={input} name="zip" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} title="4-digit postcode" autoComplete="postal-code" /></label>
-            </div>
+            <AddressLookup label="Street address" known={false} />
             <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">What&apos;s going on with your roof?</span><textarea className={`${input} min-h-24`} name="message" placeholder="Leak over the kitchen, storm damage, getting quotes for a replacement…" /></label>
             <label className="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" name="insurance" value="yes" className="h-5 w-5 accent-brand-500" /> This may be an insurance claim (storm, hail or wind damage)</label>
             <button className="w-full rounded-lg bg-brand-500 px-4 py-3 text-base font-semibold text-white hover:bg-brand-600">Request inspection</button>
