@@ -10,6 +10,7 @@ import { useRef, useState } from "react";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { cx } from "@/components/ui";
 import { LOST_REASONS, type ScheduleItem } from "@/lib/lead-steps";
+import { ItemIcon } from "@/components/item-icons";
 import { createEstimate } from "../estimates/actions";
 import { sendQuoteEmail } from "./quote-actions";
 import { BookingCalendar } from "./booking-calendar";
@@ -22,41 +23,54 @@ const CHECK = "M5 12l5 5L20 7";
 const CAL = "M4 6h16v14H4zM4 10h16M8 3v5M16 3v5";
 const PEN = "M4 20l4-1 11-11-3-3L5 16zM14 6l3 3";
 const SEND = "M4 12l16-8-6 16-2.5-6.5z";
+const XCIRCLE = "M12 21a9 9 0 100-18 9 9 0 000 18M9 9l6 6M15 9l-6 6";
+const BIN = "M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3";
 const aud = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: n % 1 ? 2 : 0 });
 
-/** The quote in a few lines: the biggest items, how many more, the total, then Send quote with Edit (opens the
- *  whole quote) beside it.
- *  The bottom half of one box with the plan sheet above it. */
+/** Torn bottom edge of the receipt (same zig-zag as the quote docket). */
+const TORN = (() => {
+  const p = ["0 0", "100% 0", "100% calc(100% - 10px)"];
+  for (let x = 96; x > 0; x -= 4) p.push(`${x}% ${(100 - x) % 8 === 4 ? "100%" : "calc(100% - 10px)"}`);
+  p.push("0 calc(100% - 10px)");
+  return `polygon(${p.join(",")})`;
+})();
+
+/** The quote as a little receipt torn off under the plan sheet: the biggest items (monospace, with their icons),
+ *  how many more, a dashed rule and the total; then Send quote with Edit (opens the whole quote) beside it. */
 function QuoteSummary({ q, first }: { q: NonNullable<LeadStepsProps["quote"]>; first: string }) {
   return (
-    <div className="border-t border-brand-200 bg-white" data-lead-quote-summary>
-      {q.lines.length ? (
-        <ul className="px-3.5 py-2.5 text-[13px]">
-          {q.lines.map((l, i) => (
-            <li key={i} className="flex justify-between gap-3 py-0.5"><span className="min-w-0 truncate text-slate-600">{l.description}</span><span className="shrink-0 tabular-nums text-ink">{aud(l.amount)}</span></li>
-          ))}
-          {q.more > 0 && <li className="py-0.5 text-slate-400">and {q.more} more</li>}
-        </ul>
-      ) : (
-        <p className="px-3.5 py-2.5 text-[13px] text-slate-500">No prices yet. Tap Edit to price it.</p>
-      )}
-      <div className="flex items-baseline justify-between border-t border-slate-100 px-3.5 py-2.5">
-        <span className="text-sm font-semibold text-ink">Total <span className="font-normal text-slate-500">inc GST</span></span>
-        <span className="font-display text-xl font-bold tabular-nums text-ink" data-lead-quote-total>{aud(q.total)}</span>
+    <div className="border-t border-brand-200 bg-cream px-3 pt-3" data-lead-quote-summary>
+      <div className="bg-white px-4 pb-6 pt-3.5 ring-1 ring-slate-200" style={{ clipPath: TORN }} data-lead-receipt>
+        {q.lines.length ? (
+          <ul className="font-mono text-[12.5px] text-slate-600">
+            {q.lines.map((l, i) => (
+              <li key={i} className="flex items-start gap-2.5 py-1">
+                <ItemIcon calcKey={l.calcKey} size={16} />
+                <span className="min-w-0 flex-1 break-words pt-1">{l.description}</span>
+                <span className="shrink-0 pt-1 tabular-nums text-ink">{aud(l.amount)}</span>
+              </li>
+            ))}
+            {q.more > 0 && <li className="py-1 pl-[34px] text-slate-400">+ {q.more} more</li>}
+          </ul>
+        ) : (
+          <p className="font-mono text-[12.5px] text-slate-500">No prices yet. Tap Edit to price it.</p>
+        )}
+        <div className="mt-2.5 flex items-baseline justify-between border-t-2 border-dashed border-slate-200 pt-2.5">
+          <span className="font-mono text-xs font-semibold uppercase tracking-wider text-slate-500">Total inc GST</span>
+          <span className="font-display text-xl font-bold tabular-nums text-ink" data-lead-quote-total>{aud(q.total)}</span>
+        </div>
       </div>
       {/* Send it from right here: the same email as the Send quote button everywhere else. */}
-      <ActionForm action={sendQuoteEmail} className="border-t border-slate-100 p-3">
+      <ActionForm action={sendQuoteEmail} className="py-3">
         <input type="hidden" name="estimate_id" value={q.id} />
         <div className="flex gap-2" data-lead-send>
           <SubmitButton className="min-h-12 flex-1 gap-2 text-[15px]"><Icon d={SEND} />{q.status === "sent" ? "Send quote again" : `Send quote to ${first}`}</SubmitButton>
-          <Link href={`/app/estimates/${q.id}`} title="Edit the quote" aria-label="Edit the quote" className="grid h-12 w-12 shrink-0 place-items-center rounded-xl text-ink ring-1 ring-slate-300 hover:bg-slate-50" data-lead-quote-edit><Icon d={PEN} className="h-5 w-5" /></Link>
+          <Link href={`/app/estimates/${q.id}`} title="Edit the quote" aria-label="Edit the quote" className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white text-ink ring-1 ring-slate-300 hover:bg-slate-50" data-lead-quote-edit><Icon d={PEN} className="h-5 w-5" /></Link>
         </div>
       </ActionForm>
     </div>
   );
 }
-const XCIRCLE = "M12 21a9 9 0 100-18 9 9 0 000 18M9 9l6 6M15 9l-6 6";
-const BIN = "M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3";
 
 /** Hover / focus label above an icon button (the button needs `group relative`). */
 function Tip({ children, align = "center" }: { children: React.ReactNode; align?: "start" | "center" | "end" }) {
@@ -103,7 +117,7 @@ export type LeadStepsProps = {
   /** Documents on the job so far (plans, reports…). */
   plans: number;
   /** The lead's quote, if there is one: its biggest lines (already cut to a few), how many more, the total. */
-  quote: { id: string; number: number; status: string; total: number; lines: { description: string; amount: number }[]; more: number } | null;
+  quote: { id: string; number: number; status: string; total: number; lines: { description: string; amount: number; calcKey: string | null }[]; more: number } | null;
   /** The measured roof's numbers for the dimensioned drawing on the plan sheet (see roof-sheet.ts). */
   roof: RoofSheet | null;
   /** Under the sheet: the site address, if there is one. */

@@ -36,7 +36,7 @@ export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: st
 
   // The quote in a few lines: what's in the total (main lines and extras added), biggest first.
   const included = (q?.lines ?? []).filter((l) => l.extra_status !== "offered" && l.amount > 0);
-  const topLines = [...included].sort((a, b) => b.amount - a.amount).slice(0, 3).map((l) => ({ description: l.description, amount: l.amount }));
+  const topLines = [...included].sort((a, b) => b.amount - a.amount).slice(0, 3).map((l) => ({ description: l.description, amount: l.amount, calcKey: l.calc_key }));
 
   return (
     <>
