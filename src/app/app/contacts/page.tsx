@@ -159,9 +159,9 @@ export default async function ContactsPage({ searchParams }: PageProps<"/app/con
     : adding ? <NewContactPanel closeHref={closeHref} initial={type ?? "customer"} defaultState={org.state ?? null} claude={<ClaudeBar ready={aiEnabled()} />} /> : null;
   if (!side) return content;
   return (
-    <div className="lg:flex lg:h-screen">
+    <div className="lg:flex lg:h-full">
       <div className="no-scrollbar min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:py-7">{content}</div>
-      <aside aria-label={docket ? `Contact: ${docket.customer.name}` : supplier ? `Supplier: ${supplier.s.name}` : "New contact"} className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-screen lg:w-[440px] lg:shrink-0 lg:border-l lg:border-slate-200 xl:w-[460px]">
+      <aside aria-label={docket ? `Contact: ${docket.customer.name}` : supplier ? `Supplier: ${supplier.s.name}` : "New contact"} className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-full lg:w-[440px] lg:shrink-0 lg:border-l lg:border-slate-200 xl:w-[460px]">
         {side}
       </aside>
     </div>
