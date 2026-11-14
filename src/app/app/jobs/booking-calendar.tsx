@@ -72,12 +72,12 @@ export function BookingCalendar({ jobId, first, phone, people, defaultStaff, meI
           <span className="flex w-[66px] items-center"><button type="button" onClick={() => step(-1)} disabled={!canPrev} aria-label="Previous month" className="grid h-8 w-8 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-30"><Chev d="M15 6l-6 6 6 6" /></button></span>
           <p className="text-sm font-semibold text-ink">{monthName}</p>
           <span className="flex items-center gap-0.5">
-            <button type="button" onClick={() => step(1)} aria-label="Next month" className="grid h-8 w-8 place-items-center rounded-lg text-slate-600 hover:bg-slate-100"><Chev d="M9 6l6 6-6 6" /></button>
             <button type="button" onClick={() => setFull(true)} data-open-full-calendar aria-label={`${who}'s full calendar and projects`}
               className="group relative grid h-8 w-8 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 hover:text-ink">
               <Chev d="M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7" />
               <span role="tooltip" className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 whitespace-nowrap rounded-lg bg-ink px-2.5 py-1.5 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">{who}&rsquo;s full calendar and projects</span>
             </button>
+            <button type="button" onClick={() => step(1)} aria-label="Next month" className="grid h-8 w-8 place-items-center rounded-lg text-slate-600 hover:bg-slate-100"><Chev d="M9 6l6 6-6 6" /></button>
           </span>
         </div>
         <div className="grid grid-cols-7 text-center text-[11px] font-semibold text-slate-400">{WEEK.map((w, i) => <span key={i} className="py-1">{w}</span>)}</div>
