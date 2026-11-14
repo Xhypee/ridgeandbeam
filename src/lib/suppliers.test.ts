@@ -37,6 +37,10 @@ describe("header detection and column mapping", () => {
   it("skips title rows to find the header", () => {
     expect(detectHeaderRow(rows)).toBe(2);
   });
+  it("isn't fooled by a note above the table that mentions price, length and units", () => {
+    const noted = [rows[0], ["Valid from 1 November 2026. All prices ex GST. Cut-to-length sheet priced per lineal metre."], rows[2], rows[3]];
+    expect(detectHeaderRow(noted)).toBe(2);
+  });
   it("auto-maps code, description, profile, finish, thickness, cover, unit, pack and price", () => {
     const m = autoMapColumns(rows[2]);
     expect(m).toMatchObject({ product_code: 0, description: 1, profile: 2, finish: 3, thickness_mm: 4, cover_width_mm: 5, unit: 6, pack_qty: 7, price: 8 });

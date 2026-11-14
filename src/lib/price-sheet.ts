@@ -151,8 +151,12 @@ export function detectHeaderRow(rows: string[][]): number {
   for (let i = 0; i < limit; i++) {
     const hits = new Set<ImportField>();
     for (const c of rows[i]) {
-      if (/^-?[$]?\d[\d,.]*$/.test(c)) continue;
-      for (const f of IMPORT_FIELDS) if (headerScore(c, f.field) >= 50) hits.add(f.field);
+      // A header cell is a short column name: numbers and long notes above the table ("All prices ex GST.
+      // Cut-to-length sheet priced per lineal metre.") don't count, and each cell names one column at most.
+      if (/^-?[$]?\d[\d,.]*$/.test(c) || c.trim().length > 40) continue;
+      let best: ImportField | null = null, bestScore = 49;
+      for (const f of IMPORT_FIELDS) { const sc = headerScore(c, f.field); if (sc > bestScore) { best = f.field; bestScore = sc; } }
+      if (best) hits.add(best);
     }
     if (hits.size > bestHits) { bestHits = hits.size; bestIdx = i; }
     if (hits.size >= 3) break;
