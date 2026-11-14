@@ -14,6 +14,7 @@ type Recognition = { lang: string; interimResults: boolean; continuous: boolean;
 const Spark = ({ className = "h-4 w-4" }: { className?: string }) => (
   <svg viewBox="0 0 24 24" className={className} aria-hidden><path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z" fill="currentColor" /><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" fill="currentColor" opacity=".7" /></svg>
 );
+const iconBtn = "grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-ink";
 const MIC = "M12 4a3 3 0 00-3 3v5a3 3 0 006 0V7a3 3 0 00-3-3zM6 11a6 6 0 0012 0M12 17v3";
 
 function getRecognition(): Recognition | null {
@@ -152,9 +153,15 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready }: { 
         <div ref={panel} className="absolute inset-x-0 top-[30%] z-30 flex flex-col rounded-t-[22px] border-t border-slate-200 bg-white" style={{ bottom: barH }} data-claude-panel>
           <div className="flex items-center justify-between px-4 pb-1 pt-3">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Claude · knows your jobs</p>
-            <span className="flex items-center gap-3">
-              {turns.length > 0 && <button type="button" onClick={clear} className="text-xs font-semibold text-slate-500 hover:text-ink">Clear</button>}
-              <button type="button" onClick={() => setFocused(false)} className="text-xs font-semibold text-slate-500 hover:text-ink" data-claude-minimise>Minimise</button>
+            <span className="flex items-center gap-1">
+              {turns.length > 0 && (
+                <button type="button" onClick={clear} title="Clear chat" aria-label="Clear chat" className={iconBtn} data-claude-clear>
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 12a8 8 0 108-8 8.5 8.5 0 00-6 2.5L4 8M4 3v5h5" /></svg>
+                </button>
+              )}
+              <button type="button" onClick={() => setFocused(false)} title="Minimise" aria-label="Minimise" className={iconBtn} data-claude-minimise>
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 9l6 6 6-6" /></svg>
+              </button>
             </span>
           </div>
           <div ref={log} className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 pb-3 pt-2 text-sm" aria-live="polite">
