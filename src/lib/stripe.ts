@@ -6,8 +6,9 @@ import { createHmac, timingSafeEqual } from "node:crypto";
  * STRIPE_PRICE_ID (the flat Ridge & Beam plan price, subscription mode).
  */
 
-export const stripeConfigured = () => Boolean(process.env.STRIPE_SECRET_KEY);
-export const subscriptionBillingConfigured = () => Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_PRICE_ID);
+// Off in test mode (OUTBOUND_PAUSED=1): no card payments or Stripe set-up.
+export const stripeConfigured = () => Boolean(process.env.STRIPE_SECRET_KEY) && process.env.OUTBOUND_PAUSED !== "1";
+export const subscriptionBillingConfigured = () => Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_PRICE_ID) && process.env.OUTBOUND_PAUSED !== "1";
 
 type Scalar = string | number | boolean | null | undefined;
 interface Params { [key: string]: Scalar | Params | (string | Params)[] }

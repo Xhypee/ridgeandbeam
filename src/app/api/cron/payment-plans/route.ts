@@ -9,6 +9,7 @@ import { calendarDate } from "@/lib/au-business-days";
 import { addDays } from "@/lib/pay-plan";
 import { sendPartMessage } from "@/lib/pay-plan-notify";
 import { effectiveMethods } from "@/lib/pay-plan-server";
+import { outboundPaused } from "@/lib/notify";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -26,6 +27,8 @@ type Row = {
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ error: "unauthorised" }, { status: 401 });
+  // Test mode: no instalments issued, no reminders sent.
+  if (outboundPaused()) return NextResponse.json({ paused: true, issued: 0, reminded: 0 });
   const db = adminClient();
   const horizon = addDays(new Date().toISOString().slice(0, 10), 5);
   const { data, error } = await db.from("invoices")

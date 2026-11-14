@@ -189,7 +189,7 @@ async function sendOne(ctx: Awaited<ReturnType<typeof requireMoneyAccess>>, data
   if (r.status === "failed") return { ok: false, msg: `${order.supplier}: ${r.error ?? "email failed"}` };
   await ctx.supabase.from("material_orders").update({ status: order.status === "draft" ? "sent" : order.status, sent_at: new Date().toISOString() }).eq("id", order.id);
   await ctx.supabase.from("jobs").update({ materials_status: "ordered" }).eq("id", data.job.id).eq("materials_status", "not_ordered");
-  return { ok: true, msg: r.status === "sent" ? `Sent to ${order.supplier}.` : `${order.supplier} marked sent (email isn't set up here).` };
+  return { ok: true, msg: r.status === "sent" ? `Sent to ${order.supplier}.` : r.status === "paused" ? `${order.supplier} marked sent (test mode: not emailed).` : `${order.supplier} marked sent (email isn't set up here).` };
 }
 
 /** Send one supplier's order. */

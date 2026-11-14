@@ -84,8 +84,8 @@ export async function postStatusEvent(input: z.input<typeof EventSchema>): Promi
         orgId: job.org_id, jobId: job.id, customerId: job.customer_id, to: phone,
         body: statusSms(p.kind, org.name, `${siteUrl()}/p/${job.public_token}`, p.note),
       });
-      await supabase.from("job_events").update({ notified: r.status === "sent" || r.status === "not_configured" }).eq("id", ev.id);
-      notified = r.status === "sent" ? "Homeowner texted." : r.status === "not_configured" ? "Homeowner text logged (SMS provider not set up)." : `Text failed: ${r.error}`;
+      await supabase.from("job_events").update({ notified: r.status === "sent" || (r.status === "not_configured" || r.status === "paused") }).eq("id", ev.id);
+      notified = r.status === "sent" ? "Homeowner texted." : (r.status === "not_configured" || r.status === "paused") ? "Homeowner text logged (SMS provider not set up)." : `Text failed: ${r.error}`;
     } else notified = "No homeowner phone on file — not texted.";
   }
   revalidatePath(`/app/jobs/${job.id}`, "layout");
