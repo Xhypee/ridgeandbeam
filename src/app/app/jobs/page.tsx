@@ -116,9 +116,9 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
       </header>
 
       {/* All five columns fit from 1280px; below that the board scrolls inside itself, never the page. */}
-      <div data-pipeline-scroll className={side ? "overflow-x-auto pb-4" : "-mx-4 overflow-x-auto px-4 pb-4 sm:-mx-8 sm:px-8 xl:mx-0 xl:px-0"}>
+      <div data-pipeline-scroll className={side ? "no-scrollbar -mx-1 overflow-x-auto px-1 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col" : "-mx-4 overflow-x-auto px-4 pb-4 sm:-mx-8 sm:px-8 xl:mx-0 xl:px-0"}>
         {/* With a sidebar open the five columns share whatever width is left (nothing hides under the sidebar). */}
-        <div className={cx("grid grid-cols-[repeat(5,minmax(0,1fr))]", side ? "gap-2.5 lg:min-w-0" : "min-w-[940px] gap-3")}>
+        <div className={cx("grid grid-cols-[repeat(5,minmax(0,1fr))]", side ? "gap-2.5 lg:min-h-0 lg:min-w-0 lg:flex-1" : "min-w-[940px] gap-3")}>
           {COLUMNS.map((col) => {
             const list = cards
               .filter((c) => c.col === col.key)
@@ -129,7 +129,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
               );
             const total = list.reduce((s, c) => s + (c.value ?? 0), 0);
             return (
-              <section key={col.key} aria-label={col.name} data-pipeline-col={col.key} className="flex min-w-0 flex-col gap-2.5">
+              <section key={col.key} aria-label={col.name} data-pipeline-col={col.key} className="flex min-h-0 min-w-0 flex-col gap-2.5">
                 <header className={cx("px-1", side && "min-h-[3.4rem]")}>
                   <div className="flex items-baseline justify-between gap-2">
                     <h2 className={cx("text-[15px] font-bold leading-tight text-ink", side ? "min-w-0 [overflow-wrap:anywhere]" : "truncate")}>{col.name} <span className="font-medium text-slate-500">{list.length}</span></h2>
@@ -138,7 +138,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
                   <p className="mt-0.5 truncate text-xs text-slate-500">{col.hint}</p>
                 </header>
                 {/* On a computer each column scrolls on its own; the page and the other columns stay put. */}
-                <div data-col-scroll className="no-scrollbar -mx-1 flex min-h-0 flex-col gap-2.5 px-1 py-0.5 lg:max-h-[calc(100dvh-14rem)] lg:overflow-y-auto lg:overscroll-contain">
+                <div data-col-scroll className={cx("no-scrollbar -mx-1 flex min-h-0 flex-col gap-2.5 px-1 py-0.5 lg:overflow-y-auto lg:overscroll-contain", side ? "lg:flex-1 lg:pb-6" : "lg:max-h-[calc(100dvh-14rem)]")}>
                 {list.map(({ j, value, next }) => {
                   const owner = people.byId.get(j.assigned_to ?? j.sales_rep_id ?? "");
                   const uncontacted = j.stage === "lead" && !j.first_contacted_at;
@@ -191,11 +191,11 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
   if (!side) return board;
   if (adding) {
     return (
-      <div className="lg:flex lg:h-screen">
-        <div className="no-scrollbar min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:py-7">
+      <div className="lg:flex lg:h-full">
+        <div className="no-scrollbar min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:flex lg:flex-col lg:overflow-hidden lg:pb-0 lg:pt-7">
           {board}
         </div>
-        <aside aria-label="New lead" className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-screen lg:w-[440px] lg:shrink-0 lg:border-l lg:border-slate-200 xl:w-[460px]">
+        <aside aria-label="New lead" className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-full lg:w-[440px] lg:shrink-0 lg:border-l lg:border-slate-200 xl:w-[460px]">
           <NewLeadPanel key={referrer ? `${referrer.type}-${referrer.id}` : "new"} closeHref={hrefFor(null)} filter={filterQs ? filter : null} defaultState={org.state ?? null} referrer={referrer} />
         </aside>
       </div>
@@ -203,11 +203,11 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
   }
   if (!docket) return board;
   return (
-    <div className="lg:flex lg:h-screen">
-      <div className="no-scrollbar min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:py-7">
+    <div className="lg:flex lg:h-full">
+      <div className="no-scrollbar min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:flex lg:flex-col lg:overflow-hidden lg:pb-0 lg:pt-7">
         {board}
       </div>
-      <aside aria-label={`Job docket: ${docket.customer.name}`} className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-screen lg:w-[440px] lg:shrink-0 lg:border-l lg:border-slate-200 xl:w-[460px]">
+      <aside aria-label={`Job docket: ${docket.customer.name}`} className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-full lg:w-[440px] lg:shrink-0 lg:border-l lg:border-slate-200 xl:w-[460px]">
         <JobDocket key={docket.job.id} d={docket} org={org} canSeeMoney={canSeeMoney} isCrewLead={isCrewLead} closeHref={hrefFor(null)} previewHref={previewHref}
           askHref={withParam("ask=1")} payHref={(id) => withParam(`pay=${id}`)} remindHref={withParam("remind=1")} aiReady={aiEnabled()} meId={user.id} />
       </aside>
