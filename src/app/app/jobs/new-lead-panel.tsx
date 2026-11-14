@@ -6,6 +6,7 @@ import { ActionForm, SubmitButton } from "@/components/action-form";
 import { Field, Input, Select, Textarea } from "@/components/ui";
 import { AddressLookup } from "@/components/address-lookup";
 import { JobTypeCards } from "./job-type-cards";
+import { ClaudeBar } from "./claude-bar";
 import { CustomerLookup } from "@/components/customer-lookup";
 import { label } from "@/lib/format";
 import { CUSTOMER_SOURCES } from "@/lib/types";
@@ -30,7 +31,7 @@ const COPY = {
   customer: { kicker: "New customer", title: "Add a customer", sub: "Homeowner, property manager or lead.", save: "Save customer" },
 };
 
-export function NewLeadPanel({ closeHref, filter = null, defaultState, variant = "lead" }: { closeHref: string; filter?: string | null; defaultState: string | null; variant?: "lead" | "customer" }) {
+export function NewLeadPanel({ closeHref, filter = null, defaultState, variant = "lead", aiReady = false }: { closeHref: string; filter?: string | null; defaultState: string | null; variant?: "lead" | "customer"; aiReady?: boolean }) {
   const t = COPY[variant];
   return (
     <div className="flex h-full flex-col bg-cream p-4" data-new-lead={variant}>
@@ -85,6 +86,7 @@ export function NewLeadPanel({ closeHref, filter = null, defaultState, variant =
             <Link href={closeHref} scroll={false} className="inline-flex min-h-12 items-center rounded-xl px-5 text-[15px] font-semibold text-slate-600 ring-1 ring-slate-300 hover:ring-slate-400">Cancel</Link>
           </div>
         </ActionForm>
+        <ClaudeBar ready={aiReady} />
       </div>
     </div>
   );

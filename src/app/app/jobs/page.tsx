@@ -192,7 +192,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
           {board}
         </div>
         <aside aria-label="New lead" className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-screen lg:w-[440px] lg:shrink-0 lg:border-l lg:border-slate-200 xl:w-[460px]">
-          <NewLeadPanel closeHref={hrefFor(null)} filter={filterQs ? filter : null} defaultState={org.state ?? null} />
+          <NewLeadPanel closeHref={hrefFor(null)} filter={filterQs ? filter : null} defaultState={org.state ?? null} aiReady={aiEnabled()} />
         </aside>
       </div>
     );

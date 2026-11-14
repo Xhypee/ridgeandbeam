@@ -1,5 +1,5 @@
 "use client";
-// Always at the bottom of the job sidebar: ask Claude anything about this job or the business, by typing or
+// Always at the bottom of every right sidebar: ask Claude about what's open (a job, a contact, a supplier) or the business, by typing or
 // by talking (the mic starts a "call": it listens, answers out loud, then listens again until you hang up).
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { cx } from "@/components/ui";
@@ -19,7 +19,7 @@ function getRecognition(): Recognition | null {
   return C ? new C() : null;
 }
 
-export function ClaudeBar({ jobId, firstName, ready }: { jobId: string; firstName: string; ready: boolean }) {
+export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready }: { jobId?: string; contactId?: string; supplierId?: string; firstName?: string; ready: boolean }) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -40,7 +40,7 @@ export function ClaudeBar({ jobId, firstName, ready }: { jobId: string; firstNam
     try {
       const res = await fetch("/api/ai/assistant", {
         method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ jobId, messages: next.filter((t) => !t.error).slice(-20).map(({ role, content }) => ({ role, content })) }),
+        body: JSON.stringify({ jobId, contactId, supplierId, messages: next.filter((t) => !t.error).slice(-20).map(({ role, content }) => ({ role, content })) }),
       });
       const json = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
       const turn: Turn = json.text ? { role: "assistant", content: json.text } : { role: "assistant", content: json.error ?? "Claude couldn't answer right now.", error: true };
@@ -132,7 +132,7 @@ export function ClaudeBar({ jobId, firstName, ready }: { jobId: string; firstNam
         <label className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-2xl bg-cream px-3 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-brand-500">
           <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#d97757] text-white"><Spark className="h-3.5 w-3.5" /></span>
           <input value={text} onChange={(e) => setText(e.target.value)} disabled={call !== "off"} aria-label="Ask Claude"
-            placeholder={status ?? (!ready ? "Claude isn't connected yet" : turns.length ? "Reply to Claude…" : `Ask Claude about ${firstName} or your business…`)}
+            placeholder={status ?? (!ready ? "Claude isn't connected yet" : turns.length ? "Reply to Claude…" : (firstName ? `Ask Claude about ${firstName} or your business…` : "Ask Claude about your business…"))}
             className="min-w-0 flex-1 bg-transparent text-sm text-ink placeholder:text-slate-400 focus:outline-none" />
         </label>
         <button type="button" onClick={toggleCall} title={call === "off" ? "Talk to Claude" : "Hang up"} aria-label={call === "off" ? "Talk to Claude" : "Hang up"}

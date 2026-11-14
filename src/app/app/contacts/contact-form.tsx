@@ -10,6 +10,7 @@ import { CONTACT_TYPES, TYPE_LABEL, type ContactType } from "@/lib/contacts";
 import { label } from "@/lib/format";
 import { CUSTOMER_SOURCES, type Customer } from "@/lib/types";
 import { createContact, updateContact, updateSupplierContact } from "./actions";
+import { ClaudeBar } from "../jobs/claude-bar";
 
 export type SupplierEdit = { id: string; name: string; fromDirectory: boolean; branch_name: string | null; branch_phone: string | null; branch_email: string | null; account_number: string | null; abn: string | null; rep_name: string | null; rep_phone: string | null; bank_name: string | null; bank_bsb: string | null; bank_account: string | null; notes: string | null };
 
@@ -137,7 +138,7 @@ function SupplierFields({ s, fromDirectory }: { s?: Partial<SupplierEdit>; fromD
 }
 
 /** Right-sidebar New contact form. */
-export function NewContactPanel({ closeHref, initial, defaultState }: { closeHref: string; initial: ContactType; defaultState?: string | null }) {
+export function NewContactPanel({ closeHref, initial, defaultState, aiReady = false }: { closeHref: string; initial: ContactType; defaultState?: string | null; aiReady?: boolean }) {
   const [type, setType] = useState<ContactType>(initial);
   return (
     <div className="flex h-full flex-col bg-cream p-4" data-new-contact>
@@ -161,6 +162,7 @@ export function NewContactPanel({ closeHref, initial, defaultState }: { closeHre
             <SubmitButton className="min-h-12 w-full text-[15px]">Save {TYPE_LABEL[type].toLowerCase()}</SubmitButton>
           </ActionForm>
         </div>
+        <ClaudeBar ready={aiReady} />
       </div>
     </div>
   );

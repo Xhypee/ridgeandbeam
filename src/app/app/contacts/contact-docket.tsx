@@ -12,6 +12,7 @@ import { Icon, Section } from "../jobs/job-sections";
 import { CustomerDocket, loadCustomerDocket, type CustomerDocketData } from "../customers/customer-docket";
 import { addPerson, addToJob, removeFromJob, removePerson } from "./actions";
 import { EditContact, EditSupplier, type SupplierEdit } from "./contact-form";
+import { ClaudeBar } from "../jobs/claude-bar";
 
 type DB = Awaited<ReturnType<typeof createClient>>;
 const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
@@ -63,7 +64,7 @@ function Row({ icon, k, v, href }: { icon: string; k: string; v: React.ReactNode
   return href ? <a href={href} className="flex items-center gap-3 rounded-lg py-1.5 hover:bg-slate-50">{inner}</a> : <div className="flex items-center gap-3 py-1.5">{inner}</div>;
 }
 
-function Shell({ id, tag, sinceIso, name, sub, stats, fullHref, closeHref, phone, email, children }: { id: string; tag: string; sinceIso: string; name: string; sub: string; stats: { k: string; v: string; warn?: boolean }[]; fullHref?: string; closeHref: string; phone: string | null; email: string | null; children: React.ReactNode }) {
+function Shell({ id, tag, sinceIso, name, sub, stats, fullHref, closeHref, phone, email, ai, children }: { id: string; tag: string; sinceIso: string; name: string; sub: string; stats: { k: string; v: string; warn?: boolean }[]; fullHref?: string; closeHref: string; phone: string | null; email: string | null; ai: React.ReactNode; children: React.ReactNode }) {
   const btn = "inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl text-[15px] font-semibold";
   return (
     <div className="flex h-full flex-col bg-cream p-4" data-contact-docket={id}>
@@ -89,6 +90,7 @@ function Shell({ id, tag, sinceIso, name, sub, stats, fullHref, closeHref, phone
           </div>
           {children}
         </div>
+        {ai}
       </div>
     </div>
   );
@@ -134,13 +136,13 @@ function JobList({ d, canSeeMoney, newHref, newLabel }: { d: ContactDocketData; 
   );
 }
 
-function BuilderDocket({ d, closeHref, canSeeMoney }: { d: ContactDocketData; closeHref: string; canSeeMoney: boolean }) {
+function BuilderDocket({ d, closeHref, canSeeMoney, aiReady }: { d: ContactDocketData; closeHref: string; canSeeMoney: boolean; aiReady: boolean }) {
   const c = d.customer;
   const address = fullAddress(c);
   return (
     <Shell id={c.id} tag={TYPE_LABEL.builder} sinceIso={c.created_at} name={c.name} sub={[c.abn ? `ABN ${c.abn}` : null, c.city].filter(Boolean).join(" · ") || address || "Builder"}
       stats={canSeeMoney ? [{ k: "Jobs", v: String(d.jobs.length) }, { k: "Signed", v: aud(d.contract) }, { k: "Owing", v: aud(d.owing), warn: d.owing > 0 }] : [{ k: "Jobs", v: String(d.jobs.length) }]}
-      fullHref={`/app/customers/${c.id}`} closeHref={closeHref} phone={c.phone ?? d.people.find((p) => p.phone)?.phone ?? null} email={c.email ?? d.people.find((p) => p.email)?.email ?? null}>
+      fullHref={`/app/customers/${c.id}`} closeHref={closeHref} phone={c.phone ?? d.people.find((p) => p.phone)?.phone ?? null} email={c.email ?? d.people.find((p) => p.email)?.email ?? null} ai={<ClaudeBar contactId={c.id} firstName={c.name} ready={aiReady} />}>
       <Section title="People" count={d.people.length}>
         {d.people.length > 0 && (
           <ul className="-mx-2 divide-y divide-slate-100" data-contact-people>
@@ -190,7 +192,7 @@ const TONE: Record<ExpiryState, { box: string; icon: string; text: string }> = {
   missing: { box: "bg-slate-50", icon: "text-slate-400", text: "text-slate-500" },
 };
 
-function ContractorDocket({ d, closeHref, today }: { d: ContactDocketData; closeHref: string; today: string }) {
+function ContractorDocket({ d, closeHref, today, aiReady }: { d: ContactDocketData; closeHref: string; today: string; aiReady: boolean }) {
   const c = d.customer;
   const items = contractorCompliance(c, today);
   const alert = complianceAlert(c, today);
@@ -205,7 +207,7 @@ function ContractorDocket({ d, closeHref, today }: { d: ContactDocketData; close
   return (
     <Shell id={c.id} tag={[TYPE_LABEL.contractor, c.trade].filter(Boolean).join(" · ")} sinceIso={c.created_at} name={c.name} sub={[c.company, c.city].filter(Boolean).join(" · ") || c.trade || "Contractor"}
       stats={[{ k: "On jobs", v: String(d.onJobs.length) }, { k: "Licence & ins.", v: alert ? (alert.tone === "red" ? "Expired" : "Due soon") : okCount ? "Current" : "Not set", warn: Boolean(alert) }, { k: "GST", v: c.gst_registered === true ? "Yes" : c.gst_registered === false ? "No" : "–" }]}
-      closeHref={closeHref} phone={c.phone} email={c.email}>
+      closeHref={closeHref} phone={c.phone} email={c.email} ai={<ClaudeBar contactId={c.id} firstName={c.name.split(" ")[0]} ready={aiReady} />}>
       <Section title="Licence & insurance">
         <ul className="space-y-2" data-compliance>
           {lines.map((l) => { const i = byKey[l.key]!; const t = TONE[i.state]; return (
@@ -252,11 +254,11 @@ function ContractorDocket({ d, closeHref, today }: { d: ContactDocketData; close
   );
 }
 
-function OtherDocket({ d, closeHref }: { d: ContactDocketData; closeHref: string }) {
+function OtherDocket({ d, closeHref, aiReady }: { d: ContactDocketData; closeHref: string; aiReady: boolean }) {
   const c = d.customer;
   const address = fullAddress(c);
   return (
-    <Shell id={c.id} tag={TYPE_LABEL.other} sinceIso={c.created_at} name={c.name} sub={[c.company, c.city].filter(Boolean).join(" · ") || "Contact"} stats={[]} closeHref={closeHref} phone={c.phone} email={c.email}>
+    <Shell id={c.id} tag={TYPE_LABEL.other} sinceIso={c.created_at} name={c.name} sub={[c.company, c.city].filter(Boolean).join(" · ") || "Contact"} stats={[]} closeHref={closeHref} phone={c.phone} email={c.email} ai={<ClaudeBar contactId={c.id} firstName={c.name} ready={aiReady} />}>
       <Section title="Contact">
         {c.phone && <Row icon={PHONE} k="Phone" v={c.phone} href={tel(c.phone)} />}
         {c.email && <Row icon={MAIL} k="Email" v={c.email} href={`mailto:${c.email}`} />}
@@ -270,11 +272,11 @@ function OtherDocket({ d, closeHref }: { d: ContactDocketData; closeHref: string
 }
 
 /** Customers keep their docket (with the type picker in Edit details); other kinds get their own. */
-export function ContactDocket({ d, closeHref, canSeeMoney, today }: { d: ContactDocketData; closeHref: string; canSeeMoney: boolean; today: string }) {
-  if (d.customer.kind === "builder") return <BuilderDocket d={d} closeHref={closeHref} canSeeMoney={canSeeMoney} />;
-  if (d.customer.kind === "contractor") return <ContractorDocket d={d} closeHref={closeHref} today={today} />;
-  if (d.customer.kind === "other") return <OtherDocket d={d} closeHref={closeHref} />;
-  return <CustomerDocket d={d} closeHref={closeHref} canSeeMoney={canSeeMoney} today={today} edit={<EditContact c={d.customer} />} />;
+export function ContactDocket({ d, closeHref, canSeeMoney, today, aiReady }: { d: ContactDocketData; closeHref: string; canSeeMoney: boolean; today: string; aiReady: boolean }) {
+  if (d.customer.kind === "builder") return <BuilderDocket d={d} closeHref={closeHref} canSeeMoney={canSeeMoney} aiReady={aiReady} />;
+  if (d.customer.kind === "contractor") return <ContractorDocket d={d} closeHref={closeHref} today={today} aiReady={aiReady} />;
+  if (d.customer.kind === "other") return <OtherDocket d={d} closeHref={closeHref} aiReady={aiReady} />;
+  return <CustomerDocket d={d} closeHref={closeHref} canSeeMoney={canSeeMoney} today={today} edit={<EditContact c={d.customer} />} ai={<ClaudeBar contactId={d.customer.id} firstName={d.customer.name.split(" ")[0] || d.customer.name} ready={aiReady} />} />;
 }
 
 // ---------- suppliers ----------
@@ -311,14 +313,14 @@ export async function loadSupplierDocket(supabase: DB, id: string): Promise<Supp
 
 const ORDER_STATUS: Record<string, string> = { draft: "Draft", sent: "Sent", confirmed: "Confirmed", delivered: "Delivered", cancelled: "Cancelled" };
 
-export function SupplierDocket({ d, closeHref, canSeeMoney, canEdit }: { d: SupplierDocketData; closeHref: string; canSeeMoney: boolean; canEdit: boolean }) {
+export function SupplierDocket({ d, closeHref, canSeeMoney, canEdit, aiReady }: { d: SupplierDocketData; closeHref: string; canSeeMoney: boolean; canEdit: boolean; aiReady: boolean }) {
   const s = d.s;
   const phone = s.rep_phone ?? s.branch_phone;
   return (
     <Shell id={s.id} tag={[TYPE_LABEL.supplier, s.is_default ? "Default" : null].filter(Boolean).join(" · ")} sinceIso={s.created_at} name={s.name}
       sub={[s.category ? SUPPLIER_CATEGORY_LABEL[s.category] ?? null : null, s.branch_name].filter(Boolean).join(" · ") || "Supplier"}
       stats={canSeeMoney ? [{ k: "Orders", v: String(d.orderCount) }, { k: "This month", v: aud(d.thisMonth) }, { k: "To pay", v: aud(d.toPay), warn: d.toPay > 0 }] : [{ k: "Orders", v: String(d.orderCount) }]}
-      fullHref={canSeeMoney ? `/app/settings/suppliers/${s.id}` : undefined} closeHref={closeHref} phone={phone} email={s.branch_email}>
+      fullHref={canSeeMoney ? `/app/settings/suppliers/${s.id}` : undefined} closeHref={closeHref} phone={phone} email={s.branch_email} ai={<ClaudeBar supplierId={s.id} firstName={s.name} ready={aiReady} />}>
       <Section title="Account">
         {s.account_number && <Row icon={DOC} k="Account number" v={s.account_number} />}
         {s.rep_name && <Row icon={PHONE} k="Rep" v={[s.rep_name, s.rep_phone].filter(Boolean).join(" · ")} href={s.rep_phone ? tel(s.rep_phone) : undefined} />}

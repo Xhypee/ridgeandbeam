@@ -64,7 +64,7 @@ function Row({ icon, k, v, href }: { icon: string; k: string; v: React.ReactNode
   return href ? <a href={href} className="flex items-center gap-3 rounded-lg py-1.5 hover:bg-slate-50">{inner}</a> : <div className="flex items-center gap-3 py-1.5">{inner}</div>;
 }
 
-export function CustomerDocket({ d, closeHref, canSeeMoney, today, edit }: { d: CustomerDocketData; closeHref: string; canSeeMoney: boolean; today: string; edit?: React.ReactNode }) {
+export function CustomerDocket({ d, closeHref, canSeeMoney, today, edit, ai }: { d: CustomerDocketData; closeHref: string; canSeeMoney: boolean; today: string; edit?: React.ReactNode; ai?: React.ReactNode }) {
   const c = d.customer;
   const address = [c.address, [c.city, c.state, c.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
   const insurance = d.jobs.some((j) => j.is_insurance);
@@ -154,6 +154,7 @@ export function CustomerDocket({ d, closeHref, canSeeMoney, today, edit }: { d: 
             </div>
           </details>
         </div>
+        {ai}
       </div>
     </div>
   );

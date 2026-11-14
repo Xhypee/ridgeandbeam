@@ -6,6 +6,8 @@ import { STAGE_LABEL } from "@/lib/format";
 
 const Body = z.object({
   jobId: z.string().uuid().optional(),
+  contactId: z.string().uuid().optional(),
+  supplierId: z.string().uuid().optional(),
   messages: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().min(1).max(4000) })).min(1).max(30),
 });
 
@@ -22,7 +24,7 @@ export async function POST(req: Request) {
   if (isCrewLead) return Response.json({ error: "Ask the office to turn this on for you." }, { status: 403 });
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "Say something first." }, { status: 400 });
-  const { jobId, messages } = parsed.data;
+  const { jobId, contactId, supplierId, messages } = parsed.data;
   if (messages.at(-1)?.role !== "user") return Response.json({ error: "Say something first." }, { status: 400 });
 
   const since = new Date(Date.now() - 180 * 86400000).toISOString();
@@ -90,6 +92,8 @@ export async function POST(req: Request) {
     ...jobLines,
     "",
     thisJob,
+    contactId ? await contactContext(supabase, contactId) : "",
+    supplierId ? await supplierContext(supabase, supplierId) : "",
   ].join("\n");
 
   try {
@@ -98,4 +102,45 @@ export async function POST(req: Request) {
   } catch (e) {
     return Response.json({ error: e instanceof AiError ? e.message : "Claude couldn't answer right now." }, { status: e instanceof AiError ? 200 : 500 });
   }
+}
+
+type Db = Awaited<ReturnType<typeof requireOrg>>["supabase"];
+
+/** The contact open on Contacts (customer, builder, contractor or other): who they are and their jobs. */
+async function contactContext(supabase: Db, id: string): Promise<string> {
+  const [{ data: c }, { data: people }, { data: jobs }, { data: onJobs }] = await Promise.all([
+    supabase.from("customers").select("*").eq("id", id).maybeSingle(),
+    supabase.from("contact_people").select("name, role, phone, email").eq("contact_id", id),
+    supabase.from("jobs").select("title, stage, site_address").eq("customer_id", id).order("created_at", { ascending: false }).limit(20),
+    supabase.from("job_contacts").select("role, jobs(title, stage, site_address)").eq("contact_id", id).limit(20),
+  ]);
+  if (!c) return "";
+  const x = c as Record<string, unknown>;
+  const f = (k: string, label: string) => (x[k] ? `${label}: ${x[k]}` : null);
+  return [
+    `THE CONTACT OPEN ON SCREEN (${x.kind}): ${x.name}`,
+    [f("company", "Business"), f("trade", "Trade"), f("phone", "Phone"), f("email", "Email"), [x.address, x.city, x.state, x.zip].filter(Boolean).join(" ") || null].filter(Boolean).join(" · "),
+    [f("abn", "ABN"), f("payment_terms", "Terms"), x.retention_pct ? `Retention ${x.retention_pct}%` : null, f("rate", "Rate")].filter(Boolean).join(" · ") || null,
+    x.kind === "contractor" ? `Licence ${x.licence_no ?? "?"} ${x.licence_class ?? ""} expires ${day(x.licence_expiry as string) || "?"}; public liability ${x.pl_cover ?? ""} expires ${day(x.pl_expiry as string) || "?"}; WorkCover expires ${day(x.workcover_expiry as string) || "?"}.` : null,
+    people?.length ? `People: ${people.map((p) => [p.name, p.role, p.phone, p.email].filter(Boolean).join(", ")).join("; ")}` : null,
+    jobs?.length ? `Their jobs: ${jobs.map((j) => `${j.title} (${STAGE_LABEL[j.stage] ?? j.stage})`).join("; ")}` : null,
+    onJobs?.length ? `On jobs: ${onJobs.map((l) => { const j = one(l.jobs as unknown as { title: string; stage: string }); return j ? `${j.title} (${STAGE_LABEL[j.stage] ?? j.stage}${l.role ? `, ${l.role}` : ""})` : ""; }).filter(Boolean).join("; ")}` : null,
+    x.notes ? `Notes: ${x.notes}` : null,
+  ].filter(Boolean).join("\n");
+}
+
+/** The supplier open on Contacts: account details and recent orders / invoices. */
+async function supplierContext(supabase: Db, id: string): Promise<string> {
+  const [{ data: s }, { data: orders }] = await Promise.all([
+    supabase.from("org_suppliers").select("custom_name, branch_name, branch_phone, branch_email, account_number, rep_name, rep_phone, notes, suppliers(name)").eq("id", id).maybeSingle(),
+    supabase.from("material_orders").select("status, created_at, invoice_no, invoice_ex, invoice_gst, invoice_due, paid_at, jobs(title, customers(name))").eq("org_supplier_id", id).order("created_at", { ascending: false }).limit(15),
+  ]);
+  if (!s) return "";
+  const name = one(s.suppliers as unknown as { name: string })?.name ?? s.custom_name ?? "Supplier";
+  return [
+    `THE SUPPLIER OPEN ON SCREEN: ${name}${s.branch_name ? ` (${s.branch_name})` : ""}`,
+    [s.account_number ? `Account ${s.account_number}` : null, s.rep_name ? `Rep ${s.rep_name} ${s.rep_phone ?? ""}` : null, s.branch_phone, s.branch_email].filter(Boolean).join(" · ") || null,
+    orders?.length ? `Recent orders:\n${orders.map((o) => { const j = one(o.jobs as unknown as { title: string; customers: unknown }); const who = one(j?.customers as { name: string })?.name ?? j?.title ?? "job"; const tot = o.invoice_no ? aud(Number(o.invoice_ex ?? 0) + Number(o.invoice_gst ?? 0)) : null; return `- ${who}: ${o.status}${tot ? `, invoice ${o.invoice_no} ${tot} ${o.paid_at ? `paid ${day(o.paid_at)}` : `unpaid${o.invoice_due ? `, due ${day(o.invoice_due)}` : ""}`}` : ""}`; }).join("\n")}` : "No orders yet.",
+    s.notes ? `Notes: ${s.notes}` : null,
+  ].filter(Boolean).join("\n");
 }

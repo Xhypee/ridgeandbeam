@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Empty, Input, LinkButton, cx } from "@/components/ui";
 import { complianceAlert, CONTACT_TYPES, isContactType, TYPE_BADGE, TYPE_LABEL, TYPE_PLURAL, type ContactType } from "@/lib/contacts";
+import { aiEnabled } from "@/lib/ai";
 import { requireOrg } from "@/lib/dal";
 import { date, isoDate } from "@/lib/format";
 import { orgSupplierName } from "@/lib/suppliers";
@@ -152,9 +153,9 @@ export default async function ContactsPage({ searchParams }: PageProps<"/app/con
     </>
   );
 
-  const side = docket ? <ContactDocket key={docket.customer.id} d={docket} closeHref={closeHref} canSeeMoney={canSeeMoney} today={today} />
-    : supplier ? <SupplierDocket key={supplier.s.id} d={supplier} closeHref={closeHref} canSeeMoney={canSeeMoney} canEdit={isAdmin || role === "member"} />
-    : adding ? <NewContactPanel closeHref={closeHref} initial={type ?? "customer"} defaultState={org.state ?? null} /> : null;
+  const side = docket ? <ContactDocket key={docket.customer.id} d={docket} closeHref={closeHref} canSeeMoney={canSeeMoney} today={today} aiReady={aiEnabled()} />
+    : supplier ? <SupplierDocket key={supplier.s.id} d={supplier} closeHref={closeHref} canSeeMoney={canSeeMoney} canEdit={isAdmin || role === "member"} aiReady={aiEnabled()} />
+    : adding ? <NewContactPanel closeHref={closeHref} initial={type ?? "customer"} defaultState={org.state ?? null} aiReady={aiEnabled()} /> : null;
   if (!side) return content;
   return (
     <div className="lg:flex lg:h-screen">
