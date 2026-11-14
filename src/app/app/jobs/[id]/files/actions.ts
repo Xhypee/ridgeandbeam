@@ -5,7 +5,7 @@ import { z } from "zod";
 import { requireOrg } from "@/lib/dal";
 import { friendly } from "@/lib/form";
 import { aiEnabled, readJobDocument } from "@/lib/ai";
-import { intakeNote, planDocUpdates, roofMeasurementsFromDoc, DOC_TYPE_LABEL, type Current } from "@/lib/doc-intake";
+import { intakeNote, planDocUpdates, roofAreaDiff, roofMeasurementsFromDoc, DOC_TYPE_LABEL, type Current } from "@/lib/doc-intake";
 import { normalizeMeasurements, summarize } from "@/lib/roof";
 
 const Schema = z.object({
@@ -62,7 +62,7 @@ export async function deleteJobFile(fd: FormData) {
   revalidatePath("/app/jobs");
 }
 
-export type DocIntakeResult = { name: string; status: "read" | "skipped" | "off" | "failed"; type?: string; summary?: string | null; filled?: string[]; differs?: string[]; hints?: string[]; measured?: string | null };
+export type DocIntakeResult = { name: string; status: "read" | "skipped" | "off" | "failed"; type?: string; summary?: string | null; filled?: string[]; differs?: string[]; hints?: string[]; measured?: string | null; roofDiffers?: string | null };
 
 /**
  * After a file lands in a job's Documents: Claude reads it and fills empty fields on the customer, job and
@@ -105,10 +105,16 @@ export async function readUploadedDocument(fileId: string, estimateId?: string):
 
   // Dropped on a quote's empty roof plan: measurements from plans or a roof report fill it in. Only a draft that
   // isn't measured yet, and only the first file that has them (the others are noted, not applied).
-  let measured: string | null = null;
+  let measured: string | null = null, roofDiffers: string | null = null;
   if (estimateId && /^[0-9a-f-]{36}$/i.test(estimateId)) {
     const { data: est } = await supabase.from("estimates").select("id, job_id, status, measurements, measurement_source").eq("id", estimateId).maybeSingle();
-    if (est && est.job_id === job.id && est.status === "draft" && est.measurement_source !== "documents" && summarize(normalizeMeasurements(est.measurements)).trueArea === 0) {
+    const quoteArea = est ? summarize(normalizeMeasurements(est.measurements)).trueArea : 0;
+    if (est && est.job_id === job.id && quoteArea > 0) {
+      // Already measured: measurements stay as they are; a document that disagrees on the roof area is pointed out.
+      roofDiffers = roofAreaDiff(read.roof, quoteArea);
+      if (roofDiffers) plan.differs.push(roofDiffers);
+      plan.hints = plan.hints.filter((h) => !h.startsWith("Roof area on the plans"));
+    } else if (est && est.job_id === job.id && est.status === "draft" && est.measurement_source !== "documents") {
       const m = roofMeasurementsFromDoc(read.roof, read.job.roof_material ?? job.roof_material, est.measurements);
       if (m) {
         const { data: saved } = await supabase.from("estimates").update({ measurements: m.measurements, measurement_source: "documents" })
@@ -127,5 +133,5 @@ export async function readUploadedDocument(fileId: string, estimateId?: string):
   await supabase.from("job_notes").insert({ org_id: org.id, job_id: job.id, body: intakeNote(name, read, plan), author_id: user.id, author_name: `Claude (for ${me?.full_name || user.fullName || user.email})` });
   revalidatePath("/app/jobs");
   revalidatePath(`/app/jobs/${job.id}`, "layout");
-  return { name, status: "read", type: DOC_TYPE_LABEL[read.doc_type], summary: read.summary, filled: plan.filled, differs: plan.differs, hints: plan.hints, measured };
+  return { name, status: "read", type: DOC_TYPE_LABEL[read.doc_type], summary: read.summary, filled: plan.filled, differs: plan.differs, hints: plan.hints, measured, roofDiffers };
 }

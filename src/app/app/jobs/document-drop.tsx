@@ -40,7 +40,7 @@ async function walk(entry: FsEntry, prefix = ""): Promise<Item[]> {
   return nested.flat();
 }
 
-export function DocumentDrop({ jobId, estimateId, variant = "sidebar" }: { jobId: string; estimateId?: string; variant?: "sidebar" | "measure" }) {
+export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured = false }: { jobId: string; estimateId?: string; variant?: "sidebar" | "measure"; measured?: boolean }) {
   const measure = variant === "measure";
   const router = useRouter();
   const files = useRef<HTMLInputElement>(null);
@@ -89,7 +89,7 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar" }: { jobId
           setReading({ done: ++done, total: uploaded.length });
         }
       };
-      void Promise.all([worker(), worker()]).then(() => { setReading(null); setMsg(readSummary(results, todo.length - failed.length)); router.refresh(); });
+      void Promise.all([worker(), worker()]).then(() => { setReading(null); setMsg(readSummary(results, todo.length - failed.length, measured)); router.refresh(); });
     } else if (uploaded.length) {
       let next = 0;
       const worker = async () => { while (next < uploaded.length) await readUploadedDocument(uploaded[next++]).catch(() => null); };
@@ -131,9 +131,9 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar" }: { jobId
         onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(false); }}
         onDrop={onDrop}
         className={cx("flex flex-col items-center justify-center gap-1 border-2 border-dashed text-center transition",
-          measure ? "rounded-2xl px-5 py-6" : "rounded-xl px-4 py-5",
+          measure && measured ? "rounded-xl px-4 py-3" : measure ? "rounded-2xl px-5 py-6" : "rounded-xl px-4 py-5",
           over ? "border-brand-500 bg-brand-50" : measure ? "border-slate-300 bg-white" : "border-slate-300 bg-slate-50/60")}>
-        <svg viewBox="0 0 24 24" className={cx("h-7 w-7", over ? "text-brand-600" : "text-slate-400")} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" /></svg>
+        <svg viewBox="0 0 24 24" className={cx(measure && measured ? "hidden" : "h-7 w-7", over ? "text-brand-600" : "text-slate-400")} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" /></svg>
         {reading ? (
           <>
             <p className="text-sm font-semibold text-ink" data-reading>Claude is reading {reading.total === 1 ? "your file" : `${Math.min(reading.done + 1, reading.total)} of ${reading.total}`}…</p>
@@ -147,7 +147,9 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar" }: { jobId
           </>
         ) : (
           <>
-            {measure ? (<>
+            {measure && measured ? (
+              <p className="text-sm text-slate-600"><span className="font-semibold text-ink">{over ? "Drop to upload" : "More plans or reports?"}</span> Drop files or folders here. Claude adds them to the job; your measurements stay as they are.</p>
+            ) : measure ? (<>
               <p className="font-semibold text-ink">{over ? "Drop to upload" : "Not measured yet"}</p>
               <p className="max-w-md text-sm text-slate-500">Drop plans, a roof report or a whole folder here. Claude reads them, fills in the roof measurements and sorts the rest into the job. Or measure from the plans, on the satellite map, or by hand.</p>
             </>) : <p className="text-sm font-semibold text-ink">{over ? "Drop to upload" : "Drag files or folders here"}</p>}
@@ -167,8 +169,16 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar" }: { jobId
 
 
 /** What Claude did with the files dropped on a quote's roof plan, in a sentence or two. */
-function readSummary(rs: DocIntakeResult[], saved: number): { ok?: string; error?: string } {
+function readSummary(rs: DocIntakeResult[], saved: number, measured = false): { ok?: string; error?: string } {
   const files = `${saved} ${saved === 1 ? "file" : "files"}`;
+  if (measured) {
+    if (rs.length && rs.every((r) => r.status === "off")) return { error: `Saved ${files} to the job's Documents. Claude isn't connected yet, so ${saved === 1 ? "it hasn't" : "they haven't"} been read.` };
+    const filled = [...new Set(rs.flatMap((r) => r.filled ?? []))].slice(0, 4);
+    const diff = rs.find((r) => r.roofDiffers);
+    const head = `Saved ${files} and Claude read ${rs.filter((r) => r.status === "read").length}.${filled.length ? ` Filled in: ${filled.join(", ")}.` : ""}`;
+    if (diff) return { error: `${head} Heads up: the ${diff.roofDiffers!.replace(/^roof area on the quote is (.+?), the document says (.+)$/, `roof area in "${diff.name}" is $2, the quote has $1`)}. Kept yours; measure again if it's right.` };
+    return { ok: filled.length ? head : `${head} Nothing new for the job, and the roof area matches.` };
+  }
   if (rs.length && rs.every((r) => r.status === "off")) return { error: `Saved ${files} to the job's Documents. Claude isn't connected yet, so ${saved === 1 ? "it hasn't" : "they haven't"} been read. Measure from the plans, on the satellite map, or by hand.` };
   const m = rs.find((r) => r.measured);
   const others = [...new Set(rs.flatMap((r) => r.filled ?? []).filter((f) => !m?.measured || !f.startsWith(m.measured)))].slice(0, 4);

@@ -147,11 +147,23 @@ export function roofMeasurementsFromDoc(roof: DocRoof | null | undefined, roofMa
   const system = /terracotta/.test(mat) ? "terracotta_tile" : /tile/.test(mat) ? "concrete_tile"
     : /colorbond|metal|zincalume|trimdek|corrugat|klip|spandek|sheet/.test(mat) ? "metal" : prevSys ?? "metal";
   const r2 = (n: number) => Math.round(n * 100) / 100;
-  const out: Record<string, unknown> = { ...base, sections: [{ label: "Main roof", area: r2(plan), pitch, system }] };
+  // units: "metric" matters: measurements without it are read as old imperial data (square feet, rise-in-12).
+  const out: Record<string, unknown> = { ...base, units: "metric", sections: [{ label: "Main roof", area: r2(plan), pitch, system }] };
   const lens: [keyof DocRoof, string][] = [["ridge_m", "ridge"], ["hip_m", "hip"], ["valley_m", "valley"], ["gutter_m", "eave"], ["barge_m", "barge"]];
   for (const [from, to] of lens) { const v = ok(roof[from], 0.1, 5000); if (v) out[to] = r2(v); }
   const dp = ok(roof.downpipes, 1, 100);
   if (dp) out.downpipes = Math.round(dp);
   const trueArea = plan / Math.cos((pitch * Math.PI) / 180);
   return { measurements: out, label: `roof area ${Math.round(trueArea)} m² at ${r2(pitch)}°${ok(roof.pitch_deg, 1, 60) ? "" : " (pitch assumed)"}` };
+}
+
+/** Already measured: the document's roof area against the quote's, when they're 5% or more apart (else null). */
+export function roofAreaDiff(roof: DocRoof | null | undefined, quoteTrueArea: number): string | null {
+  if (!roof || !(quoteTrueArea > 0)) return null;
+  const ok = (v: number | null, min: number, max: number) => (typeof v === "number" && Number.isFinite(v) && v >= min && v <= max ? v : null);
+  const pitch = ok(roof.pitch_deg, 1, 60) ?? 22.5;
+  const plan = ok(roof.plan_area_m2, 5, 20000);
+  const doc = ok(roof.area_m2, 5, 20000) ?? (plan ? plan / Math.cos((pitch * Math.PI) / 180) : null);
+  if (!doc || Math.abs(doc - quoteTrueArea) / quoteTrueArea < 0.05) return null;
+  return `roof area on the quote is ${Math.round(quoteTrueArea)} m², the document says ${Math.round(doc)} m²`;
 }
