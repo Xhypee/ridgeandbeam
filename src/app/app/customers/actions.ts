@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { requireOrg } from "@/lib/dal";
 import { friendly, oneOf, str } from "@/lib/form";
 import { CUSTOMER_SOURCES } from "@/lib/types";
-import { AU_JOB_TYPES, AU_JOB_TYPE_LABEL, type AuJobType } from "@/lib/job-types";
+import { AU_JOB_TYPES, AU_JOB_TYPE_LABEL, JOB_CARDS, type AuJobType } from "@/lib/job-types";
 
 // New lead's job cards: the picked type names the job ("Re-roof"); nothing picked keeps the old default.
 const pickedType = (fd: FormData) => { const t = String(fd.get("job_type") ?? ""); return (AU_JOB_TYPES as readonly string[]).includes(t) ? (t as AuJobType) : null; };
@@ -16,6 +16,16 @@ const jobTitle = (fd: FormData, insurance: boolean) => {
   return t && t !== "other" ? `${insurance ? "Insurance · " : ""}${AU_JOB_TYPE_LABEL[t]}` : insurance ? "Insurance roof inspection" : "Roof inspection";
 };
 import type { ActionResult } from "@/components/action-form";
+
+/** The job's notes (shown under Notes on its sidebar): what they need from the picked card, then anything typed.
+ *  "Needs: Re-roof (Full replacement)\nNotes: Leaking over the back bedroom". Nothing picked → just the typed notes. */
+function leadNotes(fd: FormData): string | null {
+  const t = pickedType(fd), typed = str(fd, "job_title")?.slice(0, 120), notes = str(fd, "notes");
+  const card = t ? JOB_CARDS.find((c) => c.type === t) : null;
+  const needs = !card ? null : t === "other" ? (typed ?? "Something else") : `${card.title} (${card.hint})`;
+  if (!needs) return notes;
+  return notes ? `Needs: ${needs}\nNotes: ${notes}` : `Needs: ${needs}`;
+}
 
 // Insurance details now live on the job's claim (claims table). The legacy customer columns
 // (insurance_company, claim_number, adjuster_*) are kept in the DB for history but no longer edited here.
@@ -99,6 +109,7 @@ export async function createCustomer(_: ActionResult, fd: FormData): Promise<Act
         ...coords(fd),
         is_insurance: insurance,
         created_by: user.id,
+        notes: leadNotes(fd),
         ...referral(fd),
       })
       .select("id")
@@ -155,7 +166,7 @@ async function jobForExisting(customerId: string, fd: FormData): Promise<ActionR
     site_address: [site.address, site.city, site.state, site.zip].filter(Boolean).join(", ") || null,
     state: site.state, zip: site.zip, is_insurance: insurance, created_by: user.id,
     ...referral(fd, c.id),
-    notes: str(fd, "notes"),
+    notes: leadNotes(fd),
     ...(typed.address ? coords(fd) : {}),
   }).select("id").single();
   if (error) return { error: friendly(error) };

@@ -13,7 +13,8 @@ import { ContactSection } from "./job-contact";
 export function noteFacts(body: string): [string, string][] | null {
   const lines = body.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   const facts = lines.map((l) => /^([A-Za-z][\w &'/()-]{0,24}):\s+(.+)$/.exec(l)).filter((m): m is RegExpExecArray => Boolean(m)).map((m) => [m[1], m[2]] as [string, string]);
-  return facts.length >= 2 && facts.length === lines.length ? facts : null;
+  // Two or more labelled lines; or just "Needs: Re-roof (Full replacement)" from the New lead job cards.
+  return (facts.length >= 2 || facts[0]?.[0] === "Needs") && facts.length === lines.length ? facts : null;
 }
 
 const when = (iso: string) => new Date(iso).toLocaleString("en-AU", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Australia/Brisbane" });

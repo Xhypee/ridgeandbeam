@@ -3,14 +3,12 @@
 // the job (then their customer page opens).
 import Link from "next/link";
 import { ActionForm, SubmitButton } from "@/components/action-form";
-import { Field, Input, Select, Textarea } from "@/components/ui";
+import { Field, Textarea } from "@/components/ui";
 import { AddressLookup } from "@/components/address-lookup";
 import { JobTypeCards } from "./job-type-cards";
 import { CustomerLookup } from "@/components/customer-lookup";
 import { ContactPicker } from "@/components/contact-picker";
 import type { Referrer } from "@/lib/referrals-server";
-import { label } from "@/lib/format";
-import { CUSTOMER_SOURCES } from "@/lib/types";
 import { createCustomer } from "../customers/actions";
 import { ClaudeBar } from "./claude-bar";
 import { aiEnabled } from "@/lib/ai";
@@ -78,14 +76,6 @@ export function NewLeadPanel({ closeHref, filter = null, defaultState, variant =
                   <ContactPicker name="referred_by" initial={referrer} placeholder="A customer, builder, contractor or supplier" />
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Lead source">
-                  <Select name="source" defaultValue={referrer ? "referral" : "other"}>
-                    {CUSTOMER_SOURCES.map((s) => <option key={s} value={s}>{label(s)}</option>)}
-                  </Select>
-                </Field>
-                <Field label="Follow up on"><Input name="follow_up_on" type="date" /></Field>
-              </div>
               <Field label="Anything else"><Textarea name="notes" placeholder="Leaking over the back bedroom, home after 3pm…" /></Field>
             </Section>
           </div>

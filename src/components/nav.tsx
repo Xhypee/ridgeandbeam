@@ -140,7 +140,9 @@ export function AppFrame({ full, rail, header, tabs, children }: { full: React.R
   return (
     // With a sidebar open the frame is exactly the screen tall on a computer: the board/list and the sidebar
     // scroll inside it, the page itself never does.
-    <div className={cx("flex min-h-screen", docket && "lg:h-dvh lg:min-h-0 lg:overflow-hidden")}>
+    // `relative` + `overflow-clip`: hidden form fields (sr-only, absolutely positioned) inside the sidebar would
+    // otherwise be placed against the page and stretch it taller than the screen, so the page scrolled too.
+    <div className={cx("flex min-h-screen", docket && "lg:relative lg:h-dvh lg:min-h-0 lg:overflow-clip")}>
       {docket ? rail : full}
       <div className={cx("flex min-w-0 flex-1 flex-col", docket && "lg:min-h-0")}>
         {header}
