@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { Field, Input, Select, Textarea } from "@/components/ui";
 import { AddressLookup } from "@/components/address-lookup";
+import { JobTypeCards } from "./job-type-cards";
 import { CustomerLookup } from "@/components/customer-lookup";
 import { label } from "@/lib/format";
 import { CUSTOMER_SOURCES } from "@/lib/types";
@@ -64,7 +65,7 @@ export function NewLeadPanel({ closeHref, filter = null, defaultState, variant =
                   Also open a job for this customer
                 </label>
               )}
-              <Field label="What do they need?"><Input name="job_title" placeholder="Roof inspection" /></Field>
+              <JobTypeCards />
               <div className="-mt-1"><JobKind /></div>
             </Section>
 
