@@ -161,7 +161,13 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
           setReading({ done: ++done, total: uploaded.length });
         }
       };
-      void Promise.all([worker(), worker()]).then(() => { setReading(null); setMsg(readSummary(results, todo.length - failed.length, measured)); router.refresh(); });
+      void Promise.all([worker(), worker()]).then(() => {
+        setReading(null);
+        // On a new lead's plan sheet the drawing and the quote already show what Claude found, so only problems get a message.
+        const summary = readSummary(results, todo.length - failed.length, measured);
+        if (!plans || summary.error) setMsg(summary);
+        router.refresh();
+      });
     } else if (uploaded.length) {
       let next = 0;
       const worker = async () => { while (next < uploaded.length) await readUploadedDocument(uploaded[next++]).catch(() => null); };
