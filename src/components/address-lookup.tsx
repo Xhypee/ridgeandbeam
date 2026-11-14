@@ -42,7 +42,8 @@ export type { AddressParts } from "./address-parts";
 
 type Suggestion = { id: string; main: string; rest: string; prediction?: GPrediction; parts?: AddressParts };
 
-export function AddressLookup({ defaultState }: { defaultState?: string | null }) {
+/** `initial`: an address already on file (editing) — starts as the picked card, with "Choose another address" and "Edit". */
+export function AddressLookup({ defaultState, initial }: { defaultState?: string | null; initial?: AddressParts | null }) {
   const [mode, setMode] = useState<"lookup" | "manual">("lookup");
   const [failed, setFailed] = useState(false);
   const [query, setQuery] = useState("");
@@ -50,8 +51,8 @@ export function AddressLookup({ defaultState }: { defaultState?: string | null }
   const [active, setActive] = useState(-1);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [picked, setPicked] = useState<AddressParts | null>(null);
-  const [manual, setManual] = useState<AddressParts>({ address: "", city: "", state: defaultState ?? "", zip: "", lat: null, lng: null });
+  const [picked, setPicked] = useState<AddressParts | null>(initial ?? null);
+  const [manual, setManual] = useState<AddressParts>(initial ?? { address: "", city: "", state: defaultState ?? "", zip: "", lat: null, lng: null });
   const lib = useRef<PlacesLib | null>(null);
   const token = useRef<unknown>(null);
   const seq = useRef(0);
