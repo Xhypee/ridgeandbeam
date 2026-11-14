@@ -1,5 +1,4 @@
 // Contact · Notes · Documents: the same three sections on every stage's sidebar (New leads, Sold, Building).
-import Link from "next/link";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { cx } from "@/components/ui";
 import type { Docket, LeadDoc } from "@/lib/job-docket-server";
