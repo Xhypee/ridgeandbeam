@@ -5,17 +5,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { cx } from "@/components/ui";
-import { clashAt, INSPECTION_TIMES, monthGrid, type ScheduleItem } from "@/lib/lead-steps";
+import { clashAt, INSPECTION_TIMES, monthGrid, type ScheduleItem, type StaffProject } from "@/lib/lead-steps";
+import { FullCalendar } from "./full-calendar";
 import { bookInspection, getStaffSchedule } from "./lead-actions";
 
 const WEEK = ["M", "T", "W", "T", "F", "S", "S"];
 const CAL = "M4 6h16v14H4zM4 10h16M8 3v5M16 3v5";
 const Chev = ({ d }: { d: string }) => <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={d} /></svg>;
 
-export function BookingCalendar({ jobId, first, phone, people, defaultStaff, meId, today, suggested, tz, load = getStaffSchedule }: {
+export function BookingCalendar({ jobId, first, phone, people, defaultStaff, meId, today, suggested, tz, load = getStaffSchedule, loadProjects }: {
   jobId: string; first: string; phone: string | null; people: { user_id: string; name: string }[]; defaultStaff: string; meId: string;
   today: string; suggested: string; tz: string; load?: (staffId: string, from: string, to: string, tz: string) => Promise<ScheduleItem[]>;
+  loadProjects?: (staffId: string) => Promise<StaffProject[]>;
 }) {
+  const [full, setFull] = useState(false);
   const [staff, setStaff] = useState(defaultStaff);
   const [day, setDay] = useState(suggested);
   const [time, setTime] = useState("09:00");
@@ -57,6 +60,17 @@ export function BookingCalendar({ jobId, first, phone, people, defaultStaff, meI
           {people.map((p) => <option key={p.user_id} value={p.user_id}>{p.user_id === meId ? `${p.name} (me)` : p.name}</option>)}
         </select>
       </label>
+
+      <button type="button" onClick={() => setFull(true)} data-open-full-calendar
+        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-semibold text-brand-700 ring-1 ring-brand-300 hover:bg-brand-50">
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 6h16v14H4zM4 10h16M8 3v5M16 3v5M8 14h3M13 14h3M8 17h3" /></svg>
+        See {who}&rsquo;s full calendar and projects
+      </button>
+      {full && (
+        <FullCalendar people={people} staff={staff} day={day} time={time} today={today} tz={tz} leadName={first} load={load} loadProjects={loadProjects}
+          onClose={() => setFull(false)}
+          onPick={(pk) => { setStaff(pk.staff); setDay(pk.day); setTime(pk.time); setYm({ y: Number(pk.day.slice(0, 4)), m: Number(pk.day.slice(5, 7)) }); setFull(false); }} />
+      )}
 
       <div className="rounded-xl bg-white p-3 ring-1 ring-slate-200" data-booking-calendar>
         <div className="mb-2 flex items-center justify-between">

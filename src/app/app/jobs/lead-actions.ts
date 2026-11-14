@@ -6,7 +6,7 @@ import { friendly, num, oneOf, str } from "@/lib/form";
 import { notifyUser, sendSms } from "@/lib/notify";
 import type { ActionResult } from "@/components/action-form";
 import { asAuState, AU_STATE_TZ } from "@/lib/au";
-import { inspectionLabel, inspectionSms, localToUtc, LOST_REASON_LABEL, LOST_REASONS, type ScheduleItem } from "@/lib/lead-steps";
+import { inspectionLabel, inspectionSms, localToUtc, LOST_REASON_LABEL, LOST_REASONS, type ScheduleItem, type StaffProject } from "@/lib/lead-steps";
 
 const FIN_STATUSES = ["link_sent", "prequalified", "approved", "declined", "funded", "cancelled"] as const;
 
@@ -226,29 +226,48 @@ export async function getStaffSchedule(staffId: string, from: string, to: string
   const fromTs = new Date(`${from}T00:00:00Z`).getTime() - 86400000, toTs = new Date(`${to}T23:59:59Z`).getTime() + 86400000;
   const or = [`assigned_to.eq.${staffId}`, ...(teamJobs.length ? [`id.in.(${teamJobs.join(",")})`] : [])].join(",");
   const [{ data: insp }, { data: builds }] = await Promise.all([
-    ctx.supabase.from("jobs").select("id, inspection_at, title, customers(name)").or(or)
+    ctx.supabase.from("jobs").select("id, stage, inspection_at, title, customers(name)").or(or)
       .gte("inspection_at", new Date(fromTs).toISOString()).lte("inspection_at", new Date(toTs).toISOString()).neq("stage", "lost").limit(200),
     teamJobs.length
-      ? ctx.supabase.from("jobs").select("id, scheduled_start, scheduled_end, title, site_address, customers(name)").in("id", teamJobs)
+      ? ctx.supabase.from("jobs").select("id, stage, scheduled_start, scheduled_end, title, site_address, customers(name)").in("id", teamJobs)
         .lte("scheduled_start", to).gte("scheduled_end", from).neq("stage", "lost").limit(200)
       : Promise.resolve({ data: [] as never[] }),
   ]);
   const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
   const out: ScheduleItem[] = [];
-  for (const j of (insp ?? []) as { inspection_at: string; title: string; customers: unknown }[]) {
+  for (const j of (insp ?? []) as { id: string; stage: string; inspection_at: string; title: string; customers: unknown }[]) {
     const d = new Date(j.inspection_at);
     const date = d.toLocaleDateString("en-CA", { timeZone: zone });
     if (date < from || date > to) continue;
     const hm = d.toLocaleTimeString("en-GB", { timeZone: zone, hour: "2-digit", minute: "2-digit", hour12: false });
     const [h, m] = hm.split(":").map(Number);
     const time = d.toLocaleTimeString("en-AU", { timeZone: zone, hour: "numeric", minute: "2-digit", hour12: true }).replace(/\s?(am|pm)$/i, (x) => ` ${x.trim().toLowerCase()}`);
-    out.push({ date, time, minutes: h * 60 + m, kind: "inspection", label: `Inspection · ${one(j.customers as { name: string })?.name ?? j.title}` });
+    out.push({ date, time, minutes: h * 60 + m, kind: "inspection", label: `Inspection · ${one(j.customers as { name: string })?.name ?? j.title}`, jobId: j.id, stage: j.stage });
   }
-  for (const j of (builds ?? []) as { scheduled_start: string; scheduled_end: string | null; title: string; site_address: string | null; customers: unknown }[]) {
+  for (const j of (builds ?? []) as { id: string; stage: string; scheduled_start: string; scheduled_end: string | null; title: string; site_address: string | null; customers: unknown }[]) {
     const end = j.scheduled_end ?? j.scheduled_start;
     for (let t = Math.max(Date.parse(`${j.scheduled_start}T12:00:00Z`), Date.parse(`${from}T12:00:00Z`)); t <= Math.min(Date.parse(`${end}T12:00:00Z`), Date.parse(`${to}T12:00:00Z`)); t += 86400000) {
-      out.push({ date: new Date(t).toISOString().slice(0, 10), time: null, minutes: null, kind: "build", label: `Build · ${one(j.customers as { name: string })?.name ?? j.title}` });
+      out.push({ date: new Date(t).toISOString().slice(0, 10), time: null, minutes: null, kind: "build", label: `Build · ${one(j.customers as { name: string })?.name ?? j.title}`, jobId: j.id, stage: j.stage });
     }
   }
   return out.sort((a, b) => a.date.localeCompare(b.date) || (a.minutes ?? -1) - (b.minutes ?? -1));
+}
+
+/** Every open job a staff member is on (looking after it, or on its team), for the full calendar's Projects panel. */
+export async function getStaffProjects(staffId: string): Promise<StaffProject[]> {
+  const ctx = await requireOrg();
+  if (!/^[0-9a-f-]{36}$/i.test(staffId)) return [];
+  const { data: mine } = await ctx.supabase.from("job_members").select("job_id, role").eq("user_id", staffId).limit(500);
+  const roles = new Map((mine ?? []).map((m) => [m.job_id as string, m.role as string]));
+  const or = [`assigned_to.eq.${staffId}`, ...(roles.size ? [`id.in.(${[...roles.keys()].join(",")})`] : [])].join(",");
+  const { data } = await ctx.supabase.from("jobs").select("id, title, stage, assigned_to, scheduled_start, scheduled_end, inspection_at, site_address, customers(name)")
+    .or(or).not("stage", "in", "(lost,paid)").is("closed_at", null).order("stage_changed_at", { ascending: false }).limit(60);
+  const ROLE: Record<string, string> = { sales: "Sales", office: "Office", crew_lead: "Crew lead", crew: "Crew", subcontractor: "Subbie" };
+  const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
+  return ((data ?? []) as { id: string; title: string; stage: string; assigned_to: string | null; scheduled_start: string | null; scheduled_end: string | null; inspection_at: string | null; site_address: string | null; customers: unknown }[]).map((j) => ({
+    id: j.id, customer: one(j.customers as { name: string })?.name ?? j.title, title: j.title, stage: j.stage,
+    role: roles.has(j.id) ? ROLE[roles.get(j.id)!] ?? "Team" : j.assigned_to === staffId ? "Looking after" : "Team",
+    start: j.scheduled_start, end: j.scheduled_end, inspection: j.inspection_at,
+    suburb: j.site_address?.split(",").slice(-2, -1)[0]?.trim().replace(/\s+(QLD|NSW|VIC|WA|SA|TAS|ACT|NT)\b.*$/, "") ?? null,
+  }));
 }

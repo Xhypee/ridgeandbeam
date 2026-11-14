@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clashAt, dateIn, INSPECTION_TIMES, inspectionLabel, inspectionSms, localToUtc, LOST_REASON_LABEL, monthGrid } from "./lead-steps";
+import { clashAt, dateIn, INSPECTION_TIMES, inspectionLabel, inspectionSms, localToUtc, LOST_REASON_LABEL, monthGrid, weekOf } from "./lead-steps";
 
 describe("localToUtc", () => {
   it("Brisbane has no daylight saving: 9 am is 23:00 UTC the day before", () => {
@@ -77,5 +77,13 @@ describe("clashAt", () => {
   it("ignores other times, days and all-day builds", () => {
     expect(clashAt(items, "2026-11-16", "10:00")).toBeNull();
     expect(clashAt(items, "2026-11-17", "09:00")).toBeNull();
+  });
+});
+
+describe("weekOf", () => {
+  it("gives Monday to Sunday around a date", () => {
+    expect(weekOf("2026-11-18")).toEqual(["2026-11-16", "2026-11-17", "2026-11-18", "2026-11-19", "2026-11-20", "2026-11-21", "2026-11-22"]);
+    expect(weekOf("2026-11-22")[0]).toBe("2026-11-16");
+    expect(weekOf("2026-11-16")[0]).toBe("2026-11-16");
   });
 });

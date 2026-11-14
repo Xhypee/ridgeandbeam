@@ -69,7 +69,17 @@ export function monthGrid(year: number, month: number): (string | null)[][] {
 }
 
 /** One thing on a staff member's schedule, already in the job's timezone. */
-export type ScheduleItem = { date: string; time: string | null; minutes: number | null; kind: "inspection" | "build"; label: string };
+export type ScheduleItem = { date: string; time: string | null; minutes: number | null; kind: "inspection" | "build"; label: string; jobId?: string; stage?: string };
+
+/** A job a staff member is on (looking after it, or on its team), for the full calendar's Projects panel. */
+export type StaffProject = { id: string; customer: string; title: string; stage: string; role: string; start: string | null; end: string | null; inspection: string | null; suburb: string | null };
+
+/** Monday of the week containing `date` ("YYYY-MM-DD"), and the 7 days from it. */
+export function weekOf(date: string): string[] {
+  const t = Date.parse(`${date}T12:00:00Z`);
+  const mon = t - ((new Date(t).getUTCDay() + 6) % 7) * 86400000;
+  return Array.from({ length: 7 }, (_, i) => new Date(mon + i * 86400000).toISOString().slice(0, 10));
+}
 
 /** Does a new inspection at `time` ("HH:MM") clash with one already booked that day (within an hour)? */
 export function clashAt(items: ScheduleItem[], date: string, time: string): ScheduleItem | null {
