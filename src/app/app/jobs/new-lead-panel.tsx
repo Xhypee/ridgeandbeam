@@ -5,13 +5,13 @@ import Link from "next/link";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { Field, Input, Select, Textarea } from "@/components/ui";
 import { AddressLookup } from "@/components/address-lookup";
+import { JobTypeCards } from "./job-type-cards";
 import { CustomerLookup } from "@/components/customer-lookup";
 import { ContactPicker } from "@/components/contact-picker";
 import type { Referrer } from "@/lib/referrals-server";
 import { label } from "@/lib/format";
 import { CUSTOMER_SOURCES } from "@/lib/types";
 import { createCustomer } from "../customers/actions";
-import { JobKind } from "../customers/new/job-kind";
 import { ClaudeBar } from "./claude-bar";
 import { aiEnabled } from "@/lib/ai";
 
@@ -68,8 +68,7 @@ export function NewLeadPanel({ closeHref, filter = null, defaultState, variant =
                   Also open a job for this customer
                 </label>
               )}
-              <Field label="What do they need?"><Input name="job_title" placeholder="Roof inspection" /></Field>
-              <div className="-mt-1"><JobKind /></div>
+              <JobTypeCards />
             </Section>
 
             <Section title="Notes">
