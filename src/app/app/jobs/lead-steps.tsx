@@ -1,13 +1,13 @@
 "use client";
 
-// The New lead sidebar's "Next up": Call, then four icon buttons (Spoke to them · No answer · Book the
-// inspection · Not going ahead, labels on hover), then Who's looking after it. Server actions: lead-actions.ts.
+// The New lead sidebar's "Next up": Call, then five icon buttons (Spoke to them · No answer · Book the
+// inspection · Not going ahead · Delete lead, labels on hover), then Who's looking after it. Server actions: lead-actions.ts.
 import { useRef, useState } from "react";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { cx } from "@/components/ui";
 import { LOST_REASONS, type ScheduleItem } from "@/lib/lead-steps";
 import { BookingCalendar } from "./booking-calendar";
-import { logLeadCall, markLeadLost, setLeadOwner } from "./lead-actions";
+import { deleteLead, logLeadCall, markLeadLost, setLeadOwner } from "./lead-actions";
 import { LeadTimer } from "./lead-timer";
 
 const PHONE = "M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2";
@@ -16,6 +16,7 @@ const CHECK = "M5 12l5 5L20 7";
 const CAL = "M4 6h16v14H4zM4 10h16M8 3v5M16 3v5";
 const MISSED = "M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2M15 3l6 6M21 3l-6 6";
 const XCIRCLE = "M12 21a9 9 0 100-18 9 9 0 000 18M9 9l6 6M15 9l-6 6";
+const BIN = "M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3";
 
 /** Hover / focus label above an icon button (the button needs `group relative`). */
 function Tip({ children, align = "center" }: { children: React.ReactNode; align?: "start" | "center" | "end" }) {
@@ -56,6 +57,9 @@ export type LeadStepsProps = {
   tz: string;
   /** For previews: a stand-in for the staff schedule lookup. */
   loadSchedule?: (staffId: string, from: string, to: string, tz: string) => Promise<ScheduleItem[]>;
+  /** Full name, for the delete confirmation; `otherJobs` > 0 means the contact stays. */
+  name: string;
+  otherJobs: number;
 };
 
 function OwnerPicker({ jobId, owner, people, meId }: { jobId: string; owner: string; people: LeadStepsProps["people"]; meId: string }) {
@@ -76,7 +80,7 @@ function OwnerPicker({ jobId, owner, people, meId }: { jobId: string; owner: str
 }
 
 export function LeadSteps(p: LeadStepsProps) {
-  const [open, setOpen] = useState<"book" | "lost" | null>(null);
+  const [open, setOpen] = useState<"book" | "lost" | "delete" | null>(null);
   const [reason, setReason] = useState<string>("");
   const tel = p.phone ? `tel:${p.phone.replace(/\s+/g, "")}` : null;
   const sms = p.phone ? `sms:${p.phone.replace(/\s+/g, "")}` : null;
@@ -109,10 +113,10 @@ export function LeadSteps(p: LeadStepsProps) {
         </div>
       )}
 
-      {/* Four actions as icon buttons; the label shows on hover (and keyboard focus). */}
+      {/* Five actions as icon buttons; the label shows on hover (and keyboard focus). */}
       <ActionForm action={logLeadCall} className="mt-3">
         <input type="hidden" name="job_id" value={p.jobId} />
-        <div className="grid grid-cols-4 gap-2" data-lead-actions>
+        <div className="grid grid-cols-5 gap-2" data-lead-actions>
           <SubmitButton name="outcome" value="spoke" variant={p.contacted ? "primary" : "secondary"} className="group relative h-12 w-full px-0">
             <Icon d={CHECK} className="h-5 w-5" /><Tip align="start">{p.contacted ? `Spoke ${p.contacted.label}` : "Spoke to them"}</Tip>
           </SubmitButton>
@@ -121,7 +125,8 @@ export function LeadSteps(p: LeadStepsProps) {
             {p.noAnswer.count > 0 && <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-amber-500 px-1 text-[11px] font-bold text-white" aria-hidden>{p.noAnswer.count}</span>}
           </SubmitButton>
           <IconToggle on={open === "book"} onClick={() => setOpen(open === "book" ? null : "book")} label="Book the inspection" d={CAL} />
-          <IconToggle on={open === "lost"} onClick={() => setOpen(open === "lost" ? null : "lost")} label="Not going ahead" d={XCIRCLE} tone="red" align="end" />
+          <IconToggle on={open === "lost"} onClick={() => setOpen(open === "lost" ? null : "lost")} label="Not going ahead" d={XCIRCLE} tone="red" />
+          <IconToggle on={open === "delete"} onClick={() => setOpen(open === "delete" ? null : "delete")} label="Delete lead" d={BIN} tone="red" align="end" />
         </div>
       </ActionForm>
 
@@ -146,6 +151,26 @@ export function LeadSteps(p: LeadStepsProps) {
           <div className="mt-2 flex gap-2">
             <SubmitButton variant="danger" className="min-h-10 flex-1">Mark as not going ahead</SubmitButton>
             <button type="button" onClick={() => setOpen(null)} className="min-h-10 rounded-xl px-4 text-sm font-semibold text-slate-600 ring-1 ring-slate-300 hover:bg-white">Cancel</button>
+          </div>
+        </ActionForm>
+      )}
+
+      {open === "delete" && (
+        // Delete: gone for good (spam, a test, a double-up). Red, and says exactly what goes.
+        <ActionForm action={deleteLead} className="mt-3 rounded-xl bg-red-50 p-3.5 ring-1 ring-red-200">
+          <input type="hidden" name="job_id" value={p.jobId} />
+          <div data-lead-delete-confirm>
+            <p className="text-sm font-semibold text-red-800">Delete {p.first}&rsquo;s lead?</p>
+            <p className="mt-0.5 text-[13px] text-red-700">The lead, its notes and files go for good. This can&rsquo;t be undone.</p>
+            {p.otherJobs === 0 && (
+              <label className="mt-2.5 flex cursor-pointer items-center gap-2 text-[13px] font-medium text-red-800">
+                <input type="checkbox" name="remove_contact" defaultChecked className="h-4 w-4 accent-red-600" />Also delete {p.name} from Contacts
+              </label>
+            )}
+          </div>
+          <div className="mt-3 flex gap-2">
+            <SubmitButton variant="danger" className="min-h-10 flex-1">Delete lead</SubmitButton>
+            <button type="button" onClick={() => setOpen(null)} className="min-h-10 rounded-xl bg-white px-4 text-sm font-semibold text-slate-600 ring-1 ring-slate-300 hover:bg-slate-50">Cancel</button>
           </div>
         </ActionForm>
       )}
