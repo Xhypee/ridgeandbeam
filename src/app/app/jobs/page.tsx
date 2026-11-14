@@ -27,8 +27,8 @@ type Row = NextStepJob & {
 };
 
 const COLUMNS: { key: PipelineColumn; name: string; hint: string }[] = [
-  { key: "new", name: "New leads", hint: "Call within 5 minutes" },
-  { key: "quoting", name: "Quoting", hint: "Inspect, measure, send options" },
+  { key: "new", name: "New leads", hint: "Call, inspect, write the quote" },
+  { key: "quoted", name: "Quoted", hint: "Waiting for them to sign and pay the deposit" },
   { key: "sold", name: "Signed & Prepping", hint: "Get it ready to build" },
   { key: "building", name: "Building", hint: "Crew on the roof" },
   { key: "wrapping", name: "Wrapping up", hint: "Close out and get paid" },
@@ -72,7 +72,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
     .map((j) => {
       const c = ctx.get(j.id)!;
       const est = c.estimate;
-      return { j, col: pipelineColumn(j, now), value: est && ["accepted", "sent"].includes(est.status) ? est.total : null, next: nextStep(j, c) };
+      return { j, col: pipelineColumn(j, now, c), value: est && ["accepted", "sent"].includes(est.status) ? est.total : null, next: nextStep(j, c) };
     })
     .filter((x) => x.col !== null);
   const shownValue = cards.reduce((s, c) => s + (c.value ?? 0), 0);

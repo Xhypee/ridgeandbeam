@@ -211,7 +211,8 @@ describe("jobPhase / jobSteps", () => {
 describe("pipeline helpers", () => {
   it("columns", () => {
     expect(pipelineColumn({ stage: "lead" })).toBe("new");
-    expect(pipelineColumn({ stage: "estimate_sent" })).toBe("quoting");
+    expect(pipelineColumn({ stage: "estimate_sent" })).toBe("quoted");
+    expect(pipelineColumn({ stage: "inspection" })).toBe("new");
     expect(pipelineColumn({ stage: "scheduled" })).toBe("sold");
     expect(pipelineColumn({ stage: "in_progress" })).toBe("building");
     expect(pipelineColumn({ stage: "completed" })).toBe("wrapping");
@@ -223,10 +224,26 @@ describe("pipeline helpers", () => {
     expect(ageTone("new", { minutes: 3 })).toBe("ok");
     expect(ageTone("new", { minutes: 41 })).toBe("amber");
     expect(ageTone("new", { minutes: 90 })).toBe("red");
-    expect(ageTone("quoting", { days: 6 })).toBe("amber");
+    expect(ageTone("quoted", { days: 6 })).toBe("amber");
     expect(ageTone("sold", { days: 15 })).toBe("red");
   });
   it("dollars", () => {
     expect(dollars(18750.4)).toBe("$18,750");
+  });
+});
+
+describe("pipelineColumn: deposit", () => {
+  const signed = (over: Partial<NextStepCtx["estimate"] & object> = {}, paid = 0) => ({
+    estimate: { id: "e", number: 1, status: "accepted", total: 10000, sent_at: null, accepted_at: "2026-11-01", ...over },
+    invoices: { ...EMPTY_INVOICES, paid },
+  });
+  it("keeps a signed job in Quoted until the deposit is paid", () => {
+    expect(pipelineColumn({ stage: "sold" }, NOW, signed())).toBe("quoted");
+    expect(pipelineColumn({ stage: "sold" }, NOW, signed({}, 1000))).toBe("sold");
+  });
+  it("moves on when no deposit is due, for insurance jobs, or when nothing is known", () => {
+    expect(pipelineColumn({ stage: "sold" }, NOW, signed({ depositDue: false }))).toBe("sold");
+    expect(pipelineColumn({ stage: "sold", is_insurance: true }, NOW, signed())).toBe("sold");
+    expect(pipelineColumn({ stage: "scheduled" })).toBe("sold");
   });
 });

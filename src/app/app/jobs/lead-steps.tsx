@@ -132,7 +132,7 @@ export function LeadSteps(p: LeadStepsProps) {
 
       {open === "book" && (
         <div className="mt-3 rounded-xl bg-brand-50 p-3.5 ring-1 ring-brand-200" data-lead-book>
-          <p className="mb-2 text-sm font-semibold text-ink">Book the inspection <span className="font-normal text-slate-500">· it moves to Quoting</span></p>
+          <p className="mb-2 text-sm font-semibold text-ink">Book the inspection <span className="font-normal text-slate-500">· then write the quote</span></p>
           {booking}
         </div>
       )}

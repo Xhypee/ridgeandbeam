@@ -1,4 +1,5 @@
 import "server-only";
+import { dueOnSigning } from "./quote-pricing";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { jobReadiness, type ReadinessJob } from "./production";
 import { isoDate } from "./format";
@@ -41,8 +42,8 @@ export async function loadNextStepCtx(supabase: SupabaseClient, jobs: NextStepJo
   const today = isoDate(opts.now ?? new Date());
 
   const [estimates, claims, orders, invoices] = await Promise.all([
-    inChunks<{ id: string; job_id: string; number: number; status: string; sent_at: string | null; accepted_at: string | null; created_at: string }>(ids, (c) =>
-      supabase.from("estimates").select("id, job_id, number, status, sent_at, accepted_at, created_at").in("job_id", c).order("created_at", { ascending: false })),
+    inChunks<{ id: string; job_id: string; number: number; status: string; sent_at: string | null; accepted_at: string | null; created_at: string; payment_mode: string | null; payment_when: string | null }>(ids, (c) =>
+      supabase.from("estimates").select("id, job_id, number, status, sent_at, accepted_at, created_at, payment_mode, payment_when").in("job_id", c).order("created_at", { ascending: false })),
     inChunks<{ id: string; job_id: string; stage: string; stage_changed_at: string | null; carrier: string | null; claim_number: string | null }>(ids, (c) =>
       supabase.from("claims").select("id, job_id, stage, stage_changed_at, carrier, claim_number").in("job_id", c)),
     inChunks<{ job_id: string; status: string; delivery_date: string | null }>(ids, (c) => supabase.from("material_orders").select("job_id, status, delivery_date").in("job_id", c)),
@@ -88,7 +89,7 @@ export async function loadNextStepCtx(supabase: SupabaseClient, jobs: NextStepJo
 
   for (const j of jobs) {
     const e = best.get(j.id);
-    const estimate: NextStepEstimate | null = e ? { id: e.id, number: e.number, status: e.status, total: estTotal.get(e.id) ?? 0, sent_at: e.sent_at, accepted_at: e.accepted_at } : null;
+    const estimate: NextStepEstimate | null = e ? { id: e.id, number: e.number, status: e.status, total: estTotal.get(e.id) ?? 0, sent_at: e.sent_at, accepted_at: e.accepted_at, depositDue: dueOnSigning(e.payment_mode, e.payment_when) } : null;
     const claim = claimByJob.get(j.id) ?? null;
     const v = claim ? varByClaim.get(claim.id) ?? null : null;
     const inv = { ...EMPTY_INVOICES };
