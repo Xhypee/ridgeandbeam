@@ -86,7 +86,6 @@ export function CustomerDocket({ d, closeHref, canSeeMoney, today, edit }: { d: 
             <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-200">
               <span className="min-w-0 flex-1 truncate">{tag}</span>
               <span className="shrink-0">Since {since(c.created_at)}</span>
-              <Link href={`/app/customers/${c.id}`} aria-label="Open the full customer page" title="Open the full customer page" className="-my-1 grid h-8 w-8 place-items-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"><Icon d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6" /></Link>
               <Link href={closeHref} scroll={false} aria-label="Close" className="-my-1 -mr-2 grid h-8 w-8 place-items-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"><Icon d="M6 6l12 12M18 6L6 18" /></Link>
             </div>
             <h2 className="mt-2 font-display text-2xl font-bold leading-tight">{c.name}</h2>

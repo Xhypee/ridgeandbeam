@@ -67,7 +67,7 @@ function Row({ icon, k, v, href }: { icon: string; k: string; v: React.ReactNode
   return href ? <a href={href} className="flex items-center gap-3 rounded-lg py-1.5 hover:bg-slate-50">{inner}</a> : <div className="flex items-center gap-3 py-1.5">{inner}</div>;
 }
 
-function Shell({ id, tag, sinceIso, name, sub, stats, fullHref, closeHref, phone, email, children, claude }: { id: string; tag: string; sinceIso: string; name: string; sub: string; stats: { k: string; v: string; warn?: boolean }[]; fullHref?: string; closeHref: string; phone: string | null; email: string | null; children: React.ReactNode; claude?: React.ReactNode }) {
+function Shell({ id, tag, sinceIso, name, sub, stats, closeHref, phone, email, children, claude }: { id: string; tag: string; sinceIso: string; name: string; sub: string; stats: { k: string; v: string; warn?: boolean }[]; closeHref: string; phone: string | null; email: string | null; children: React.ReactNode; claude?: React.ReactNode }) {
   const btn = "inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl text-[15px] font-semibold";
   return (
     <div className="flex h-full flex-col bg-cream p-4" data-contact-docket={id}>
@@ -77,7 +77,6 @@ function Shell({ id, tag, sinceIso, name, sub, stats, fullHref, closeHref, phone
             <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-200">
               <span className="min-w-0 flex-1 truncate" data-contact-tag>{tag}</span>
               <span className="shrink-0">Since {since(sinceIso)}</span>
-              {fullHref && <Link href={fullHref} aria-label="Open the full page" title="Open the full page" className="-my-1 grid h-8 w-8 place-items-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"><Icon d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6" /></Link>}
               <Link href={closeHref} scroll={false} aria-label="Close" className="-my-1 -mr-2 grid h-8 w-8 place-items-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"><Icon d="M6 6l12 12M18 6L6 18" /></Link>
             </div>
             <h2 className="mt-2 font-display text-2xl font-bold leading-tight">{name}</h2>
@@ -145,7 +144,7 @@ function BuilderDocket({ d, closeHref, canSeeMoney }: { d: ContactDocketData; cl
   return (
     <Shell claude={<ClaudeBar contactId={c.id} firstName={c.name.split(" ")[0] || c.name} ready={aiEnabled()} />} id={c.id} tag={TYPE_LABEL.builder} sinceIso={c.created_at} name={c.name} sub={[c.abn ? `ABN ${c.abn}` : null, c.city].filter(Boolean).join(" · ") || address || "Builder"}
       stats={canSeeMoney ? [{ k: "Jobs", v: String(d.jobs.length) }, { k: "Signed", v: aud(d.contract) }, { k: "Owing", v: aud(d.owing), warn: d.owing > 0 }] : [{ k: "Jobs", v: String(d.jobs.length) }]}
-      fullHref={`/app/customers/${c.id}`} closeHref={closeHref} phone={c.phone ?? d.people.find((p) => p.phone)?.phone ?? null} email={c.email ?? d.people.find((p) => p.email)?.email ?? null}>
+      closeHref={closeHref} phone={c.phone ?? d.people.find((p) => p.phone)?.phone ?? null} email={c.email ?? d.people.find((p) => p.email)?.email ?? null}>
       <Section title="People" count={d.people.length}>
         {d.people.length > 0 && (
           <ul className="-mx-2 divide-y divide-slate-100" data-contact-people>
@@ -327,7 +326,7 @@ export function SupplierDocket({ d, closeHref, canSeeMoney, canEdit }: { d: Supp
     <Shell claude={<ClaudeBar supplierId={s.id} firstName={s.name} ready={aiEnabled()} />} id={s.id} tag={[TYPE_LABEL.supplier, s.is_default ? "Default" : null].filter(Boolean).join(" · ")} sinceIso={s.created_at} name={s.name}
       sub={[s.category ? SUPPLIER_CATEGORY_LABEL[s.category] ?? null : null, s.branch_name].filter(Boolean).join(" · ") || "Supplier"}
       stats={canSeeMoney ? [{ k: "Orders", v: String(d.orderCount) }, { k: "This month", v: aud(d.thisMonth) }, { k: "To pay", v: aud(d.toPay), warn: d.toPay > 0 }] : [{ k: "Orders", v: String(d.orderCount) }]}
-      fullHref={canSeeMoney ? `/app/settings/suppliers/${s.id}` : undefined} closeHref={closeHref} phone={phone} email={s.branch_email}>
+      closeHref={closeHref} phone={phone} email={s.branch_email}>
       <Section title="Account">
         {s.account_number && <Row icon={DOC} k="Account number" v={s.account_number} />}
         {s.rep_name && <Row icon={PHONE} k="Rep" v={[s.rep_name, s.rep_phone].filter(Boolean).join(" · ")} href={s.rep_phone ? tel(s.rep_phone) : undefined} />}

@@ -89,7 +89,6 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
             <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-200">
               <span className="min-w-0 flex-1 truncate">{tag}</span>
               {(lost || stageClock(d)) && <span className="shrink-0">{lost ? "Lost" : stageClock(d)}</span>}
-              <Link href={base} aria-label="Open the full job" title="Open the full job" className="-my-1 grid h-8 w-8 place-items-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"><Icon d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6" /></Link>
               <Link href={closeHref} scroll={false} aria-label="Close" className="-my-1 -mr-2 grid h-8 w-8 place-items-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"><Icon d="M6 6l12 12M18 6L6 18" /></Link>
             </div>
             <h2 className="mt-2 font-display text-2xl font-bold leading-tight">{d.customer.name}</h2>
