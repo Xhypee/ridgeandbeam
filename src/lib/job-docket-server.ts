@@ -255,7 +255,8 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
 
   const refRow = row as { referred_by?: string | null; referred_by_type?: string | null };
   const referredBy = refRow.referred_by && isReferrerType(refRow.referred_by_type) ? await loadReferrer(supabase, refRow.referred_by_type, refRow.referred_by) : null;
-  const addr = [c.address, c.city, [c.state, c.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+  // Just a state on its own (the form's default) isn't an address.
+  const addr = c.address || c.city ? [c.address, c.city, [c.state, c.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ") : "";
   return {
     job: {
       id: row.id, title: row.title, stage: row.stage, job_type: row.job_type, site_address: row.site_address, state: row.state, is_insurance: row.is_insurance,

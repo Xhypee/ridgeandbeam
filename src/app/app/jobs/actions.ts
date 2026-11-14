@@ -8,6 +8,7 @@ import { loadReadiness } from "@/lib/production-server";
 import { AU_JOB_TYPES } from "@/lib/job-types";
 import { JOB_STAGES } from "@/lib/types";
 import type { ActionResult } from "@/components/action-form";
+import { referralFromForm } from "@/lib/referral-form";
 
 export async function createJob(_: ActionResult, fd: FormData): Promise<ActionResult> {
   const { supabase, org, user } = await requireOrg();
@@ -127,7 +128,7 @@ export async function deleteJob(fd: FormData) {
 
 /** The job sidebar's Contact section → Edit: mobile, email and site address in one save. */
 export async function updateJobContact(_: ActionResult, fd: FormData): Promise<ActionResult> {
-  const { supabase } = await requireOrg();
+  const { supabase, org, user } = await requireOrg();
   const jobId = String(fd.get("job_id") ?? ""), customerId = String(fd.get("customer_id") ?? "");
   if (!jobId || !customerId) return { error: "Couldn't find this job." };
   const email = str(fd, "email");
@@ -137,14 +138,21 @@ export async function updateJobContact(_: ActionResult, fd: FormData): Promise<A
   const lat = Number(fd.get("lat")), lng = Number(fd.get("lng"));
   const at = fd.get("lat") && fd.get("lng") && lat >= -45 && lat <= -9 && lng >= 112 && lng <= 155 ? { lat, lng } : {};
 
-  const { data: job } = await supabase.from("jobs").select("site_address").eq("id", jobId).maybeSingle();
+  const { data: job } = await supabase.from("jobs").select("site_address, lead_source").eq("id", jobId).maybeSingle();
+  // Referred by (picked from contacts, or a new contact added from the lookup); cleared when removed.
+  let ref: Record<string, string | null> = {};
+  if (fd.get("referral_edit")) {
+    const r = await referralFromForm(supabase, org.id, user.id, fd, customerId);
+    if (r && "error" in r) return { error: r.error };
+    ref = r ? { ...r, ...(!job?.lead_source || job.lead_source === "other" ? { lead_source: "referral" } : {}) } : { referred_by: null, referred_by_type: null };
+  }
   const { error: cErr } = await supabase.from("customers").update({
     phone: str(fd, "phone"), email,
     // The site was the customer's own address (no separate site on the job) → keep the two in step.
     ...(job && !job.site_address ? a : {}),
   }).eq("id", customerId);
   if (cErr) return { error: friendly(cErr) };
-  const { error: jErr } = await supabase.from("jobs").update({ site_address: site, ...(a.state ? { state: a.state } : {}), ...(a.zip ? { zip: a.zip } : {}), ...at }).eq("id", jobId);
+  const { error: jErr } = await supabase.from("jobs").update({ site_address: site, ...(a.state ? { state: a.state } : {}), ...(a.zip ? { zip: a.zip } : {}), ...at, ...ref }).eq("id", jobId);
   if (jErr) return { error: friendly(jErr) };
   revalidatePath("/app", "layout");
   return { ok: "Saved." };
