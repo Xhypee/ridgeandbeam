@@ -15,6 +15,17 @@ const Schema = z.object({
   category: z.enum(["plans", "document"]),
 });
 
+/** Where a new upload for this job goes in storage (the org folder comes from the server, not the browser). */
+export async function prepareJobUpload(jobId: string, name: string): Promise<{ path?: string; error?: string }> {
+  if (!z.uuid().safeParse(jobId).success) return { error: "Job not found." };
+  const { supabase, org, isCrewLead } = await requireOrg();
+  if (isCrewLead) return { error: "Ask the office to add files to this job." };
+  const { data: job } = await supabase.from("jobs").select("id, org_id").eq("id", jobId).maybeSingle();
+  if (!job || job.org_id !== org.id) return { error: "Job not found." };
+  const safe = name.replace(/[^A-Za-z0-9._-]+/g, "_").slice(-80) || "file";
+  return { path: `${org.id}/${job.id}/files/${crypto.randomUUID()}-${safe}` };
+}
+
 /** Record a file uploaded straight to job storage (plans, contracts, reports…). */
 export async function attachJobFile(input: z.input<typeof Schema>): Promise<ActionResult> {
   const p = Schema.safeParse(input);

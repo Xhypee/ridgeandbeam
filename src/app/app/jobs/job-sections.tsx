@@ -1,9 +1,9 @@
 // Contact · Notes · Documents: the same three sections on every stage's sidebar (New leads, Sold, Building).
-import Link from "next/link";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { cx } from "@/components/ui";
 import type { Docket, LeadDoc } from "@/lib/job-docket-server";
 import { addNote } from "./actions";
+import { DocumentDrop } from "./document-drop";
 
 export { EYE, Icon, Section } from "./job-section-ui";
 import { EYE, Icon, Section } from "./job-section-ui";
@@ -85,7 +85,8 @@ export function JobDocuments({ jobId, docs, meta }: { jobId: string; docs: LeadD
               );
             })}
           </ul>
-        ) : <p className="text-sm text-slate-500">Nothing yet. <Link href={`/app/jobs/${jobId}/files`} className="font-semibold text-brand-700">Add plans or documents</Link></p>}
+        ) : null}
+        <DocumentDrop jobId={jobId} />
       </Section>
 
     </>

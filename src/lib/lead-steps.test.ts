@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dateIn, INSPECTION_TIMES, inspectionLabel, inspectionSms, localToUtc, LOST_REASON_LABEL } from "./lead-steps";
+import { clashAt, dateIn, INSPECTION_TIMES, inspectionLabel, inspectionSms, localToUtc, LOST_REASON_LABEL, monthGrid, weekOf } from "./lead-steps";
 
 describe("localToUtc", () => {
   it("Brisbane has no daylight saving: 9 am is 23:00 UTC the day before", () => {
@@ -47,5 +47,43 @@ describe("slots, reasons, text", () => {
   it("writes the booking text", () => {
     expect(inspectionSms({ first: "Priya", when: "Wed 18 Nov, 9:00 am", business: "Bbang Roofing", who: "Sam" }))
       .toBe("Hi Priya, it's Sam from Bbang Roofing. You're booked in for a roof inspection on Wed 18 Nov, 9:00 am. Reply to this text if you need to change the time.");
+  });
+});
+
+
+describe("monthGrid", () => {
+  it("starts weeks on Monday and pads the edges", () => {
+    // November 2026 starts on a Sunday.
+    const g = monthGrid(2026, 11);
+    expect(g[0]).toEqual([null, null, null, null, null, null, "2026-11-01"]);
+    expect(g[1][0]).toBe("2026-11-02");
+    expect(g.flat().filter(Boolean)).toHaveLength(30);
+    expect(g.every((w) => w.length === 7)).toBe(true);
+  });
+  it("handles February in a leap year", () => {
+    expect(monthGrid(2028, 2).flat().filter(Boolean)).toHaveLength(29);
+  });
+});
+
+describe("clashAt", () => {
+  const items = [
+    { date: "2026-11-16", time: "9:00 am", minutes: 540, kind: "inspection" as const, label: "Tom Nguyen" },
+    { date: "2026-11-16", time: null, minutes: null, kind: "build" as const, label: "Smith St build" },
+  ];
+  it("flags an inspection within the hour", () => {
+    expect(clashAt(items, "2026-11-16", "09:30")?.label).toBe("Tom Nguyen");
+    expect(clashAt(items, "2026-11-16", "08:30")?.label).toBe("Tom Nguyen");
+  });
+  it("ignores other times, days and all-day builds", () => {
+    expect(clashAt(items, "2026-11-16", "10:00")).toBeNull();
+    expect(clashAt(items, "2026-11-17", "09:00")).toBeNull();
+  });
+});
+
+describe("weekOf", () => {
+  it("gives Monday to Sunday around a date", () => {
+    expect(weekOf("2026-11-18")).toEqual(["2026-11-16", "2026-11-17", "2026-11-18", "2026-11-19", "2026-11-20", "2026-11-21", "2026-11-22"]);
+    expect(weekOf("2026-11-22")[0]).toBe("2026-11-16");
+    expect(weekOf("2026-11-16")[0]).toBe("2026-11-16");
   });
 });

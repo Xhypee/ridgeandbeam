@@ -57,3 +57,34 @@ export const INSPECTION_TIMES = Array.from({ length: 21 }, (_, i) => {
 export function inspectionSms(o: { first: string; when: string; business: string; who?: string | null }) {
   return `Hi ${o.first}, it's ${o.who ? `${o.who} from ` : ""}${o.business}. You're booked in for a roof inspection on ${o.when}. Reply to this text if you need to change the time.`;
 }
+
+/** Monday-first month grid for the booking calendar: weeks of "YYYY-MM-DD" (null = padding). month is 1–12. */
+export function monthGrid(year: number, month: number): (string | null)[][] {
+  const days = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const lead = (new Date(Date.UTC(year, month - 1, 1)).getUTCDay() + 6) % 7; // Mon=0 … Sun=6
+  const cells: (string | null)[] = Array.from({ length: lead }, () => null);
+  for (let d = 1; d <= days; d++) cells.push(`${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`);
+  while (cells.length % 7) cells.push(null);
+  return Array.from({ length: cells.length / 7 }, (_, w) => cells.slice(w * 7, w * 7 + 7));
+}
+
+/** One thing on a staff member's schedule, already in the job's timezone. */
+export type ScheduleItem = { date: string; time: string | null; minutes: number | null; kind: "inspection" | "build"; label: string; jobId?: string; stage?: string };
+
+/** A job a staff member is on (looking after it, or on its team), for the full calendar's Projects panel. */
+export type StaffProject = { id: string; customer: string; title: string; stage: string; role: string; start: string | null; end: string | null; inspection: string | null; suburb: string | null };
+
+/** Monday of the week containing `date` ("YYYY-MM-DD"), and the 7 days from it. */
+export function weekOf(date: string): string[] {
+  const t = Date.parse(`${date}T12:00:00Z`);
+  const mon = t - ((new Date(t).getUTCDay() + 6) % 7) * 86400000;
+  return Array.from({ length: 7 }, (_, i) => new Date(mon + i * 86400000).toISOString().slice(0, 10));
+}
+
+/** Does a new inspection at `time` ("HH:MM") clash with one already booked that day (within an hour)? */
+export function clashAt(items: ScheduleItem[], date: string, time: string): ScheduleItem | null {
+  const m = /^(\d{2}):(\d{2})$/.exec(time);
+  if (!m) return null;
+  const at = Number(m[1]) * 60 + Number(m[2]);
+  return items.find((i) => i.date === date && i.kind === "inspection" && i.minutes !== null && Math.abs(i.minutes - at) < 60) ?? null;
+}
