@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { intakeNote, planDocUpdates, sameValue, type Current, type DocRead } from "./doc-intake";
+import { intakeNote, NO_ROOF, planDocUpdates, roofMeasurementsFromDoc, sameValue, type Current, type DocRead } from "./doc-intake";
 
 const read = (over: Partial<DocRead>): DocRead => ({
   doc_type: "other", summary: null,
   customer: { phone: null, email: null, address: null, suburb: null, state: null, postcode: null },
   site: { address: null, suburb: null, state: null, postcode: null },
   job: { roof_material: null, roof_area_m2: null },
+  roof: NO_ROOF,
   insurance: { insurer: null, claim_number: null, policy_number: null, assessor_name: null, assessor_phone: null, assessor_email: null, excess: null, date_of_loss: null },
   notes: null, ...over,
 });
@@ -66,5 +67,27 @@ describe("planDocUpdates", () => {
     const r = read({ doc_type: "insurance", summary: "Assessor report", insurance: { insurer: "NRMA", claim_number: "88213", policy_number: null, assessor_name: null, assessor_phone: null, assessor_email: null, excess: null, date_of_loss: null } });
     const note = intakeNote("Assessor report.pdf", r, planDocUpdates(r, cur()));
     expect(note).toBe('Claude read "Assessor report.pdf" (insurance document). Assessor report. Filled in: insurer NRMA, claim # 88213, marked as an insurance job.');
+  });
+});
+
+describe("roofMeasurementsFromDoc", () => {
+  it("uses the plan area and pitch from a roof report, plus the line lengths", () => {
+    const r = roofMeasurementsFromDoc({ ...NO_ROOF, plan_area_m2: 180, area_m2: 195, pitch_deg: 22.5, ridge_m: 14.2, hip_m: 22, valley_m: 0, gutter_m: 58, downpipes: 5 }, "Colorbond Trimdek", { wastePct: 12 })!;
+    expect(r.measurements).toMatchObject({ wastePct: 12, sections: [{ label: "Main roof", area: 180, pitch: 22.5, system: "metal" }], ridge: 14.2, hip: 22, eave: 58, downpipes: 5 });
+    expect(r.measurements).not.toHaveProperty("valley");
+    expect(r.label).toBe("roof area 195 m² at 22.5°");
+  });
+  it("works the plan area out from the roof area, assuming 22.5° when no pitch is given", () => {
+    const r = roofMeasurementsFromDoc({ ...NO_ROOF, area_m2: 212 }, "Concrete tile", null)!;
+    const sec = (r.measurements.sections as { area: number; pitch: number; system: string }[])[0];
+    expect(sec.pitch).toBe(22.5);
+    expect(sec.system).toBe("concrete_tile");
+    expect(sec.area).toBeCloseTo(212 * Math.cos((22.5 * Math.PI) / 180), 1);
+    expect(r.label).toBe("roof area 212 m² at 22.5° (pitch assumed)");
+  });
+  it("gives nothing without a believable area", () => {
+    expect(roofMeasurementsFromDoc(NO_ROOF, null, null)).toBeNull();
+    expect(roofMeasurementsFromDoc({ ...NO_ROOF, area_m2: 2 }, null, null)).toBeNull();
+    expect(roofMeasurementsFromDoc(null, null, null)).toBeNull();
   });
 });

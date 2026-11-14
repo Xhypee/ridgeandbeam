@@ -5,7 +5,8 @@ import { z } from "zod";
 import { requireOrg } from "@/lib/dal";
 import { friendly } from "@/lib/form";
 import { aiEnabled, readJobDocument } from "@/lib/ai";
-import { intakeNote, planDocUpdates, DOC_TYPE_LABEL, type Current } from "@/lib/doc-intake";
+import { intakeNote, planDocUpdates, roofMeasurementsFromDoc, DOC_TYPE_LABEL, type Current } from "@/lib/doc-intake";
+import { normalizeMeasurements, summarize } from "@/lib/roof";
 
 const Schema = z.object({
   jobId: z.uuid(),
@@ -61,13 +62,14 @@ export async function deleteJobFile(fd: FormData) {
   revalidatePath("/app/jobs");
 }
 
-export type DocIntakeResult = { name: string; status: "read" | "skipped" | "off" | "failed"; type?: string; summary?: string | null; filled?: string[]; differs?: string[]; hints?: string[] };
+export type DocIntakeResult = { name: string; status: "read" | "skipped" | "off" | "failed"; type?: string; summary?: string | null; filled?: string[]; differs?: string[]; hints?: string[]; measured?: string | null };
 
 /**
  * After a file lands in a job's Documents: Claude reads it and fills empty fields on the customer, job and
  * insurance claim (never overwriting), files plans as plans, and leaves a note on the job saying what it did.
  */
-export async function readUploadedDocument(fileId: string): Promise<DocIntakeResult> {
+/** `estimateId`: dropped on that quote's roof plan, so roof measurements Claude finds fill it in (draft, not yet measured). */
+export async function readUploadedDocument(fileId: string, estimateId?: string): Promise<DocIntakeResult> {
   const { supabase, org, user, memberships, isCrewLead } = await requireOrg();
   const { data: f } = await supabase.from("job_files").select("id, job_id, storage_path, mime_type, size_bytes, caption").eq("id", fileId).maybeSingle();
   const name = (f?.caption as string | null) ?? "file";
@@ -101,9 +103,29 @@ export async function readUploadedDocument(fileId: string): Promise<DocIntakeRes
   else if (plan.claim && claim) await supabase.from("claims").update(plan.claim).eq("id", claim.id);
   if (plan.category !== "document") await supabase.from("job_files").update({ category: plan.category }).eq("id", f.id);
 
+  // Dropped on a quote's empty roof plan: measurements from plans or a roof report fill it in. Only a draft that
+  // isn't measured yet, and only the first file that has them (the others are noted, not applied).
+  let measured: string | null = null;
+  if (estimateId && /^[0-9a-f-]{36}$/i.test(estimateId)) {
+    const { data: est } = await supabase.from("estimates").select("id, job_id, status, measurements, measurement_source").eq("id", estimateId).maybeSingle();
+    if (est && est.job_id === job.id && est.status === "draft" && est.measurement_source !== "documents" && summarize(normalizeMeasurements(est.measurements)).trueArea === 0) {
+      const m = roofMeasurementsFromDoc(read.roof, read.job.roof_material ?? job.roof_material, est.measurements);
+      if (m) {
+        const { data: saved } = await supabase.from("estimates").update({ measurements: m.measurements, measurement_source: "documents" })
+          .eq("id", est.id).or("measurement_source.is.null,measurement_source.neq.documents").select("id");
+        if (saved?.length) {
+          measured = m.label;
+          plan.filled.push(`${m.label} on the quote`);
+          plan.hints = plan.hints.filter((h) => !h.startsWith("Roof area on the plans"));
+          revalidatePath(`/app/estimates/${est.id}`);
+        }
+      }
+    }
+  }
+
   const me = memberships.find((m) => m.org_id === org.id);
   await supabase.from("job_notes").insert({ org_id: org.id, job_id: job.id, body: intakeNote(name, read, plan), author_id: user.id, author_name: `Claude (for ${me?.full_name || user.fullName || user.email})` });
   revalidatePath("/app/jobs");
   revalidatePath(`/app/jobs/${job.id}`, "layout");
-  return { name, status: "read", type: DOC_TYPE_LABEL[read.doc_type], summary: read.summary, filled: plan.filled, differs: plan.differs, hints: plan.hints };
+  return { name, status: "read", type: DOC_TYPE_LABEL[read.doc_type], summary: read.summary, filled: plan.filled, differs: plan.differs, hints: plan.hints, measured };
 }

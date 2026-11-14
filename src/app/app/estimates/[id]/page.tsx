@@ -111,7 +111,7 @@ export default async function EstimatePage({ params, searchParams }: PageProps<"
         previewHref={previewHref}
         roofMeasured={summarize(normalizeMeasurements(e.measurements)).trueArea > 0}
         emailPane={q ? <QuoteEmailPane html={q.email.html} subject={q.email.subject} toName={q.to.name} toEmail={q.to.email} fromName={fromName} /> : null}
-        roofPlan={<RoofPlanPanel estimateId={e.id} measurements={e.measurements} source={e.measurement_source ?? null} />}
+        roofPlan={<RoofPlanPanel estimateId={e.id} jobId={e.job_id} measurements={e.measurements} source={e.measurement_source ?? null} canDrop={e.status === "draft"} />}
         rules={<RulesLine state={resolved.state} total={contractValue} roofMaterial={profile?.roof_system ?? job.roof_material} jobType={profile?.au_job_type ?? job.job_type} />}
       />
     );

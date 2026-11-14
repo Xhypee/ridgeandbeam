@@ -3,11 +3,13 @@
 // Drop box in a job sidebar's Documents section: drag in files or whole folders (every file inside is
 // uploaded, subfolders kept in the name, e.g. "Plans/Roof plan.pdf"), or browse for files or a folder.
 // After upload Claude reads each file in the background and fills in the job (see readUploadedDocument).
+// variant "measure" (a quote's empty roof plan): also fills the roof measurements, and shows Claude reading
+// and what it found, since that's what they're waiting for.
 import { useRouter } from "next/navigation";
 import { useRef, useState, type DragEvent } from "react";
 import { cx } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
-import { attachJobFile, prepareJobUpload, readUploadedDocument } from "./[id]/files/actions";
+import { attachJobFile, prepareJobUpload, readUploadedDocument, type DocIntakeResult } from "./[id]/files/actions";
 
 const MAX = 50 * 1024 * 1024;
 type Item = { file: File; name: string };
@@ -38,12 +40,14 @@ async function walk(entry: FsEntry, prefix = ""): Promise<Item[]> {
   return nested.flat();
 }
 
-export function DocumentDrop({ jobId }: { jobId: string }) {
+export function DocumentDrop({ jobId, estimateId, variant = "sidebar" }: { jobId: string; estimateId?: string; variant?: "sidebar" | "measure" }) {
+  const measure = variant === "measure";
   const router = useRouter();
   const files = useRef<HTMLInputElement>(null);
   const folder = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
   const [busy, setBusy] = useState<{ done: number; total: number } | null>(null);
+  const [reading, setReading] = useState<{ done: number; total: number } | null>(null);
   const [msg, setMsg] = useState<{ ok?: string; error?: string } | null>(null);
 
   async function upload(all: Item[]) {
@@ -73,7 +77,20 @@ export function DocumentDrop({ jobId }: { jobId: string }) {
     setBusy(null);
     // Quietly, in the background: Claude reads each file and fills in the job, customer and claim (two at a
     // time), then the sidebar refreshes to show the new details. Nothing is shown about it here.
-    if (uploaded.length) {
+    if (uploaded.length && measure) {
+      // On a quote's roof plan: show Claude reading, then what it found.
+      setReading({ done: 0, total: uploaded.length });
+      const results: DocIntakeResult[] = [];
+      let next = 0, done = 0;
+      const worker = async () => {
+        while (next < uploaded.length) {
+          const r = await readUploadedDocument(uploaded[next++], estimateId).catch(() => null);
+          if (r) results.push(r);
+          setReading({ done: ++done, total: uploaded.length });
+        }
+      };
+      void Promise.all([worker(), worker()]).then(() => { setReading(null); setMsg(readSummary(results, todo.length - failed.length)); router.refresh(); });
+    } else if (uploaded.length) {
       let next = 0;
       const worker = async () => { while (next < uploaded.length) await readUploadedDocument(uploaded[next++]).catch(() => null); };
       void Promise.all([worker(), worker()]).then(() => router.refresh());
@@ -83,7 +100,8 @@ export function DocumentDrop({ jobId }: { jobId: string }) {
       big.length ? `${big.length} over 50 MB skipped (${big.map((b) => b.name).slice(0, 2).join(", ")}${big.length > 2 ? "…" : ""})` : null,
       failed.length ? `${failed.length} didn't upload (${failed.slice(0, 2).join(", ")}${failed.length > 2 ? "…" : ""})` : null,
     ].filter(Boolean).join(". ");
-    setMsg(failed.length || big.length ? { error: `${ok ? `Uploaded ${ok}. ` : ""}${notes}.` } : { ok: `Uploaded ${ok} ${ok === 1 ? "file" : "files"}.` });
+    if (failed.length || big.length) setMsg({ error: `${ok ? `Uploaded ${ok}. ` : ""}${notes}.` });
+    else if (!measure) setMsg({ ok: `Uploaded ${ok} ${ok === 1 ? "file" : "files"}.` });
     if (ok) router.refresh();
     if (files.current) files.current.value = "";
     if (folder.current) folder.current.value = "";
@@ -92,7 +110,7 @@ export function DocumentDrop({ jobId }: { jobId: string }) {
   async function onDrop(e: DragEvent<HTMLDivElement>) {
     e.preventDefault();
     setOver(false);
-    if (busy) return;
+    if (busy || reading) return;
     const entries = Array.from(e.dataTransfer.items ?? [])
       .map((i) => (i.kind === "file" && typeof i.webkitGetAsEntry === "function" ? (i.webkitGetAsEntry() as unknown as FsEntry | null) : null))
       .filter((x): x is FsEntry => x !== null);
@@ -107,22 +125,32 @@ export function DocumentDrop({ jobId }: { jobId: string }) {
   };
 
   return (
-    <div className="mt-2" data-document-drop>
+    <div className={measure ? "" : "mt-2"} data-document-drop={variant}>
       <div
-        onDragOver={(e) => { e.preventDefault(); if (!busy) setOver(true); }}
+        onDragOver={(e) => { e.preventDefault(); if (!busy && !reading) setOver(true); }}
         onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(false); }}
         onDrop={onDrop}
-        className={cx("flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-4 py-5 text-center transition",
-          over ? "border-brand-500 bg-brand-50" : "border-slate-300 bg-slate-50/60")}>
+        className={cx("flex flex-col items-center justify-center gap-1 border-2 border-dashed text-center transition",
+          measure ? "rounded-2xl px-5 py-6" : "rounded-xl px-4 py-5",
+          over ? "border-brand-500 bg-brand-50" : measure ? "border-slate-300 bg-white" : "border-slate-300 bg-slate-50/60")}>
         <svg viewBox="0 0 24 24" className={cx("h-7 w-7", over ? "text-brand-600" : "text-slate-400")} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" /></svg>
-        {busy ? (
+        {reading ? (
+          <>
+            <p className="text-sm font-semibold text-ink" data-reading>Claude is reading {reading.total === 1 ? "your file" : `${Math.min(reading.done + 1, reading.total)} of ${reading.total}`}…</p>
+            <p className="text-xs text-slate-500">Looking for roof measurements and job details</p>
+            <div className="mt-1 h-1.5 w-40 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${reading.total ? Math.max(8, (reading.done / reading.total) * 100) : 0}%` }} /></div>
+          </>
+        ) : busy ? (
           <>
             <p className="text-sm font-semibold text-ink">Uploading {Math.min(busy.done + 1, busy.total)} of {busy.total}…</p>
             <div className="mt-1 h-1.5 w-40 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${busy.total ? (busy.done / busy.total) * 100 : 0}%` }} /></div>
           </>
         ) : (
           <>
-            <p className="text-sm font-semibold text-ink">{over ? "Drop to upload" : "Drag files or folders here"}</p>
+            {measure ? (<>
+              <p className="font-semibold text-ink">{over ? "Drop to upload" : "Not measured yet"}</p>
+              <p className="max-w-md text-sm text-slate-500">Drop plans, a roof report or a whole folder here. Claude reads them, fills in the roof measurements and sorts the rest into the job. Or measure from the plans, on the satellite map, or by hand.</p>
+            </>) : <p className="text-sm font-semibold text-ink">{over ? "Drop to upload" : "Drag files or folders here"}</p>}
             <p className="text-xs text-slate-500">
               or <button type="button" onClick={() => files.current?.click()} className="font-semibold text-brand-700 hover:underline">browse files</button>
               {" · "}<button type="button" onClick={() => folder.current?.click()} className="font-semibold text-brand-700 hover:underline">choose a folder</button>
@@ -137,3 +165,14 @@ export function DocumentDrop({ jobId }: { jobId: string }) {
   );
 }
 
+
+/** What Claude did with the files dropped on a quote's roof plan, in a sentence or two. */
+function readSummary(rs: DocIntakeResult[], saved: number): { ok?: string; error?: string } {
+  const files = `${saved} ${saved === 1 ? "file" : "files"}`;
+  if (rs.length && rs.every((r) => r.status === "off")) return { error: `Saved ${files} to the job's Documents. Claude isn't connected yet, so ${saved === 1 ? "it hasn't" : "they haven't"} been read. Measure from the plans, on the satellite map, or by hand.` };
+  const m = rs.find((r) => r.measured);
+  const others = [...new Set(rs.flatMap((r) => r.filled ?? []).filter((f) => !m?.measured || !f.startsWith(m.measured)))].slice(0, 4);
+  const also = others.length ? ` Also filled in: ${others.join(", ")}.` : "";
+  if (m) return { ok: `Roof measured from "${m.name}": ${m.measured}.${also} Check it in the roof report.` };
+  return { error: `Saved ${files} and Claude read ${rs.filter((r) => r.status === "read").length}. No roof measurements in them${also ? "," : "."}${also ? also.replace(" Also filled", " but it filled") : ""} Measure from the plans, on the satellite map, or by hand.` };
+}
