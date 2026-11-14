@@ -17,6 +17,7 @@ import { loadReminder } from "@/lib/quote-remind-server";
 import { loadSupplierPay, paymentRequestPreview } from "@/lib/build-stage-server";
 import { loadQuoteEmail } from "@/lib/quote-email-server";
 import { aiEnabled } from "@/lib/ai";
+import { ClaudeSidebar } from "./claude-sidebar";
 import { StageMotion } from "./stage-motion";
 
 export const metadata: Metadata = { title: "Jobs" };
@@ -193,7 +194,17 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
     </>
   );
 
-  if (!side) return board;
+  // Nothing open: Claude's chat takes the right side (computer only; crew leads just get the board).
+  if (!side) {
+    return (
+      <div className="lg:flex lg:h-full">
+        <div className="no-scrollbar min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:flex lg:flex-col lg:overflow-hidden lg:pb-0 lg:pt-7">
+          {board}
+        </div>
+        {!isCrewLead && <ClaudeSidebar ready={aiEnabled()} />}
+      </div>
+    );
+  }
   if (adding) {
     return (
       <div className="lg:flex lg:h-full">

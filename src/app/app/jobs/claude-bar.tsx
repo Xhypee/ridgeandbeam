@@ -24,7 +24,8 @@ function getRecognition(): Recognition | null {
   return C ? new C() : null;
 }
 
-export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready }: { jobId?: string; contactId?: string; supplierId?: string; firstName?: string; ready: boolean }) {
+/** `docked`: the chat is the whole sidebar (Jobs and Contacts with nothing else open), always open, no blur or minimise. */
+export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready, docked = false }: { jobId?: string; contactId?: string; supplierId?: string; firstName?: string; ready: boolean; docked?: boolean }) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -45,7 +46,7 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready }: { 
     if (parent && getComputedStyle(parent).position === "static") parent.style.position = "relative";
   }, []);
   useEffect(() => {
-    if (!focused) return;
+    if (!focused || docked) return;
     panel.current?.animate([{ transform: "translateY(24px)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }], { duration: 220, easing: "cubic-bezier(.3,.7,.2,1)" });
     const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setFocused(false); };
     // Anywhere outside the chat (the panel and the blur are inside it; the blur minimises on its own).
@@ -53,7 +54,7 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready }: { 
     window.addEventListener("keydown", esc);
     document.addEventListener("pointerdown", away, true);
     return () => { window.removeEventListener("keydown", esc); document.removeEventListener("pointerdown", away, true); };
-  }, [focused]);
+  }, [focused, docked]);
 
   useEffect(() => { log.current?.scrollTo({ top: log.current.scrollHeight }); }, [turns, busy]);
   useEffect(() => () => { callOn.current = false; rec.current?.abort(); if (typeof window !== "undefined") window.speechSynthesis?.cancel(); }, []);
@@ -135,7 +136,7 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready }: { 
     listen();
   }
 
-  const open = focused; // a voice call carries on minimised; the bar shows its status
+  const open = docked || focused; // a voice call carries on minimised; the bar shows its status
   // The chat panel runs from 30% down to the top of the input bar, so chat + bar = the bottom 70%.
   useLayoutEffect(() => { if (open && root.current) setBarH(root.current.offsetHeight); }, [open]);
   const status = call === "listening" ? "Listening… say what you need" : call === "thinking" ? "Thinking…" : call === "speaking" ? "Claude is talking. Tap to hang up" : null;
@@ -148,26 +149,30 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready }: { 
     <div ref={root} className="border-t border-slate-200 bg-white" data-claude-bar data-focused={open ? "true" : "false"}>
       {open && (<>
         {/* Everything above the chat blurs; tap it to go back to the job. */}
-        <button type="button" aria-label="Back to the sidebar" onClick={() => setFocused(false)} data-claude-dim
-          className="absolute inset-x-0 top-0 z-20 h-[30%] cursor-default bg-white/60 backdrop-blur-md" />
-        <div ref={panel} className="absolute inset-x-0 top-[30%] z-30 flex flex-col rounded-t-[22px] border-t border-slate-200 bg-white" style={{ bottom: barH }} data-claude-panel>
-          <div className="flex items-center justify-between px-4 pb-1 pt-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Claude · knows your jobs</p>
+        {!docked && <button type="button" aria-label="Back to the sidebar" onClick={() => setFocused(false)} data-claude-dim
+          className="absolute inset-x-0 top-0 z-20 h-[30%] cursor-default bg-white/60 backdrop-blur-md" />}
+        <div ref={panel} className={cx("absolute inset-x-0 z-30 flex flex-col bg-white", docked ? "top-0" : "top-[30%] rounded-t-[22px] border-t border-slate-200")} style={{ bottom: barH }} data-claude-panel>
+          <div className={cx("flex items-center justify-between px-4 pb-1", docked ? "pt-6" : "pt-3")}>
+            {docked
+              ? <p className="flex items-center gap-2 font-display text-xl font-bold text-ink"><span className="grid h-7 w-7 place-items-center rounded-full bg-[#d97757] text-white"><Spark className="h-3.5 w-3.5" /></span>Ask Claude</p>
+              : <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Claude · knows your jobs</p>}
             <span className="flex items-center gap-1">
               {turns.length > 0 && (
                 <button type="button" onClick={clear} title="Clear chat" aria-label="Clear chat" className={iconBtn} data-claude-clear>
                   <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 12a8 8 0 108-8 8.5 8.5 0 00-6 2.5L4 8M4 3v5h5" /></svg>
                 </button>
               )}
-              <button type="button" onClick={() => setFocused(false)} title="Minimise" aria-label="Minimise" className={iconBtn} data-claude-minimise>
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 9l6 6 6-6" /></svg>
-              </button>
+              {!docked && (
+                <button type="button" onClick={() => setFocused(false)} title="Minimise" aria-label="Minimise" className={iconBtn} data-claude-minimise>
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+              )}
             </span>
           </div>
           <div ref={log} className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 pb-3 pt-2 text-sm" aria-live="polite">
             {turns.length === 0 && call === "off" && (
               <div className="space-y-2 pt-1" data-claude-starters>
-                <p className="text-sm text-slate-500">Ask anything about {firstName ?? "your business"}. Try:</p>
+                <p className="text-sm text-slate-500">{docked ? "Claude knows your jobs, quotes and customers. Try:" : <>Ask anything about {firstName ?? "your business"}. Try:</>}</p>
                 {starters.map((q) => (
                   <button key={q} type="button" disabled={!ready} onMouseDown={(e) => e.preventDefault()} onClick={() => void ask(q)}
                     className="block w-full rounded-xl bg-cream px-3.5 py-2.5 text-left text-sm font-medium text-ink ring-1 ring-slate-200 hover:ring-brand-400 disabled:opacity-50">{q}</button>
