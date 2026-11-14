@@ -16,6 +16,7 @@ const jobTitle = (fd: FormData, insurance: boolean) => {
   return t && t !== "other" ? `${insurance ? "Insurance · " : ""}${AU_JOB_TYPE_LABEL[t]}` : insurance ? "Insurance roof inspection" : "Roof inspection";
 };
 import type { ActionResult } from "@/components/action-form";
+import { referralFromForm, type ReferralFields } from "@/lib/referral-form";
 
 /** The job's notes (shown under Notes on its sidebar): what they need from the picked card, then anything typed.
  *  "Needs: Re-roof (Full replacement)\nNotes: Leaking over the back bedroom". Nothing picked → just the typed notes. */
@@ -66,12 +67,12 @@ export async function searchCustomers(q: string): Promise<CustomerMatch[]> {
   return (data ?? []).map((c) => ({ id: c.id, name: c.name, phone: c.phone, email: c.email, address: c.address, city: c.city, state: c.state, zip: c.zip, jobs: Array.isArray(c.jobs) ? c.jobs.length : 0 }));
 }
 
-/** "Referred by" from the New lead sidebar: the referring contact, and the lead source says referral. */
-function referral(fd: FormData, customerId?: string): { referred_by?: string; referred_by_type?: "contact" | "supplier"; lead_source?: string } {
-  const id = str(fd, "referred_by");
-  const type = fd.get("referred_by_type") === "supplier" ? "supplier" : "contact";
-  if (!id || !/^[0-9a-f-]{36}$/i.test(id) || (type === "contact" && id === customerId)) return {};
-  return { referred_by: id, referred_by_type: type, lead_source: "referral" };
+/** "Referred by" from the New lead sidebar (an existing contact / supplier, or a new contact added from the lookup);
+ *  the lead source then says referral. */
+async function referral(supabase: Parameters<typeof referralFromForm>[0], orgId: string, userId: string, fd: FormData, customerId?: string): Promise<{ error: string } | { fields: Partial<ReferralFields> & { lead_source?: string } }> {
+  const r = await referralFromForm(supabase, orgId, userId, fd, customerId);
+  if (r && "error" in r) return { error: r.error };
+  return { fields: r ? { ...r, lead_source: "referral" } : {} };
 }
 
 export async function createCustomer(_: ActionResult, fd: FormData): Promise<ActionResult> {
@@ -91,18 +92,21 @@ export async function createCustomer(_: ActionResult, fd: FormData): Promise<Act
   const createJob = fd.get("create_job") === "on";
   if (insurance && !createJob) return { error: "An insurance claim belongs to a job. Tick “Also open a job” or choose Retail." };
 
-  const { data, error } = await supabase.from("customers").insert({ ...f, ...(str(fd, "referred_by") && f.source === "other" ? { source: "referral" as const } : {}), org_id: org.id, created_by: user.id }).select("id").single();
+  const { data, error } = await supabase.from("customers").insert({ ...f, ...((str(fd, "referred_by") || str(fd, "referred_by_new")) && f.source === "other" ? { source: "referral" as const } : {}), org_id: org.id, created_by: user.id }).select("id").single();
   if (error) return { error: friendly(error) };
 
   // Optionally open a job right away (the common "new lead" flow).
   if (createJob) {
+    const ref = await referral(supabase, org.id, user.id, fd, data.id);
+    if ("error" in ref) return { error: ref.error };
     const { data: job, error: jobErr } = await supabase
       .from("jobs")
       .insert({
         org_id: org.id,
         customer_id: data.id,
         title: jobTitle(fd, insurance), ...jobType(fd),
-        site_address: [f.address, f.city, f.state, f.zip].filter(Boolean).join(", ") || null,
+        // No street typed → no site yet (not just the default state on its own).
+        site_address: f.address ? [f.address, f.city, f.state, f.zip].filter(Boolean).join(", ") : null,
         state: f.state,
         zip: f.zip,
         // From the Google Maps address lookup, when they picked a result.
@@ -110,7 +114,7 @@ export async function createCustomer(_: ActionResult, fd: FormData): Promise<Act
         is_insurance: insurance,
         created_by: user.id,
         notes: leadNotes(fd),
-        ...referral(fd),
+        ...ref.fields,
       })
       .select("id")
       .single();
@@ -160,12 +164,14 @@ async function jobForExisting(customerId: string, fd: FormData): Promise<ActionR
   // The site is what they entered, else the customer's own address.
   const typed = { address: str(fd, "address"), city: str(fd, "city"), state: str(fd, "state")?.toUpperCase() ?? null, zip: str(fd, "zip") };
   const site = typed.address ? typed : { address: c.address, city: c.city, state: c.state, zip: c.zip };
+  const ref = await referral(supabase, org.id, user.id, fd, c.id);
+  if ("error" in ref) return { error: ref.error };
   const { data: job, error } = await supabase.from("jobs").insert({
     org_id: org.id, customer_id: c.id,
     title: jobTitle(fd, insurance), ...jobType(fd),
     site_address: [site.address, site.city, site.state, site.zip].filter(Boolean).join(", ") || null,
     state: site.state, zip: site.zip, is_insurance: insurance, created_by: user.id,
-    ...referral(fd, c.id),
+    ...ref.fields,
     notes: leadNotes(fd),
     ...(typed.address ? coords(fd) : {}),
   }).select("id").single();
