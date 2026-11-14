@@ -71,6 +71,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
   const notOnTeam = d.people.filter((p) => !d.team.some((t) => t.user_id === p.user_id));
   const tag = [quote ? `Job ${quote.number}` : "New job", j.is_insurance ? "Insurance" : null].filter(Boolean).join(" · ");
   const firstNames = d.team.map((t) => t.name.split(" ")[0]);
+  const teamTime = (STAGE_INDEX[j.stage] ?? 0) >= 2 && j.stage !== "lost";
   const actionIsLink = !d.next.href.startsWith("tel:");
 
   return (
@@ -146,8 +147,8 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
           </>)}
         </div>
 
-        {/* Team + call */}
-        {!(d.lead && canSeeMoney) && <div className="flex items-center gap-2 border-t border-slate-100 px-5 py-3" data-docket-team>
+        {/* Team + call: only once it's sold (before that there's no crew to add, and Contact has text/call). */}
+        {teamTime && <div className="flex items-center gap-2 border-t border-slate-100 px-5 py-3" data-docket-team>
           {d.team.length > 0 ? (
             <span className="flex -space-x-1.5">{d.team.map((t) => <span key={t.user_id} title={`${t.name} · ${JOB_ROLE_LABEL[t.role]}`} data-team-member={t.role} className="grid h-8 w-8 place-items-center rounded-full text-[11px] font-bold text-white ring-2 ring-white" style={{ background: avatarColour(t.user_id) }}>{initials({ full_name: t.name })}</span>)}</span>
           ) : null}

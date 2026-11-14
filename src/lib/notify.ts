@@ -1,5 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { adminClient } from "@/lib/admin";
 import { auPhoneE164 } from "@/lib/au";
 
 /**
@@ -11,9 +12,10 @@ import { auPhoneE164 } from "@/lib/au";
  */
 
 /**
- * Test mode (OUTBOUND_PAUSED=1 in Vercel): nothing leaves the app. Emails and texts are logged as "paused"
- * instead of sent, online card payments are off and the daily payment-plan job does nothing. Sign-in and
- * sign-up emails (sent by Supabase Auth) still work.
+ * Test mode (OUTBOUND_PAUSED=1 in Vercel): nothing reaches customers or suppliers. Every email is really sent,
+ * but to the company owner (their login email) instead, marked "Test" with who it was meant for. Texts are
+ * logged as "paused", online card payments are off and the daily payment-plan job does nothing. Sign-in and
+ * sign-up emails (sent by Supabase Auth) work as normal.
  */
 export const outboundPaused = () => process.env.OUTBOUND_PAUSED === "1";
 
@@ -69,23 +71,29 @@ export async function sendSms(db: SupabaseClient, m: Base & { to: string | null 
 }
 
 export async function sendEmail(db: SupabaseClient, m: Base & { to: string | null | undefined; subject: string; html: string; text?: string; replyTo?: string | null; fromName?: string | null; attachments?: { filename: string; content?: string; path?: string }[] }) {
+  let owner: string | null = null;
   let status = "not_configured";
   let providerRef: string | null = null;
   let error: string | null = null;
   if (!m.to) {
     status = "failed";
     error = "No email address";
-  } else if (outboundPaused()) {
+  } else if (outboundPaused() && !(owner = await ownerEmail(db, m.orgId))) {
     status = "paused";
   } else if (emailConfigured()) {
+    // Test mode: the owner gets it instead, clearly marked with who it was meant for.
+    const to = owner ?? m.to;
+    const subject = owner ? `[Test · for ${m.to}] ${m.subject}` : m.subject;
+    const html = owner ? testBanner(m.to) + m.html : m.html;
+    const text = owner && m.text ? `TEST MODE: this email was meant for ${m.to}. Only you got it.\n\n${m.text}` : m.text;
     try {
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from: fromWithName(process.env.EMAIL_FROM!, m.fromName), to: [m.to], subject: m.subject, html: m.html, text: m.text, ...(m.replyTo ? { reply_to: m.replyTo } : {}), ...(m.attachments?.length ? { attachments: m.attachments } : {}) }),
+        body: JSON.stringify({ from: fromWithName(process.env.EMAIL_FROM!, m.fromName), to: [to], subject, html, text, ...(m.replyTo ? { reply_to: m.replyTo } : {}), ...(m.attachments?.length ? { attachments: m.attachments } : {}) }),
       });
       const json = (await res.json()) as { id?: string; message?: string };
-      if (res.ok) { status = "sent"; providerRef = json.id ?? null; } else { status = "failed"; error = json.message ?? `HTTP ${res.status}`; }
+      if (res.ok) { status = owner ? "redirected" : "sent"; providerRef = json.id ?? null; } else { status = "failed"; error = json.message ?? `HTTP ${res.status}`; }
     } catch (e) {
       status = "failed";
       error = (e as Error).message;
@@ -93,11 +101,24 @@ export async function sendEmail(db: SupabaseClient, m: Base & { to: string | nul
   }
   await db.from("messages").insert({
     org_id: m.orgId, job_id: m.jobId ?? null, customer_id: m.customerId ?? null,
-    direction: "outbound", channel: "email", to_address: m.to ?? null, from_address: process.env.EMAIL_FROM ?? null,
-    subject: m.subject, body: m.text ?? m.html.replace(/<[^>]+>/g, " "), status, provider_ref: providerRef, error,
+    direction: "outbound", channel: "email", to_address: owner ?? m.to ?? null, from_address: process.env.EMAIL_FROM ?? null,
+    subject: owner ? `[Test · for ${m.to}] ${m.subject}` : m.subject, body: m.text ?? m.html.replace(/<[^>]+>/g, " "), status, provider_ref: providerRef, error,
   });
   return { status, error };
 }
+
+/** Where test mode sends everything: TEST_EMAIL_TO (set in Vercel, kept out of the code), else the owner's login email. */
+async function ownerEmail(db: SupabaseClient, orgId: string): Promise<string | null> {
+  const fixed = process.env.TEST_EMAIL_TO?.trim();
+  if (fixed) return fixed;
+  const pick = async (c: SupabaseClient) => {
+    const { data } = await c.from("memberships").select("email").eq("org_id", orgId).eq("role", "owner").not("email", "is", null).order("created_at").limit(1).maybeSingle();
+    return (data as { email: string | null } | null)?.email ?? null;
+  };
+  try { return (await pick(adminClient())) ?? (await pick(db)); } catch { try { return await pick(db); } catch { return null; } }
+}
+
+const testBanner = (meantFor: string) => `<div style="background:#fff7e6;border:2px solid #f4c66b;border-radius:12px;padding:12px 16px;margin:12px auto;max-width:560px;font-family:Inter,system-ui,sans-serif;font-size:14px;color:#13221a"><b>Test mode.</b> This email was meant for <b>${meantFor.replace(/[<>&"]/g, "")}</b>. Only you got it; turn test mode off to send to customers and suppliers.</div>`;
 
 /** "Ridge & Beam <hello@x>" + "Bbang Roofing" → "Bbang Roofing <hello@x>" (the customer sees the business's name). */
 export function fromWithName(from: string, name: string | null | undefined): string {

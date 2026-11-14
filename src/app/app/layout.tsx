@@ -42,7 +42,7 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
         {outboundPaused() && (
           <div className="mx-2 mt-4 rounded-xl bg-amber-50 px-3 py-2.5 text-xs leading-snug text-amber-900 ring-1 ring-amber-200" data-test-mode>
             <p className="font-semibold">Test mode</p>
-            <p className="mt-0.5">Emails, texts and online payments are off. Everything is saved; nothing is sent.</p>
+            <p className="mt-0.5">Every email comes to you instead of customers or suppliers. Texts and online payments are off.</p>
           </div>
         )}
         <div className="mt-auto border-t border-slate-100 px-2 pt-4">
