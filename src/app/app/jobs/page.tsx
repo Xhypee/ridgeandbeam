@@ -7,7 +7,6 @@ import { ageTone, dollars, nextStep, pipelineColumn, type NextStepJob, type Pipe
 import { asNextStepJob, loadNextStepCtx, NEXT_STEP_JOB_COLS } from "@/lib/next-step-server";
 import { isoDate } from "@/lib/format";
 import { displayName, initials, orgPeople } from "./people";
-import { SectionTabs } from "@/components/nav";
 import { loadDocket } from "@/lib/job-docket-server";
 import { JobDocket } from "./job-docket";
 import { QuotePreview } from "./quote-preview";
@@ -46,11 +45,11 @@ const DAY = 86400000;
 const STATE_TAIL = /,?\s+(NSW|VIC|QLD|WA|SA|TAS|ACT|NT)(\s+\d{4})?\s*$/;
 
 export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">) {
-  const { supabase, org, user, isSalesRep, canSeeMoney, isCrewLead, memberships } = await requireOrg();
+  const { supabase, org, user, canSeeMoney, isCrewLead, memberships } = await requireOrg();
   const sp = await searchParams;
   // ?mine=1 / ?mine=0 still work (older links).
   const raw = typeof sp.filter === "string" ? sp.filter : sp.mine === "1" ? "mine" : sp.mine === "0" ? "all" : undefined;
-  const filter: Filter = FILTERS.some((f) => f.key === raw) ? (raw as Filter) : isSalesRep ? "mine" : "all";
+  const filter: Filter = FILTERS.some((f) => f.key === raw) ? (raw as Filter) : "all";
   const now = new Date();
   const since30 = isoDate(new Date(now.getTime() - 30 * DAY));
 
@@ -78,7 +77,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
   // ?job=<id> opens that job's docket in the right sidebar.
   const openId = typeof sp.job === "string" && /^[0-9a-f-]{36}$/i.test(sp.job) ? sp.job : null;
   const docket = openId ? await loadDocket(supabase, org, openId, { canSeeMoney }) : null;
-  const filterQs = filter === (isSalesRep ? "mine" : "all") ? "" : `filter=${filter}`;
+  const filterQs = filter === "all" ? "" : `filter=${filter}`;
   const hrefFor = (id: string | null) => `/app/jobs${[filterQs, id ? `job=${id}` : ""].filter(Boolean).length ? `?${[filterQs, id ? `job=${id}` : ""].filter(Boolean).join("&")}` : ""}`;
   // ?preview=1 shows the quote email for the open job, exactly as the customer will get it.
   const me = memberships.find((m) => m.org_id === org.id);
@@ -105,15 +104,6 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
             {waiting > 0 && <span className="font-semibold text-red-700"> · {waiting} new lead{waiting === 1 ? "" : "s"} waiting for a first call</span>}
           </p>
         </div>
-        <nav aria-label="Filter jobs" className="flex flex-wrap gap-1.5">
-          {FILTERS.map((f) => (
-            <Link key={f.key} href={`/app/jobs?filter=${f.key}${docket ? `&job=${docket.job.id}` : ""}`} scroll={false} aria-current={filter === f.key ? "true" : undefined}
-              className={cx("inline-flex min-h-11 items-center rounded-full px-4 text-[15px] font-semibold ring-1 ring-inset transition",
-                filter === f.key ? "bg-ink text-white ring-ink" : "bg-white text-slate-700 ring-slate-300 hover:ring-slate-400")}>
-              {f.label}
-            </Link>
-          ))}
-        </nav>
         <LinkButton href="/app/customers/new" className="h-11 px-5 text-[15px]">+ New lead</LinkButton>
       </header>
 
@@ -190,7 +180,6 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
   return (
     <div className="lg:flex lg:h-screen">
       <div className="min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:py-7">
-        <SectionTabs canSeeMoney={canSeeMoney} />
         {board}
       </div>
       <aside aria-label={`Job docket: ${docket.customer.name}`} className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-screen lg:w-[440px] lg:shrink-0 lg:border-l lg:border-slate-200 xl:w-[460px]">

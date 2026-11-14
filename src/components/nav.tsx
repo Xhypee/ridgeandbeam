@@ -57,12 +57,7 @@ export function Nav({ mobile = false, canSeeMoney = true, crewLead = false }: { 
 
 /** Sub-pages of the current group, shown at the top of list pages (not on a single job or record). */
 const SECTION_TABS: Record<string, { href: string; label: string; money?: boolean }[]> = {
-  "/app/jobs": [
-    { href: "/app/jobs", label: "Pipeline" },
-    { href: "/app/customers", label: "Customers" },
-    { href: "/app/claims", label: "Insurance claims", money: true },
-    { href: "/app/canvass", label: "Door knocking" },
-  ],
+  // Jobs: no tabs for now (Customers, Insurance claims and Door knocking will move elsewhere; the pages still exist).
   "/app/schedule": [
     { href: "/app/schedule", label: "Calendar" },
     { href: "/app/orders", label: "Material orders" },
