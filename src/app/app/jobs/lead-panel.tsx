@@ -61,13 +61,14 @@ export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: st
         name={d.customer.name} otherJobs={lead.customerOtherJobs}
         plans={lead.docs.length}
         quote={q ? { id: q.id, number: q.number, status: q.status, total: q.total, lines: topLines, more: Math.max(0, included.length - topLines.length) } : null}
-        roof={roofLabels(d.roof)} caption={d.job.site_address}
+        roof={roofLabels(d.roof)} caption={d.job.site_address} previewHref={previewHref}
       />
       <JobContact d={d} />
       <JobNotes d={d} leadNote={lead.message ? { by: sourceLabel, at: lead.receivedAt, body: lead.message } : null} />
       <JobDocuments jobId={d.job.id} docs={lead.docs} />
 
-      {(q || !lead.docs.length) && <div className="border-t border-slate-100 px-5 py-4" data-send-quote>
+      {/* Once the plans are in, Next up carries the quote and its Send button; this is for the rest. */}
+      {(q ? !(lead.docs.length || d.roof) : !lead.docs.length) && <div className="border-t border-slate-100 px-5 py-4" data-send-quote>
         {q ? (
           <>
             <ActionForm action={sendQuoteEmail}>
