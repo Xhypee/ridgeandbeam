@@ -50,7 +50,7 @@ async function deliver(db: Awaited<ReturnType<typeof requireMoneyAccess>>["supab
         subject: `Change order for your approval: ${co.title}`,
         html: `<p>Hi ${first},</p><p>We found something during your roof project that needs your approval: <b>${co.title}</b> (${money(total)}).</p><p><a href="${link}">Review photos and approve</a></p><p>— ${orgName}</p>`,
         text: `Hi ${first}, please review and approve this change order: ${co.title} (${money(total)}). ${link}` });
-      notes.push(r.status === "sent" ? "emailed" : (r.status === "not_configured" || r.status === "paused") ? "email logged (email not set up)" : `email failed: ${r.error}`);
+      notes.push(r.status === "redirected" ? "emailed to you (test mode)" : r.status === "sent" ? "emailed" : (r.status === "not_configured" || r.status === "paused") ? "email logged (email not set up)" : `email failed: ${r.error}`);
     }
   }
   await db.from("change_orders").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", co.id).eq("status", "draft");

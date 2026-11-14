@@ -4,7 +4,8 @@ import { sendEmail, sendSms } from "./notify";
 import { aud, type PayMethod } from "./pay-plan";
 
 /** Made-up addresses (demo data, tests) are never emailed: they bounce and hurt the sending domain. */
-export const isRealEmail = (e: string | null | undefined): e is string => Boolean(e && /@/.test(e) && !/@(example\.(com|org|net)|[^@]*\.(test|invalid|example|localhost))$/i.test(e.trim()));
+// In test mode every email goes to the owner instead, so demo addresses are fine to "send" to.
+export const isRealEmail = (e: string | null | undefined): e is string => Boolean(e && /@/.test(e) && (process.env.OUTBOUND_PAUSED === "1" || !/@(example\.(com|org|net)|[^@]*\.(test|invalid|example|localhost))$/i.test(e.trim())));
 
 const site = () => (process.env.NEXT_PUBLIC_SITE_URL ?? "https://ridgeandbeam.com").replace(/\/$/, "");
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
