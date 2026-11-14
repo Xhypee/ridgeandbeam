@@ -58,3 +58,20 @@ h1, h2, h3, .font-display {
     display: none;
   }
 }
+
+/* Dropdowns: our own chevron, the same distance from the right edge as the text is from the left.
+   Unlayered so it wins over the px-* utilities; selects that draw their own arrow use appearance-none. */
+select:not(.appearance-none):not([multiple]):not([size]) {
+  --select-pad: 0.75rem;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: 1rem 1rem;
+  background-position: right var(--select-pad) center;
+  padding-right: calc(var(--select-pad) + 1.5rem);
+}
+select.px-2:not(.appearance-none) { --select-pad: 0.5rem; }
+select.px-1:not(.appearance-none) { --select-pad: 0.25rem; }
+select.bg-transparent:not(.appearance-none):not([class*="px-"]) { --select-pad: 0rem; }
+select:disabled { opacity: 0.6; }
