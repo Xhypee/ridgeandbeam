@@ -33,6 +33,8 @@ export type EngineProps = {
   previewHref: string;
   roofPlan: ReactNode;
   roofMeasured: boolean;
+  /** The customer's email, docked on the right on wide screens; refreshed after each save. */
+  emailPane?: ReactNode;
   rules: ReactNode;
 };
 
@@ -120,8 +122,9 @@ export function QuoteEngine(p: EngineProps) {
     const err = results.find((r) => r && "error" in r && r.error) as { error: string } | undefined;
     setState(err ? "error" : "saved");
     if (err) setMsg({ error: err.error });
+    else router.refresh(); // re-render the email preview from what's now saved
     return !err;
-  }, [p.id, p.base]);
+  }, [p.id, p.base, router]);
 
   const touch = useCallback((what: "party" | "content" | "money") => {
     dirty.current[what] = true;
@@ -168,7 +171,8 @@ export function QuoteEngine(p: EngineProps) {
   async function preview() { if (await flush()) router.push(p.previewHref, { scroll: false }); }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-cream" data-quote-engine>
+    <div className={cx("min-h-[calc(100vh-4rem)] bg-cream", Boolean(p.emailPane) && "lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]")} data-quote-engine>
+      <div className="min-w-0">
       <main className="mx-auto max-w-[780px] px-4 pb-6 pt-4 sm:px-6">
         <Block n={1} title="Roof plan" hint="start here · our roof report"
           right={!p.roofMeasured && reached === 1 ? <button type="button" onClick={() => setRoofSkipped(true)} className="text-sm font-semibold text-slate-500 underline-offset-2 hover:text-ink hover:underline" data-skip-roof>No measuring needed</button> : null}>
@@ -272,7 +276,7 @@ export function QuoteEngine(p: EngineProps) {
           </div>
           {msg?.error && <p role="alert" className="w-full rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 sm:order-first">{msg.error}</p>}
           {msg?.ok && <p className="w-full rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 sm:order-first">{msg.ok}</p>}
-          <button type="button" onClick={() => void preview()} className="flex min-h-12 items-center gap-2 rounded-xl px-3.5 font-semibold text-ink ring-1 ring-slate-300 hover:bg-slate-50 sm:px-4" data-preview aria-label="Preview">
+          <button type="button" onClick={() => void preview()} className={cx("flex min-h-12 items-center gap-2 rounded-xl px-3.5 font-semibold text-ink ring-1 ring-slate-300 hover:bg-slate-50 sm:px-4", Boolean(p.emailPane) && "lg:hidden")} data-preview aria-label="Preview">
             <Icon d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6" className="h-5 w-5" /><span className="hidden sm:inline">Preview</span>
           </button>
           <button type="button" onClick={() => void send()} disabled={sending || main.length === 0} className="flex min-h-12 items-center gap-2 rounded-xl bg-brand-500 px-4 font-semibold text-white sm:px-6 hover:bg-brand-600 disabled:opacity-50" data-send>
@@ -280,6 +284,10 @@ export function QuoteEngine(p: EngineProps) {
           </button>
         </div>
       </div>
+      </div>
+      {p.emailPane && (
+        <aside className="hidden border-l border-slate-200 lg:sticky lg:top-16 lg:block lg:h-[calc(100dvh-4rem)] lg:self-start" aria-label="Email preview">{p.emailPane}</aside>
+      )}
     </div>
   );
 }
