@@ -61,11 +61,6 @@ export function BookingCalendar({ jobId, first, phone, people, defaultStaff, meI
         </select>
       </label>
 
-      <button type="button" onClick={() => setFull(true)} data-open-full-calendar
-        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-semibold text-brand-700 ring-1 ring-brand-300 hover:bg-brand-50">
-        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 6h16v14H4zM4 10h16M8 3v5M16 3v5M8 14h3M13 14h3M8 17h3" /></svg>
-        See {who}&rsquo;s full calendar and projects
-      </button>
       {full && (
         <FullCalendar people={people} staff={staff} day={day} time={time} today={today} tz={tz} leadName={first} load={load} loadProjects={loadProjects}
           onClose={() => setFull(false)}
@@ -74,9 +69,16 @@ export function BookingCalendar({ jobId, first, phone, people, defaultStaff, meI
 
       <div className="rounded-xl bg-white p-3 ring-1 ring-slate-200" data-booking-calendar>
         <div className="mb-2 flex items-center justify-between">
-          <button type="button" onClick={() => step(-1)} disabled={!canPrev} aria-label="Previous month" className="grid h-8 w-8 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-30"><Chev d="M15 6l-6 6 6 6" /></button>
+          <span className="flex w-[66px] items-center"><button type="button" onClick={() => step(-1)} disabled={!canPrev} aria-label="Previous month" className="grid h-8 w-8 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-30"><Chev d="M15 6l-6 6 6 6" /></button></span>
           <p className="text-sm font-semibold text-ink">{monthName}</p>
-          <button type="button" onClick={() => step(1)} aria-label="Next month" className="grid h-8 w-8 place-items-center rounded-lg text-slate-600 hover:bg-slate-100"><Chev d="M9 6l6 6-6 6" /></button>
+          <span className="flex items-center gap-0.5">
+            <button type="button" onClick={() => step(1)} aria-label="Next month" className="grid h-8 w-8 place-items-center rounded-lg text-slate-600 hover:bg-slate-100"><Chev d="M9 6l6 6-6 6" /></button>
+            <button type="button" onClick={() => setFull(true)} data-open-full-calendar aria-label={`${who}'s full calendar and projects`}
+              className="group relative grid h-8 w-8 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 hover:text-ink">
+              <Chev d="M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7" />
+              <span role="tooltip" className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 whitespace-nowrap rounded-lg bg-ink px-2.5 py-1.5 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">{who}&rsquo;s full calendar and projects</span>
+            </button>
+          </span>
         </div>
         <div className="grid grid-cols-7 text-center text-[11px] font-semibold text-slate-400">{WEEK.map((w, i) => <span key={i} className="py-1">{w}</span>)}</div>
         <div className={cx("grid grid-cols-7 gap-y-0.5 text-center", loading && "opacity-60")}>
