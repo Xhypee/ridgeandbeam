@@ -7,6 +7,7 @@ import { friendly } from "@/lib/form";
 import { aiEnabled, readJobDocument } from "@/lib/ai";
 import { intakeNote, planDocUpdates, roofAreaDiff, roofMeasurementsFromDoc, DOC_TYPE_LABEL, type Current } from "@/lib/doc-intake";
 import { normalizeMeasurements, summarize } from "@/lib/roof";
+import { priceQuoteFromMeasurements } from "@/lib/quote-autofill";
 
 const Schema = z.object({
   jobId: z.uuid(),
@@ -121,6 +122,7 @@ export async function readUploadedDocument(fileId: string, estimateId?: string):
           .eq("id", est.id).or("measurement_source.is.null,measurement_source.neq.documents").select("id");
         if (saved?.length) {
           measured = m.label;
+          if (await priceQuoteFromMeasurements(supabase, org, est.id).catch(() => false)) plan.filled.push("the quote's line items, priced from your price book");
           plan.filled.push(`${m.label} on the quote`);
           plan.hints = plan.hints.filter((h) => !h.startsWith("Roof area on the plans"));
           revalidatePath(`/app/estimates/${est.id}`);

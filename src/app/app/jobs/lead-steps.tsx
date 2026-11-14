@@ -1,8 +1,9 @@
 "use client";
 
 // The New lead sidebar's "Next up". People ring a few roofers and get told "send us your plans", so the first
-// step is the plans: a big drop box (Claude reads them, makes the draft quote and measures the roof). Once
-// they're in: check / write the quote. Under it six icon buttons (Call · Text · Spoke to them · Book the
+// step is the plans, dropped on a blueprint sheet (Claude reads them, makes the draft quote, measures the roof and
+// prices it). Once they're in: the roof drawn on the sheet with its numbers, and a very short quote (main items,
+// total, Edit). Under it six icon buttons (Call · Text · Spoke to them · Book the
 // inspection · Not going ahead · Delete lead, labels on hover), then Who's looking after it. Server actions: lead-actions.ts.
 import Link from "next/link";
 import { useRef, useState } from "react";
@@ -11,7 +12,7 @@ import { cx } from "@/components/ui";
 import { LOST_REASONS, type ScheduleItem } from "@/lib/lead-steps";
 import { createEstimate } from "../estimates/actions";
 import { BookingCalendar } from "./booking-calendar";
-import { DocumentDrop } from "./document-drop";
+import { DocumentDrop, RoofDrawing } from "./document-drop";
 import { deleteLead, logLeadCall, markLeadLost, setLeadOwner } from "./lead-actions";
 import { LeadTimer } from "./lead-timer";
 
@@ -19,7 +20,37 @@ const PHONE = "M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0
 const SMS = "M4 5h16v11H9l-5 4z";
 const CHECK = "M5 12l5 5L20 7";
 const CAL = "M4 6h16v14H4zM4 10h16M8 3v5M16 3v5";
-const DOC = "M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6";
+const PEN = "M4 20l4-1 11-11-3-3L5 16zM14 6l3 3";
+const aud = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: n % 1 ? 2 : 0 });
+
+/** The quote in a few lines: the biggest items, how many more, the total, and Edit (opens the whole quote). */
+function QuoteSummary({ q }: { q: NonNullable<LeadStepsProps["quote"]> }) {
+  return (
+    <div className="rounded-xl ring-1 ring-slate-200" data-lead-quote-summary>
+      <div className="flex items-center gap-2 py-2 pl-3.5 pr-2">
+        <span className="text-sm font-semibold text-ink">Quote #{q.number}</span>
+        <span className="text-xs text-slate-500">{q.status === "sent" ? "sent" : "draft"}</span>
+        <Link href={`/app/estimates/${q.id}`} className="ml-auto inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-brand-700 ring-1 ring-slate-300 hover:bg-slate-50" data-lead-quote-edit>
+          <Icon d={PEN} className="h-3.5 w-3.5" />Edit
+        </Link>
+      </div>
+      {q.lines.length ? (
+        <ul className="border-t border-slate-100 px-3.5 py-2 text-[13px]">
+          {q.lines.map((l, i) => (
+            <li key={i} className="flex justify-between gap-3 py-0.5"><span className="min-w-0 truncate text-slate-600">{l.description}</span><span className="shrink-0 tabular-nums text-ink">{aud(l.amount)}</span></li>
+          ))}
+          {q.more > 0 && <li className="py-0.5 text-slate-400">and {q.more} more</li>}
+        </ul>
+      ) : (
+        <p className="border-t border-slate-100 px-3.5 py-2 text-[13px] text-slate-500">No prices yet. Tap Edit to price it.</p>
+      )}
+      <div className="flex items-baseline justify-between border-t border-slate-100 px-3.5 py-2.5">
+        <span className="text-sm font-semibold text-ink">Total <span className="font-normal text-slate-500">inc GST</span></span>
+        <span className="font-display text-xl font-bold tabular-nums text-ink" data-lead-quote-total>{aud(q.total)}</span>
+      </div>
+    </div>
+  );
+}
 const XCIRCLE = "M12 21a9 9 0 100-18 9 9 0 000 18M9 9l6 6M15 9l-6 6";
 const BIN = "M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3";
 
@@ -75,8 +106,12 @@ export type LeadStepsProps = {
   otherJobs: number;
   /** Documents on the job so far (plans, reports…). */
   plans: number;
-  /** The lead's quote, if there is one; `measured` e.g. "214 m² of roof" once the roof is measured. */
-  quote: { id: string; status: string; measured: string | null; fromPlans: boolean } | null;
+  /** The lead's quote, if there is one: its biggest lines (already cut to a few), how many more, the total. */
+  quote: { id: string; number: number; status: string; total: number; lines: { description: string; amount: number }[]; more: number } | null;
+  /** The measured roof's numbers for the blueprint ("214 m²", "ridge & hips 24 m · 22.5°", "eave 58 m"). */
+  roof: { area: string; mid: string | null; foot: string | null } | null;
+  /** Under the sheet: the site address, if there is one. */
+  caption: string | null;
 };
 
 function OwnerPicker({ jobId, owner, people, meId }: { jobId: string; owner: string; people: LeadStepsProps["people"]; meId: string }) {
@@ -101,11 +136,8 @@ export function LeadSteps(p: LeadStepsProps) {
   const [reason, setReason] = useState<string>("");
   const tel = p.phone ? `tel:${p.phone.replace(/\s+/g, "")}` : null;
   const sms = p.phone ? `sms:${p.phone.replace(/\s+/g, "")}` : null;
-  const planless = p.plans === 0 && !p.quote?.measured;
+  const planless = p.plans === 0 && !p.roof;
   const headline = planless ? `Upload ${p.first}\u2019s plans` : p.quote ? `Check ${p.first}\u2019s quote` : `Write ${p.first}\u2019s quote`;
-  const sub = planless ? null
-    : p.quote?.measured ? `Claude measured ${p.quote.measured}${p.quote.fromPlans ? " from the plans" : ""}. Check it, add your prices and send it.`
-    : p.quote ? "The plans are in. Measure the roof and price it." : "The plans are in. Start the quote and measure from them.";
   const btn = "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 text-[15px] font-semibold";
   const booking = (
     <BookingCalendar jobId={p.jobId} first={p.first} phone={p.phone} people={p.people} defaultStaff={p.owner} meId={p.meId}
@@ -119,20 +151,19 @@ export function LeadSteps(p: LeadStepsProps) {
         {planless && !p.contacted && p.receivedAt && <span className="ml-auto"><LeadTimer since={p.receivedAt} /></span>}
       </div>
       <p className="font-display text-[26px] font-bold leading-tight text-ink" data-lead-headline>{headline}</p>
-      {sub && <p className="text-sm text-slate-500" data-lead-status>{sub}</p>}
 
-      {/* The plans drop box keeps its place in both states, so Claude's summary survives the refresh. */}
+      {/* The sheet keeps its place in both states, so Claude's summary survives the refresh. */}
+      <div className="mt-3" data-lead-drop>
+        <DocumentDrop jobId={p.jobId} variant="plans" compact={!planless} measured={Boolean(p.roof)}
+          estimateId={p.quote?.status === "draft" ? p.quote.id : undefined}
+          sheet={p.roof ? <RoofDrawing labels={p.roof} /> : undefined} caption={p.caption ?? undefined} />
+      </div>
       {!planless && (
         <div className="mt-3">
-          {p.quote
-            ? <Link href={`/app/estimates/${p.quote.id}`} className={cx(btn, "bg-brand-500 text-white hover:bg-brand-600")} data-lead-quote><Icon d={DOC} className="h-5 w-5" />Open the quote</Link>
+          {p.quote ? <QuoteSummary q={p.quote} />
             : <form action={createEstimate}><input type="hidden" name="job_id" value={p.jobId} /><button className={cx(btn, "bg-brand-500 text-white hover:bg-brand-600")} data-lead-quote><Icon d="M12 5v14M5 12h14" className="h-5 w-5" />Start the quote</button></form>}
         </div>
       )}
-      <div className="mt-3" data-lead-drop>
-        <DocumentDrop jobId={p.jobId} variant="plans" compact={!planless} measured={Boolean(p.quote?.measured)}
-          estimateId={p.quote?.status === "draft" ? p.quote.id : undefined} />
-      </div>
 
       {/* Six actions as icon buttons; the label shows on hover (and keyboard focus). */}
       <ActionForm action={logLeadCall} className="mt-3">
