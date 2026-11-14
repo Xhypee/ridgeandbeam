@@ -5,8 +5,9 @@
 import { useRef, useState } from "react";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { cx } from "@/components/ui";
-import { INSPECTION_TIMES, LOST_REASONS } from "@/lib/lead-steps";
-import { bookInspection, logLeadCall, markLeadLost, setLeadOwner } from "./lead-actions";
+import { LOST_REASONS, type ScheduleItem } from "@/lib/lead-steps";
+import { BookingCalendar } from "./booking-calendar";
+import { logLeadCall, markLeadLost, setLeadOwner } from "./lead-actions";
 import { LeadTimer } from "./lead-timer";
 
 const PHONE = "M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2";
@@ -52,6 +53,9 @@ export type LeadStepsProps = {
   people: { user_id: string; name: string }[];
   meId: string;
   dates: { min: string; suggested: string };
+  tz: string;
+  /** For previews: a stand-in for the staff schedule lookup. */
+  loadSchedule?: (staffId: string, from: string, to: string, tz: string) => Promise<ScheduleItem[]>;
 };
 
 function OwnerPicker({ jobId, owner, people, meId }: { jobId: string; owner: string; people: LeadStepsProps["people"]; meId: string }) {
@@ -79,25 +83,8 @@ export function LeadSteps(p: LeadStepsProps) {
   const headline = !p.contacted ? `Call ${p.first}` : "Book the inspection";
   const btn = "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold";
   const booking = (
-    <ActionForm action={bookInspection} className="space-y-2">
-      <input type="hidden" name="job_id" value={p.jobId} />
-      <div className="grid grid-cols-[1fr_8rem] gap-2">
-        <label className="block"><span className="mb-1 block text-xs font-medium text-slate-600">Day</span>
-          <input type="date" name="date" required min={p.dates.min} defaultValue={p.dates.suggested} className="h-11 w-full rounded-xl bg-white px-3 text-sm text-ink ring-1 ring-slate-300 focus:outline-2 focus:outline-brand-500" />
-        </label>
-        <label className="block"><span className="mb-1 block text-xs font-medium text-slate-600">Time</span>
-          <select name="time" defaultValue="09:00" className="h-11 w-full rounded-xl bg-white px-3 text-sm text-ink ring-1 ring-slate-300 focus:outline-2 focus:outline-brand-500">
-            {INSPECTION_TIMES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-          </select>
-        </label>
-      </div>
-      {p.phone && (
-        <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input type="checkbox" name="text_customer" defaultChecked className="h-4 w-4 accent-brand-500" />Text {p.first} the time
-        </label>
-      )}
-      <SubmitButton className="min-h-11 w-full gap-2"><Icon d={CAL} />Book inspection</SubmitButton>
-    </ActionForm>
+    <BookingCalendar jobId={p.jobId} first={p.first} phone={p.phone} people={p.people} defaultStaff={p.owner} meId={p.meId}
+      today={p.dates.min} suggested={p.dates.suggested} tz={p.tz} load={p.loadSchedule} />
   );
 
   const status = p.contacted

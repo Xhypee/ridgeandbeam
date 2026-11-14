@@ -6,7 +6,7 @@ import { friendly, num, oneOf, str } from "@/lib/form";
 import { notifyUser, sendSms } from "@/lib/notify";
 import type { ActionResult } from "@/components/action-form";
 import { asAuState, AU_STATE_TZ } from "@/lib/au";
-import { inspectionLabel, inspectionSms, localToUtc, LOST_REASON_LABEL, LOST_REASONS } from "@/lib/lead-steps";
+import { inspectionLabel, inspectionSms, localToUtc, LOST_REASON_LABEL, LOST_REASONS, type ScheduleItem } from "@/lib/lead-steps";
 
 const FIN_STATUSES = ["link_sent", "prequalified", "approved", "declined", "funded", "cancelled"] as const;
 
@@ -158,11 +158,17 @@ export async function bookInspection(_: ActionResult, fd: FormData): Promise<Act
   const at = localToUtc(String(fd.get("date") ?? ""), String(fd.get("time") ?? ""), tz);
   if (!at) return { error: "Pick a day and a time." };
   if (at.getTime() < Date.now() - 60 * 60000) return { error: "That time has already passed." };
+  // Who's doing the inspection: must be on the team; they go on the job's team as sales.
+  const staffId = str(fd, "staff_id");
+  const { data: staff } = staffId ? await ctx.supabase.from("memberships").select("user_id, full_name, email").eq("org_id", ctx.org.id).eq("user_id", staffId).maybeSingle() : { data: null };
+  if (staffId && !staff) return { error: "Pick someone on your team." };
   const update: Record<string, unknown> = { inspection_at: at.toISOString(), first_contacted_at: job.first_contacted_at ?? new Date().toISOString(), assigned_to: job.assigned_to ?? ctx.user.id };
   if (job.stage === "lead") update.stage = "inspection";
   const { error } = await ctx.supabase.from("jobs").update(update).eq("id", id);
   if (error) return { error: friendly(error) };
+  if (staff) await ctx.supabase.from("job_members").upsert({ org_id: ctx.org.id, job_id: id, user_id: staff.user_id, role: "sales", added_by: ctx.user.id }, { onConflict: "job_id,user_id", ignoreDuplicates: true });
   const when = inspectionLabel(at.toISOString(), tz);
+  const withWho = staff ? ` with ${(staff.full_name || staff.email || "").split(" ")[0]}` : "";
   const c = (Array.isArray(job.customers) ? job.customers[0] : job.customers) as { name: string; phone: string | null } | null;
   const first = c?.name.split(" ")[0] || "them";
   let texted = "";
@@ -171,9 +177,9 @@ export async function bookInspection(_: ActionResult, fd: FormData): Promise<Act
     const r = await sendSms(ctx.supabase, { orgId: ctx.org.id, jobId: id, customerId: job.customer_id, to: c.phone, body: inspectionSms({ first, when, business: ctx.org.name, who: me }) });
     texted = r?.status === "sent" ? ` Texted ${first}.` : r?.status === "failed" ? ` The text to ${first} didn't send.` : r?.status === "paused" ? " Test mode, so no text went out." : " Texts aren't set up yet, so no text went out.";
   }
-  await note(ctx, id, `Inspection booked for ${when}.${texted}`);
+  await note(ctx, id, `Inspection booked for ${when}${withWho}.${texted}`);
   touch(id);
-  return { ok: `Booked for ${when}.${texted}` };
+  return { ok: `Booked for ${when}${withWho}.${texted}` };
 }
 
 /** Not going ahead: stage lost + the reason. Reopen puts it back where it was (lead, or quoting if inspected). */
@@ -204,4 +210,45 @@ export async function reopenLead(_: ActionResult, fd: FormData): Promise<ActionR
   await note(ctx, id, "Reopened.");
   touch(id);
   return { ok: "Reopened." };
+}
+
+/**
+ * A staff member's schedule for the booking calendar: inspections they're on (looking after the job, or on its
+ * team) and builds they're on the team for, between two dates, as days and wall-clock times in `tz`.
+ */
+export async function getStaffSchedule(staffId: string, from: string, to: string, tz: string): Promise<ScheduleItem[]> {
+  const ctx = await requireOrg();
+  if (!/^[0-9a-f-]{36}$/i.test(staffId) || !/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return [];
+  let zone = "Australia/Sydney";
+  try { new Intl.DateTimeFormat("en-AU", { timeZone: tz }); zone = tz; } catch { /* keep default */ }
+  const { data: mine } = await ctx.supabase.from("job_members").select("job_id").eq("user_id", staffId).limit(500);
+  const teamJobs = (mine ?? []).map((m) => m.job_id as string);
+  const fromTs = new Date(`${from}T00:00:00Z`).getTime() - 86400000, toTs = new Date(`${to}T23:59:59Z`).getTime() + 86400000;
+  const or = [`assigned_to.eq.${staffId}`, ...(teamJobs.length ? [`id.in.(${teamJobs.join(",")})`] : [])].join(",");
+  const [{ data: insp }, { data: builds }] = await Promise.all([
+    ctx.supabase.from("jobs").select("id, inspection_at, title, customers(name)").or(or)
+      .gte("inspection_at", new Date(fromTs).toISOString()).lte("inspection_at", new Date(toTs).toISOString()).neq("stage", "lost").limit(200),
+    teamJobs.length
+      ? ctx.supabase.from("jobs").select("id, scheduled_start, scheduled_end, title, site_address, customers(name)").in("id", teamJobs)
+        .lte("scheduled_start", to).gte("scheduled_end", from).neq("stage", "lost").limit(200)
+      : Promise.resolve({ data: [] as never[] }),
+  ]);
+  const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
+  const out: ScheduleItem[] = [];
+  for (const j of (insp ?? []) as { inspection_at: string; title: string; customers: unknown }[]) {
+    const d = new Date(j.inspection_at);
+    const date = d.toLocaleDateString("en-CA", { timeZone: zone });
+    if (date < from || date > to) continue;
+    const hm = d.toLocaleTimeString("en-GB", { timeZone: zone, hour: "2-digit", minute: "2-digit", hour12: false });
+    const [h, m] = hm.split(":").map(Number);
+    const time = d.toLocaleTimeString("en-AU", { timeZone: zone, hour: "numeric", minute: "2-digit", hour12: true }).replace(/\s?(am|pm)$/i, (x) => ` ${x.trim().toLowerCase()}`);
+    out.push({ date, time, minutes: h * 60 + m, kind: "inspection", label: `Inspection · ${one(j.customers as { name: string })?.name ?? j.title}` });
+  }
+  for (const j of (builds ?? []) as { scheduled_start: string; scheduled_end: string | null; title: string; site_address: string | null; customers: unknown }[]) {
+    const end = j.scheduled_end ?? j.scheduled_start;
+    for (let t = Math.max(Date.parse(`${j.scheduled_start}T12:00:00Z`), Date.parse(`${from}T12:00:00Z`)); t <= Math.min(Date.parse(`${end}T12:00:00Z`), Date.parse(`${to}T12:00:00Z`)); t += 86400000) {
+      out.push({ date: new Date(t).toISOString().slice(0, 10), time: null, minutes: null, kind: "build", label: `Build · ${one(j.customers as { name: string })?.name ?? j.title}` });
+    }
+  }
+  return out.sort((a, b) => a.date.localeCompare(b.date) || (a.minutes ?? -1) - (b.minutes ?? -1));
 }
