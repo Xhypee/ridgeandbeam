@@ -1,9 +1,9 @@
-// New lead: what the job is, as small one-tap cards (a radio group; no typing).
+// New lead: what the job is, as small one-tap cards (a radio group; no typing). "Other" opens a one-line box.
 import { JOB_CARDS } from "@/lib/job-types";
 
 export function JobTypeCards() {
   return (
-    <fieldset data-job-cards>
+    <fieldset data-job-cards className="group">
       <legend className="mb-2 text-sm font-medium text-slate-700">What do they need?</legend>
       <div className="grid grid-cols-2 gap-2">
         {JOB_CARDS.map((c) => (
@@ -15,6 +15,8 @@ export function JobTypeCards() {
           </label>
         ))}
       </div>
+      <input name="job_title" aria-label="What's the job?" placeholder="What's the job?" maxLength={120} data-job-other
+        className="mt-2 hidden h-11 w-full rounded-xl bg-white px-3 text-[15px] text-ink ring-1 ring-slate-300 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 group-has-[input[value=other]:checked]:block" />
     </fieldset>
   );
 }

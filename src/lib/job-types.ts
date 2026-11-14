@@ -31,6 +31,7 @@ export const JOB_CARDS: { type: AuJobType; title: string; hint: string }[] = [
   { type: "asbestos", title: "Asbestos", hint: "Fibro roofs" },
   { type: "add_on", title: "Add-ons", hint: "Skylights, vents" },
   { type: "maintenance", title: "Maintenance", hint: "Cleaning, checks" },
+  { type: "other", title: "Other", hint: "Something else" },
 ];
 
 export const jobTypeLabel = (t: string | null | undefined) => AU_JOB_TYPE_LABEL[t as AuJobType] ?? (t ? t.replace(/_/g, " ") : "");
