@@ -73,7 +73,9 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
     .map((j) => {
       const c = ctx.get(j.id)!;
       const est = c.estimate;
-      return { j, col: pipelineColumn(j, now, c), value: est && ["accepted", "sent"].includes(est.status) ? est.total : null, next: nextStep(j, c) };
+      // Signed: past the quote stage, or the quote is accepted (signed, waiting on the deposit). Drives the tile burst.
+      const signed = ["sold", "scheduled", "in_progress", "completed", "paid"].includes(j.stage) || est?.status === "accepted";
+      return { j, col: pipelineColumn(j, now, c), value: est && ["accepted", "sent"].includes(est.status) ? est.total : null, next: nextStep(j, c), signed };
     })
     .filter((x) => x.col !== null);
   const shownValue = cards.reduce((s, c) => s + (c.value ?? 0), 0);
@@ -141,13 +143,13 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
                 </header>
                 {/* On a computer each column scrolls on its own; the page and the other columns stay put. */}
                 <div data-col-scroll className={cx("no-scrollbar -mx-1 flex min-h-0 flex-col gap-2.5 px-1 py-0.5 lg:overflow-y-auto lg:overscroll-contain", side ? "lg:flex-1 lg:pb-6" : "lg:max-h-[calc(100dvh-14rem)]")}>
-                {list.map(({ j, value, next }) => {
+                {list.map(({ j, value, next, signed }) => {
                   const owner = people.byId.get(j.assigned_to ?? j.sales_rep_id ?? "");
                   const uncontacted = j.stage === "lead" && !j.first_contacted_at;
                   const days = Math.max(0, Math.floor((now.getTime() - new Date(j.stage_changed_at ?? now).getTime()) / DAY));
                   const tone = ageTone(col.key, { days });
                   return (
-                    <Link key={j.id} href={hrefFor(j.id)} scroll={false} data-job-card={j.id} aria-current={docket?.job.id === j.id ? "true" : undefined}
+                    <Link key={j.id} href={hrefFor(j.id)} scroll={false} data-job-card={j.id} data-signed={signed ? "1" : "0"} aria-current={docket?.job.id === j.id ? "true" : undefined}
                       className={cx("flex min-w-0 flex-col gap-1.5 rounded-2xl bg-white p-3.5 transition", docket?.job.id === j.id ? "ring-2 ring-ink" : "ring-1 ring-slate-200 hover:ring-brand-400")}>
                       <span className="flex items-start gap-2">
                         <span className="font-display min-w-0 flex-1 truncate text-[15px] font-bold leading-snug text-ink">{j.customer_name ?? j.title}</span>
