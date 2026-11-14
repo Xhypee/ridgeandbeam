@@ -164,6 +164,7 @@ export async function readJobDocument(data: Buffer, mediaType: string, fileName:
     `"customer": {"phone": string, "email": string, "address": string, "suburb": string, "state": string (QLD/NSW/...), "postcode": string} (the homeowner / client, not the business, architect, insurer or supplier), ` +
     `"site": {"address": string (street), "suburb": string, "state": string, "postcode": string} (the property the roof work is on), ` +
     `"job": {"roof_material": string (e.g. "Concrete tile", "Colorbond Trimdek"), "roof_area_m2": number}, ` +
+    `"roof": {"area_m2": number (total sloped roof area), "plan_area_m2": number (roof area on plan / footprint), "pitch_deg": number, "ridge_m": number, "hip_m": number, "valley_m": number, "gutter_m": number (eaves / gutter length), "barge_m": number (barge / rake length), "downpipes": number} (only measurements printed on plans or a roof report, in metres), ` +
     `"insurance": {"insurer": string, "claim_number": string, "policy_number": string, "assessor_name": string, "assessor_phone": string, "assessor_email": string, "excess": number, "date_of_loss": "YYYY-MM-DD"}, ` +
     `"notes": string (anything else a roofer must know from it, one sentence, or null)}`;
   try {
@@ -183,13 +184,17 @@ export async function readJobDocument(data: Buffer, mediaType: string, fileName:
     const o = (k: string) => (j[k] && typeof j[k] === "object" ? (j[k] as Record<string, unknown>) : {});
     const s = (v: unknown, max = 200) => (typeof v === "string" && v.trim() && v.trim().toLowerCase() !== "null" ? v.trim().slice(0, max) : null);
     const n = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : typeof v === "string" && /^\$?[\d,]+(\.\d+)?$/.test(v.trim()) ? Number(v.replace(/[$,]/g, "")) : null);
-    const c = o("customer"), st = o("site"), jb = o("job"), ins = o("insurance");
+    const c = o("customer"), st = o("site"), jb = o("job"), ins = o("insurance"), rf = o("roof");
     const type = (DOC_TYPES as readonly string[]).includes(String(j.doc_type)) ? (j.doc_type as (typeof DOC_TYPES)[number]) : "other";
     return {
       doc_type: type, summary: s(j.summary, 300),
       customer: { phone: s(c.phone, 30), email: s(c.email, 120), address: s(c.address), suburb: s(c.suburb, 80), state: s(c.state, 10), postcode: s(c.postcode, 10) },
       site: { address: s(st.address), suburb: s(st.suburb, 80), state: s(st.state, 10), postcode: s(st.postcode, 10) },
       job: { roof_material: s(jb.roof_material, 80), roof_area_m2: n(jb.roof_area_m2) },
+      roof: {
+        area_m2: n(rf.area_m2) ?? n(jb.roof_area_m2), plan_area_m2: n(rf.plan_area_m2), pitch_deg: n(rf.pitch_deg),
+        ridge_m: n(rf.ridge_m), hip_m: n(rf.hip_m), valley_m: n(rf.valley_m), gutter_m: n(rf.gutter_m), barge_m: n(rf.barge_m), downpipes: n(rf.downpipes),
+      },
       insurance: { insurer: s(ins.insurer, 80), claim_number: s(ins.claim_number, 60), policy_number: s(ins.policy_number, 60), assessor_name: s(ins.assessor_name, 100), assessor_phone: s(ins.assessor_phone, 30), assessor_email: s(ins.assessor_email, 120), excess: n(ins.excess), date_of_loss: s(ins.date_of_loss, 10) },
       notes: s(j.notes, 400),
     };

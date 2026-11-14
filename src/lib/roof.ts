@@ -655,7 +655,7 @@ export function mergeMeasurements(raw: unknown, m: Measurements): Record<string,
 // ---------------------------------------------------------------------------
 // Measurement report import (Nearmap / other aerial report / hand-measured table)
 // ---------------------------------------------------------------------------
-export const MEASUREMENT_SOURCES = ["manual", "satellite", "plans", "nearmap", "roofgraf", "other", "eagleview", "hover", "roofr", "gaf_quickmeasure"] as const;
+export const MEASUREMENT_SOURCES = ["manual", "satellite", "plans", "nearmap", "roofgraf", "other", "eagleview", "hover", "roofr", "gaf_quickmeasure", "documents"] as const;
 export type MeasurementSource = (typeof MEASUREMENT_SOURCES)[number];
 export const MEASUREMENT_SOURCE_LABEL: Record<string, string> = {
   manual: "Hand measured",
