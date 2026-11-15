@@ -55,7 +55,7 @@ export default async function CloseoutPage({ params }: PageProps<"/app/jobs/[id]
               <span aria-hidden className={cx("mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-sm font-bold", c.done ? "bg-green-600 text-white" : "bg-slate-200 text-slate-500")}>{c.done ? "✓" : ""}</span>
               <div className="min-w-0">
                 <p className="font-semibold">{c.label}<span className="sr-only">{c.done ? " — done" : " — not done"}</span></p>
-                <p className="text-sm text-slate-600">{c.href ? <Link href={c.href} className="text-brand-700 underline">{c.detail}</Link> : c.detail}</p>
+                <p className="text-sm text-slate-600">{c.href ? <Link href={c.href} className="text-ink underline">{c.detail}</Link> : c.detail}</p>
               </div>
             </li>
           ))}
@@ -116,11 +116,11 @@ export default async function CloseoutPage({ params }: PageProps<"/app/jobs/[id]
             <ul className="divide-y-2 divide-dashed divide-slate-200 text-sm">
               {blockers.invoices.map((v) => (
                 <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                  {canSeeMoney ? <Link href={`/app/invoices/${v.id}`} className="font-medium hover:text-brand-600">{v.milestone_label || label(v.kind)} #{v.number}</Link> : <span>{v.milestone_label || label(v.kind)} #{v.number}</span>}
+                  {canSeeMoney ? <Link href={`/app/invoices/${v.id}`} className="font-medium hover:text-ink">{v.milestone_label || label(v.kind)} #{v.number}</Link> : <span>{v.milestone_label || label(v.kind)} #{v.number}</span>}
                   <span className="flex items-center gap-2">
                     {canSeeMoney && <span className="tabular-nums">{money(v.total)}{v.balance > 0 ? ` · ${money(v.balance)} due` : ""}</span>}
                     <Badge tone={STATUS_TONE[v.status]}>{label(v.status)}</Badge>
-                    {v.status !== "draft" && <a className="text-xs text-brand-700 underline" href={`/i/${v.public_token}`} target="_blank" rel="noreferrer">pay link</a>}
+                    {v.status !== "draft" && <a className="text-xs text-ink underline" href={`/i/${v.public_token}`} target="_blank" rel="noreferrer">pay link</a>}
                   </span>
                 </li>
               ))}

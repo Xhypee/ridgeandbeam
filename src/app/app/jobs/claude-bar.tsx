@@ -242,7 +242,7 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready, dock
                 <p className="text-sm text-slate-500">{docked ? "Claude knows your jobs, quotes and customers. Try:" : <>Ask anything about {firstName ?? "your business"}. Try:</>}</p>
                 {starters.map((q) => (
                   <button key={q} type="button" disabled={!ready} onMouseDown={(e) => e.preventDefault()} onClick={() => void ask(q)}
-                    className="block w-full rounded-xl bg-cream px-3.5 py-2.5 text-left text-sm font-medium text-ink ring-1 ring-slate-200 hover:ring-brand-400 disabled:opacity-50">{q}</button>
+                    className="block w-full rounded-xl bg-cream px-3.5 py-2.5 text-left text-sm font-medium text-ink ring-1 ring-slate-200 hover:ring-slate-400 disabled:opacity-50">{q}</button>
                 ))}
               </div>
             )}

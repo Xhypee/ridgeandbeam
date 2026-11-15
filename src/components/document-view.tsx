@@ -31,7 +31,7 @@ export function DocumentView({ doc }: { doc: PublicDocument & { org: PublicDocum
           </div>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-semibold uppercase tracking-wide text-brand-600">{isInvoice ? (registered && abn ? "Tax invoice" : "Invoice") : "Quote"}</p>
+          <p className="text-2xl font-semibold uppercase tracking-wide text-ink">{isInvoice ? (registered && abn ? "Tax invoice" : "Invoice") : "Quote"}</p>
           <p className="text-sm text-slate-600">#{doc.number}</p>
           <p className="text-sm text-slate-500">{date(isInvoice ? doc.issue_date : doc.created_at)}</p>
           {isInvoice && doc.due_date && <p className="text-sm text-slate-500">Due {date(doc.due_date)}</p>}
@@ -79,7 +79,7 @@ export function DocumentView({ doc }: { doc: PublicDocument & { org: PublicDocum
         {t.tax > 0 && <div className="flex w-60 justify-between"><span className="text-slate-500">GST ({Number(doc.tax_rate)}%)</span><span className="tabular-nums">{money(t.tax)}</span></div>}
         <div className="flex w-60 justify-between border-t-2 border-dashed border-slate-200 pt-2 text-base font-semibold"><span>Total{t.tax > 0 ? " inc GST" : ""}</span><span className="tabular-nums">{money(t.total)}</span></div>
         {isInvoice && paid > 0 && <div className="flex w-60 justify-between text-slate-500"><span>Paid</span><span className="tabular-nums">−{money(paid)}</span></div>}
-        {isInvoice && <div className="flex w-60 justify-between text-base font-semibold text-brand-700"><span>Balance due</span><span className="tabular-nums">{money(round2(t.total - paid))}</span></div>}
+        {isInvoice && <div className="flex w-60 justify-between text-base font-semibold text-ink"><span>Balance due</span><span className="tabular-nums">{money(round2(t.total - paid))}</span></div>}
       </div>
 
       {(doc.notes || doc.terms) && (

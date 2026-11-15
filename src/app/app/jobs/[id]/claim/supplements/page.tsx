@@ -34,7 +34,7 @@ export default async function SupplementsPage({ params }: PageProps<"/app/jobs/[
         </form>
       </div>
       {rows.length === 0 ? (
-        <Empty title="No variation requests yet">Compare the insurer&apos;s scope on the <Link className="text-brand-700" href={`/app/jobs/${id}/claim/scope`}>Scope compare</Link> tab to find missing items, or start one by hand.</Empty>
+        <Empty title="No variation requests yet">Compare the insurer&apos;s scope on the <Link className="text-ink" href={`/app/jobs/${id}/claim/scope`}>Scope compare</Link> tab to find missing items, or start one by hand.</Empty>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {rows.map((s) => {
@@ -43,7 +43,7 @@ export default async function SupplementsPage({ params }: PageProps<"/app/jobs/[
             return (
               <Card
                 key={s.id}
-                title={<Link href={`/app/jobs/${id}/claim/supplements/${s.id}`} className="hover:text-brand-600">Variation request {s.round}</Link>}
+                title={<Link href={`/app/jobs/${id}/claim/supplements/${s.id}`} className="hover:text-ink">Variation request {s.round}</Link>}
                 actions={<Badge tone={SUPPLEMENT_STATUS_TONE[s.status]}>{SUPPLEMENT_STATUS_LABEL[s.status]}</Badge>}
               >
                 <dl className="grid grid-cols-2 gap-2 text-sm">
@@ -62,7 +62,7 @@ export default async function SupplementsPage({ params }: PageProps<"/app/jobs/[
                   </div>
                 )}
                 <div className="mt-3 flex gap-3 text-sm">
-                  <Link className="font-medium text-brand-700" href={`/app/jobs/${id}/claim/supplements/${s.id}`}>Open</Link>
+                  <Link className="font-medium text-ink" href={`/app/jobs/${id}/claim/supplements/${s.id}`}>Open</Link>
                   <Link className="font-medium text-slate-600" href={`/app/claims/supplements/${s.id}`} target="_blank">Printable request</Link>
                 </div>
               </Card>

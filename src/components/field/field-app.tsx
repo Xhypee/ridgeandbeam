@@ -225,7 +225,7 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
         <input value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Caption for next photos (optional)"
           className="mb-3 block min-h-12 w-full rounded-xl px-3 text-base ring-1 ring-slate-300 focus:ring-2 focus:ring-ink focus:outline-none" />
 
-        <label className={cx("flex min-h-20 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-ink text-xl font-black text-white active:bg-brand-600", busy && "opacity-60")}>
+        <label className={cx("flex min-h-20 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-ink text-xl font-black text-white active:bg-ink/80", busy && "opacity-60")}>
           <input type="file" accept="image/*" capture="environment" multiple className="sr-only" data-testid="photo-input"
             onChange={(e) => { const fl = e.target.files; void onPhotos(fl).then(() => { e.target.value = ""; }); }} />
           {busy ?? "Take photos"}
@@ -341,7 +341,7 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
             Text link to homeowner
           </button>
         </div>
-        <a href={portalUrl} target="_blank" rel="noreferrer" className="mt-2 block break-all text-sm text-brand-700 underline" data-testid="portal-link">{portalUrl}</a>
+        <a href={portalUrl} target="_blank" rel="noreferrer" className="mt-2 block break-all text-sm text-ink underline" data-testid="portal-link">{portalUrl}</a>
       </section>
 
       {toast && (
@@ -553,7 +553,7 @@ function PhotoSheet({ tile, onClose, onMarkup, onQueuePatch, onDiscard, onServer
         )}
         {err && <p className="mb-2 text-sm text-red-700">{err}</p>}
         <div className="grid grid-cols-2 gap-2">
-          <button type="button" onClick={onMarkup} className="min-h-14 rounded-xl bg-white text-base font-bold ring-2 ring-ink text-brand-700">Mark up</button>
+          <button type="button" onClick={onMarkup} className="min-h-14 rounded-xl bg-white text-base font-bold ring-2 ring-ink text-ink">Mark up</button>
           <button type="button" onClick={save} disabled={pending} className="min-h-14 rounded-xl bg-ink text-base font-bold text-white">{pending ? "Saving…" : "Save"}</button>
           <button type="button" onClick={onClose} className="min-h-12 rounded-xl font-semibold ring-1 ring-slate-300">Close</button>
           <button type="button" className="min-h-12 rounded-xl font-semibold text-red-700 ring-1 ring-red-200"

@@ -85,7 +85,7 @@ export function SoldPanel({ d }: { d: Docket }) {
               {x.href && !x.action && (x.key === "crew" && x.state !== "done" ? <span className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold text-ink ring-1 ring-slate-300">Book</span> : <Icon d={I.next} className="h-5 w-5 text-slate-400" />)}
             </>
           );
-          const cls = cx("flex items-center gap-3 px-3.5 py-3", k > 0 && "border-t-2 border-dashed border-slate-200", x.state === "now" && "bg-brand-50");
+          const cls = cx("flex items-center gap-3 px-3.5 py-3", k > 0 && "border-t-2 border-dashed border-slate-200", x.state === "now" && "bg-slate-100");
           return <li key={x.key} data-ready-step={x.key} data-state={x.state}>{x.href && !x.action ? <Link href={x.href} className={cx(cls, "hover:bg-slate-50")}>{body}</Link> : <div className={cls}>{body}</div>}</li>;
         })}
       </ol>
@@ -96,7 +96,7 @@ export function SoldPanel({ d }: { d: Docket }) {
             <button className="flex min-h-11 items-center justify-center rounded-xl px-4 font-mono text-xs font-semibold uppercase tracking-wider text-ink ring-1 ring-slate-300 hover:bg-slate-50">Start build</button></form>
         </div>
       )}
-      {s.rule && <p className="mt-3 flex gap-2 rounded-xl bg-cream px-3 py-2.5 text-xs leading-relaxed text-slate-600 ring-1 ring-slate-200"><Icon d={I.shield} className="mt-0.5 h-4 w-4 text-brand-700" />{s.rule}</p>}
+      {s.rule && <p className="mt-3 flex gap-2 rounded-xl bg-cream px-3 py-2.5 text-xs leading-relaxed text-slate-600 ring-1 ring-slate-200"><Icon d={I.shield} className="mt-0.5 h-4 w-4 text-ink" />{s.rule}</p>}
     </div>
   );
 }

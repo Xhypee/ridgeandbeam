@@ -164,7 +164,7 @@ export function SatelliteMeasure({ estimateId, address, initialCenter, initialZo
 
   return (
     <div className="space-y-4">
-      <p className="rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-700 ring-1 ring-brand-100">
+      <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm text-ink ring-1 ring-slate-300">
         <b>Trace roof edges including overhangs; verify pitch on site.</b> Satellite photos can be off by half a metre or more and trees hide edges — treat this as a starting measurement.
       </p>
       {geoMsg && <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-700" data-geo-message>{geoMsg}</p>}
@@ -207,7 +207,7 @@ export function SatelliteMeasure({ estimateId, address, initialCenter, initialZo
         ) : (
           <ul className="divide-y-2 divide-dashed divide-slate-200">
             {rows.map(({ f, plan, pf, area }) => (
-              <li key={f.id} className={cx("space-y-2 px-4 py-3", f.id === selected && "bg-brand-50/50")} data-facet>
+              <li key={f.id} className={cx("space-y-2 px-4 py-3", f.id === selected && "bg-slate-100/50")} data-facet>
                 <div className="flex flex-wrap items-center gap-2">
                   <Input aria-label="Facet name" value={f.label} disabled={locked} onChange={(e) => update((fs) => fs.map((x) => (x.id === f.id ? { ...x, label: e.target.value } : x)))} onFocus={() => setSelected(f.id)} className="max-w-44" />
                   <span className="text-sm tabular-nums text-slate-600">{fmt(plan, 1)} m² plan × {pf.toFixed(3)} = <b className="text-slate-900">{fmt(area, 1)} m²</b></span>

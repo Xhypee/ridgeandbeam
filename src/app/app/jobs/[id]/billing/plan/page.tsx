@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Payment plan" };
 
 const STATUS: Record<string, [string, string]> = {
   draft: ["Waiting", "bg-slate-100 text-slate-600"],
-  sent: ["Sent", "bg-brand-50 text-brand-700"],
+  sent: ["Sent", "bg-slate-100 text-ink"],
   partial: ["Part paid", "bg-amber-50 text-amber-800"],
   paid: ["Paid", "bg-teal-50 text-teal-700"],
 };
@@ -68,7 +68,7 @@ export default async function PaymentPlanPage({ params }: PageProps<"/app/jobs/[
               return (
                 <li key={i.id} data-plan-invoice={i.status} className="flex flex-wrap items-center gap-3 px-5 py-3">
                   <div className="min-w-0 flex-1 basis-48">
-                    <Link href={`/app/invoices/${i.id}`} className="font-semibold text-ink hover:text-brand-700">{i.milestone_label ?? "Payment"} <span className="font-normal text-slate-400">#{i.number}</span></Link>
+                    <Link href={`/app/invoices/${i.id}`} className="font-semibold text-ink hover:text-ink">{i.milestone_label ?? "Payment"} <span className="font-normal text-slate-400">#{i.number}</span></Link>
                     <p className="text-xs text-slate-500">{when}{i.paid > 0 && i.balance > 0 ? ` · ${aud(i.paid)} paid, ${aud(i.balance)} to go` : ""}</p>
                   </div>
                   <span className="font-display text-lg font-bold tabular-nums text-ink">{aud(i.total)}</span>
@@ -87,7 +87,7 @@ export default async function PaymentPlanPage({ params }: PageProps<"/app/jobs/[
                         <SubmitButton variant="secondary" className="min-h-9 px-3 text-xs">Cash received</SubmitButton>
                       </ActionForm>
                     )}
-                    {i.status !== "draft" && i.balance > 0 && <Link href={`/app/invoices/${i.id}`} className="inline-flex min-h-9 items-center rounded-xl px-3 text-xs font-semibold text-brand-700 ring-1 ring-inset ring-brand-200">Record payment</Link>}
+                    {i.status !== "draft" && i.balance > 0 && <Link href={`/app/invoices/${i.id}`} className="inline-flex min-h-9 items-center rounded-xl px-3 text-xs font-semibold text-ink ring-1 ring-inset ring-slate-300">Record payment</Link>}
                   </div>
                 </li>
               );

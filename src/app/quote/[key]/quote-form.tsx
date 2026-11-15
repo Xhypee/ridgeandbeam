@@ -10,7 +10,7 @@ import type { QuoteRates } from "./rates";
 
 const aud = (n: number) => `$${Math.round(n).toLocaleString("en-AU")}`;
 const input = "block w-full rounded-lg border-0 bg-white px-3 py-3 text-base text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-ink focus:outline-none";
-const chip = "flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium ring-1 ring-slate-300 has-[:checked]:bg-brand-50 has-[:checked]:text-brand-700 has-[:checked]:ring-2 has-[:checked]:ring-ink";
+const chip = "flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium ring-1 ring-slate-300 has-[:checked]:bg-slate-100 has-[:checked]:text-ink has-[:checked]:ring-2 has-[:checked]:ring-ink";
 
 /** House outline whose roof gets steeper with the pitch (degrees). */
 function PitchIcon({ deg }: { deg: number }) {
@@ -64,7 +64,7 @@ export function QuoteForm({ intakeKey, orgName, rates, phone, defaultState }: { 
       <div className="rounded-[22px] bg-white p-6 text-center ring-1 ring-slate-200" data-testid="quote-done">
         {state.high ? (
           <>
-            <p className="text-sm font-medium uppercase tracking-wide text-brand-600">Your estimated range</p>
+            <p className="text-sm font-medium uppercase tracking-wide text-ink">Your estimated range</p>
             <p className="mt-2 text-3xl font-bold tabular-nums text-slate-900">{aud(state.low ?? 0)} – {aud(state.high ?? 0)}</p>
             <p className="mt-1 text-sm text-slate-500">Including GST · about {state.m2} m² of roof</p>
           </>
@@ -72,7 +72,7 @@ export function QuoteForm({ intakeKey, orgName, rates, phone, defaultState }: { 
           <p className="text-lg font-semibold text-slate-900">Request received</p>
         )}
         <p className="mt-4 text-base text-slate-700">Thanks! {state.orgName ?? orgName} will contact you shortly to book a free roof inspection and an exact price.</p>
-        {phone && <p className="mt-2 text-sm text-slate-500">Questions? Call <a className="font-medium text-brand-700" href={`tel:${phone}`}>{phone}</a></p>}
+        {phone && <p className="mt-2 text-sm text-slate-500">Questions? Call <a className="font-medium text-ink" href={`tel:${phone}`}>{phone}</a></p>}
       </div>
     );
   }

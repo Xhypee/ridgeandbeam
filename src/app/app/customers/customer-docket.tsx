@@ -137,7 +137,7 @@ export function CustomerDocket({ d, closeHref, canSeeMoney, today, edit }: { d: 
                 ))}
               </ul>
             )}
-            <Link href={`/app/jobs/new?customer=${c.id}`} className="mt-2 inline-flex min-h-11 items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 hover:text-brand-700">+ New job for {c.name.split(" ")[0]}</Link>
+            <Link href={`/app/jobs/new?customer=${c.id}`} className="mt-2 inline-flex min-h-11 items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-ink hover:text-ink">+ New job for {c.name.split(" ")[0]}</Link>
           </Section>
 
           <ReferralsSection who={{ id: c.id, type: "contact", name: c.name }} r={d} canSeeMoney={canSeeMoney} />

@@ -49,7 +49,7 @@ export function DoorKnockSaleBanner({ state, leadSource, doorKnockSale, signedAt
       )}
       <p className="mt-1 text-sm text-slate-600">
         Counted from the day after signing, without weekends and national public holidays (add a day for any state-only public holiday). Visiting hours: {ACL_CALLING_HOURS}{" "}
-        <a href={SRC.acccDoor.url} target="_blank" rel="noreferrer" className="font-semibold text-brand-700 underline underline-offset-2">ACCC guide ↗</a>
+        <a href={SRC.acccDoor.url} target="_blank" rel="noreferrer" className="font-semibold text-ink underline underline-offset-2">ACCC guide ↗</a>
       </p>
     </aside>
   );

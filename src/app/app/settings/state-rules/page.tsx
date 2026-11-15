@@ -58,7 +58,7 @@ export default async function StateRulesPage({ searchParams }: PageProps<"/app/s
 
       <Card
         title={<span>{AU_STATE_NAME[state]} <span className="font-normal text-slate-500">as at {formatAuDate(ref.asOf)}</span></span>}
-        actions={<a href={ref.regulator.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider">{ref.regulator.name} ↗</a>}
+        actions={<a href={ref.regulator.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center font-semibold text-ink font-mono text-xs uppercase tracking-wider">{ref.regulator.name} ↗</a>}
       >
         {ref.changes.map((c) => <p key={c} className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">Coming change — {c}</p>)}
         <div className="overflow-x-auto">
@@ -76,7 +76,7 @@ export default async function StateRulesPage({ searchParams }: PageProps<"/app/s
                   <th scope="row" className="py-3 pr-4 text-left font-semibold text-ink sm:w-44">{r.topic}</th>
                   <td className="py-3 pr-4 text-slate-700">{r.text}</td>
                   <td className="py-3 text-xs sm:w-64">
-                    {r.src.slice(0, 2).map((s) => <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className="block break-words text-brand-700 underline underline-offset-2">{s.label}</a>)}
+                    {r.src.slice(0, 2).map((s) => <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className="block break-words text-ink underline underline-offset-2">{s.label}</a>)}
                     <span className="mt-0.5 block text-slate-500">Verified {formatAuDate(ref.verifiedOn)}</span>
                   </td>
                 </tr>
@@ -89,7 +89,7 @@ export default async function StateRulesPage({ searchParams }: PageProps<"/app/s
             <p className="text-sm font-bold text-violet-800">Not verified — check with your regulator</p>
             <ul className="mt-2 space-y-1.5 text-sm text-slate-700">
               {ref.unverified.map((u) => (
-                <li key={u.topic}><span className="font-semibold">{u.topic}:</span> {u.note} <a href={u.regulator.url} target="_blank" rel="noreferrer" className="font-semibold text-brand-700 underline">{u.regulator.name} ↗</a></li>
+                <li key={u.topic}><span className="font-semibold">{u.topic}:</span> {u.note} <a href={u.regulator.url} target="_blank" rel="noreferrer" className="font-semibold text-ink underline">{u.regulator.name} ↗</a></li>
               ))}
             </ul>
           </div>
@@ -106,7 +106,7 @@ export default async function StateRulesPage({ searchParams }: PageProps<"/app/s
           <Field label="Permit needed?"><Select name="approval" defaultValue={scenario?.approval ?? ""}><option value="">Not decided</option><option value="yes">Yes</option><option value="no">No</option></Select></Field>
           <Field label="Contract date"><Input name="date" type="date" defaultValue={asOf} /></Field>
           <div className="flex flex-col justify-end gap-2">
-            <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="door" defaultChecked={scenario?.doorKnock} className="h-5 w-5 accent-brand-600" /> Door-knock sale</label>
+            <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="door" defaultChecked={scenario?.doorKnock} className="h-5 w-5 accent-ink" /> Door-knock sale</label>
           </div>
           <div className="sm:col-span-3 lg:col-span-6"><button type="submit" className="inline-flex min-h-11 items-center rounded-xl bg-ink px-4 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90">Show what applies</button></div>
         </form>

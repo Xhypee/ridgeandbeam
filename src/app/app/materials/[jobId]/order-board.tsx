@@ -218,7 +218,7 @@ export function OrderBoard(p: BoardProps) {
             </div>
             {p.quotedCost !== null && (
               <div className="rounded-2xl bg-ink p-5 text-white">
-                <p className="text-[11px] uppercase text-brand-200 font-mono tracking-[0.12em]">Against the quote · only you</p>
+                <p className="text-[11px] uppercase text-white/60 font-mono tracking-[0.12em]">Against the quote · only you</p>
                 <p className="mt-1 font-display text-4xl font-bold leading-none" style={{ color: ex <= p.quotedCost ? "#8fd0a8" : "#f4c66b" }}>{aud(Math.abs(p.quotedCost - ex)).replace(".00", "")} {ex <= p.quotedCost ? "under" : "over"}</p>
                 <p className="mt-4 text-sm text-white/70">Materials quoted at {aud(p.quotedCost)} cost ex GST</p>
               </div>
@@ -257,8 +257,8 @@ function Envelope({ o, tz, dark, busy, onSend, onPreview, onAdd, onEdit, onRemov
   for (const l of o.items) { const g = l.group_label ?? ""; const hit = groups.find(([x]) => x === g); if (hit) hit[1].push(l); else groups.push([g, [l]]); }
   const when = o.supplierDate ? new Date(`${o.supplierDate}T12:00:00`).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" }) : null;
   const status = o.status === "confirmed" ? <span className="flex items-center gap-1.5 rounded-full bg-ink px-3 py-1.5 text-sm font-semibold text-white"><Icon d={CHECK} />Confirmed{when ? ` · ${when}` : ""}</span>
-    : o.status === "delivered" ? <span className="flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider"><Icon d={CHECK} />Delivered</span>
-    : o.status === "sent" ? <span className="flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider"><Icon d={CHECK} />Sent {o.sentAt ? new Date(o.sentAt).toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit", timeZone: tz }) : ""}{o.openedAt ? " · opened" : ""}</span>
+    : o.status === "delivered" ? <span className="flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 font-semibold text-ink font-mono text-xs uppercase tracking-wider"><Icon d={CHECK} />Delivered</span>
+    : o.status === "sent" ? <span className="flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 font-semibold text-ink font-mono text-xs uppercase tracking-wider"><Icon d={CHECK} />Sent {o.sentAt ? new Date(o.sentAt).toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit", timeZone: tz }) : ""}{o.openedAt ? " · opened" : ""}</span>
     : !o.items.length ? null
     : o.email ? <button type="button" disabled={busy || !o.id} onClick={(e) => { e.preventDefault(); onSend(); }} className="flex items-center gap-1.5 rounded-lg bg-ink px-3.5 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90 disabled:opacity-50" data-send-one><Icon d={SEND} />Send</button>
     : <button type="button" onClick={(e) => { e.preventDefault(); setAddEmail(true); setOpen(true); }} className="rounded-lg px-3.5 py-2 text-sm font-semibold text-ink ring-1 ring-slate-300 hover:bg-slate-50" data-add-email>Add email</button>;
@@ -298,7 +298,7 @@ function Envelope({ o, tz, dark, busy, onSend, onPreview, onAdd, onEdit, onRemov
           </div>
           {groups.map(([g, ls]) => (
             <div key={g || "-"}>
-              {g && groups.length > 1 && <p className={cx("border-t-2 border-dashed border-slate-200 px-4 py-1.5 text-xs font-semibold", g.startsWith("Extras") ? "bg-brand-50 text-brand-800" : "text-slate-500")}>{g}</p>}
+              {g && groups.length > 1 && <p className={cx("border-t-2 border-dashed border-slate-200 px-4 py-1.5 text-xs font-semibold", g.startsWith("Extras") ? "bg-slate-100 text-ink" : "text-slate-500")}>{g}</p>}
               {ls.map((l) => (
                 <div key={l.key} className="grid grid-cols-[minmax(0,1fr)_60px_96px_92px_16px] items-center gap-x-3 gap-y-2 border-t-2 border-dashed border-slate-200 px-4 py-2.5 md:grid-cols-[16px_minmax(0,1fr)_150px_60px_96px_92px_16px]" data-order-line>
                   <Icon d={GRIP} className="hidden h-4 w-4 text-slate-300 md:block" />
@@ -323,7 +323,7 @@ function Envelope({ o, tz, dark, busy, onSend, onPreview, onAdd, onEdit, onRemov
               ))}
             </div>
           ))}
-          <div className="flex items-center gap-5 border-t-2 border-dashed border-slate-200 px-4 py-2.5 font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider">
+          <div className="flex items-center gap-5 border-t-2 border-dashed border-slate-200 px-4 py-2.5 font-semibold text-ink font-mono text-xs uppercase tracking-wider">
             <button type="button" onClick={onAdd} className="flex items-center gap-2" data-add-item><Icon d="M12 5v14M5 12h14" />Add an item</button>
             {o.status !== "draft" && <span className="ml-auto text-xs font-normal text-slate-500">Changes after sending: send it again so {o.supplier} has the latest.</span>}
           </div>

@@ -11,7 +11,7 @@ import { jobTypeLabel } from "@/lib/job-types";
 
 
 const btn = "inline-flex min-h-11 items-center rounded-xl bg-white px-4 font-mono text-xs font-semibold uppercase tracking-wider text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50";
-const primary = "font-display inline-flex min-h-13 items-center rounded-xl bg-brand-300 px-6 text-base font-bold text-ink hover:bg-brand-200";
+const primary = "font-display inline-flex min-h-13 items-center rounded-xl bg-slate-300 px-6 text-base font-bold text-ink hover:bg-slate-300";
 
 type Row = NextStepJob & { title: string; site_address: string | null; job_type: string; crew_id: string | null; public_token: string; customers: { id: string; name: string; phone: string | null } };
 
@@ -44,7 +44,7 @@ export default async function JobLayout({ children, params }: LayoutProps<"/app/
 
   return (
     <>
-      <Link href={isCrewLead ? "/app/schedule" : "/app/jobs"} className="no-print mb-3 inline-flex min-h-8 items-center gap-1 font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 hover:text-brand-700">
+      <Link href={isCrewLead ? "/app/schedule" : "/app/jobs"} className="no-print mb-3 inline-flex min-h-8 items-center gap-1 font-mono text-xs font-semibold uppercase tracking-wider text-ink hover:text-ink">
         <span aria-hidden>←</span> {isCrewLead ? "Schedule" : "Jobs"}
       </Link>
       <header data-job-header className="mb-5 flex flex-wrap items-start gap-4">
@@ -76,7 +76,7 @@ export default async function JobLayout({ children, params }: LayoutProps<"/app/
       {!isCrewLead && (
         <section data-next-step-bar aria-label="Next step" className="no-print mb-6 flex flex-wrap items-center gap-4 rounded-[18px] bg-ink px-6 py-5 text-white">
           <div className="min-w-0 flex-1 basis-72">
-            <p className="text-[13px] font-semibold uppercase tracking-[0.06em] text-brand-300">Next step</p>
+            <p className="text-[13px] font-semibold uppercase tracking-[0.06em] text-ink">Next step</p>
             <p className="font-display mt-1 text-[22px] font-bold leading-snug">{next.title}</p>
             <p className="mt-1 text-[15px] text-slate-300">{next.detail}</p>
           </div>

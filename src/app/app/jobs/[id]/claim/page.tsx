@@ -204,8 +204,8 @@ export default async function ClaimPage({ params }: PageProps<"/app/jobs/[id]/cl
           {(claim.adjuster_name || claim.adjuster_meeting_at) && (
             <Card title="Assessor">
               <p className="font-medium text-slate-900">{claim.adjuster_name ?? "Assessor"}</p>
-              {claim.adjuster_phone && <a className="block min-h-11 py-2 text-sm text-brand-700" href={`tel:${claim.adjuster_phone}`}>{claim.adjuster_phone}</a>}
-              {claim.adjuster_email && <a className="block truncate text-sm text-brand-700" href={`mailto:${claim.adjuster_email}`}>{claim.adjuster_email}</a>}
+              {claim.adjuster_phone && <a className="block min-h-11 py-2 text-sm text-ink" href={`tel:${claim.adjuster_phone}`}>{claim.adjuster_phone}</a>}
+              {claim.adjuster_email && <a className="block truncate text-sm text-ink" href={`mailto:${claim.adjuster_email}`}>{claim.adjuster_email}</a>}
               {claim.adjuster_meeting_at && <p className="mt-2 text-sm text-slate-700">Inspection: <b><LocalDateTime iso={claim.adjuster_meeting_at} /></b></p>}
             </Card>
           )}

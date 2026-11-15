@@ -45,7 +45,7 @@ export default async function Page() {
                   </div>
                   {isAdmin && (
                     <details className="mt-1">
-                      <summary className="cursor-pointer text-xs font-medium text-brand-600">Role, crew & commission</summary>
+                      <summary className="cursor-pointer text-xs font-medium text-ink">Role, crew & commission</summary>
                       <ActionForm action={updateMember} className="mt-2 grid gap-3 rounded-lg bg-slate-50 p-3 sm:grid-cols-5">
                         <input type="hidden" name="user_id" value={m.user_id} />
                         <Field label="Role">

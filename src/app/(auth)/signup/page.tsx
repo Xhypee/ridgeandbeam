@@ -21,7 +21,7 @@ export default async function SignupPage({ searchParams }: PageProps<"/signup">)
         <SubmitButton className="w-full">Create account</SubmitButton>
       </ActionForm>
       <p className="mt-6 text-center text-sm text-slate-500">
-        Already have an account? <Link className="font-medium text-brand-600 hover:underline" href={`/login?next=${encodeURIComponent(nextStr)}`}>Sign in</Link>
+        Already have an account? <Link className="font-medium text-ink hover:underline" href={`/login?next=${encodeURIComponent(nextStr)}`}>Sign in</Link>
       </p>
     </>
   );

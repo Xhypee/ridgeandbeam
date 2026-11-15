@@ -32,7 +32,7 @@ function StatementView({ s, isAdmin }: { s: Statement; isAdmin: boolean }) {
       </p>
       {s.jobs.length === 0 && <p className="text-sm text-slate-500">No signed jobs with this rep assigned yet.</p>}
       {s.jobs.map((j) => (
-        <Card key={j.id} title={<span><Link href={`/app/jobs/${j.id}`} className="hover:text-brand-600">{j.customer} · {j.title}</Link> <Badge tone="slate">{STAGE_LABEL[j.stage]}</Badge></span>} actions={<span className={cx("text-sm font-semibold", j.payable < 0 ? "text-red-700" : "text-slate-900")} data-testid="job-payable">{money(j.payable)} payable</span>}>
+        <Card key={j.id} title={<span><Link href={`/app/jobs/${j.id}`} className="hover:text-ink">{j.customer} · {j.title}</Link> <Badge tone="slate">{STAGE_LABEL[j.stage]}</Badge></span>} actions={<span className={cx("text-sm font-semibold", j.payable < 0 ? "text-red-700" : "text-slate-900")} data-testid="job-payable">{money(j.payable)} payable</span>}>
           <div className="grid gap-4 lg:grid-cols-2">
             <table className="w-full text-sm">
               <tbody className="divide-y-2 divide-dashed divide-slate-200">
@@ -99,8 +99,8 @@ export default async function CommissionsPage({ searchParams }: PageProps<"/app/
             <thead><tr><th className={th}>Rep</th><th className={th}>Plan</th><th className={cx(th, "text-right")}>Jobs</th><th className={cx(th, "text-right")}>Earned</th><th className={cx(th, "text-right")}>Paid</th><th className={cx(th, "text-right")}>Payable</th></tr></thead>
             <tbody className="divide-y-2 divide-dashed divide-slate-200">
               {statements.map((s) => (
-                <tr key={s.rep.user_id} className={cx(selected?.rep.user_id === s.rep.user_id && "bg-brand-50")}>
-                  <td className={td}><Link className="font-medium text-brand-700 hover:underline" href={`/app/reports/commissions?rep=${s.rep.user_id}`}>{s.rep.name}</Link><span className="block font-mono text-xs text-slate-500">{ROLE_LABEL[s.rep.role]}</span></td>
+                <tr key={s.rep.user_id} className={cx(selected?.rep.user_id === s.rep.user_id && "bg-slate-100")}>
+                  <td className={td}><Link className="font-medium text-ink hover:underline" href={`/app/reports/commissions?rep=${s.rep.user_id}`}>{s.rep.name}</Link><span className="block font-mono text-xs text-slate-500">{ROLE_LABEL[s.rep.role]}</span></td>
                   <td className={td}>{s.plan?.name ?? <span className="text-slate-400">—</span>}</td>
                   <td className={cx(td, "text-right")}>{s.jobs.length}</td>
                   <td className={cx(td, "text-right")}>{money(s.totals.earned)}</td>

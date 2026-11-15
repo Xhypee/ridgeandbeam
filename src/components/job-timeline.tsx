@@ -42,7 +42,7 @@ export function JobTimeline({ steps, extras = [] }: { steps: TimelineStep[]; ext
                   {s.label}
                   {s.state === "current" && <span className="sr-only"> (current step)</span>}
                 </span>
-                <span className={cx("mt-0.5 block truncate text-xs", s.state === "current" ? "font-semibold text-brand-700" : "opacity-85")}>{s.status}</span>
+                <span className={cx("mt-0.5 block truncate text-xs", s.state === "current" ? "font-semibold text-ink" : "opacity-85")}>{s.status}</span>
               </Link>
             </li>
           );
@@ -55,7 +55,7 @@ export function JobTimeline({ steps, extras = [] }: { steps: TimelineStep[]; ext
             <span key={x.href} className="inline-flex items-center gap-1">
               {i > 0 && <span aria-hidden>·</span>}
               <Link href={x.href} aria-current={isActive(x.href) ? "page" : undefined}
-                className={cx("inline-flex min-h-8 items-center rounded-md px-1.5 font-semibold hover:text-brand-700", isActive(x.href) ? "text-ink underline underline-offset-4" : "text-brand-600")}>
+                className={cx("inline-flex min-h-8 items-center rounded-md px-1.5 font-semibold hover:text-ink", isActive(x.href) ? "text-ink underline underline-offset-4" : "text-ink")}>
                 {x.label}
               </Link>
             </span>

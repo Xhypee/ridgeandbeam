@@ -44,7 +44,7 @@ export function TaxInvoice({ doc }: { doc: TaxInvoiceDoc }) {
           </div>
         </div>
         <div className="text-left sm:text-right">
-          <h1 className="font-display text-2xl font-semibold uppercase tracking-wide text-brand-600" data-testid="invoice-title">{title}</h1>
+          <h1 className="font-display text-2xl font-semibold uppercase tracking-wide text-ink" data-testid="invoice-title">{title}</h1>
           <p className="text-sm text-slate-700">No. {doc.number}{doc.milestone_label ? ` · ${doc.milestone_label}` : ""}</p>
           <p className="text-sm text-slate-600">Issued {date(doc.issue_date, { day: "2-digit", month: "2-digit", year: "numeric" })}</p>
           {doc.due_date && <p className="text-sm text-slate-600">Due {date(doc.due_date, { day: "2-digit", month: "2-digit", year: "numeric" })}</p>}
@@ -100,7 +100,7 @@ export function TaxInvoice({ doc }: { doc: TaxInvoiceDoc }) {
         {gst && doc.amounts_include_gst && <p className="text-slate-600" data-testid="gst-line">Includes GST of {money(t.gst)}</p>}
         {!doc.seller.gst_registered && <p className="text-slate-600">No GST has been charged.</p>}
         {Number(doc.paid) > 0 && <div className="flex w-full max-w-72 justify-between text-slate-500"><span>Paid</span><span className="tabular-nums">−{money(doc.paid)}</span></div>}
-        <div className="flex w-full max-w-72 justify-between text-base font-semibold text-brand-700"><span>Balance due</span><span className="tabular-nums">{money(balance)}</span></div>
+        <div className="flex w-full max-w-72 justify-between text-base font-semibold text-ink"><span>Balance due</span><span className="tabular-nums">{money(balance)}</span></div>
       </div>
 
       {gst && t.total >= TAX_INVOICE_BUYER_THRESHOLD && !doc.buyer.name && !doc.buyer.abn && (

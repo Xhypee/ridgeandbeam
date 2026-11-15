@@ -218,7 +218,7 @@ export function QuoteEngine(p: EngineProps) {
           <Icon d={done[n - 1] ? "M5 12l5 5 9-10" : "M12 8v5M12 16.5v.5"} className="h-3.5 w-3.5" />
         </span>
         <span className="w-6 shrink-0 font-mono text-xs text-slate-400">0{n}</span><b className="shrink-0 font-display text-[15px] text-ink">{STEP_TITLE[n]}</b><span className="min-w-0 flex-1 truncate text-right font-mono text-xs text-slate-500">{summary[n]}</span>
-        <button type="button" onClick={() => open(n)} className="shrink-0 rounded-lg px-2 py-1 font-semibold text-brand-700 hover:bg-brand-50 font-mono text-xs uppercase tracking-wider" data-step-change>Change</button>
+        <button type="button" onClick={() => open(n)} className="shrink-0 rounded-lg px-2 py-1 font-semibold text-ink hover:bg-slate-100 font-mono text-xs uppercase tracking-wider" data-step-change>Change</button>
       </div>
     );
     return <div className="my-2 rounded-[18px] px-4 py-3 font-mono text-xs uppercase tracking-[0.12em] text-slate-400 ring-1 ring-dashed ring-slate-300" data-step-later={n}>0{n} {STEP_TITLE[n]}</div>;
@@ -276,7 +276,7 @@ export function QuoteEngine(p: EngineProps) {
             </div>
             {main.map((i) => <LineRow key={i.id} i={i} supplierName={p.supplier.name} margin={margin ?? shownMargin} onEdit={editItem} onCost={setCost} onRemove={removeItem} flush={flush} />)}
             {main.length === 0 && <p className="px-4 py-6 text-center font-mono text-xs uppercase tracking-[0.12em] text-slate-400">No lines yet. Add one, or pick from a price guide.</p>}
-            <div className="flex flex-wrap items-center gap-5 px-4 py-3 font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider">
+            <div className="flex flex-wrap items-center gap-5 px-4 py-3 font-semibold text-ink font-mono text-xs uppercase tracking-wider">
               <button type="button" onClick={() => addLine()} className="flex items-center gap-2 uppercase" data-add-line><Icon d="M12 5v14M5 12h14" />Add a line</button>
               <GuideSearch orgSupplierId={orgSupplierId} name={p.supplier.name} hasGuide={p.supplier.hasGuide} onPick={(g) => addLine({ description: g.description, unit: g.unit || "ea", unit_cost: g.cost, supplier_price_item_id: g.id, calc_key: g.calc_key })} />
             </div>
@@ -292,12 +292,12 @@ export function QuoteEngine(p: EngineProps) {
                 <button type="button" aria-label="Remove extra" onClick={() => removeItem(x.id!)} className="text-slate-300 hover:text-red-600"><Icon d="M6 6l12 12M18 6L6 18" /></button>
               </div>
             ))}
-            <button type="button" onClick={() => addLine({ extra_status: "offered", description: "" })} className="mt-2 font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider" data-add-extra>+ Add an extra</button>
+            <button type="button" onClick={() => addLine({ extra_status: "offered", description: "" })} className="mt-2 font-semibold text-ink font-mono text-xs uppercase tracking-wider" data-add-extra>+ Add an extra</button>
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2" data-you-make>
             <div className="rounded-2xl bg-ink p-5 text-white">
-              <p className="flex items-center gap-1.5 text-[11px] uppercase text-brand-200 font-mono tracking-[0.12em]"><Icon d={LOCK} className="h-3.5 w-3.5" />You make</p>
+              <p className="flex items-center gap-1.5 text-[11px] uppercase text-white/60 font-mono tracking-[0.12em]"><Icon d={LOCK} className="h-3.5 w-3.5" />You make</p>
               <p className="mt-1 font-display text-4xl font-bold leading-none" style={{ color: "#8fd0a8" }} data-profit>{aud(money.profit)}</p>
               <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-white/70">
                 <span className="flex items-center rounded-lg bg-white/10 px-2 ring-1 ring-white/20 focus-within:ring-white/60">
@@ -326,7 +326,7 @@ export function QuoteEngine(p: EngineProps) {
           </span>}>
           {payment.mode === "full" ? (
             <div className="flex flex-wrap items-center gap-4 rounded-[22px] bg-white px-4 py-4 ring-1 ring-slate-200">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><Icon d="M5 12l5 5 9-10" className="h-5 w-5" /></span>
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-ink"><Icon d="M5 12l5 5 9-10" className="h-5 w-5" /></span>
               <div className="min-w-0 flex-1"><p className="font-display font-bold text-ink">Paid in full</p><p className="font-mono text-xs text-slate-500">One invoice, due 7 days after it&apos;s sent</p></div>
               <select aria-label="When they pay" value={payment.when} onChange={(e) => setPlan({ ...payment, when: e.target.value as PaymentPlan["when"] })} className="rounded-lg bg-cream px-3 py-2 text-sm font-semibold text-ink ring-1 ring-slate-200">
                 <option value="completed">Upon completion</option><option value="delivered">When materials are delivered</option><option value="signed">When they accept</option>
@@ -453,11 +453,11 @@ function Stages({ stages, total, onChange }: { stages: Stage[]; total: number; o
   return (
     <div className="overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200" data-stages>
       {stages.slice(0, -1).map((s, k) => row(s, k))}
-      <button type="button" onClick={addStage} className="flex w-full items-center gap-2 border-b border-dashed border-slate-200 px-4 py-2.5 font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider"><Icon d="M12 5v14M5 12h14" />Add a stage</button>
+      <button type="button" onClick={addStage} className="flex w-full items-center gap-2 border-b border-dashed border-slate-200 px-4 py-2.5 font-semibold text-ink font-mono text-xs uppercase tracking-wider"><Icon d="M12 5v14M5 12h14" />Add a stage</button>
       {row(stages[stages.length - 1], stages.length - 1)}
       <div className="flex flex-wrap items-center justify-between gap-2 bg-cream px-4 py-2.5 text-xs text-slate-500">
         <span>Deposit and Upon completion are always the first and last stages.</span>
-        {problem ? <span className="font-semibold text-red-700">{problem}</span> : <span className="font-semibold text-brand-700">✓ Adds up to {aud(total)}</span>}
+        {problem ? <span className="font-semibold text-red-700">{problem}</span> : <span className="font-semibold text-ink">✓ Adds up to {aud(total)}</span>}
       </div>
     </div>
   );
@@ -496,12 +496,12 @@ function SupplierPicker({ p, current, onChosen, flush }: { p: EngineProps; curre
     const on = s.orgSupplierId && s.orgSupplierId === current;
     return (
       <li key={s.supplierId + (closest ? "n" : "")}>
-        <button type="button" disabled={busy} onClick={() => void choose(s)} className={cx("flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-slate-50", on && "bg-brand-50")}>
+        <button type="button" disabled={busy} onClick={() => void choose(s)} className={cx("flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-slate-50", on && "bg-slate-100")}>
           <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-lg font-display text-xs font-bold text-white", on ? "bg-ink" : "bg-[#5b6b62]")}>{s.name.slice(0, 2)}</span>
           <span className="min-w-0 flex-1"><span className="flex items-center gap-1.5 truncate text-sm font-semibold text-ink">{s.name}{closest && <span className="rounded-full bg-ink px-1.5 py-0.5 text-[10px] font-bold text-white">Closest</span>}</span>
             <span className="block truncate text-xs text-slate-500">{s.branch ? `${s.place ?? s.branch}${s.km !== null ? ` · ${s.km < 10 ? s.km.toFixed(1) : Math.round(s.km)} km` : ""}` : s.branches ? `${s.branches} branches · ${s.states.join(", ")}` : "Use their store finder"}</span></span>
-          {s.hasGuide ? <span className="text-xs font-semibold text-brand-700">✓ Price guide</span> : <span className="text-xs text-slate-400">No price guide</span>}
-          {on && <Icon d="M5 12l5 5 9-10" className="h-5 w-5 text-brand-700" />}
+          {s.hasGuide ? <span className="text-xs font-semibold text-ink">✓ Price guide</span> : <span className="text-xs text-slate-400">No price guide</span>}
+          {on && <Icon d="M5 12l5 5 9-10" className="h-5 w-5 text-ink" />}
         </button>
       </li>
     );
@@ -511,7 +511,7 @@ function SupplierPicker({ p, current, onChosen, flush }: { p: EngineProps; curre
       <button type="button" onClick={() => setOpen((o) => !o)} className={cx("flex min-h-11 items-center gap-2.5 rounded-xl bg-white py-1.5 pl-1.5 pr-3 ring-1", open ? "ring-2 ring-ink" : "ring-slate-300")} aria-expanded={open}>
         <span className="grid h-8 w-8 place-items-center rounded-lg bg-ink font-display text-xs font-bold text-white">{(p.supplier.name ?? "?").slice(0, 2)}</span>
         <span className="text-left leading-tight"><span className="block text-[11px] text-slate-500">Prices from</span><span className="block font-display text-[15px] font-bold text-ink">{p.supplier.name ? `${p.supplier.name}${p.supplier.branch ? ` · ${p.supplier.branch}` : ""}` : "Choose a supplier"}</span></span>
-        {p.supplier.isDefault && <span className="ml-1 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700">Default</span>}
+        {p.supplier.isDefault && <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-ink">Default</span>}
         <Icon d="M6 9l6 6 6-6" className="h-4 w-4 text-slate-500" />
       </button>
       {open && (
@@ -521,7 +521,7 @@ function SupplierPicker({ p, current, onChosen, flush }: { p: EngineProps; curre
             {near.length > 0 && <><p className="px-4 pt-3 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">{p.nearLabel ?? "Nearest to you"}</p><ul className="px-2 pb-2 pt-1">{near.map((s, k) => row(s, k === 0 && !words))}</ul></>}
             <div className="border-t-2 border-dashed border-slate-200 pb-2">
               <p className="flex items-center justify-between px-4 pt-3 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400"><span>All suppliers · {p.suppliers.length}</span>
-                {!words && <button type="button" onClick={() => setAll((a) => !a)} className="normal-case tracking-normal text-brand-700">{all ? "Show less" : "Show all"}</button>}</p>
+                {!words && <button type="button" onClick={() => setAll((a) => !a)} className="normal-case tracking-normal text-ink">{all ? "Show less" : "Show all"}</button>}</p>
               {(all || words) ? groups.map(([g, list]) => (
                 <div key={g} className="mt-2"><p className="px-4 pb-1 text-xs font-semibold text-slate-500">{g}</p><ul className="px-2">{list.map((s) => row(s, false))}</ul></div>
               )) : <p className="px-4 pt-1 text-sm text-slate-500">{p.suppliers.slice(0, 8).map((s) => s.name).join(" · ")}…</p>}

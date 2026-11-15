@@ -130,8 +130,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/app/sch
           {days.map((d) => {
             const risk = weatherRisk(fc.get(d));
             return (
-              <div key={d} className={cx("border-l border-slate-200 px-2 py-2 text-xs", d === today && "bg-brand-50", risk && "bg-red-50", isWeekend(d) && !risk && "bg-slate-100/70")}>
-                <span className={cx("block text-[13px] font-semibold", d === today ? "text-brand-700" : "text-slate-700")}>{new Date(d + "T12:00:00").toLocaleDateString("en-AU", { weekday: "short" })} {Number(d.slice(8))}</span>
+              <div key={d} className={cx("border-l border-slate-200 px-2 py-2 text-xs", d === today && "bg-slate-100", risk && "bg-red-50", isWeekend(d) && !risk && "bg-slate-100/70")}>
+                <span className={cx("block text-[13px] font-semibold", d === today ? "text-ink" : "text-slate-700")}>{new Date(d + "T12:00:00").toLocaleDateString("en-AU", { weekday: "short" })} {Number(d.slice(8))}</span>
                 <Weather f={fc.get(d)} />
               </div>
             );
@@ -149,7 +149,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/app/sch
                 <span className="min-w-0 break-words">{lane.name}</span>
               </div>
               {days.map((d, i) => (
-                <div key={d} aria-hidden className={cx("border-l border-slate-100", d === today && "bg-brand-50/50", weatherRisk(fc.get(d)) && "bg-red-50/70", isWeekend(d) && "bg-slate-50")} style={{ gridRow: `1 / span ${nLanes}`, gridColumn: i + 2 }} />
+                <div key={d} aria-hidden className={cx("border-l border-slate-100", d === today && "bg-slate-100/50", weatherRisk(fc.get(d)) && "bg-red-50/70", isWeekend(d) && "bg-slate-50")} style={{ gridRow: `1 / span ${nLanes}`, gridColumn: i + 2 }} />
               ))}
               {laneJobs.map(({ j, start, end, lane: l }) => (
                 <div key={j.id} className="relative z-10 min-w-0 p-1" style={{ gridColumn: `${idx(start < from ? from : start) + 2} / ${idx(end > to ? to : end) + 3}`, gridRow: l + 1 }}>
@@ -171,7 +171,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/app/sch
           return (
             <li key={d} className={cx("rounded-[22px] bg-white p-4 ring-1", d === today ? "ring-2 ring-ink" : risk ? "ring-red-300" : "ring-slate-200")}>
               <div className="mb-2 flex items-center justify-between gap-2">
-                <p className={cx("font-display text-[15px] font-bold", d === today ? "text-brand-700" : "text-ink")}>{date(d, { weekday: "long", month: "short", day: "numeric" })}</p>
+                <p className={cx("font-display text-[15px] font-bold", d === today ? "text-ink" : "text-ink")}>{date(d, { weekday: "long", month: "short", day: "numeric" })}</p>
                 <Weather f={fc.get(d)} />
               </div>
               {dayJobs.length === 0 ? <p className="text-xs text-slate-400">Nothing scheduled</p> : (
@@ -192,7 +192,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/app/sch
                 const r = ready(j);
                 return (
                   <li key={j.id}>
-                    <Link href={`/app/jobs/${j.id}/production`} className="flex min-h-14 items-center justify-between gap-3 py-2.5 hover:text-brand-600">
+                    <Link href={`/app/jobs/${j.id}/production`} className="flex min-h-14 items-center justify-between gap-3 py-2.5 hover:text-ink">
                       <span className="min-w-0"><span className="block truncate text-[15px] font-semibold">{j.customers?.name}: {j.title}</span><span className="block truncate text-xs text-slate-500">{r.ready ? "Ready to lock" : `Waiting on ${r.blockers.map((b) => b.label.toLowerCase()).join(", ")}`}</span></span>
                       <span className="flex shrink-0 items-center gap-2"><ReadinessDots r={r} /><Badge tone={STAGE_TONE[j.stage]}>{STAGE_LABEL[j.stage]}</Badge></span>
                     </Link>

@@ -164,7 +164,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
       </div>
       {cards.length === 0 && (
         <p className="mt-2 text-sm text-slate-500">
-          {filter === "mine" ? <>No open jobs assigned to you. <Link className="font-semibold text-brand-600" href="/app/jobs?filter=all">See everyone&apos;s jobs</Link></> : "No open jobs yet. Add a new lead to get started."}
+          {filter === "mine" ? <>No open jobs assigned to you. <Link className="font-semibold text-ink" href="/app/jobs?filter=all">See everyone&apos;s jobs</Link></> : "No open jobs yet. Add a new lead to get started."}
         </p>
       )}
     </>

@@ -38,7 +38,7 @@ function ClaudeNoteBody({ n }: { n: ClaudeNote }) {
       {n.summary && <p className="mt-1 text-slate-600">{n.summary}</p>}
       {n.added.length > 0 && (
         <div className="mt-2.5" data-claude-added>
-          <p className="text-[10px] uppercase text-brand-700 font-mono tracking-[0.12em]">Added</p>
+          <p className="text-[10px] uppercase text-ink font-mono tracking-[0.12em]">Added</p>
           <ul className="mt-1 space-y-1">
             {n.added.map((t, i) => <li key={i} className="flex gap-2 text-ink"><span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-ink text-white"><Icon d={TICK} className="h-2.5 w-2.5" /></span><span className="[overflow-wrap:anywhere]">{t}</span></li>)}
           </ul>
@@ -135,7 +135,7 @@ export function JobDocuments({ jobId, docs, meta }: { jobId: string; docs: LeadD
                   <span className={cx("grid h-9 w-9 shrink-0 place-items-center rounded-lg", pdf ? "bg-red-50 text-red-600" : "bg-slate-100 text-slate-600")}>
                     {pdf ? <span className="text-[9px] font-bold">PDF</span> : <Icon d="M6 3h8l4 4v14H6zM14 3v4h4" />}
                   </span>
-                  <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-ink">{f.name}</span><span className={cx("block truncate text-xs", meta?.[f.id]?.paid ? "font-medium text-brand-700" : "text-slate-500")} data-doc-meta>{meta?.[f.id]?.meta ?? [sizeText(f.size), new Date(f.at).toLocaleDateString("en-AU", { day: "numeric", month: "short" })].filter(Boolean).join(" · ")}</span></span>
+                  <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-ink">{f.name}</span><span className={cx("block truncate text-xs", meta?.[f.id]?.paid ? "font-medium text-ink" : "text-slate-500")} data-doc-meta>{meta?.[f.id]?.meta ?? [sizeText(f.size), new Date(f.at).toLocaleDateString("en-AU", { day: "numeric", month: "short" })].filter(Boolean).join(" · ")}</span></span>
                   {f.viewUrl && <a href={f.viewUrl} target="_blank" rel="noreferrer" title="Preview" aria-label={`Preview ${f.name}`} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-600 ring-1 ring-slate-300 hover:bg-slate-50"><Icon d={EYE} /></a>}
                   {f.downloadUrl && <a href={f.downloadUrl} title="Download" aria-label={`Download ${f.name}`} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-600 ring-1 ring-slate-300 hover:bg-slate-50"><Icon d="M12 4v11M7 10l5 5 5-5M5 20h14" /></a>}
                 </li>

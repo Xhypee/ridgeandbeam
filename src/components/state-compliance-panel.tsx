@@ -93,7 +93,7 @@ function Sources({ src }: { src: Cite[] }) {
       {src.slice(0, 3).map((s, i) => (
         <span key={s.url}>
           {i > 0 && " · "}
-          <a href={s.url} target="_blank" rel="noreferrer" className="text-brand-700 underline underline-offset-2 hover:text-brand-600">{s.label}</a>
+          <a href={s.url} target="_blank" rel="noreferrer" className="text-ink underline underline-offset-2 hover:text-ink">{s.label}</a>
         </span>
       ))}
     </span>
@@ -116,7 +116,7 @@ function ReferenceView({ props }: { props: StateComplianceProps }) {
           <p className="mt-0.5 text-xs text-slate-500">Add a price to see exactly what applies to this job.</p>
           <SourceNote source={props.source} />
         </div>
-        <a href={ref.regulator.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center font-semibold text-brand-700 hover:text-brand-600 font-mono text-xs uppercase tracking-wider">{ref.regulator.name} ↗</a>
+        <a href={ref.regulator.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center font-semibold text-ink hover:text-ink font-mono text-xs uppercase tracking-wider">{ref.regulator.name} ↗</a>
       </header>
       <div className="px-5 pb-2">
         {ref.rows.slice(0, props.compact ? 6 : undefined).map((row) => (
@@ -155,7 +155,7 @@ export function StateCompliancePanel(props: StateComplianceProps) {
           <p className="mt-0.5 text-xs text-slate-500">{r.regime} · contract date {formatAuDate(r.contractDate)} · {$(Number(props.contractValueIncGst))} incl. GST</p>
           <SourceNote source={props.source} />
         </div>
-        <a href={r.regulator.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center font-semibold text-brand-700 hover:text-brand-600 font-mono text-xs uppercase tracking-wider">{r.regulator.name} ↗</a>
+        <a href={r.regulator.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center font-semibold text-ink hover:text-ink font-mono text-xs uppercase tracking-wider">{r.regulator.name} ↗</a>
       </header>
       {props.summary && (
         <div className="grid grid-cols-2 gap-2 px-5 pt-4 @lg:grid-cols-3" data-testid="compliance-summary">
@@ -176,7 +176,7 @@ export function StateCompliancePanel(props: StateComplianceProps) {
       )}
       {props.summary ? (
         <details className="group px-5 pb-1 pt-2">
-          <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider">Show all {r.stateName} rules</summary>
+          <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-ink font-mono text-xs uppercase tracking-wider">Show all {r.stateName} rules</summary>
       <div className="px-5 pb-2">
         <p className="pt-3 text-sm text-slate-700">{r.scope.summary}</p>
 
@@ -196,7 +196,7 @@ export function StateCompliancePanel(props: StateComplianceProps) {
           <p>{r.writtenContract.note}</p>
           {r.writtenContract.mustInclude.length > 0 && (
             <details className="mt-1">
-              <summary className="inline-flex min-h-9 cursor-pointer items-center font-semibold text-brand-700">What the contract must include ({r.writtenContract.mustInclude.length})</summary>
+              <summary className="inline-flex min-h-9 cursor-pointer items-center font-semibold text-ink">What the contract must include ({r.writtenContract.mustInclude.length})</summary>
               <ul className="ml-5 list-disc text-slate-600">{r.writtenContract.mustInclude.map((m) => <li key={m}>{m}</li>)}</ul>
             </details>
           )}
@@ -218,7 +218,7 @@ export function StateCompliancePanel(props: StateComplianceProps) {
           <p>{r.coolingOff.note}</p>
           {r.coolingOff.applies && r.coolingOff.exceptions.length > 0 && (
             <details className="mt-1">
-              <summary className="inline-flex min-h-9 cursor-pointer items-center font-semibold text-brand-700">Exceptions</summary>
+              <summary className="inline-flex min-h-9 cursor-pointer items-center font-semibold text-ink">Exceptions</summary>
               <ul className="ml-5 list-disc text-slate-600">{r.coolingOff.exceptions.map((m) => <li key={m}>{m}</li>)}</ul>
             </details>
           )}
@@ -237,7 +237,7 @@ export function StateCompliancePanel(props: StateComplianceProps) {
             <ul className="space-y-1">
               {r.documents.map((d) => (
                 <li key={d.name}>
-                  <a href={d.link} target="_blank" rel="noreferrer" className="font-medium text-brand-700 underline underline-offset-2 hover:text-brand-600">{d.name}</a>
+                  <a href={d.link} target="_blank" rel="noreferrer" className="font-medium text-ink underline underline-offset-2 hover:text-ink">{d.name}</a>
                   <span className="text-slate-500"> — {d.when}</span>
                 </li>
               ))}
@@ -271,7 +271,7 @@ export function StateCompliancePanel(props: StateComplianceProps) {
               {r.unverified.map((u) => (
                 <li key={u.topic}>
                   <span className="font-semibold text-ink">{u.topic}:</span> {u.note}{" "}
-                  <a href={u.regulator.url} target="_blank" rel="noreferrer" className="whitespace-nowrap font-semibold text-brand-700 underline underline-offset-2">Check with {u.regulator.name} ↗</a>
+                  <a href={u.regulator.url} target="_blank" rel="noreferrer" className="whitespace-nowrap font-semibold text-ink underline underline-offset-2">Check with {u.regulator.name} ↗</a>
                 </li>
               ))}
             </ul>
@@ -280,9 +280,9 @@ export function StateCompliancePanel(props: StateComplianceProps) {
 
         {!props.compact && (
           <details className="border-t-2 border-dashed border-slate-200 py-3">
-            <summary className="inline-flex min-h-9 cursor-pointer items-center font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider">All sources ({r.sources.length})</summary>
+            <summary className="inline-flex min-h-9 cursor-pointer items-center font-semibold text-ink font-mono text-xs uppercase tracking-wider">All sources ({r.sources.length})</summary>
             <ul className="mt-1 space-y-0.5 text-xs">
-              {r.sources.map((s) => <li key={s.url}><a href={s.url} target="_blank" rel="noreferrer" className="break-words text-brand-700 underline underline-offset-2">{s.label}</a></li>)}
+              {r.sources.map((s) => <li key={s.url}><a href={s.url} target="_blank" rel="noreferrer" className="break-words text-ink underline underline-offset-2">{s.label}</a></li>)}
             </ul>
           </details>
         )}
@@ -311,7 +311,7 @@ export function StateCompliancePanel(props: StateComplianceProps) {
           <p>{r.writtenContract.note}</p>
           {r.writtenContract.mustInclude.length > 0 && (
             <details className="mt-1">
-              <summary className="inline-flex min-h-9 cursor-pointer items-center font-semibold text-brand-700">What the contract must include ({r.writtenContract.mustInclude.length})</summary>
+              <summary className="inline-flex min-h-9 cursor-pointer items-center font-semibold text-ink">What the contract must include ({r.writtenContract.mustInclude.length})</summary>
               <ul className="ml-5 list-disc text-slate-600">{r.writtenContract.mustInclude.map((m) => <li key={m}>{m}</li>)}</ul>
             </details>
           )}
@@ -333,7 +333,7 @@ export function StateCompliancePanel(props: StateComplianceProps) {
           <p>{r.coolingOff.note}</p>
           {r.coolingOff.applies && r.coolingOff.exceptions.length > 0 && (
             <details className="mt-1">
-              <summary className="inline-flex min-h-9 cursor-pointer items-center font-semibold text-brand-700">Exceptions</summary>
+              <summary className="inline-flex min-h-9 cursor-pointer items-center font-semibold text-ink">Exceptions</summary>
               <ul className="ml-5 list-disc text-slate-600">{r.coolingOff.exceptions.map((m) => <li key={m}>{m}</li>)}</ul>
             </details>
           )}
@@ -352,7 +352,7 @@ export function StateCompliancePanel(props: StateComplianceProps) {
             <ul className="space-y-1">
               {r.documents.map((d) => (
                 <li key={d.name}>
-                  <a href={d.link} target="_blank" rel="noreferrer" className="font-medium text-brand-700 underline underline-offset-2 hover:text-brand-600">{d.name}</a>
+                  <a href={d.link} target="_blank" rel="noreferrer" className="font-medium text-ink underline underline-offset-2 hover:text-ink">{d.name}</a>
                   <span className="text-slate-500"> — {d.when}</span>
                 </li>
               ))}
@@ -386,7 +386,7 @@ export function StateCompliancePanel(props: StateComplianceProps) {
               {r.unverified.map((u) => (
                 <li key={u.topic}>
                   <span className="font-semibold text-ink">{u.topic}:</span> {u.note}{" "}
-                  <a href={u.regulator.url} target="_blank" rel="noreferrer" className="whitespace-nowrap font-semibold text-brand-700 underline underline-offset-2">Check with {u.regulator.name} ↗</a>
+                  <a href={u.regulator.url} target="_blank" rel="noreferrer" className="whitespace-nowrap font-semibold text-ink underline underline-offset-2">Check with {u.regulator.name} ↗</a>
                 </li>
               ))}
             </ul>
@@ -395,9 +395,9 @@ export function StateCompliancePanel(props: StateComplianceProps) {
 
         {!props.compact && (
           <details className="border-t-2 border-dashed border-slate-200 py-3">
-            <summary className="inline-flex min-h-9 cursor-pointer items-center font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider">All sources ({r.sources.length})</summary>
+            <summary className="inline-flex min-h-9 cursor-pointer items-center font-semibold text-ink font-mono text-xs uppercase tracking-wider">All sources ({r.sources.length})</summary>
             <ul className="mt-1 space-y-0.5 text-xs">
-              {r.sources.map((s) => <li key={s.url}><a href={s.url} target="_blank" rel="noreferrer" className="break-words text-brand-700 underline underline-offset-2">{s.label}</a></li>)}
+              {r.sources.map((s) => <li key={s.url}><a href={s.url} target="_blank" rel="noreferrer" className="break-words text-ink underline underline-offset-2">{s.label}</a></li>)}
             </ul>
           </details>
         )}

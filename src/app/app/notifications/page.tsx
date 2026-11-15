@@ -23,7 +23,7 @@ export default async function NotificationsPage() {
         <ul className="divide-y-2 divide-dashed divide-slate-200 rounded-xl bg-white ring-1 ring-slate-200">
           {rows.map((n) => (
             <li key={n.id}>
-              <Link href={n.url ?? "#"} className={cx("flex items-start gap-3 px-4 py-3 hover:bg-slate-50", !n.read_at && "bg-brand-50/40")}>
+              <Link href={n.url ?? "#"} className={cx("flex items-start gap-3 px-4 py-3 hover:bg-slate-50", !n.read_at && "bg-slate-100/40")}>
                 <span className={cx("mt-1.5 h-2 w-2 shrink-0 rounded-full", n.read_at ? "bg-transparent" : "bg-ink")} />
                 <span className="min-w-0">
                   <span className="block text-sm font-medium text-slate-900">{n.title}</span>

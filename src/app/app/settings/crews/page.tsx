@@ -63,7 +63,7 @@ export default async function Page() {
           <div className="mt-4 flex flex-wrap items-center gap-2 border-t-2 border-dashed border-slate-200 pt-4">
             <span className="min-w-0 flex-1 truncate text-xs text-slate-500" title="Crew portal">Crew portal: /w/{c.public_token.slice(0, 6)}…</span>
             <CopyLink url={`${siteUrl()}/w/${c.public_token}`} label="Copy crew portal link" />
-            <a href={`/w/${c.public_token}`} target="_blank" rel="noreferrer" className="rounded-lg px-3 py-2 text-sm text-brand-600 hover:bg-brand-50">Open</a>
+            <a href={`/w/${c.public_token}`} target="_blank" rel="noreferrer" className="rounded-lg px-3 py-2 text-sm text-ink hover:bg-slate-100">Open</a>
             {isAdmin && (
               <form action={resetCrewLink}><input type="hidden" name="id" value={c.id} /><SubmitButton variant="ghost" confirm="Make a new link? The old one stops working.">New link</SubmitButton></form>
             )}

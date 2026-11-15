@@ -36,7 +36,7 @@ export default async function ChangeOrdersPage({ params }: PageProps<"/app/jobs/
                 const total = (c.change_order_items as { quantity: number; unit_price: number }[]).reduce((s, i) => s + Number(i.quantity) * Number(i.unit_price), 0);
                 return (
                   <li key={c.id}>
-                    <Link href={`/app/jobs/${id}/change-orders/${c.id}`} className="flex min-h-12 items-center justify-between gap-3 py-2 hover:text-brand-600">
+                    <Link href={`/app/jobs/${id}/change-orders/${c.id}`} className="flex min-h-12 items-center justify-between gap-3 py-2 hover:text-ink">
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-medium">{c.title}</span>
                         <span className="text-xs text-slate-500">{c.approved_at ? `Approved ${date(c.approved_at)} by ${c.approved_name}${c.approval_method === "verbal" ? " (verbal)" : ""}` : date(c.created_at)}</span>

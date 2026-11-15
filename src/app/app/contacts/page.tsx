@@ -128,7 +128,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/app/con
             </thead>
             <tbody className="divide-y-2 divide-dashed divide-slate-200">
               {list.map((r) => (
-                <tr key={r.key} data-contact-row={r.type} aria-current={r.current ? "true" : undefined} className="relative cursor-pointer hover:bg-slate-50 aria-[current]:bg-brand-50">
+                <tr key={r.key} data-contact-row={r.type} aria-current={r.current ? "true" : undefined} className="relative cursor-pointer hover:bg-slate-50 aria-[current]:bg-slate-100">
                   <td className="px-4 py-3">
                     <Link href={r.href} scroll={false} className="block font-semibold text-ink before:absolute before:inset-0">{r.name}</Link>
                     {r.sub && <span className={cx("text-xs", r.sub === "Insurance" ? "text-violet-700" : "text-slate-500")}>{r.sub}</span>}

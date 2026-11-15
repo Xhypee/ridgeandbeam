@@ -51,7 +51,7 @@ export function BuildPanel({ d, askHref, payHref }: { d: Docket; askHref: string
                 : live && r.due ? `Due now${r.trigger === "delivered" && deliveredOn ? ` · delivered ${wkday(deliveredOn)}` : r.trigger === "completed" ? " · job done" : ""}`
                 : r.when;
               return (
-                <li key={r.label + k} className={cx("flex items-center gap-3 px-3.5 py-2.5", k > 0 && "border-t-2 border-dashed border-slate-200", live && "bg-brand-50")} data-pay-row={r.state}>
+                <li key={r.label + k} className={cx("flex items-center gap-3 px-3.5 py-2.5", k > 0 && "border-t-2 border-dashed border-slate-200", live && "bg-slate-100")} data-pay-row={r.state}>
                   <span className={cx("grid h-7 w-7 shrink-0 place-items-center rounded-full", r.state === "paid" ? "bg-ink text-white" : live ? "bg-ink text-white" : "bg-white text-slate-400 ring-1 ring-slate-200")}><Icon d={r.state === "paid" ? CHECK : DOLLAR} className="h-3.5 w-3.5" /></span>
                   <span className="min-w-0 flex-1">
                     <span className={cx("block font-display text-[15px] font-bold", r.state === "later" ? "text-slate-500" : "text-ink")}>{r.label}{r.pct < 100 ? ` · ${r.pct}%` : ""}</span>
@@ -105,7 +105,7 @@ export function BuildPanel({ d, askHref, payHref }: { d: Docket; askHref: string
                       <SubmitButton variant="secondary" className="min-h-9 gap-1.5 px-3 text-xs"><span className="h-3.5 w-3.5 rounded border-[1.5px] border-slate-400" />Delivered</SubmitButton>
                     </ActionForm></span>
                   ) : o.paidAt ? (
-                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700"><Icon d={CHECK} className="h-3.5 w-3.5" />Paid</span>
+                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-ink"><Icon d={CHECK} className="h-3.5 w-3.5" />Paid</span>
                   ) : (
                     <Link href={payHref(o.id)} scroll={false} className={cx("shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold", o.invoice ? "bg-ink text-white hover:bg-ink/90" : "text-ink ring-1 ring-slate-300 hover:bg-slate-50")} data-pay-invoice>{o.invoice ? "Pay invoice" : "Add invoice"}</Link>
                   )}
