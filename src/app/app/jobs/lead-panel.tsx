@@ -9,6 +9,7 @@ import { createEstimate } from "../estimates/actions";
 import { EYE, Icon, JobContact, JobDocuments, JobNotes } from "./job-sections";
 import { LeadSteps } from "./lead-steps";
 import { dateIn } from "@/lib/lead-steps";
+import { roofSheet } from "@/lib/roof-sheet";
 
 export { EYE, noteFacts } from "./job-sections";
 const SEND = "M4 12l16-8-6 16-2.5-6.5z";
@@ -33,6 +34,10 @@ export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: st
   const dow = new Date(`${tomorrow}T12:00:00Z`).getUTCDay();
   const suggested = dow === 6 ? dateIn(tz, 3) : dow === 0 ? dateIn(tz, 2) : tomorrow;
 
+  // The quote in a few lines: what's in the total (main lines and extras added), biggest first.
+  const included = (q?.lines ?? []).filter((l) => l.extra_status !== "offered" && l.amount > 0);
+  const topLines = [...included].sort((a, b) => b.amount - a.amount).slice(0, 3).map((l) => ({ description: l.description, amount: l.amount, calcKey: l.calc_key }));
+
   return (
     <>
       <LeadSteps
@@ -43,12 +48,16 @@ export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: st
         people={d.people.filter((p) => p.role !== "crew_lead").map((p) => ({ user_id: p.user_id, name: p.full_name || p.email || "Someone" }))}
         dates={{ min: dateIn(tz), suggested }} tz={tz}
         name={d.customer.name} otherJobs={lead.customerOtherJobs}
+        plans={lead.docs.length}
+        quote={q ? { id: q.id, number: q.number, status: q.status, total: q.total, lines: topLines, more: Math.max(0, included.length - topLines.length) } : null}
+        roof={d.roof ? roofSheet(d.roof.summary, d.roof.m) : null} caption={d.job.site_address} previewHref={previewHref}
       />
       <JobContact d={d} />
       <JobNotes d={d} leadNote={lead.message ? { by: sourceLabel, at: lead.receivedAt, body: lead.message } : null} />
       <JobDocuments jobId={d.job.id} docs={lead.docs} />
 
-      <div className="border-t-2 border-dashed border-slate-200 px-5 py-4" data-send-quote>
+      {/* Once the plans are in, Next up carries the quote and its Send button; this is for the rest. */}
+      {(q ? !(lead.docs.length || d.roof) : !lead.docs.length) && <div className="border-t-2 border-dashed border-slate-200 px-5 py-4" data-send-quote>
         {q ? (
           <>
             <ActionForm action={sendQuoteEmail}>
@@ -66,11 +75,11 @@ export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: st
         ) : (
           <form action={createEstimate}>
             <input type="hidden" name="job_id" value={d.job.id} />
-            <button className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-ink font-semibold text-white hover:bg-ink/90"><Icon d="M12 5v14M5 12h14" />Start a quote</button>
-            <p className="mt-2 text-xs text-slate-500">No inspection needed? Measure from plans or satellite, then send it from here.</p>
+            <button className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-ink font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90"><Icon d="M12 5v14M5 12h14" />Start a quote</button>
+            <p className="mt-2 text-xs text-slate-500">No plans? Measure on the satellite map, then send it from here.</p>
           </form>
         )}
-      </div>
+      </div>}
     </>
   );
 }

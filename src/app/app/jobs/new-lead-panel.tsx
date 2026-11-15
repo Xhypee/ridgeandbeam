@@ -35,8 +35,8 @@ const COPY = {
 export function NewLeadPanel({ closeHref, filter = null, defaultState, variant = "lead", referrer = null }: { closeHref: string; filter?: string | null; defaultState: string | null; variant?: "lead" | "customer"; referrer?: Referrer | null }) {
   const t = COPY[variant];
   return (
-    <div className="flex h-full flex-col bg-cream p-4" data-new-lead={variant}>
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200">
+    <div className="flex h-full flex-col bg-white" data-new-lead={variant}>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
         <ActionForm action={createCustomer} className="flex min-h-0 flex-1 flex-col">
           {variant === "lead" && <input type="hidden" name="create_job" value="on" />}
           <input type="hidden" name="return_to" value="board" />

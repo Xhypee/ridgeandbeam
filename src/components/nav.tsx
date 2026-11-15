@@ -119,13 +119,14 @@ export function NavRail({ canSeeMoney = true, crewLead = false, unread = 0 }: { 
   );
 }
 
-/** True while a right sidebar is open: a job's docket (?job=…) or New lead (?new=1) on the Jobs board; a contact (?contact= / ?supplier=…) or New contact (?new=1) on Contacts. */
+/** True while the page has a right sidebar: always on the Jobs board and Contacts (a job, a contact, New lead /
+ *  New contact, or else Claude's chat), and on Customers while one is open. */
 export function useDocketOpen() {
   const path = usePathname();
   const sp = useSearchParams();
-  if (path === "/app/contacts") return sp.has("contact") || sp.has("supplier") || sp.get("new") === "1";
+  if (path === "/app/jobs" || path === "/app/contacts") return true;
   if (path === "/app/customers") return sp.has("customer") || sp.get("new") === "1";
-  return path === "/app/jobs" && (sp.has("job") || sp.get("new") === "1");
+  return false;
 }
 
 /** The quoting engine (/app/estimates/<id>) takes the whole screen: no menu, its own top bar. */

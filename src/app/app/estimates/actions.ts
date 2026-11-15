@@ -7,6 +7,7 @@ import { requireMoneyAccess } from "@/lib/dal";
 import { effectiveOptionId, estimateTotals, itemsForOption } from "@/lib/estimate-totals";
 import { noticeSnapshot, requiredNotices, resolveJobState } from "@/lib/estimate-notices";
 import { friendly } from "@/lib/form";
+import { insertDraftEstimate } from "@/lib/estimate-new";
 import { MEASUREMENT_SOURCES, METAL_PROFILES } from "@/lib/roof";
 import { supplierPriceBook, type PriceRow } from "@/lib/suppliers";
 import type { ActionResult } from "@/components/action-form";
@@ -64,22 +65,8 @@ const SaveSchema = z.object({
 export type SaveEstimateInput = z.input<typeof SaveSchema>;
 
 export async function createEstimate(fd: FormData) {
-  const { supabase, org, user } = await requireMoneyAccess();
-  const jobId = String(fd.get("job_id"));
-  const { data, error } = await supabase
-    .from("estimates")
-    .insert({
-      org_id: org.id,
-      job_id: jobId,
-      tax_rate: org.gst_registered ? 10 : 0,
-      gst_inclusive: org.prices_include_gst !== false,
-      org_supplier_id: org.default_supplier_id ?? null,
-      terms: org.estimate_terms,
-      measurements: { units: "metric", wastePct: Number(org.default_waste_pct) },
-      created_by: user.id,
-    })
-    .select("id")
-    .single();
+  const ctx = await requireMoneyAccess();
+  const { data, error } = await insertDraftEstimate(ctx, String(fd.get("job_id")));
   if (error) throw new Error(friendly(error));
   revalidatePath("/app", "layout");
   redirect(`/app/estimates/${data.id}`);

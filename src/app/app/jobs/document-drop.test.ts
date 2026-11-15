@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh() {} }) }));
 vi.mock("@/lib/supabase/client", () => ({ createClient: () => ({}) }));
 vi.mock("./[id]/files/actions", () => ({ attachJobFile: vi.fn(), prepareJobUpload: vi.fn() }));
+vi.mock("./lead-actions", () => ({ quoteForPlans: vi.fn() }));
 import { skipFile } from "./document-drop";
 
 describe("skipFile", () => {

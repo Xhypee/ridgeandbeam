@@ -3,6 +3,7 @@ import { ActionForm, SubmitButton } from "@/components/action-form";
 import { cx } from "@/components/ui";
 import type { Docket, LeadDoc } from "@/lib/job-docket-server";
 import { referrerHref } from "@/lib/referrals-server";
+import { parseClaudeNote, type ClaudeNote } from "@/lib/claude-note";
 import { addNote } from "./actions";
 import { DocumentDrop } from "./document-drop";
 
@@ -21,7 +22,59 @@ export function noteFacts(body: string): [string, string][] | null {
 const when = (iso: string) => new Date(iso).toLocaleString("en-AU", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Australia/Brisbane" });
 const sizeText = (n: number | null) => (n === null ? "" : n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`);
 
+const DOC = "M7 3h7l5 5v13H7zM14 3v5h5";
+const TICK = "M5 12l5 5L20 7";
+
+/** Claude's note after reading a file: the file, one line on what it is, then Added (ticks), Check (amber) and
+ *  Details (small tags). */
+function ClaudeNoteBody({ n }: { n: ClaudeNote }) {
+  return (
+    <div className="mt-1.5" data-claude-note>
+      <div className="flex min-w-0 items-center gap-2">
+        <Icon d={DOC} className="h-4 w-4 shrink-0 text-slate-400" />
+        <span className="min-w-0 truncate font-semibold text-ink" title={n.file}>{n.file}</span>
+        <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{n.kind}</span>
+      </div>
+      {n.summary && <p className="mt-1 text-slate-600">{n.summary}</p>}
+      {n.added.length > 0 && (
+        <div className="mt-2.5" data-claude-added>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-700">Added</p>
+          <ul className="mt-1 space-y-1">
+            {n.added.map((t, i) => <li key={i} className="flex gap-2 text-ink"><span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-brand-500 text-white"><Icon d={TICK} className="h-2.5 w-2.5" /></span><span className="[overflow-wrap:anywhere]">{t}</span></li>)}
+          </ul>
+        </div>
+      )}
+      {n.check.length > 0 && (
+        <div className="mt-2.5 rounded-lg bg-amber-50 px-2.5 py-2" data-claude-check>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-800">Check</p>
+          <ul className="mt-1 space-y-1">
+            {n.check.map((t, i) => <li key={i} className="flex gap-2 text-amber-950"><span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-amber-500 text-[10px] font-bold text-white">!</span><span className="[overflow-wrap:anywhere]">{t}</span></li>)}
+          </ul>
+        </div>
+      )}
+      {n.details.length > 0 && (
+        <div className="mt-2.5" data-claude-details>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Details</p>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {n.details.map((t, i) => <span key={i} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-700">{t}</span>)}
+          </div>
+        </div>
+      )}
+      {n.nothing && <p className="mt-1 text-slate-500">Nothing to watch out for.</p>}
+    </div>
+  );
+}
+
 export function NoteCard({ by, at, body, tone }: { by: string; at: string | null; body: string; tone: "lead" | "team" }) {
+  const claude = parseClaudeNote(body);
+  if (claude) {
+    return (
+      <li className="rounded-xl bg-white px-3 py-2.5 text-sm ring-1 ring-slate-200" data-note>
+        <p className="text-xs font-semibold text-slate-600">{by}{at && <> · <span className="font-normal">{when(at)}</span></>}</p>
+        <ClaudeNoteBody n={claude} />
+      </li>
+    );
+  }
   const facts = noteFacts(body);
   return (
     <li className={cx("rounded-xl px-3 py-2.5 text-sm", tone === "lead" ? "bg-slate-50 ring-1 ring-slate-200" : "bg-amber-50")} data-note>

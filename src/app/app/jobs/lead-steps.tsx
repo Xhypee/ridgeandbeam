@@ -1,22 +1,79 @@
 "use client";
 
-// The New lead sidebar's "Next up": Call, then five icon buttons (Spoke to them · No answer · Book the
-// inspection · Not going ahead · Delete lead, labels on hover), then Who's looking after it. Server actions: lead-actions.ts.
+// The New lead sidebar's "Next up". People ring a few roofers and get told "send us your plans", so the first
+// step is the plans, dropped on a blueprint sheet (Claude reads them, makes the draft quote, measures the roof and
+// prices it). Once they're in: the roof drawn on the sheet with its numbers, and a very short quote (main items,
+// total, Edit, Send quote). Under it three icon buttons (Book the inspection · Not going ahead · Delete lead,
+// labels on hover), then Who's looking after it. Server actions: lead-actions.ts.
+import Link from "next/link";
 import { useRef, useState } from "react";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { cx } from "@/components/ui";
 import { LOST_REASONS, type ScheduleItem } from "@/lib/lead-steps";
+import { ItemIcon } from "@/components/item-icons";
+import { createEstimate } from "../estimates/actions";
+import { sendQuoteEmail } from "./quote-actions";
 import { BookingCalendar } from "./booking-calendar";
-import { deleteLead, logLeadCall, markLeadLost, setLeadOwner } from "./lead-actions";
+import { DocumentDrop, RoofDrawing } from "./document-drop";
+import type { RoofSheet } from "@/lib/roof-sheet";
+import { deleteLead, markLeadLost, setLeadOwner } from "./lead-actions";
 import { LeadTimer } from "./lead-timer";
 
-const PHONE = "M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2";
-const SMS = "M4 5h16v11H9l-5 4z";
 const CHECK = "M5 12l5 5L20 7";
 const CAL = "M4 6h16v14H4zM4 10h16M8 3v5M16 3v5";
-const MISSED = "M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2M15 3l6 6M21 3l-6 6";
+const PEN = "M4 20l4-1 11-11-3-3L5 16zM14 6l3 3";
+const SEND = "M4 12l16-8-6 16-2.5-6.5z";
+const EYE = "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6z";
 const XCIRCLE = "M12 21a9 9 0 100-18 9 9 0 000 18M9 9l6 6M15 9l-6 6";
 const BIN = "M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3";
+const aud = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: n % 1 ? 2 : 0 });
+
+/** Torn bottom edge of the receipt (same zig-zag as the quote docket). */
+const TORN = (() => {
+  const p = ["0 0", "100% 0", "100% calc(100% - 10px)"];
+  for (let x = 96; x > 0; x -= 4) p.push(`${x}% ${(100 - x) % 8 === 4 ? "100%" : "calc(100% - 10px)"}`);
+  p.push("0 calc(100% - 10px)");
+  return `polygon(${p.join(",")})`;
+})();
+
+/** The quote as a little receipt torn off under the plan sheet: the biggest items (monospace, with their icons),
+ *  how many more, a dashed rule and the total; then Send quote with Edit (opens the whole quote) and Preview (the
+ *  email exactly as the customer gets it) beside it. */
+function QuoteSummary({ q, first, previewHref }: { q: NonNullable<LeadStepsProps["quote"]>; first: string; previewHref: string | null }) {
+  return (
+    <div className="border-t border-brand-200 bg-cream px-3 pt-3" data-lead-quote-summary>
+      <div className="bg-white px-4 pb-6 pt-3.5 ring-1 ring-slate-200" style={{ clipPath: TORN }} data-lead-receipt>
+        {q.lines.length ? (
+          <ul className="font-mono text-[12.5px] text-slate-600">
+            {q.lines.map((l, i) => (
+              <li key={i} className="flex items-start gap-2.5 py-1">
+                <ItemIcon calcKey={l.calcKey} size={16} />
+                <span className="min-w-0 flex-1 break-words pt-1">{l.description}</span>
+                <span className="shrink-0 pt-1 tabular-nums text-ink">{aud(l.amount)}</span>
+              </li>
+            ))}
+            {q.more > 0 && <li className="py-1 pl-[34px] text-slate-400">+ {q.more} more</li>}
+          </ul>
+        ) : (
+          <p className="font-mono text-[12.5px] text-slate-500">No prices yet. Tap Edit to price it.</p>
+        )}
+        <div className="mt-2.5 flex items-baseline justify-between border-t-2 border-dashed border-slate-200 pt-2.5">
+          <span className="font-mono text-xs font-semibold uppercase tracking-wider text-slate-500">Total inc GST</span>
+          <span className="font-display text-xl font-bold tabular-nums text-ink" data-lead-quote-total>{aud(q.total)}</span>
+        </div>
+      </div>
+      {/* Send it from right here: the same email as the Send quote button everywhere else. */}
+      <ActionForm action={sendQuoteEmail} className="py-3">
+        <input type="hidden" name="estimate_id" value={q.id} />
+        <div className="flex gap-2" data-lead-send>
+          <SubmitButton className="min-h-12 flex-1 gap-2 text-[15px]"><Icon d={SEND} />{q.status === "sent" ? "Send quote again" : `Send quote to ${first}`}</SubmitButton>
+          <Link href={`/app/estimates/${q.id}`} title="Edit the quote" aria-label="Edit the quote" className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white text-ink ring-1 ring-slate-300 hover:bg-slate-50" data-lead-quote-edit><Icon d={PEN} className="h-5 w-5" /></Link>
+          {previewHref && <Link href={previewHref} scroll={false} title={`Preview what ${first} will get`} aria-label={`Preview what ${first} will get`} className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white text-ink ring-1 ring-slate-300 hover:bg-slate-50" data-lead-quote-preview><Icon d={EYE} className="h-5 w-5" /></Link>}
+        </div>
+      </ActionForm>
+    </div>
+  );
+}
 
 /** Hover / focus label above an icon button (the button needs `group relative`). */
 function Tip({ children, align = "center" }: { children: React.ReactNode; align?: "start" | "center" | "end" }) {
@@ -60,6 +117,16 @@ export type LeadStepsProps = {
   /** Full name, for the delete confirmation; `otherJobs` > 0 means the contact stays. */
   name: string;
   otherJobs: number;
+  /** Documents on the job so far (plans, reports…). */
+  plans: number;
+  /** The lead's quote, if there is one: its biggest lines (already cut to a few), how many more, the total. */
+  quote: { id: string; number: number; status: string; total: number; lines: { description: string; amount: number; calcKey: string | null }[]; more: number } | null;
+  /** The measured roof's numbers for the dimensioned drawing on the plan sheet (see roof-sheet.ts). */
+  roof: RoofSheet | null;
+  /** Under the sheet: the site address, if there is one. */
+  caption: string | null;
+  /** Opens the quote email exactly as the customer will get it. */
+  previewHref?: string | null;
 };
 
 function OwnerPicker({ jobId, owner, people, meId }: { jobId: string; owner: string; people: LeadStepsProps["people"]; meId: string }) {
@@ -82,53 +149,41 @@ function OwnerPicker({ jobId, owner, people, meId }: { jobId: string; owner: str
 export function LeadSteps(p: LeadStepsProps) {
   const [open, setOpen] = useState<"book" | "lost" | "delete" | null>(null);
   const [reason, setReason] = useState<string>("");
-  const tel = p.phone ? `tel:${p.phone.replace(/\s+/g, "")}` : null;
-  const sms = p.phone ? `sms:${p.phone.replace(/\s+/g, "")}` : null;
-  const headline = !p.contacted ? `Call ${p.first}` : "Book the inspection";
-  const btn = "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold";
+  const planless = p.plans === 0 && !p.roof;
+  const headline = planless ? `Upload ${p.first}\u2019s plans` : p.quote ? `Check ${p.first}\u2019s quote` : `Write ${p.first}\u2019s quote`;
+  const btn = "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 text-[15px] font-semibold";
   const booking = (
     <BookingCalendar jobId={p.jobId} first={p.first} phone={p.phone} people={p.people} defaultStaff={p.owner} meId={p.meId}
       today={p.dates.min} suggested={p.dates.suggested} tz={p.tz} load={p.loadSchedule} />
   );
 
-  const status = p.contacted
-    ? `Spoke ${p.contacted.label}${p.contacted.by ? ` · ${p.contacted.by.split(" ")[0]}` : ""}`
-    : p.noAnswer.count ? `${p.noAnswer.count} ${p.noAnswer.count === 1 ? "try" : "tries"}, no answer${p.noAnswer.lastLabel ? ` · last ${p.noAnswer.lastLabel}` : ""}`
-    : "The first roofer to call usually wins the job.";
-
   return (
-    <div className="px-5 pb-4" data-lead-steps>
+    <div className="px-5 pb-4" data-lead-steps data-lead-plans={planless ? "none" : "in"}>
       <div className="flex items-center gap-2">
         <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">Next up</p>
-        {!p.contacted && p.receivedAt && <span className="ml-auto"><LeadTimer since={p.receivedAt} /></span>}
+        {planless && !p.contacted && p.receivedAt && <span className="ml-auto"><LeadTimer since={p.receivedAt} /></span>}
       </div>
-      <p className="font-display text-[26px] font-bold leading-tight text-ink">{headline}</p>
-      <p className="text-sm text-slate-500" data-lead-status>{status}</p>
+      <p className="font-display text-[26px] font-bold leading-tight text-ink" data-lead-headline>{headline}</p>
 
-      {!p.contacted && (
-        <div className="mt-3 flex gap-2">
-          {tel ? <a href={tel} className={cx(btn, "flex-1 bg-ink text-white hover:bg-ink/90")} data-lead-call><Icon d={PHONE} />Call {p.first}</a>
-            : <span className={cx(btn, "flex-1 bg-slate-100 text-slate-400")}>No mobile</span>}
-          {sms && <a href={sms} aria-label={`Text ${p.first}`} title={`Text ${p.first}`} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-ink ring-1 ring-slate-300 hover:bg-slate-50"><Icon d={SMS} /></a>}
-        </div>
+      {/* One box: the plan sheet, and once the plans are in, the quote right under it. The sheet keeps its place in
+          both states, so Claude's summary survives the refresh. */}
+      {/* Full bleed: the sheet (and receipt) run the whole width of the sidebar, lines top and bottom only. */}
+      <div className="-mx-5 mt-3 border-y border-brand-200" data-lead-drop>
+        <DocumentDrop jobId={p.jobId} variant="plans" compact={!planless} measured={Boolean(p.roof)} joined
+          estimateId={p.quote?.status === "draft" ? p.quote.id : undefined}
+          sheet={p.roof ? <RoofDrawing labels={p.roof} /> : undefined} caption={p.caption ?? undefined} />
+        {!planless && p.quote && <QuoteSummary q={p.quote} first={p.first} previewHref={p.previewHref ?? null} />}
+      </div>
+      {!planless && !p.quote && (
+        <form action={createEstimate} className="mt-3"><input type="hidden" name="job_id" value={p.jobId} /><button className={cx(btn, "bg-ink text-white hover:bg-ink/90")} data-lead-quote><Icon d="M12 5v14M5 12h14" className="h-5 w-5" />Start the quote</button></form>
       )}
 
-      {/* Five actions as icon buttons; the label shows on hover (and keyboard focus). */}
-      <ActionForm action={logLeadCall} className="mt-3">
-        <input type="hidden" name="job_id" value={p.jobId} />
-        <div className="grid grid-cols-5 gap-2" data-lead-actions>
-          <SubmitButton name="outcome" value="spoke" variant={p.contacted ? "primary" : "secondary"} className="group relative h-12 w-full px-0">
-            <Icon d={CHECK} className="h-5 w-5" /><Tip align="start">{p.contacted ? `Spoke ${p.contacted.label}` : "Spoke to them"}</Tip>
-          </SubmitButton>
-          <SubmitButton name="outcome" value="no_answer" variant="secondary" className="group relative h-12 w-full px-0">
-            <Icon d={MISSED} className="h-5 w-5" /><Tip>No answer</Tip>
-            {p.noAnswer.count > 0 && <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-amber-500 px-1 text-[11px] font-bold text-white" aria-hidden>{p.noAnswer.count}</span>}
-          </SubmitButton>
-          <IconToggle on={open === "book"} onClick={() => setOpen(open === "book" ? null : "book")} label="Book the inspection" d={CAL} />
-          <IconToggle on={open === "lost"} onClick={() => setOpen(open === "lost" ? null : "lost")} label="Not going ahead" d={XCIRCLE} tone="red" />
-          <IconToggle on={open === "delete"} onClick={() => setOpen(open === "delete" ? null : "delete")} label="Delete lead" d={BIN} tone="red" align="end" />
-        </div>
-      </ActionForm>
+      {/* Three actions as icon buttons; the label shows on hover (and keyboard focus). */}
+      <div className="mt-3 grid grid-cols-3 gap-2" data-lead-actions>
+        <IconToggle on={open === "book"} onClick={() => setOpen(open === "book" ? null : "book")} label="No plans? Book an inspection" d={CAL} align="start" />
+        <IconToggle on={open === "lost"} onClick={() => setOpen(open === "lost" ? null : "lost")} label="Not going ahead" d={XCIRCLE} tone="red" />
+        <IconToggle on={open === "delete"} onClick={() => setOpen(open === "delete" ? null : "delete")} label="Delete lead" d={BIN} tone="red" align="end" />
+      </div>
 
       {open === "book" && (
         <div className="mt-3 rounded-xl bg-brand-50 p-3.5 ring-1 ring-brand-200" data-lead-book>

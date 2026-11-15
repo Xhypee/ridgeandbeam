@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireMoneyAccess, requireOrg } from "@/lib/dal";
 import { friendly, num, oneOf, str } from "@/lib/form";
+import { insertDraftEstimate } from "@/lib/estimate-new";
 import { notifyUser, sendSms } from "@/lib/notify";
 import type { ActionResult } from "@/components/action-form";
 import { asAuState, AU_STATE_TZ } from "@/lib/au";
@@ -291,4 +292,18 @@ export async function deleteLead(_: ActionResult, fd: FormData): Promise<ActionR
   revalidatePath("/app", "layout");
   const filter = str(fd, "filter");
   redirect(`/app/jobs${filter && /^[a-z]+$/.test(filter) ? `?filter=${filter}` : ""}`);
+}
+
+/** Plans dropped on a new lead: the quote Claude's roof measurements go into. The latest draft if there is
+ *  one, else a new draft. Null for people who can't see prices (the files still upload and get read). */
+export async function quoteForPlans(jobId: string): Promise<string | null> {
+  const ctx = await requireOrg();
+  if (!ctx.canSeeMoney || !/^[0-9a-f-]{36}$/i.test(jobId)) return null;
+  const { data: job } = await ctx.supabase.from("jobs").select("id").eq("id", jobId).maybeSingle();
+  if (!job) return null;
+  const { data: drafts } = await ctx.supabase.from("estimates").select("id, status").eq("job_id", jobId).order("created_at", { ascending: false });
+  if (drafts?.some((e) => e.status !== "draft")) return null; // already sent or signed: leave it alone
+  if (drafts?.[0]) return drafts[0].id as string;
+  const { data } = await insertDraftEstimate(ctx, jobId);
+  return (data?.id as string | undefined) ?? null;
 }

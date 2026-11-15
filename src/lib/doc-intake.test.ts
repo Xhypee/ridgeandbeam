@@ -67,7 +67,19 @@ describe("planDocUpdates", () => {
   it("writes a readable note", () => {
     const r = read({ doc_type: "insurance", summary: "Assessor report", insurance: { insurer: "NRMA", claim_number: "88213", policy_number: null, assessor_name: null, assessor_phone: null, assessor_email: null, excess: null, date_of_loss: null } });
     const note = intakeNote("Assessor report.pdf", r, planDocUpdates(r, cur()));
-    expect(note).toBe('Claude read "Assessor report.pdf" (insurance document). Assessor report. Filled in: insurer NRMA, claim # 88213, marked as an insurance job.');
+    expect(note).toBe('Read "Assessor report.pdf" · Insurance document\nAssessor report\nNothing to watch out for.');
+  });
+
+  it("lists only what the roofer needs to be aware of: no filled-in fields, no material specs", () => {
+    const r = read({ doc_type: "plans", summary: "Plans for a new single-storey house.", site: { address: "Lot 214 Grand Ave", suburb: "Springfield Lakes", state: "QLD", postcode: "4300" },
+      details: ["hip roof, 600 mm eaves", "Anticon 60 sarking"], checks: ["Wind class N3 to be confirmed."] });
+    const p = planDocUpdates(r, cur({ job: { site_address: "36 Brownvale St, Logan Central QLD 4114", state: "QLD", zip: "4114", roof_material: null, is_insurance: false } }));
+    const note = intakeNote("Plans.pdf", r, p);
+    expect(note.split("\n")[0]).toBe('Read "Plans.pdf" · Plans');
+    expect(note).toContain("\nCheck\n- Site address: you have 36 Brownvale St, Logan Central QLD 4114, the plans say ");
+    expect(note).toContain("Kept yours\n");
+    expect(note).toContain("- Wind class N3 to be confirmed");
+    expect(note).not.toMatch(/Added|Details|sarking|eaves/);
   });
 });
 

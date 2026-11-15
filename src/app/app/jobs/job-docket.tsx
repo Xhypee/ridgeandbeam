@@ -82,8 +82,8 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
   const actionIsLink = !d.next.href.startsWith("tel:");
 
   return (
-    <div className="flex h-full flex-col bg-cream p-4" data-job-docket={j.id}>
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200">
+    <div className="flex h-full flex-col bg-white" data-job-docket={j.id}>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden" data-docket-scroll>
           {/* Ticket top: a receipt header (mono top line, the name, the street, NOW → NEXT, the stage bar). */}
           <div className="px-5 pb-5 pt-4" data-docket-stages>
