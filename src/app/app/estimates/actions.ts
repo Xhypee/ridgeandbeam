@@ -69,7 +69,8 @@ export async function createEstimate(fd: FormData) {
   const { data, error } = await insertDraftEstimate(ctx, String(fd.get("job_id")));
   if (error) throw new Error(friendly(error));
   revalidatePath("/app", "layout");
-  redirect(`/app/estimates/${data.id}`);
+  // next=measure: straight to tracing the roof on the satellite map (the New lead "Measure on satellite" option).
+  redirect(fd.get("next") === "measure" ? `/app/measure/${data.id}` : `/app/estimates/${data.id}`);
 }
 
 export async function saveEstimate(input: SaveEstimateInput): Promise<ActionResult & { optionIds?: Record<string, string>; itemIds?: string[] }> {
