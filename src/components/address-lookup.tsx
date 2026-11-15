@@ -63,6 +63,9 @@ export function AddressLookup({ defaultState, initial, initialLine, label = "Sit
   const lookupOk = Boolean(KEY) || known;
   const [mode, setMode] = useState<"lookup" | "manual">(lookupOk ? "lookup" : "manual");
   const [failed, setFailed] = useState(false);
+  // Google answered but said no (billing not active, the API not switched on, the key not allowed): say so in the
+  // list instead of showing nothing, and offer saved addresses and "enter it manually" meanwhile.
+  const [refused, setRefused] = useState(false);
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<Suggestion[]>([]);
   const [active, setActive] = useState(-1);
@@ -105,6 +108,7 @@ export function AddressLookup({ defaultState, initial, initialLine, label = "Sit
         token.current ??= new l.AutocompleteSessionToken();
         const { suggestions } = await l.AutocompleteSuggestion.fetchAutocompleteSuggestions({ input: q, sessionToken: token.current, includedRegionCodes: ["au"], language: "en-AU", region: "au" });
         if (n !== seq.current) return;
+        setRefused(false);
         setItems(suggestions.flatMap((s) => (s.placePrediction ? [{
           id: s.placePrediction.placeId,
           main: s.placePrediction.mainText?.toString() ?? s.placePrediction.text.toString(),
@@ -113,12 +117,25 @@ export function AddressLookup({ defaultState, initial, initialLine, label = "Sit
         }] : [])).slice(0, 5));
         setActive(-1);
         setOpen(true);
-      } catch {
-        if (n === seq.current) setItems([]);
+      } catch (err) {
+        console.warn("Google address lookup refused:", err instanceof Error ? err.message : err);
+        if (n !== seq.current) return;
+        setRefused(true);
+        let fallback: Suggestion[] = [];
+        if (known) {
+          try {
+            const k = await searchKnownAddresses(q);
+            fallback = k.map((x, i) => ({ id: `k${i}-${x.address}`, main: x.address, rest: [x.city, x.state, x.zip].filter(Boolean).join(" "), parts: x }));
+          } catch { /* none */ }
+        }
+        if (n !== seq.current) return;
+        setItems(fallback);
+        setActive(-1);
+        setOpen(true);
       }
     }, 200);
     return () => clearTimeout(t);
-  }, [query, mode, picked]);
+  }, [query, mode, picked, known]);
 
   const choose = useCallback(async (s: Suggestion) => {
     setOpen(false);
@@ -224,6 +241,12 @@ export function AddressLookup({ defaultState, initial, initialLine, label = "Sit
           <svg viewBox="0 0 24 24" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5" /></svg>
           {open && query.trim().length >= 3 && !picked && (
             <ul id={listId} role="listbox" className="absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-xl bg-white py-1 ring-1 ring-slate-300">
+              {refused && (
+                <li aria-hidden className="mx-1 mb-1 flex items-start gap-2 rounded-lg bg-amber-50 px-2.5 py-2 text-xs text-amber-900" data-address-refused>
+                  <span className="mt-px grid h-4 w-4 shrink-0 place-items-center rounded-full bg-amber-500 text-[10px] font-bold text-white">!</span>
+                  <span>Google address lookup isn&rsquo;t working yet (Google refused it: check billing and the Places API). {known ? "Pick a saved address or enter it manually." : "Enter the address manually."}</span>
+                </li>
+              )}
               {shown.map((s, i) => (
                 <li key={s.id} id={`${listId}-${i}`} role="option" aria-selected={i === active}
                   onMouseDown={(e) => { e.preventDefault(); void choose(s); }} onMouseEnter={() => setActive(i)}
@@ -237,7 +260,7 @@ export function AddressLookup({ defaultState, initial, initialLine, label = "Sit
                 <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" /></svg>
                 <span className="min-w-0 truncate">Enter &ldquo;{query.trim()}&rdquo; manually</span>
               </li>
-              <li aria-hidden className="px-3 pb-1 pt-1.5 text-right text-[10px] text-slate-400">{KEY ? "Powered by Google" : shown.length ? "From your contacts and jobs" : "No saved addresses match"}</li>
+              <li aria-hidden className="px-3 pb-1 pt-1.5 text-right text-[10px] text-slate-400">{KEY && !refused ? "Powered by Google" : shown.length ? "From your contacts and jobs" : "No saved addresses match"}</li>
             </ul>
           )}
         </div>
