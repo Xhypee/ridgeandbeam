@@ -59,4 +59,22 @@ describe("job record", () => {
     const r = jobRecord(base({ quote: quote("accepted") }, { stage: "paid" }), NOW);
     expect(r.some((x) => x.state === "now")).toBe(false);
   });
+
+  it("variations, site safety and sign-off fill in from the build", () => {
+    const extra = {
+      variations: [{ id: "v1", title: "Fascia", status: "approved", amount: 700, approvedAt: "2026-11-04T00:00:00Z", approvedName: "Ahmed Khan" }, { id: "v2", title: "Valley", status: "sent", amount: 540, approvedAt: null, approvedName: null }],
+      signoff: null, swms: { status: "done", fileId: null, by: "Josh Moss", at: null }, siteDays: { days: 2, first: "2026-11-09", last: "2026-11-10" },
+      defects: { open: 0, total: 0 }, photoStages: { before: 12, during: 9, after: 0 }, messageCount: 16,
+    };
+    const building = by(jobRecord(base({ quote: quote("accepted"), extra, files: { photos: 21, plans: 1, documents: 0, planName: null, thumbs: [] }, messages: [{ id: "m", channel: "sms", direction: "out", body: "", at: "2026-11-10T00:00:00Z", status: "sent" }] }, { stage: "in_progress" }), NOW));
+    expect(building.variations.state).toBe("now");
+    expect(building.variations.value).toBe("2 variations · +$700 · 1 not signed");
+    expect(building.safety.value).toBe("SWMS by Josh · 2 days logged");
+    expect(building.photos.value).toBe("Before 12 · during 9");
+    expect(building.messages.value).toBe("16 messages · latest 10 Nov");
+    const done = by(jobRecord(base({ quote: quote("accepted"), extra: { ...extra, variations: [], signoff: null } }, { stage: "completed" }), NOW));
+    expect(done.signoff.state).toBe("now");
+    const signed = by(jobRecord(base({ quote: quote("accepted"), extra: { ...extra, signoff: { at: "2026-11-18T00:00:00Z", name: "Ahmed Khan" }, defects: { open: 1, total: 2 } } }, { stage: "completed" }), NOW));
+    expect(signed.signoff.value).toBe("Signed by Ahmed · 18 Nov · 1 touch-up open");
+  });
 });

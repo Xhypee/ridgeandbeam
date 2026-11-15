@@ -20,6 +20,7 @@ import { JobContact, JobDocuments, JobNotes } from "./job-sections";
 import { ClaudeBar } from "./claude-bar";
 import { inspectionLabel } from "@/lib/lead-steps";
 import { jobRecord } from "@/lib/job-record";
+import { recordItems } from "@/lib/job-record-items";
 import { JobTask } from "./job-task";
 import { JobRecordList } from "./job-record-list";
 
@@ -119,7 +120,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
           <div className="relative h-5" aria-hidden><span className="absolute -left-2.5 top-0 h-5 w-5 rounded-full bg-cream" /><span className="absolute -right-2.5 top-0 h-5 w-5 rounded-full bg-cream" /><span className="absolute inset-x-4 top-2.5 border-t-2 border-dashed border-slate-200" /></div>
 
           {!isCrewLead && <JobTask d={d} bookHref={bookHref} canSeeMoney={canSeeMoney} />}
-          <JobRecordList rows={record} lost={lost} />
+          <JobRecordList rows={record} items={recordItems(d)} lost={lost} />
 
           {done && canSeeMoney && exGst !== null && (
             <section className="mt-6 px-5" data-docket-made>
@@ -131,7 +132,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
           )}
 
           <div className="mx-5 mt-5">
-            <Link href={`${base}/files`} className="flex items-center gap-3 rounded-xl p-3 ring-1 ring-slate-300 hover:bg-slate-50" data-job-file>
+            <Link href={`${base}/file`} className="flex items-center gap-3 rounded-xl p-3 ring-1 ring-slate-300 hover:bg-slate-50" data-job-file>
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-ink text-white"><Icon d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6" /></span>
               <span className="min-w-0 flex-1"><span className="block font-display text-[14px] font-bold text-ink">Open job file</span><span className="block font-mono text-[11px] text-slate-500">{fileCount ? `Plans, photos & documents · ${fileCount} file${fileCount === 1 ? "" : "s"}` : "Plans, photos & documents"}</span></span>
               <Icon d="M9 6l6 6-6 6" className="h-4 w-4 text-slate-400" />

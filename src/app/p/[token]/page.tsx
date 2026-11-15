@@ -1,4 +1,8 @@
 import type { Metadata } from "next";
+import { ActionForm, SubmitButton } from "@/components/action-form";
+import { SignaturePad } from "@/components/signature-pad";
+import { Input } from "@/components/ui";
+import { signOffRoof } from "./actions";
 import { notFound } from "next/navigation";
 import { ClaimExplainer } from "@/components/claim-explainer";
 import { ServiceWorkerRegister } from "@/components/field/sw-register";
@@ -73,6 +77,23 @@ export default async function Portal({ params }: PageProps<"/p/[token]">) {
           <p className="mt-2 text-sm text-slate-700">Booked: <b>{date(job.scheduled_start)}</b>{job.scheduled_end && job.scheduled_end !== job.scheduled_start ? ` – ${date(job.scheduled_end)}` : ""} (weather permitting)</p>
         )}
       </section>
+
+      {["completed", "paid"].includes(job.stage) && !job.walkthrough_signed_at && (
+        <section className="mt-4 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-300" data-testid="portal-signoff">
+          <h2 className="font-bold text-amber-900">Sign off your new roof</h2>
+          <p className="mt-1 text-sm text-amber-900">Happy with the work? Sign below to confirm it&apos;s finished. Anything not right, call us first and we&apos;ll fix it.</p>
+          <ActionForm action={signOffRoof} className="mt-3 space-y-3">
+            <input type="hidden" name="token" value={token} />
+            <Input name="name" placeholder="Your full name" autoComplete="name" required aria-label="Your full name" />
+            <SignaturePad name="signature" />
+            <label className="flex items-start gap-2 text-sm text-slate-700"><input type="checkbox" name="agree" className="mt-0.5 h-5 w-5 accent-[#13221a]" />The work is finished to my satisfaction.</label>
+            <SubmitButton className="w-full">Sign off</SubmitButton>
+          </ActionForm>
+        </section>
+      )}
+      {job.walkthrough_signed_at && ["completed", "paid"].includes(job.stage) && (
+        <p className="mt-4 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700" data-testid="portal-signed">Signed off on {date(job.walkthrough_signed_at)}. Thank you!</p>
+      )}
 
       {pendingCo.length > 0 && (
         <section className="mt-4 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-300">

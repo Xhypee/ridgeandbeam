@@ -8,7 +8,7 @@ import { WaitTimer } from "@/components/wait-timer";
 import type { Docket } from "@/lib/job-docket-server";
 import { focusKey } from "@/lib/job-record";
 import { LOST_REASON_LABEL } from "@/lib/lead-steps";
-import { label as human } from "@/lib/format";
+import { label as human, siteUrl } from "@/lib/format";
 import { createEstimate } from "../estimates/actions";
 import { DocumentDrop } from "./document-drop";
 import { markContacted, reopenLead } from "./lead-actions";
@@ -107,6 +107,26 @@ export function JobTask({ d, bookHref, canSeeMoney }: { d: Docket; bookHref: str
           </Link>
         </div>
         <CallStrip d={d} />
+      </Box>
+    );
+  }
+
+  // Finished: get the homeowner to sign the roof off (text them the project page link, or sign on site).
+  if (focusKey(d) === "signoff") {
+    const link = `${siteUrl()}/p/${j.public_token}`;
+    const tel = d.customer.phone?.replace(/\s+/g, "");
+    const body = encodeURIComponent(`Hi ${first}, your new roof is finished. Could you sign it off here when you have a minute? ${link}`);
+    return (
+      <Box>
+        <p className={kicker}>One thing left</p>
+        <div className="mt-1 flex items-center gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full ring-1 ring-slate-300"><Icon d="M3 17c3-6 5-6 6-2s3 2 4-1 3-3 4 0 2 2 4 1M3 21h18" /></span>
+          <div className="min-w-0"><p className="font-display text-[19px] font-bold leading-tight text-ink" data-task-title>Get {first} to sign off the roof</p><p className="font-mono text-xs leading-snug text-slate-500">They sign on their project page, or with you on site</p></div>
+        </div>
+        <div className="mt-3 flex gap-2">
+          {tel ? <a href={`sms:${tel}?&body=${body}`} className={cx(solid, "flex-1")} data-signoff-text>Text the sign-off link</a> : <span className={cx(outline, "flex-1 text-slate-400")}>No mobile on file</span>}
+          <Link href={`/app/jobs/${j.id}/closeout`} className={outline}>Sign on site</Link>
+        </div>
       </Box>
     );
   }
