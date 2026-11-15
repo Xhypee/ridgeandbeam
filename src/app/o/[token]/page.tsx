@@ -31,13 +31,13 @@ export default async function SupplierOrderPage({ params }: PageProps<"/o/[token
           <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-200">Material order {d.po_number ?? ""}</p><p className="font-display text-2xl font-bold">{d.org.name}</p></div>
           <p className="text-right text-xs text-brand-200">For {d.supplier}{d.branch ? ` · ${d.branch}` : ""}{d.account_number ? <><br />Account {d.account_number}</> : null}</p>
         </div>
-        <div className="grid gap-4 border-b border-slate-100 px-6 py-5 text-sm sm:grid-cols-2">
+        <div className="grid gap-4 border-b-2 border-dashed border-slate-200 px-6 py-5 text-sm sm:grid-cols-2">
           {[["Deliver to", d.site_address ?? "To be confirmed"], ["When", deliveryWhen(d.delivery_date, d.delivery_time)], ["Delivery", DELIVERY_LABEL[d.delivery_type] ?? d.delivery_type], ["On site", d.site_contact ?? d.org.phone ?? "Call the office"]].map(([k, v]) => (
             <p key={k}><span className="block text-xs text-slate-500">{k}</span><span className="font-medium text-ink">{v}</span></p>
           ))}
           {d.notes && <p className="sm:col-span-2"><span className="block text-xs text-slate-500">Driver notes</span><span className="text-ink">{d.notes}</span></p>}
         </div>
-        <ul className="divide-y divide-slate-100 px-6">
+        <ul className="divide-y-2 divide-dashed divide-slate-200 px-6">
           {d.items.map((i, n) => (
             <li key={n} className="flex items-start gap-3 py-3 text-sm">
               <span className="w-6 text-slate-400">{n + 1}</span>
@@ -46,7 +46,7 @@ export default async function SupplierOrderPage({ params }: PageProps<"/o/[token
             </li>
           ))}
         </ul>
-        <div className="border-t border-slate-100 bg-cream px-6 py-5">
+        <div className="border-t-2 border-dashed border-slate-200 bg-cream px-6 py-5">
           {confirmed ? (
             <div className="rounded-2xl bg-brand-50 px-4 py-3 text-brand-800 ring-1 ring-brand-100" data-confirmed>
               <p className="font-semibold">Confirmed{d.confirmed_at ? ` ${new Date(d.confirmed_at).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}` : ""}. Thanks!</p>

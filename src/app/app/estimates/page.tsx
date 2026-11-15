@@ -52,7 +52,7 @@ export default async function EstimatesPage({ searchParams }: PageProps<"/app/es
       ) : (
         <Table>
           <thead className="bg-slate-50"><tr><th className={th}>#</th><th className={th}>Customer / job</th><th className={th}>Created</th><th className={th}>Status</th><th className={`${th} text-right`}>Total</th></tr></thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y-2 divide-dashed divide-slate-200">
             {rows.map((r) => (
               <tr key={r.id} className="hover:bg-slate-50">
                 <td className={td}><Link href={`/app/estimates/${r.id}`} className="font-medium text-slate-900 hover:text-brand-600">#{r.number}</Link></td>

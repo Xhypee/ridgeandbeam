@@ -36,7 +36,7 @@ export function EvidenceUpload({ orgId, jobId, itemKey, title }: { orgId: string
 
   return (
     <div>
-      <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50">
+      <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-white px-4 font-mono text-xs font-semibold uppercase tracking-wider text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50">
         <input ref={input} type="file" className="sr-only" accept="application/pdf,image/*" disabled={busy} data-evidence-input={itemKey} onChange={(e) => onFile(e.target.files?.[0])} />
         {busy ? "Uploading…" : "Upload evidence"}
       </label>

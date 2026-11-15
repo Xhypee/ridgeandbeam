@@ -18,7 +18,7 @@ export function PublicPayPlan({ plan, current, cardOnline }: { plan: PublicPlan;
   const dueNow = parts.find((p) => p.public_token && p.balance > 0);
   const ways = [cardOnline && plan.methods.includes("card") && "card", plan.methods.includes("bank") && "PayID / bank transfer", plan.methods.includes("cash") && "cash"].filter(Boolean) as string[];
   return (
-    <section data-public-plan className="rounded-2xl bg-white ring-1 ring-slate-200">
+    <section data-public-plan className="rounded-[22px] bg-white ring-1 ring-slate-200">
       <div className="rounded-t-2xl bg-brand-500 px-4 pb-4 pt-4 text-white">
         <h2 className="font-display text-lg font-bold">Your payment plan</h2>
         <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-white/20" aria-hidden>
@@ -27,13 +27,13 @@ export function PublicPayPlan({ plan, current, cardOnline }: { plan: PublicPlan;
         <p className="mt-1.5 text-sm text-white/80">{aud(paid)} of {aud(total)} paid · {parts.length} payments</p>
       </div>
       {dueNow && dueNow.public_token !== current && (
-        <div className="border-b border-slate-100 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Due now · {dueNow.label}</p>
+        <div className="border-b-2 border-dashed border-slate-200 p-4">
+          <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Due now · {dueNow.label}</p>
           <p className="font-display text-3xl font-bold tabular-nums text-ink">{aud(dueNow.balance)}</p>
           <a href={`/i/${dueNow.public_token}`} className="mt-3 flex min-h-12 items-center justify-center rounded-xl bg-ink text-base font-semibold text-white">Pay {aud(dueNow.balance)}</a>
         </div>
       )}
-      <ul className="divide-y divide-slate-100 px-4">
+      <ul className="divide-y-2 divide-dashed divide-slate-200 px-4">
         {parts.map((p) => {
           const done = p.balance <= 0;
           const label = p.trigger === "date" && p.due_date ? fmt(p.due_date) : p.public_token && p.due_date ? `Due ${fmt(p.due_date)}` : WHEN[p.trigger ?? ""] ?? "";

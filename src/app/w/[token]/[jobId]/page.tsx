@@ -104,7 +104,7 @@ export default async function CrewJobPage({ params }: PageProps<"/w/[token]/[job
         {mats.items.length === 0 ? <p className="text-slate-500">{t.noMaterials}</p> : (
           <table className="w-full text-base">
             <thead><tr className="text-left text-xs text-slate-500"><th className="pb-1">{t.qty}</th><th className="pb-1">{t.item}</th></tr></thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y-2 divide-dashed divide-slate-200">
               {mats.items.map((i, n) => (
                 <tr key={n}><td className="w-28 py-2 align-top font-semibold">{i.quantity} <span className="text-sm font-normal text-slate-500">{unitLabel(i.unit)}</span></td><td className="py-2">{i.description}</td></tr>
               ))}

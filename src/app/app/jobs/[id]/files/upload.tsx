@@ -37,7 +37,7 @@ export function FileUpload({ orgId, jobId, category, label }: { orgId: string; j
 
   return (
     <div>
-      <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50">
+      <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-white px-4 font-mono text-xs font-semibold uppercase tracking-wider text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50">
         <input ref={input} type="file" multiple className="sr-only" accept={category === "plans" ? "application/pdf,image/*" : "application/pdf,image/*,.doc,.docx,.xls,.xlsx,.csv,.txt"} disabled={busy} data-upload={category} onChange={(e) => onFiles(e.target.files)} />
         {busy ? "Uploading…" : label}
       </label>

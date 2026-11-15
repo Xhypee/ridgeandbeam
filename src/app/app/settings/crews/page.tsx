@@ -46,7 +46,7 @@ export default async function Page() {
             </div>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="is_subcontractor" defaultChecked={c.is_subcontractor} className="h-4 w-4 accent-brand-500" />Subcontractor (paid from the pay sheet, reported on the TPAR)</label>
             <fieldset>
-              <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Pay sheet (ex GST)</legend>
+              <legend className="mb-2 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Pay sheet (ex GST)</legend>
               <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
                 {RATES.map(([k, l, unit, hint]) => (
                   <Field key={k} label={`${l} (${unit})`} hint={hint}>
@@ -60,7 +60,7 @@ export default async function Page() {
             </fieldset>
             <SubmitButton variant="secondary">Save crew</SubmitButton>
           </ActionForm>
-          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-t-2 border-dashed border-slate-200 pt-4">
             <span className="min-w-0 flex-1 truncate text-xs text-slate-500" title="Crew portal">Crew portal: /w/{c.public_token.slice(0, 6)}…</span>
             <CopyLink url={`${siteUrl()}/w/${c.public_token}`} label="Copy crew portal link" />
             <a href={`/w/${c.public_token}`} target="_blank" rel="noreferrer" className="rounded-lg px-3 py-2 text-sm text-brand-600 hover:bg-brand-50">Open</a>

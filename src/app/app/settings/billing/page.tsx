@@ -56,7 +56,7 @@ export default async function BillingPage({ searchParams }: PageProps<"/app/sett
                   ? <ActionForm action={startSubscriptionCheckout}><SubmitButton>Add a card</SubmitButton></ActionForm>
                   : <p className="rounded-lg bg-slate-50 p-3 text-xs text-slate-500">Billing not configured: set STRIPE_SECRET_KEY and STRIPE_PRICE_ID to take card payments for the plan.</p>
               )}
-              <div className="border-t border-slate-100 pt-3">
+              <div className="border-t-2 border-dashed border-slate-200 pt-3">
                 <p className="mb-2 text-slate-600">Cancel any time. No calls, no forms — it ends 30 days from now (the end of your billing period) and you can export everything.</p>
                 <ActionForm action={cancelSubscription}>
                   <SubmitButton variant="danger" confirm="Cancel your Ridge & Beam subscription? Everything keeps working until the end of the billing period.">Cancel subscription</SubmitButton>

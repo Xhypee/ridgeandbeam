@@ -10,7 +10,7 @@ import { createEstimate } from "../../estimates/actions";
 import { jobTypeLabel } from "@/lib/job-types";
 
 
-const btn = "inline-flex min-h-11 items-center rounded-xl bg-white px-4 text-sm font-semibold text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50";
+const btn = "inline-flex min-h-11 items-center rounded-xl bg-white px-4 font-mono text-xs font-semibold uppercase tracking-wider text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50";
 const primary = "inline-flex min-h-13 items-center rounded-xl bg-brand-300 px-6 text-base font-bold text-ink hover:bg-brand-200";
 
 type Row = NextStepJob & { title: string; site_address: string | null; job_type: string; crew_id: string | null; public_token: string; customers: { id: string; name: string; phone: string | null } };
@@ -44,7 +44,7 @@ export default async function JobLayout({ children, params }: LayoutProps<"/app/
 
   return (
     <>
-      <Link href={isCrewLead ? "/app/schedule" : "/app/jobs"} className="no-print mb-3 inline-flex min-h-8 items-center gap-1 text-sm font-semibold text-brand-600 hover:text-brand-700">
+      <Link href={isCrewLead ? "/app/schedule" : "/app/jobs"} className="no-print mb-3 inline-flex min-h-8 items-center gap-1 font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 hover:text-brand-700">
         <span aria-hidden>←</span> {isCrewLead ? "Schedule" : "Jobs"}
       </Link>
       <header data-job-header className="mb-5 flex flex-wrap items-start gap-4">

@@ -259,7 +259,7 @@ export function ImportWizard({ orgSupplierId, supplierName, today, saved, previo
                 <thead className="bg-slate-50 text-left text-xs text-slate-500">
                   <tr><th className="px-2 py-2">Row</th><th className="px-2 py-2">Code / description</th><th className="px-2 py-2">Unit</th><th className="px-2 py-2 text-right">Cost ex GST</th><th className="px-2 py-2">Estimating item</th><th className="px-2 py-2 text-right">Priced at</th></tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y-2 divide-dashed divide-slate-200">
                   {pageRows.map((r) => {
                     const iss = issues.get(r.line) ?? [];
                     const def = r.calc_key ? CALC_KEY_MAP[r.calc_key] : null;

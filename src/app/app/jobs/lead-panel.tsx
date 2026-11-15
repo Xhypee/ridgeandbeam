@@ -57,7 +57,7 @@ export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: st
       <JobDocuments jobId={d.job.id} docs={lead.docs} />
 
       {/* Once the plans are in, Next up carries the quote and its Send button; this is for the rest. */}
-      {(q ? !(lead.docs.length || d.roof) : !lead.docs.length) && <div className="border-t border-slate-100 px-5 py-4" data-send-quote>
+      {(q ? !(lead.docs.length || d.roof) : !lead.docs.length) && <div className="border-t-2 border-dashed border-slate-200 px-5 py-4" data-send-quote>
         {q ? (
           <>
             <ActionForm action={sendQuoteEmail}>
@@ -75,7 +75,7 @@ export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: st
         ) : (
           <form action={createEstimate}>
             <input type="hidden" name="job_id" value={d.job.id} />
-            <button className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-500 font-semibold text-white hover:bg-brand-600"><Icon d="M12 5v14M5 12h14" />Start a quote</button>
+            <button className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-ink font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90"><Icon d="M12 5v14M5 12h14" />Start a quote</button>
             <p className="mt-2 text-xs text-slate-500">No plans? Measure on the satellite map, then send it from here.</p>
           </form>
         )}

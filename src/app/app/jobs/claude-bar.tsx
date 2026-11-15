@@ -54,6 +54,7 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready, dock
   const input = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false); // chat has the sidebar's attention
   const chatId = useRef<string | null>(null); // the saved chat this conversation belongs to
+  const [activeChat, setActiveChat] = useState<string | null>(null); // the same, for highlighting it in History
   const [view, setView] = useState<"chat" | "history">("chat");
   const [chats, setChats] = useState<ChatSummary[] | null>(null);
   const [barH, setBarH] = useState(68);
@@ -96,7 +97,7 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready, dock
       if (!turn.error) {
         // Keep it in History (quietly; a failed save doesn't get in the way of the chat).
         const keep = history.current.filter((t) => !t.error).map(({ role, content }) => ({ role, content }));
-        void saveChat({ id: chatId.current, context: { jobId, contactId, supplierId }, turns: keep }).then((r) => { if (r.id) chatId.current = r.id; }).catch(() => {});
+        void saveChat({ id: chatId.current, context: { jobId, contactId, supplierId }, turns: keep }).then((r) => { if (r.id) { chatId.current = r.id; setActiveChat(r.id); } }).catch(() => {});
       }
       return turn.error ? null : turn.content;
     } catch {
@@ -168,7 +169,7 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready, dock
   const starters = firstName && jobId ? ["What should I do next?", `Draft a text to ${firstName}`, "What should I charge for this?"]
     : firstName ? [`What's happening with ${firstName}?`, `Draft a message to ${firstName}`, "Who should I follow up today?"]
     : ["What needs doing today?", "Which quotes need a follow-up?", "How's this month looking?"];
-  const newChat = () => { hangUp(); history.current = []; chatId.current = null; setTurns([]); setView("chat"); input.current?.focus(); };
+  const newChat = () => { hangUp(); history.current = []; chatId.current = null; setActiveChat(null); setTurns([]); setView("chat"); input.current?.focus(); };
   async function showHistory() {
     if (view === "history") { setView("chat"); return; }
     setView("history");
@@ -181,6 +182,7 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready, dock
     hangUp();
     history.current = t;
     chatId.current = id;
+    setActiveChat(id);
     setTurns(t);
     setView("chat");
   }
@@ -199,7 +201,7 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready, dock
           <div className={cx("flex items-center justify-between px-4 pb-1", docked ? "pt-6" : "pt-3")}>
             {docked
               ? <p className="flex items-center gap-2 font-display text-xl font-bold text-ink"><span className="grid h-7 w-7 place-items-center rounded-full bg-[#d97757] text-white"><Spark className="h-3.5 w-3.5" /></span>Ask Claude</p>
-              : <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Claude · knows your jobs</p>}
+              : <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">Claude · knows your jobs</p>}
             <span className="flex items-center gap-1">
               <button type="button" onClick={() => void showHistory()} title="History" aria-label="History" aria-pressed={view === "history"} className={cx(iconBtn, view === "history" && "bg-slate-100 text-ink")} data-claude-history>
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={CLOCK} /></svg>
@@ -218,11 +220,11 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready, dock
           </div>
           {view === "history" ? (
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-3 pt-1 text-sm" data-claude-chats>
-              <p className="px-2 pb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Your chats{firstName ? ` about ${firstName}` : ""}</p>
+              <p className="px-2 pb-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">Your chats{firstName ? ` about ${firstName}` : ""}</p>
               {chats === null ? <p className="px-2 py-2 text-slate-400">Loading…</p>
-                : chats.length === 0 ? <p className="px-2 py-2 text-slate-500">No past chats yet. They'll show here once you ask Claude something.</p>
+                : chats.length === 0 ? <p className="px-2 py-2 text-slate-500">No past chats yet. They&apos;ll show here once you ask Claude something.</p>
                 : chats.map((c) => (
-                  <div key={c.id} className={cx("group flex items-center gap-1 rounded-xl", chatId.current === c.id ? "bg-slate-100" : "hover:bg-slate-50")} data-claude-chat>
+                  <div key={c.id} className={cx("group flex items-center gap-1 rounded-xl", activeChat === c.id ? "bg-slate-100" : "hover:bg-slate-50")} data-claude-chat>
                     <button type="button" onClick={() => void openChat(c.id)} className="flex min-w-0 flex-1 items-baseline justify-between gap-3 px-3 py-2.5 text-left">
                       <span className="min-w-0 truncate font-medium text-ink">{c.title}</span>
                       <span className="shrink-0 text-xs text-slate-400">{ago(c.updatedAt)}</span>

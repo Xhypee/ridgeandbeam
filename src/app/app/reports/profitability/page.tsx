@@ -74,7 +74,7 @@ export default async function ProfitabilityPage({ searchParams }: PageProps<"/ap
       {rows.length === 0 ? <p className="text-sm text-slate-500">No signed jobs match.</p> : (
         <Table>
           <thead><tr>{sortTh("date", "Signed")}<th className={th}>Job</th>{isAdmin && <th className={th}>Rep</th>}{sortTh("contract", "Contract", true)}{sortTh("cost", "Costs", true)}{sortTh("gp", "GP", true)}{sortTh("margin", "Margin", true)}</tr></thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y-2 divide-dashed divide-slate-200">
             {rows.map((r) => (
               <tr key={r.id}>
                 <td className={cx(td, "whitespace-nowrap")}>{date(r.date, { month: "short", day: "numeric", year: "2-digit" })}</td>

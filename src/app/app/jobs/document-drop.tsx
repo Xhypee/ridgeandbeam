@@ -246,7 +246,7 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
                 </>) : (<>
                   <p className="rounded-md px-2 font-semibold text-ink" style={{ background: SHEET }}>{over ? "Drop to upload" : "Drop the plans on the sheet"}</p>
                   <p className="rounded-md px-2 text-xs text-slate-500" style={{ background: SHEET }}>Claude draws the roof and measures it</p>
-                  <button type="button" onClick={() => files.current?.click()} className="mt-1.5 inline-flex min-h-10 items-center gap-2 rounded-xl bg-brand-500 px-4 text-sm font-semibold text-white hover:bg-brand-600" data-plans-browse>
+                  <button type="button" onClick={() => files.current?.click()} className="mt-1.5 inline-flex min-h-10 items-center gap-2 rounded-xl bg-ink px-4 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90" data-plans-browse>
                     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" /></svg>Choose files
                   </button>
                 </>)}

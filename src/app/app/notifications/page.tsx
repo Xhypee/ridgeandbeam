@@ -20,7 +20,7 @@ export default async function NotificationsPage() {
       {rows.length === 0 ? (
         <Empty title="Nothing yet">New leads, homeowner replies, crew problems and claim follow-ups show up here.</Empty>
       ) : (
-        <ul className="divide-y divide-slate-100 rounded-xl bg-white ring-1 ring-slate-200">
+        <ul className="divide-y-2 divide-dashed divide-slate-200 rounded-xl bg-white ring-1 ring-slate-200">
           {rows.map((n) => (
             <li key={n.id}>
               <Link href={n.url ?? "#"} className={cx("flex items-start gap-3 px-4 py-3 hover:bg-slate-50", !n.read_at && "bg-brand-50/40")}>

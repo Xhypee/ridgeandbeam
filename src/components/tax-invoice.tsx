@@ -74,7 +74,7 @@ export function TaxInvoice({ doc }: { doc: TaxInvoiceDoc }) {
             <th className="py-2 text-right font-medium">Amount</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y-2 divide-dashed divide-slate-200">
           {doc.items.map((it, i) => (
             <tr key={i}>
               <td className="break-words py-2.5 pr-3 text-slate-800">{it.description}</td>

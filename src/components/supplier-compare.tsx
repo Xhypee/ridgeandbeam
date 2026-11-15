@@ -21,7 +21,7 @@ export function SupplierCompare({ data, emptyText }: { data: SupplierComparison;
             {data.suppliers.map((s) => <th key={s.id} className="px-3 py-2 text-right font-medium">{s.name}</th>)}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y-2 divide-dashed divide-slate-200">
           {data.rows.map((r) => (
             <tr key={r.calc_key}>
               <td className="px-3 py-2">

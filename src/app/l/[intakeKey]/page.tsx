@@ -44,7 +44,7 @@ export default async function LeadForm({ params, searchParams }: PageProps<"/l/[
             <AddressLookup label="Street address" known={false} />
             <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">What&apos;s going on with your roof?</span><textarea className={`${input} min-h-24`} name="message" placeholder="Leak over the kitchen, storm damage, getting quotes for a replacement…" /></label>
             <label className="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" name="insurance" value="yes" className="h-5 w-5 accent-brand-500" /> This may be an insurance claim (storm, hail or wind damage)</label>
-            <button className="w-full rounded-lg bg-brand-500 px-4 py-3 text-base font-semibold text-white hover:bg-brand-600">Request inspection</button>
+            <button className="w-full rounded-lg bg-ink px-4 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90">Request inspection</button>
             <p className="text-xs text-slate-500">Enter a phone number or email so we can reach you. We never sell your information.</p>
           </form>
         </>

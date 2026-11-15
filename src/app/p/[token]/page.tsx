@@ -43,7 +43,7 @@ export default async function Portal({ params }: PageProps<"/p/[token]">) {
   return (
     <main className="mx-auto min-h-screen max-w-xl px-4 pb-16 pt-5 text-slate-900">
       <ServiceWorkerRegister />
-      <header className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+      <header className="rounded-[22px] bg-white p-4 ring-1 ring-slate-200">
         <p className="text-xl font-bold text-brand-700">{o.name}</p>
         <div className="mt-1 space-y-0.5 text-sm text-slate-600">
           {(o.abn || licence || o.license_number) && (
@@ -85,7 +85,7 @@ export default async function Portal({ params }: PageProps<"/p/[token]">) {
         </section>
       )}
 
-      <section className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200" aria-labelledby="ms-h">
+      <section className="mt-4 rounded-[22px] bg-white p-4 ring-1 ring-slate-200" aria-labelledby="ms-h">
         <h2 id="ms-h" className="mb-3 font-bold">Your project, step by step <span className="text-sm font-normal text-slate-500">({doneCount} of {milestones.length} done)</span></h2>
         <ol className="relative space-y-0" data-testid="milestones">
           {milestones.map((m, i) => (
@@ -109,7 +109,7 @@ export default async function Portal({ params }: PageProps<"/p/[token]">) {
       </section>
 
       {job.claim && cp && (
-        <section className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200" aria-labelledby="claim-h" data-testid="portal-claim">
+        <section className="mt-4 rounded-[22px] bg-white p-4 ring-1 ring-slate-200" aria-labelledby="claim-h" data-testid="portal-claim">
           <h2 id="claim-h" className="font-bold">Your insurance claim</h2>
           <p className="text-sm text-slate-600">{[job.claim.insurer, job.claim.claim_number && `Claim ${job.claim.claim_number}`].filter(Boolean).join(" · ") || "Your insurer"}</p>
           <p className="mt-2 rounded-xl bg-brand-50 px-3 py-2 text-base font-semibold text-brand-700" data-testid="claim-stage">{cp.stageText}</p>
@@ -140,7 +140,7 @@ export default async function Portal({ params }: PageProps<"/p/[token]">) {
         {job.events.length === 0 ? <p className="text-sm text-slate-500">Updates from the crew will show up here.</p> : (
           <ul className="space-y-2">
             {job.events.slice(0, 20).map((e, i) => (
-              <li key={i} className="rounded-2xl bg-white p-3 ring-1 ring-slate-200">
+              <li key={i} className="rounded-[22px] bg-white p-3 ring-1 ring-slate-200">
                 <p className="font-semibold">{EVENT_LABEL[e.kind] ?? "Update"}</p>
                 {e.note && <p className="text-sm text-slate-700">{e.note}</p>}
                 <p className="text-xs text-slate-500">{new Date(e.created_at).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" })}</p>
@@ -173,9 +173,9 @@ export default async function Portal({ params }: PageProps<"/p/[token]">) {
 
       {plan && plan.parts.length > 1 && <div className="mt-4"><PublicPayPlan plan={plan} cardOnline={stripeConfigured()} /></div>}
 
-      <section className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200" aria-labelledby="docs-h">
+      <section className="mt-4 rounded-[22px] bg-white p-4 ring-1 ring-slate-200" aria-labelledby="docs-h">
         <h2 id="docs-h" className="mb-2 font-bold">Documents</h2>
-        <ul className="divide-y divide-slate-100 text-sm">
+        <ul className="divide-y-2 divide-dashed divide-slate-200 text-sm">
           {job.estimates.map((e) => (
             <li key={e.public_token}><a href={`/q/${e.public_token}`} className="flex min-h-12 items-center justify-between gap-2">
               <span>Quote #{e.number}{e.status === "accepted" ? " (signed)" : ""}</span><span className="font-semibold">{money(e.total)} →</span></a></li>
@@ -194,7 +194,7 @@ export default async function Portal({ params }: PageProps<"/p/[token]">) {
       </section>
 
       {job.warranty_product && (
-        <p className="mt-4 rounded-2xl bg-white p-4 text-sm ring-1 ring-slate-200">
+        <p className="mt-4 rounded-[22px] bg-white p-4 text-sm ring-1 ring-slate-200">
           Warranty: <b>{job.warranty_product}</b> — {job.warranty_registered_at ? `registered ${date(job.warranty_registered_at)}` : "we'll lodge it with the manufacturer after install."}
         </p>
       )}

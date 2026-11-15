@@ -51,7 +51,7 @@ export default async function TparPage({ searchParams }: PageProps<"/app/reports
       ) : (
         <Table>
           <thead><tr><th className={th}>Contractor</th><th className={th}>ABN</th><th className={cx(th, "text-right")}>Payments</th><th className={cx(th, "text-right")}>GST</th><th className={cx(th, "text-right")}>Gross paid</th></tr></thead>
-          <tbody className="divide-y divide-slate-100" data-testid="tpar-rows">
+          <tbody className="divide-y-2 divide-dashed divide-slate-200" data-testid="tpar-rows">
             {rows.map((r) => (
               <tr key={r.key}>
                 <td className={td}><span className="font-medium text-slate-900">{r.name}</span>{!r.crewId && <span className="block text-xs text-slate-500">Not set up as a crew</span>}</td>
@@ -72,7 +72,7 @@ export default async function TparPage({ searchParams }: PageProps<"/app/reports
       {isAdmin && crews.length > 0 && (
         <Card title="Contractor ABNs" className="mt-6">
           <p className="mb-3 text-sm text-slate-600">Each contractor&apos;s ABN goes on the TPAR and on bills sent to Xero.</p>
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y-2 divide-dashed divide-slate-200">
             {crews.map((c) => (
               <li key={c.id} className="py-3" data-crew={c.name}>
                 <ActionForm action={saveCrewAbn} className="grid items-center gap-2 sm:grid-cols-[minmax(0,1fr)_12rem_auto_auto]">

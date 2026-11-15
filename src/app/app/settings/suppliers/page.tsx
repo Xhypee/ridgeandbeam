@@ -45,7 +45,7 @@ export default async function SuppliersPage() {
         {suppliers.length === 0 ? (
           <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">No suppliers yet. Add the suppliers you buy from below.</p>
         ) : (
-          <ul className="divide-y divide-slate-100" data-testid="org-suppliers">
+          <ul className="divide-y-2 divide-dashed divide-slate-200" data-testid="org-suppliers">
             {suppliers.map((s) => {
               const c = counts.get(s.id);
               const stale = s.active_list && daysSince(s.active_list.created_at) > STALE_DAYS;

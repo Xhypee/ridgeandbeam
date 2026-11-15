@@ -213,7 +213,7 @@ export function QuoteEngine(p: EngineProps) {
       </div>
     );
     if (n <= reached) return (
-      <div className="my-2 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200" data-step-folded={n}>
+      <div className="my-2 flex items-center gap-3 rounded-[22px] bg-white px-4 py-3 ring-1 ring-slate-200" data-step-folded={n}>
         <span className={cx("grid h-7 w-7 shrink-0 place-items-center rounded-full", done[n - 1] ? "bg-brand-500 text-white" : "bg-amber-100 text-amber-800")}>
           <Icon d={done[n - 1] ? "M5 12l5 5 9-10" : "M12 8v5M12 16.5v.5"} className="h-3.5 w-3.5" />
         </span>
@@ -236,7 +236,7 @@ export function QuoteEngine(p: EngineProps) {
         {step(2, <Block n={2} title="Who it's for">
           {!editingParty ? (
             // A saved contact by now: their card, with a pencil to change the details.
-            <div className="flex items-start gap-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200" data-party-card>
+            <div className="flex items-start gap-4 rounded-[22px] bg-white p-4 ring-1 ring-slate-200" data-party-card>
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-50 font-display text-[15px] font-bold text-brand-700 ring-1 ring-brand-200" aria-hidden>{initials(party.name)}</span>
               <div className="min-w-0 flex-1 space-y-1">
                 <p className="truncate font-display text-lg font-bold leading-tight text-ink" data-field="customer">{party.name}</p>
@@ -249,7 +249,7 @@ export function QuoteEngine(p: EngineProps) {
               </button>
             </div>
           ) : (
-            <div className="space-y-3 rounded-2xl bg-white p-4 ring-1 ring-slate-200" data-party-edit>
+            <div className="space-y-3 rounded-[22px] bg-white p-4 ring-1 ring-slate-200" data-party-edit>
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">Customer</span><input className={field} value={party.name} onChange={(e) => editParty("name", e.target.value)} onBlur={() => void flush()} data-field="customer" /></label>
                 <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">Email</span><input type="email" className={field} value={party.email} placeholder="Where the quote goes" onChange={(e) => editParty("email", e.target.value)} onBlur={() => void flush()} data-field="email" /></label>
@@ -270,8 +270,8 @@ export function QuoteEngine(p: EngineProps) {
         </Block>)}
 
         {step(4, <Block n={4} title="Price" hint={inclusive ? "inc GST" : "ex GST"} right={<SupplierPicker p={p} current={orgSupplierId} onChosen={(id) => { setOrgSupplierId(id); router.refresh(); }} flush={flush} />}>
-          <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
-            <div className="hidden grid-cols-[minmax(0,1fr)_64px_64px_120px_20px] gap-3 border-b border-slate-100 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400 sm:grid">
+          <div className="overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200">
+            <div className="hidden grid-cols-[minmax(0,1fr)_64px_64px_120px_20px] gap-3 border-b-2 border-dashed border-slate-200 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400 sm:grid">
               <span>Item</span><span className="text-right">Qty</span><span>Unit</span><span className="text-right">Price</span><span />
             </div>
             {main.map((i) => <LineRow key={i.id} i={i} supplierName={p.supplier.name} margin={margin ?? shownMargin} onEdit={editItem} onCost={setCost} onRemove={removeItem} flush={flush} />)}
@@ -282,7 +282,7 @@ export function QuoteEngine(p: EngineProps) {
             </div>
           </div>
 
-          <div className="mt-4 rounded-2xl bg-white px-4 py-3 ring-1 ring-dashed ring-slate-300" data-extras>
+          <div className="mt-4 rounded-[22px] bg-white px-4 py-3 ring-1 ring-dashed ring-slate-300" data-extras>
             <p className="text-xs font-semibold text-slate-500">Optional extras <span className="font-normal">· {p.firstName} can add these online. Not in the total.</span></p>
             {extras.map((x) => (
               <div key={x.id} className="mt-2 flex items-center gap-2 text-sm">
@@ -309,7 +309,7 @@ export function QuoteEngine(p: EngineProps) {
               </div>
               {money.uncosted > 0 && <p className="mt-2 text-xs text-white/50">{money.uncosted} line{money.uncosted === 1 ? " has" : "s have"} no cost, so {money.uncosted === 1 ? "it's" : "they're"} not in the margin.</p>}
             </div>
-            <div className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+            <div className="rounded-[22px] bg-white p-5 ring-1 ring-slate-200">
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">{p.firstName} pays</p>
               <p className="mt-1 font-display text-4xl font-bold leading-none text-ink" data-total>{aud(money.total)}</p>
               <p className="mt-4 text-sm text-slate-500">{aud(money.exGst)} + GST {aud(money.gst)}</p>
@@ -325,7 +325,7 @@ export function QuoteEngine(p: EngineProps) {
             ))}
           </span>}>
           {payment.mode === "full" ? (
-            <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-white px-4 py-4 ring-1 ring-slate-200">
+            <div className="flex flex-wrap items-center gap-4 rounded-[22px] bg-white px-4 py-4 ring-1 ring-slate-200">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><Icon d="M5 12l5 5 9-10" className="h-5 w-5" /></span>
               <div className="min-w-0 flex-1"><p className="font-semibold text-ink">Paid in full</p><p className="text-sm text-slate-500">One invoice, due 7 days after it&apos;s sent</p></div>
               <select aria-label="When they pay" value={payment.when} onChange={(e) => setPlan({ ...payment, when: e.target.value as PaymentPlan["when"] })} className="rounded-lg bg-cream px-3 py-2 text-sm font-semibold text-ink ring-1 ring-slate-200">
@@ -354,7 +354,7 @@ export function QuoteEngine(p: EngineProps) {
           <button type="button" onClick={() => void preview()} className={cx("flex min-h-12 items-center gap-2 rounded-xl px-3.5 font-semibold text-ink ring-1 ring-slate-300 hover:bg-slate-50 sm:px-4", Boolean(p.email) && "lg:hidden")} data-preview aria-label="Preview">
             <Icon d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6" className="h-5 w-5" /><span className="hidden sm:inline">Preview</span>
           </button>
-          <button type="button" onClick={() => void send()} disabled={sending || main.length === 0} className="flex min-h-12 items-center gap-2 rounded-xl bg-brand-500 px-4 font-semibold text-white sm:px-6 hover:bg-brand-600 disabled:opacity-50" data-send>
+          <button type="button" onClick={() => void send()} disabled={sending || main.length === 0} className="flex min-h-12 items-center gap-2 rounded-xl bg-ink px-4 font-semibold text-white sm:px-6 hover:bg-ink/90 disabled:opacity-50" data-send>
             <Icon d="M4 12l16-8-6 16-2.5-6.5z" />{sending ? "Sending…" : p.status === "sent" ? "Send again" : `Send to ${p.firstName}`}
           </button>
         </div>
@@ -391,7 +391,7 @@ function LineRow({ i, supplierName, margin, onEdit, onCost, onRemove, flush }: {
   const [editCost, setEditCost] = useState(!costed && !i.unit_price);
   const source = i.category === "labor" ? "Your crew" : i.supplier_price_item_id ? (supplierName ?? "Price guide") : costed ? "Your cost" : "Your price";
   return (
-    <div className="grid grid-cols-[64px_64px_minmax(0,1fr)_20px] items-center gap-x-3 gap-y-2 border-b border-slate-100 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_64px_64px_120px_20px]" data-line>
+    <div className="grid grid-cols-[64px_64px_minmax(0,1fr)_20px] items-center gap-x-3 gap-y-2 border-b-2 border-dashed border-slate-200 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_64px_64px_120px_20px]" data-line>
       <span className="col-span-4 min-w-0 sm:col-span-1">
         <input className="w-full bg-transparent font-semibold text-ink placeholder:font-normal placeholder:text-slate-400 focus:outline-none" value={i.description} placeholder="What it is" onChange={(e) => onEdit(i.id!, { description: e.target.value })} onBlur={() => void flush()} aria-label="Item" />
         <input className="w-full bg-transparent text-xs text-slate-500 placeholder:text-slate-300 focus:outline-none" value={i.blurb ?? ""} placeholder="Details (optional)" onChange={(e) => onEdit(i.id!, { blurb: e.target.value || null })} onBlur={() => void flush()} aria-label="Details" />
@@ -436,7 +436,7 @@ function Stages({ stages, total, onChange }: { stages: Stage[]; total: number; o
   const row = (s: Stage, k: number) => {
     const fixed = k === 0 || k === stages.length - 1;
     return (
-      <div key={k} className="grid grid-cols-[28px_minmax(0,1fr)_76px_20px] items-center gap-x-3 gap-y-2 border-b border-slate-100 px-4 py-3 sm:grid-cols-[28px_minmax(0,1fr)_170px_76px_104px_20px]" data-stage>
+      <div key={k} className="grid grid-cols-[28px_minmax(0,1fr)_76px_20px] items-center gap-x-3 gap-y-2 border-b-2 border-dashed border-slate-200 px-4 py-3 sm:grid-cols-[28px_minmax(0,1fr)_170px_76px_104px_20px]" data-stage>
         <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-500 font-display text-xs font-bold text-white">{k + 1}</span>
         <input className="min-w-0 bg-transparent font-semibold text-ink focus:outline-none" value={s.label} onChange={(e) => set(k, { label: e.target.value })} aria-label="Stage name" />
         {fixed ? <span className="order-5 col-start-2 rounded-lg bg-cream px-2.5 py-1.5 text-xs text-slate-600 ring-1 ring-slate-200 sm:order-none sm:col-start-auto">{STAGE_TRIGGER_LABEL[s.trigger]}</span> : (
@@ -451,7 +451,7 @@ function Stages({ stages, total, onChange }: { stages: Stage[]; total: number; o
     );
   };
   return (
-    <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200" data-stages>
+    <div className="overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200" data-stages>
       {stages.slice(0, -1).map((s, k) => row(s, k))}
       <button type="button" onClick={addStage} className="flex w-full items-center gap-2 border-b border-dashed border-slate-200 px-4 py-2.5 text-sm font-semibold text-brand-700"><Icon d="M12 5v14M5 12h14" />Add a stage</button>
       {row(stages[stages.length - 1], stages.length - 1)}
@@ -515,12 +515,12 @@ function SupplierPicker({ p, current, onChosen, flush }: { p: EngineProps; curre
         <Icon d="M6 9l6 6 6-6" className="h-4 w-4 text-slate-500" />
       </button>
       {open && (
-        <div className="absolute right-0 top-14 z-40 flex max-h-[70vh] w-[min(440px,90vw)] flex-col overflow-hidden rounded-2xl bg-white ring-2 ring-ink" data-supplier-panel>
-          <div className="border-b border-slate-100 p-3"><input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search suppliers across Australia" className="min-h-10 w-full rounded-lg bg-cream px-3 text-sm ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500" /></div>
+        <div className="absolute right-0 top-14 z-40 flex max-h-[70vh] w-[min(440px,90vw)] flex-col overflow-hidden rounded-[22px] bg-white ring-2 ring-ink" data-supplier-panel>
+          <div className="border-b-2 border-dashed border-slate-200 p-3"><input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search suppliers across Australia" className="min-h-10 w-full rounded-lg bg-cream px-3 text-sm ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500" /></div>
           <div className="min-h-0 flex-1 overflow-y-auto">
-            {near.length > 0 && <><p className="px-4 pt-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">{p.nearLabel ?? "Nearest to you"}</p><ul className="px-2 pb-2 pt-1">{near.map((s, k) => row(s, k === 0 && !words))}</ul></>}
-            <div className="border-t border-slate-100 pb-2">
-              <p className="flex items-center justify-between px-4 pt-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400"><span>All suppliers · {p.suppliers.length}</span>
+            {near.length > 0 && <><p className="px-4 pt-3 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">{p.nearLabel ?? "Nearest to you"}</p><ul className="px-2 pb-2 pt-1">{near.map((s, k) => row(s, k === 0 && !words))}</ul></>}
+            <div className="border-t-2 border-dashed border-slate-200 pb-2">
+              <p className="flex items-center justify-between px-4 pt-3 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400"><span>All suppliers · {p.suppliers.length}</span>
                 {!words && <button type="button" onClick={() => setAll((a) => !a)} className="normal-case tracking-normal text-brand-700">{all ? "Show less" : "Show all"}</button>}</p>
               {(all || words) ? groups.map(([g, list]) => (
                 <div key={g} className="mt-2"><p className="px-4 pb-1 text-xs font-semibold text-slate-500">{g}</p><ul className="px-2">{list.map((s) => row(s, false))}</ul></div>
@@ -528,9 +528,9 @@ function SupplierPicker({ p, current, onChosen, flush }: { p: EngineProps; curre
               <p className="mx-4 mt-2 rounded-lg bg-cream px-3 py-2 text-xs text-slate-500 ring-1 ring-slate-200">Price guides are your account&apos;s price lists. <Link href="/app/settings/suppliers" className="font-semibold text-ink">Upload one in Settings → Suppliers</Link>.</p>
             </div>
           </div>
-          {note && <p className="border-t border-slate-100 bg-red-50 px-4 py-2 text-xs text-red-700">{note}</p>}
+          {note && <p className="border-t-2 border-dashed border-slate-200 bg-red-50 px-4 py-2 text-xs text-red-700">{note}</p>}
           {p.canSetDefault && (
-            <label className="flex items-center gap-2.5 border-t border-slate-100 bg-cream px-4 py-3 text-sm text-ink">
+            <label className="flex items-center gap-2.5 border-t-2 border-dashed border-slate-200 bg-cream px-4 py-3 text-sm text-ink">
               <input type="checkbox" checked={makeDefault} onChange={(e) => setMakeDefault(e.target.checked)} className="h-4 w-4 accent-[#1f5f3f]" />Use the one I pick for all my quotes
             </label>
           )}
@@ -555,7 +555,7 @@ function GuideSearch({ orgSupplierId, name, hasGuide, onPick }: { orgSupplierId:
     <span className="relative">
       <button type="button" onClick={() => setOpen((o) => !o)} className="flex items-center gap-2" data-guide-search><Icon d="M11 18a7 7 0 100-14 7 7 0 000 14M20 20l-4-4" />From {name ?? "the"} price guide</button>
       {open && (
-        <div className="absolute left-0 top-8 z-40 w-[min(460px,85vw)] rounded-2xl bg-white p-3 font-normal text-ink ring-2 ring-ink">
+        <div className="absolute left-0 top-8 z-40 w-[min(460px,85vw)] rounded-[22px] bg-white p-3 font-normal text-ink ring-2 ring-ink">
           <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search, e.g. valley 0.55 or ridge cap" className="min-h-10 w-full rounded-lg bg-cream px-3 text-sm ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500" />
           <ul className="mt-2 max-h-72 overflow-y-auto">
             {res?.error && <li className="px-2 py-3 text-sm text-slate-500">{res.error}</li>}

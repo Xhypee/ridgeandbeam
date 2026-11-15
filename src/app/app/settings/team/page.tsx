@@ -23,7 +23,7 @@ export default async function Page() {
   return (
     <div className="space-y-6">
           <Card title="Team">
-            <ul className="mb-4 divide-y divide-slate-100">
+            <ul className="mb-4 divide-y-2 divide-dashed divide-slate-200">
               {((members ?? []) as Member[]).map((m) => (
                 <li key={m.user_id} className="py-2" data-testid="member">
                   <div className="flex items-center justify-between gap-2">

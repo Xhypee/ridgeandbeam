@@ -66,7 +66,7 @@ export function CsvImport({ onDone }: { onDone: (msg: string) => void }) {
           <p className="text-sm text-slate-600" data-import-count>{valid.length} of {records.length} rows have a usable location{records.length - valid.length ? ` (${records.length - valid.length} will be skipped)` : ""}.</p>
           <Table>
             <thead><tr><th className={th}>Lat, lng</th><th className={th}>Address</th><th className={th}>Status → ours</th><th className={th}>Notes</th></tr></thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y-2 divide-dashed divide-slate-200">
               {valid.slice(0, 5).map((r, i) => (
                 <tr key={i}>
                   <td className={`${td} tabular-nums`}>{r.lat.toFixed(5)}, {r.lng.toFixed(5)}</td>

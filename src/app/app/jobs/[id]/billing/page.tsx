@@ -88,7 +88,7 @@ export default async function BillingPage({ params }: PageProps<"/app/jobs/[id]/
         {invoices.length === 0 ? (
           <Empty title="No invoices yet">Create a payment schedule below, or use &ldquo;New invoice&rdquo; above.</Empty>
         ) : (
-          <ul className="divide-y divide-slate-100" data-testid="job-invoices">
+          <ul className="divide-y-2 divide-dashed divide-slate-200" data-testid="job-invoices">
             {invoices.map((i) => {
               const t = tot(i);
               return (
@@ -114,7 +114,7 @@ export default async function BillingPage({ params }: PageProps<"/app/jobs/[id]/
         )}
       </Card>
 
-      <Card title="Payment plan" actions={<Link href={`/app/jobs/${id}/billing/plan`} data-plan-link className="inline-flex min-h-10 items-center rounded-xl bg-brand-500 px-4 text-sm font-semibold text-white hover:bg-brand-600">{hasSchedule ? "Open payment plan" : "Set up a payment plan"}</Link>}>
+      <Card title="Payment plan" actions={<Link href={`/app/jobs/${id}/billing/plan`} data-plan-link className="inline-flex min-h-10 items-center rounded-xl bg-ink px-4 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90">{hasSchedule ? "Open payment plan" : "Set up a payment plan"}</Link>}>
         {!est ? (
           <p className="text-sm text-slate-600">Once the homeowner accepts a quote, split the price into {gstName}s here: a deposit within your state&apos;s limit, milestones, and monthly or fortnightly payments by card, PayID, bank transfer or cash.</p>
         ) : hasSchedule ? (
@@ -143,12 +143,12 @@ export default async function BillingPage({ params }: PageProps<"/app/jobs/[id]/
         ) : (
           <div className="space-y-3" data-testid="expected-vs-received">
             {groups.map(({ g, ls, expected, received }) => (
-              <div key={g} className="rounded-2xl bg-white ring-1 ring-slate-200" data-group={g}>
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
+              <div key={g} className="rounded-[22px] bg-white ring-1 ring-slate-200" data-group={g}>
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-dashed border-slate-200 px-4 py-3">
                   <Badge tone={PAYER_GROUP_TONE[g]}>{PAYER_GROUP_LABEL[g]}</Badge>
                   <p className="text-sm tabular-nums"><b>{money(received)}</b> <span className="text-slate-500">received of {money(expected)}</span>{expected - received > 0.004 && <span className="ml-2 font-medium text-amber-700">{money(expected - received)} still coming</span>}</p>
                 </div>
-                <ul className="divide-y divide-slate-100">
+                <ul className="divide-y-2 divide-dashed divide-slate-200">
                   {ls.map((l) => {
                     const owed = Math.max(0, l.expected - l.received);
                     return (

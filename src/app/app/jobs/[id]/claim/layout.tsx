@@ -49,7 +49,7 @@ export default async function ClaimLayout({ children, params }: LayoutProps<"/ap
               </div>
             </KeepForm>
             {job.is_insurance && (
-              <form action={markRetail} className="mt-4 border-t border-slate-100 pt-4">
+              <form action={markRetail} className="mt-4 border-t-2 border-dashed border-slate-200 pt-4">
                 <input type="hidden" name="job_id" value={job.id} />
                 <SubmitButton variant="secondary" className="min-h-11">This is a private job</SubmitButton>
                 <span className="ml-3 text-xs text-slate-500">No insurance involved — the homeowner pays directly.</span>

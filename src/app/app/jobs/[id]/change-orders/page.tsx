@@ -31,7 +31,7 @@ export default async function ChangeOrdersPage({ params }: PageProps<"/app/jobs/
       <div className="min-w-0 lg:col-span-2">
         <Card title="Change orders on this job">
           {(cos ?? []).length === 0 ? <p className="text-sm text-slate-500">None yet.</p> : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y-2 divide-dashed divide-slate-200">
               {(cos ?? []).map((c) => {
                 const total = (c.change_order_items as { quantity: number; unit_price: number }[]).reduce((s, i) => s + Number(i.quantity) * Number(i.unit_price), 0);
                 return (

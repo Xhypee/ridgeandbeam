@@ -19,7 +19,7 @@ function Icon({ d }: { d: string }) {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <fieldset className="border-t border-slate-100 px-5 py-5 first:border-t-0">
+    <fieldset className="border-t-2 border-dashed border-slate-200 px-5 py-5 first:border-t-0">
       <legend className="sr-only">{title}</legend>
       <p aria-hidden className="mb-3 text-[15px] font-bold text-ink">{title}</p>
       <div className="space-y-3">{children}</div>

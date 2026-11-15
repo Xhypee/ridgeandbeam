@@ -100,7 +100,7 @@ export function CustomerDocket({ d, closeHref, canSeeMoney, today, edit }: { d: 
           </div>
 
           <div className="flex gap-2 px-5 py-4">
-            {c.phone ? <a href={`tel:${c.phone.replace(/\s+/g, "")}`} className={cx(btn, "bg-brand-500 text-white hover:bg-brand-600")}><Icon d={PHONE} />Call</a>
+            {c.phone ? <a href={`tel:${c.phone.replace(/\s+/g, "")}`} className={cx(btn, "bg-ink text-white hover:bg-ink/90")}><Icon d={PHONE} />Call</a>
               : <span className={cx(btn, "bg-slate-100 text-slate-400")}><Icon d={PHONE} />No mobile</span>}
             {c.phone && <a href={`sms:${c.phone.replace(/\s+/g, "")}`} className={cx(btn, "bg-white text-ink ring-1 ring-slate-300 hover:bg-slate-50")}><Icon d={SMS} />Text</a>}
             {c.email && <a href={`mailto:${c.email}`} className={cx(btn, "bg-white text-ink ring-1 ring-slate-300 hover:bg-slate-50")}><Icon d={MAIL} />Email</a>}
@@ -118,7 +118,7 @@ export function CustomerDocket({ d, closeHref, canSeeMoney, today, edit }: { d: 
 
           <Section title="Jobs" count={d.jobs.length}>
             {d.jobs.length === 0 ? <p className="text-sm text-slate-500">No jobs yet.</p> : (
-              <ul className="-mx-2 divide-y divide-slate-100" data-customer-jobs>
+              <ul className="-mx-2 divide-y-2 divide-dashed divide-slate-200" data-customer-jobs>
                 {d.jobs.map((j) => (
                   <li key={j.id}>
                     <Link href={`/app/jobs?job=${j.id}`} className="flex items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-slate-50">
@@ -136,7 +136,7 @@ export function CustomerDocket({ d, closeHref, canSeeMoney, today, edit }: { d: 
                 ))}
               </ul>
             )}
-            <Link href={`/app/jobs/new?customer=${c.id}`} className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700">+ New job for {c.name.split(" ")[0]}</Link>
+            <Link href={`/app/jobs/new?customer=${c.id}`} className="mt-2 inline-flex min-h-11 items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 hover:text-brand-700">+ New job for {c.name.split(" ")[0]}</Link>
           </Section>
 
           <ReferralsSection who={{ id: c.id, type: "contact", name: c.name }} r={d} canSeeMoney={canSeeMoney} />
@@ -145,7 +145,7 @@ export function CustomerDocket({ d, closeHref, canSeeMoney, today, edit }: { d: 
             {c.notes ? <p className="whitespace-pre-wrap rounded-xl bg-amber-50 px-3 py-2.5 text-sm text-ink [overflow-wrap:anywhere]">{c.notes}</p> : <p className="text-sm text-slate-500">No notes. Add some under Edit details.</p>}
           </Section>
 
-          <details className="group border-t border-slate-100" data-customer-edit>
+          <details className="group border-t-2 border-dashed border-slate-200" data-customer-edit>
             <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-5 [&::-webkit-details-marker]:hidden">
               <span className="font-semibold text-ink">Edit details</span>
               <Icon d="M6 9l6 6 6-6" className="ml-auto h-4 w-4 text-slate-400 transition-transform group-open:rotate-180" />

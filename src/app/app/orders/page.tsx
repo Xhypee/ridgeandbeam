@@ -80,7 +80,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/app/order
       {list.length === 0 ? <Empty title="No orders match">Create one from a job&apos;s Production tab or above.</Empty> : (
         <Table>
           <thead><tr><th className={th}>Delivery</th><th className={th}>Job</th><th className={th}>Supplier</th><th className={th}>Status</th><th className={cx(th, "text-right")}>Cost ex GST</th></tr></thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y-2 divide-dashed divide-slate-200">
             {list.map((o) => (
               <tr key={o.id} className="hover:bg-slate-50">
                 <td className={cx(td, "whitespace-nowrap")}><Link href={`/app/orders/${o.id}`} className="font-medium text-brand-700 hover:underline">{o.delivery_date ? date(o.delivery_date, { weekday: "short", day: "2-digit", month: "2-digit" }) : "No date"}</Link><span className="block text-xs text-slate-500">{label(o.delivery_type)}</span></td>

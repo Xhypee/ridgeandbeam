@@ -52,7 +52,7 @@ export default async function PublicInvoice({ params, searchParams }: PageProps<
         ) : (
           <>
             {sp.paid === "1" && <p className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800" role="status">Thank you! Your payment is processing. This page updates once it clears (direct debits take a few business days).</p>}
-            <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200 sm:p-6">
+            <div className="rounded-[22px] bg-white p-4 ring-1 ring-slate-200 sm:p-6">
               <h2 className="font-display text-lg font-semibold text-ink">Pay {money(balance)}</h2>
               <p className="text-sm text-slate-600">{bank || payIdText ? "Bank transfer or PayID is quickest and free for you." : online ? "Pay securely online." : "How to pay this invoice."}</p>
 
@@ -72,7 +72,7 @@ export default async function PublicInvoice({ params, searchParams }: PageProps<
               )}
 
               {online && (
-                <div className="mt-5 border-t border-slate-100 pt-4">
+                <div className="mt-5 border-t-2 border-dashed border-slate-200 pt-4">
                   <h3 className="text-sm font-semibold text-slate-900">Or pay online</h3>
                   <p className="mb-3 text-xs text-slate-500">You&apos;ll finish on Stripe&apos;s secure checkout page. No card surcharge.</p>
                   <PayButtons token={token} action={payInvoice} total={money(balance)} becs={pay.becs_enabled} />
@@ -93,7 +93,7 @@ export default async function PublicInvoice({ params, searchParams }: PageProps<
             </div>
 
             {lenders.length > 0 && (
-              <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200 sm:p-6" data-finance>
+              <div className="rounded-[22px] bg-white p-4 ring-1 ring-slate-200 sm:p-6" data-finance>
                 <h2 className="font-display text-base font-semibold text-ink">Prefer to pay over time?</h2>
                 <p className="mt-1 text-sm text-slate-600">{inv.seller.name} can refer you to these finance providers.</p>
                 <div className="mt-3 flex flex-wrap gap-2">

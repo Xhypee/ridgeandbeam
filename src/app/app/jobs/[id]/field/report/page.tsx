@@ -53,7 +53,7 @@ export default async function PhotoReport({ params, searchParams }: PageProps<"/
         <PrintButton />
       </div>
       {aiOn && <div className="no-print mb-4"><AiPhotoSummary jobId={job.id} /></div>}
-      <article className="rounded-2xl bg-white p-5 ring-1 ring-slate-200 print:p-0 print:ring-0">
+      <article className="rounded-[22px] bg-white p-5 ring-1 ring-slate-200 print:p-0 print:ring-0">
         <header className="border-b border-slate-200 pb-4">
           <p className="text-sm font-semibold text-brand-700">{org.name}{org.abn ? ` · ABN ${formatAbn(org.abn)}` : ""}{licence ? ` · ${st} licence ${licence}` : ""}</p>
           <h1 className="text-2xl font-bold">Storm damage photo report</h1>

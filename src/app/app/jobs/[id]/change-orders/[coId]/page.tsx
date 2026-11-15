@@ -33,7 +33,7 @@ export default async function ChangeOrderPage({ params, searchParams }: PageProp
       {msg && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{msg}</p>}
       <Card title={<span className="flex flex-wrap items-center gap-2">{co.title}<Badge tone={STATUS_TONE[co.status]}>{co.status === "sent" ? "Awaiting homeowner" : label(co.status)}</Badge></span>}>
         {co.description && <p className="mb-3 whitespace-pre-wrap text-sm text-slate-700">{co.description}</p>}
-        <ul className="divide-y divide-slate-100 text-sm">
+        <ul className="divide-y-2 divide-dashed divide-slate-200 text-sm">
           {items.map((i) => (
             <li key={i.id} className="flex justify-between gap-3 py-2">
               <span>{i.description} <span className="text-slate-500">· {Number(i.quantity)} {i.unit} × {money(i.unit_price)}</span></span>

@@ -69,12 +69,12 @@ export function RoofPlanPanel({ estimateId, jobId, measurements, source, canDrop
   return (
     <div data-roof-plan>
       {measured ? (<>
-        <div className="grid overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200 sm:grid-cols-[minmax(0,1fr)_250px]">
-          <div className="grid place-items-center border-b border-slate-100 bg-[#f4f7f4] p-4 sm:border-b-0 sm:border-r">
+        <div className="grid overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200 sm:grid-cols-[minmax(0,1fr)_250px]">
+          <div className="grid place-items-center border-b-2 border-dashed border-slate-200 bg-[#f4f7f4] p-4 sm:border-b-0 sm:border-r">
             <ColourRoof shape={shape} hex="#e3e6df" className="h-56 w-full" />
           </div>
           <div className="p-4">
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Roof area</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Roof area</p>
             <p className="font-display text-4xl font-bold leading-none tracking-tight text-ink">{fmt(s.trueArea)} m²</p>
             <p className="mt-1 text-xs text-slate-500">{fmt(s.planArea)} m² on plan · {fmt(s.maxPitch)}° pitch{faces ? ` · ${faces} face${faces === 1 ? "" : "s"}` : ""}</p>
             <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm">

@@ -44,7 +44,7 @@ export default async function StateRulesPage({ searchParams }: PageProps<"/app/s
             {!served.length && " Add your service states in Settings → Company to show only those."}
           </p>
         </div>
-        <a href={mail} className="inline-flex min-h-11 items-center rounded-xl bg-white px-4 text-sm font-semibold text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50" data-report-change>Report a change</a>
+        <a href={mail} className="inline-flex min-h-11 items-center rounded-xl bg-white px-4 font-mono text-xs font-semibold uppercase tracking-wider text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50" data-report-change>Report a change</a>
       </div>
 
       <nav aria-label="States" className="flex flex-wrap gap-2">
@@ -70,7 +70,7 @@ export default async function StateRulesPage({ searchParams }: PageProps<"/app/s
                 <th className="py-2 font-medium">Source</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 align-top">
+            <tbody className="divide-y-2 divide-dashed divide-slate-200 align-top">
               {ref.rows.map((r) => (
                 <tr key={r.topic}>
                   <th scope="row" className="py-3 pr-4 text-left font-semibold text-ink sm:w-44">{r.topic}</th>
@@ -108,7 +108,7 @@ export default async function StateRulesPage({ searchParams }: PageProps<"/app/s
           <div className="flex flex-col justify-end gap-2">
             <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="door" defaultChecked={scenario?.doorKnock} className="h-5 w-5 accent-brand-600" /> Door-knock sale</label>
           </div>
-          <div className="sm:col-span-3 lg:col-span-6"><button type="submit" className="inline-flex min-h-11 items-center rounded-xl bg-brand-500 px-4 text-sm font-semibold text-white hover:bg-brand-600">Show what applies</button></div>
+          <div className="sm:col-span-3 lg:col-span-6"><button type="submit" className="inline-flex min-h-11 items-center rounded-xl bg-ink px-4 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90">Show what applies</button></div>
         </form>
         {scenario && (
           <StateCompliancePanel

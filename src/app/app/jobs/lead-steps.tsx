@@ -160,7 +160,7 @@ export function LeadSteps(p: LeadStepsProps) {
   return (
     <div className="px-5 pb-4" data-lead-steps data-lead-plans={planless ? "none" : "in"}>
       <div className="flex items-center gap-2">
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Next up</p>
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">Next up</p>
         {planless && !p.contacted && p.receivedAt && <span className="ml-auto"><LeadTimer since={p.receivedAt} /></span>}
       </div>
       <p className="font-display text-[26px] font-bold leading-tight text-ink" data-lead-headline>{headline}</p>
@@ -175,7 +175,7 @@ export function LeadSteps(p: LeadStepsProps) {
         {!planless && p.quote && <QuoteSummary q={p.quote} first={p.first} previewHref={p.previewHref ?? null} />}
       </div>
       {!planless && !p.quote && (
-        <form action={createEstimate} className="mt-3"><input type="hidden" name="job_id" value={p.jobId} /><button className={cx(btn, "bg-brand-500 text-white hover:bg-brand-600")} data-lead-quote><Icon d="M12 5v14M5 12h14" className="h-5 w-5" />Start the quote</button></form>
+        <form action={createEstimate} className="mt-3"><input type="hidden" name="job_id" value={p.jobId} /><button className={cx(btn, "bg-ink text-white hover:bg-ink/90")} data-lead-quote><Icon d="M12 5v14M5 12h14" className="h-5 w-5" />Start the quote</button></form>
       )}
 
       {/* Three actions as icon buttons; the label shows on hover (and keyboard focus). */}

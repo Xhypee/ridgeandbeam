@@ -71,7 +71,7 @@ export function ContactSection({ jobId, customer: c, site, state, referredBy }: 
         <ContactRow icon={PHONE} label="Mobile" value={c.phone ?? <span className="text-slate-400">No number</span>}>
           {phone && <span className="flex gap-1.5">
             <a href={`sms:${phone}`} aria-label={`Text ${c.name}`} title="Text" className={iconBtn}><Icon d="M4 5h16v11H9l-5 4z" /></a>
-            <a href={`tel:${phone}`} aria-label={`Call ${c.name}`} title="Call" className="grid h-9 w-9 place-items-center rounded-lg bg-brand-500 text-white hover:bg-brand-600"><Icon d={PHONE} /></a>
+            <a href={`tel:${phone}`} aria-label={`Call ${c.name}`} title="Call" className="grid h-9 w-9 place-items-center rounded-lg bg-ink text-white hover:bg-ink/90"><Icon d={PHONE} /></a>
           </span>}
         </ContactRow>
         <ContactRow icon={MAIL} label="Email" value={c.email ?? <span className="text-slate-400">No email</span>}>

@@ -58,7 +58,7 @@ export default async function IntegrationsPage({ searchParams }: PageProps<"/app
             )}
           </>
         )}
-        <ActionForm action={saveXeroAccounts} className="mt-5 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-4">
+        <ActionForm action={saveXeroAccounts} className="mt-5 grid gap-3 border-t-2 border-dashed border-slate-200 pt-4 sm:grid-cols-4">
           <Field label="Sales account" hint="GST on Income"><Input name="sales" defaultValue={accounts.sales} disabled={!isAdmin} inputMode="numeric" /></Field>
           <Field label="Job cost account" hint="GST on Expenses"><Input name="costs" defaultValue={accounts.costs} disabled={!isAdmin} inputMode="numeric" /></Field>
           <Field label="Bank account" hint="Where payments land"><Input name="bank" defaultValue={accounts.bank} disabled={!isAdmin} inputMode="numeric" /></Field>
@@ -70,7 +70,7 @@ export default async function IntegrationsPage({ searchParams }: PageProps<"/app
         {(problems ?? []).length === 0 ? (
           <Empty title="Nothing needs attention">Anything Xero rejects shows up here in plain language, with what to do about it.</Empty>
         ) : (
-          <ul className="divide-y divide-slate-100" data-sync-problems>
+          <ul className="divide-y-2 divide-dashed divide-slate-200" data-sync-problems>
             {(problems ?? []).map((p) => (
               <li key={p.id} className="flex flex-wrap items-start justify-between gap-3 py-3">
                 <div className="min-w-0 flex-1">

@@ -10,7 +10,7 @@ function Btn({ method, children, primary }: { method: "card" | "becs"; children:
       name="method"
       value={method}
       disabled={pending}
-      className={`min-h-12 w-full rounded-lg px-4 py-3 text-left text-base font-semibold disabled:opacity-60 ${primary ? "bg-brand-500 text-white hover:bg-brand-600" : "bg-white text-slate-900 ring-1 ring-slate-300 hover:bg-slate-50"}`}
+      className={`min-h-12 w-full rounded-lg px-4 py-3 text-left text-base font-semibold disabled:opacity-60 ${primary ? "bg-ink text-white hover:bg-ink/90" : "bg-white text-slate-900 ring-1 ring-slate-300 hover:bg-slate-50"}`}
     >
       {pending ? "Opening secure checkout…" : children}
     </button>

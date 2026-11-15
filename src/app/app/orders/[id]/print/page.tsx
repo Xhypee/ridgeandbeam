@@ -42,7 +42,7 @@ export default async function OrderSheet({ params }: PageProps<"/app/orders/[id]
         </section>
         <table className="w-full text-sm">
           <thead><tr className="border-b border-slate-300 text-left text-xs uppercase text-slate-500"><th className="py-1.5">#</th><th className="py-1.5">Product code</th><th className="py-1.5">Qty</th><th className="py-1.5">Unit</th><th className="py-1.5">Description</th></tr></thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y-2 divide-dashed divide-slate-200">
             {items.map((i, n) => (
               <tr key={n}><td className="py-1.5">{n + 1}</td><td className="py-1.5">{i.sku}</td><td className="py-1.5 font-semibold">{i.quantity}</td><td className="py-1.5">{i.unit}</td><td className="py-1.5">{i.description}</td></tr>
             ))}

@@ -63,7 +63,7 @@ export default async function CanvassPage({ searchParams }: PageProps<"/app/canv
         <h2 className="mb-2 text-sm font-semibold text-slate-900">Leaderboard · {from} to {to}</h2>
         <Table>
           <thead><tr><th className={th}>Setter</th><th className={`${th} text-right`}>Knocks</th><th className={`${th} text-right`}>Interested</th><th className={`${th} text-right`}>Inspections booked</th><th className={`${th} text-right`}>Leads created</th></tr></thead>
-          <tbody className="divide-y divide-slate-100" data-leaderboard>
+          <tbody className="divide-y-2 divide-dashed divide-slate-200" data-leaderboard>
             {leaders.length === 0 && <tr><td className={td} colSpan={5}>No knocks in this range yet.</td></tr>}
             {leaders.map(([id, b]) => (
               <tr key={id}>

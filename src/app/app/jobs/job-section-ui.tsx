@@ -13,7 +13,7 @@ export function Icon({ d, className = "h-4 w-4" }: { d: string; className?: stri
 
 export function Section({ title, count, action, children }: { title: string; count?: number; action?: ReactNode; children: ReactNode }) {
   return (
-    <details open className="group border-t border-slate-100" data-lead-section={title}>
+    <details open className="group border-t-2 border-dashed border-slate-200" data-lead-section={title}>
       <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-5 [&::-webkit-details-marker]:hidden">
         <span className="font-semibold text-ink">{title}</span>
         {count !== undefined && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">{count}</span>}

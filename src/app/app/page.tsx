@@ -42,9 +42,9 @@ const street = (a: string | null | undefined) => (a ?? "").split(",")[0];
 function Section({ id, title, hint, children, actions }: { id: string; title: string; hint?: string; children: React.ReactNode; actions?: React.ReactNode }) {
   return (
     <section aria-labelledby={id} className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 id={id} className="text-lg font-bold text-ink">{title}</h2>
-        {hint && <span className="text-sm text-slate-500">{hint}</span>}
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b-2 border-ink pb-2">
+        <h2 id={id} className="font-display text-lg font-bold text-ink">{title}</h2>
+        {hint && <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">{hint}</span>}
         {actions && <span className="ml-auto">{actions}</span>}
       </div>
       {children}
@@ -75,13 +75,13 @@ export default async function Today({ searchParams }: PageProps<"/app">) {
   const header = (withActions: boolean) => (
     <header className="mb-7 flex flex-wrap items-center gap-4">
       <div className="min-w-0 flex-1 basis-64">
-        <p data-today-date className="text-sm text-slate-500">{dateLine}</p>
+        <p data-today-date className="font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">{dateLine}</p>
         <h1 className="mt-1 text-[30px] font-bold leading-tight tracking-tight text-ink">{greeting}</h1>
       </div>
       {withActions && (
         <>
           <SearchBox q={q} />
-          <LinkButton href="/app/jobs?new=1" className="h-12 rounded-xl px-5 text-[15px]">+ New lead</LinkButton>
+          <LinkButton href="/app/jobs?new=1" className="h-12 rounded-xl px-5">+ New lead</LinkButton>
         </>
       )}
     </header>
@@ -112,9 +112,9 @@ export default async function Today({ searchParams }: PageProps<"/app">) {
               </div>
             )}
           </Section>
-          <Section id="h-next" title="Coming up" hint="The next two weeks" actions={<Link href="/app/schedule" className="text-sm font-semibold text-brand-600">Schedule →</Link>}>
+          <Section id="h-next" title="Coming up" hint="The next two weeks" actions={<Link href="/app/schedule" className="font-mono text-xs font-semibold uppercase tracking-wider text-brand-700">Schedule →</Link>}>
             {later.length === 0 ? <EmptyLine>Nothing else booked.</EmptyLine> : (
-              <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
+              <ul className="divide-y-2 divide-dashed divide-slate-200 overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200">
                 {later.map((j) => (
                   <li key={j.id}>
                     <Link href={`/app/jobs/${j.id}/field`} className="flex min-h-14 items-center gap-4 px-5 py-3 hover:bg-slate-50">
@@ -219,10 +219,10 @@ export default async function Today({ searchParams }: PageProps<"/app">) {
       {header(true)}
       <div className="flex flex-col gap-8">
         {results && (
-          <Section id="h-search" title={`Results for "${q}"`} actions={<Link href="/app" className="text-sm font-semibold text-brand-600">Clear</Link>}>
-            <div data-search-results className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
+          <Section id="h-search" title={`Results for "${q}"`} actions={<Link href="/app" className="font-mono text-xs font-semibold uppercase tracking-wider text-brand-700">Clear</Link>}>
+            <div data-search-results className="overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200">
               {results.length === 0 ? <p className="px-5 py-4 text-sm text-slate-500">No customers or jobs match. Try a surname, street or phone number.</p> : (
-                <ul className="divide-y divide-slate-100">
+                <ul className="divide-y-2 divide-dashed divide-slate-200">
                   {results.map((r) => (
                     <li key={r.key}>
                       <Link href={r.href} className="flex min-h-14 flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 hover:bg-slate-50">
@@ -239,18 +239,18 @@ export default async function Today({ searchParams }: PageProps<"/app">) {
 
         <section aria-label="Money at a glance" className="grid gap-4 sm:grid-cols-3">
           {tiles.map((t) => (
-            <Link key={t.label} href={t.href} data-money-tile className="block rounded-2xl bg-white p-5 ring-1 ring-slate-200 transition hover:ring-brand-400">
-              <p className="text-[13px] text-slate-500">{t.label}</p>
-              <p className="font-display mt-1.5 text-[28px] font-bold leading-none tracking-tight text-ink">{t.value}</p>
-              <p className={cx("mt-2 text-[13px]", t.subCls)}>{t.sub}</p>
+            <Link key={t.label} href={t.href} data-money-tile className="block rounded-[22px] bg-white p-5 ring-1 ring-slate-200 transition hover:ring-slate-400">
+              <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">{t.label}</p>
+              <p className="font-display mt-1.5 text-[32px] font-bold leading-none tracking-tight text-ink">{t.value}</p>
+              <div className="mt-3 border-t-2 border-dashed border-slate-200 pt-2"><p className={cx("font-mono text-[11px] uppercase tracking-[0.1em]", t.subCls)}>{t.sub}</p></div>
             </Link>
           ))}
         </section>
 
         <Section id="h-call" title="Call now" hint="New leads. The first roofer to call usually wins.">
-          <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
+          <div className="overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200">
             {callNow.length === 0 ? <p className="px-5 py-4 text-sm text-slate-500">No new leads waiting. Nice work.</p> : (
-              <ul className="divide-y divide-slate-100" data-waiting-leads>
+              <ul className="divide-y-2 divide-dashed divide-slate-200" data-waiting-leads>
                 {callNow.map((l) => {
                   const owner = people.byId.get(l.assigned_to ?? "");
                   const phone = l.customers?.phone;
@@ -258,11 +258,11 @@ export default async function Today({ searchParams }: PageProps<"/app">) {
                     <li key={l.id} className="flex flex-wrap items-center gap-x-5 gap-y-3 px-5 py-4">
                       <WaitTimer since={l.lead_received_at ?? new Date().toISOString()} className="min-w-[4.5rem]" />
                       <Link href={`/app/jobs/${l.id}`} className="min-w-0 flex-1 basis-56 hover:text-brand-600">
-                        <span className="block truncate text-[17px] font-semibold text-ink">{l.customers?.name}</span>
-                        <span className="block truncate text-sm text-slate-500">{[l.title, street(l.site_address), l.lead_source && `from ${l.lead_source.replace(/_/g, " ")}`, owner ? `→ ${displayName(owner)}` : "unassigned"].filter(Boolean).join(" · ")}</span>
+                        <span className="block truncate font-display text-[17px] font-bold text-ink">{l.customers?.name}</span>
+                        <span className="block truncate font-mono text-xs text-slate-500">{[l.title, street(l.site_address), l.lead_source && `from ${l.lead_source.replace(/_/g, " ")}`, owner ? `→ ${displayName(owner)}` : "unassigned"].filter(Boolean).join(" · ")}</span>
                       </Link>
                       <span className="flex flex-wrap items-center gap-3">
-                        {phone && <a href={`tel:${phone.replace(/\s+/g, "")}`} className="inline-flex min-h-11 items-center rounded-xl bg-white px-4 text-sm font-semibold text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50">Call {phone}</a>}
+                        {phone && <a href={`tel:${phone.replace(/\s+/g, "")}`} className="inline-flex min-h-11 items-center rounded-xl bg-white px-4 font-mono text-xs font-semibold uppercase tracking-wider text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50">Call {phone}</a>}
                         <form action={markContacted}><input type="hidden" name="id" value={l.id} /><SubmitButton>Mark contacted</SubmitButton></form>
                       </span>
                     </li>
@@ -274,21 +274,21 @@ export default async function Today({ searchParams }: PageProps<"/app">) {
         </Section>
 
         <Section id="h-waiting" title="Waiting on you" hint={tasks.length ? `${tasks.length} thing${tasks.length === 1 ? "" : "s"} to move jobs forward` : undefined}
-          actions={tasks.length > shownTasks.length ? <Link href="/app/jobs" className="text-sm font-semibold text-brand-600">All jobs →</Link> : undefined}>
-          <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
+          actions={tasks.length > shownTasks.length ? <Link href="/app/jobs" className="font-mono text-xs font-semibold uppercase tracking-wider text-brand-700">All jobs →</Link> : undefined}>
+          <div className="overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200">
             {shownTasks.length === 0 ? <p className="px-5 py-4 text-sm text-slate-500">Nothing waiting on you. Every open job is with the homeowner, the insurer or the crew.</p> : (
-              <ul className="divide-y divide-slate-100" data-waiting-on-you>
+              <ul className="divide-y-2 divide-dashed divide-slate-200" data-waiting-on-you>
                 {shownTasks.map((t) => (
                   <li key={t.id} data-task={t.id} className="flex flex-wrap items-center gap-x-5 gap-y-3 px-5 py-4">
                     <Badge tone={TAG_TONE[t.tag]} className="min-w-[5.5rem] justify-center py-1">{t.tag}</Badge>
                     <span className="min-w-0 flex-1 basis-64">
-                      <span className="block font-semibold text-ink">{t.title}</span>
-                      <span className="block text-sm text-slate-500">{t.detail}</span>
+                      <span className="block font-display font-bold text-ink">{t.title}</span>
+                      <span className="block font-mono text-xs text-slate-500">{t.detail}</span>
                     </span>
                     <span className="flex flex-wrap items-center gap-3">
-                      {t.jobId && <Link href={`/app/jobs/${t.jobId}`} className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-brand-600 hover:text-brand-700">Open job</Link>}
+                      {t.jobId && <Link href={`/app/jobs/${t.jobId}`} className="inline-flex min-h-11 items-center px-2 font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 hover:text-brand-700">Open job</Link>}
                       {!(t.jobId && t.href === `/app/jobs/${t.jobId}`) && (
-                        <a href={t.href} className="inline-flex min-h-11 items-center rounded-xl bg-white px-4 text-sm font-semibold text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50">{t.actionLabel}</a>
+                        <a href={t.href} className="inline-flex min-h-11 items-center rounded-xl bg-white px-4 font-mono text-xs font-semibold uppercase tracking-wider text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50">{t.actionLabel}</a>
                       )}
                     </span>
                   </li>
@@ -298,7 +298,7 @@ export default async function Today({ searchParams }: PageProps<"/app">) {
           </div>
         </Section>
 
-        <Section id="h-roofs" title="On roofs today" actions={<Link href="/app/schedule" className="text-sm font-semibold text-brand-600">Schedule →</Link>}>
+        <Section id="h-roofs" title="On roofs today" actions={<Link href="/app/schedule" className="font-mono text-xs font-semibold uppercase tracking-wider text-brand-700">Schedule →</Link>}>
           {onRoofs.length === 0 ? <EmptyLine>No crews on a roof today.</EmptyLine> : (
             <div className="grid gap-4 md:grid-cols-2" data-on-roofs>
               {onRoofs.map((j) => {
@@ -319,18 +319,18 @@ export default async function Today({ searchParams }: PageProps<"/app">) {
 
 function RoofCard({ href, name, address, crew, status }: { href: string; name: string; address: string | null; crew: Crew; status: string }) {
   return (
-    <Link href={href} data-roof-job className="flex gap-4 rounded-2xl bg-white p-5 ring-1 ring-slate-200 transition hover:ring-brand-400">
+    <Link href={href} data-roof-job className="flex gap-4 rounded-[22px] bg-white p-5 ring-1 ring-slate-200 transition hover:ring-brand-400">
       <span className="w-1.5 shrink-0 rounded-full" style={{ background: crew?.color ?? "#cbd5e1" }} aria-hidden />
       <span className="min-w-0">
-        <span className="block truncate text-[17px] font-semibold text-ink">{name}{address ? ` · ${street(address)}` : ""}</span>
-        <span className="block truncate text-sm text-slate-500">{[crew?.name ?? "No crew yet", status].join(" · ")}</span>
+        <span className="block truncate font-display text-[17px] font-bold text-ink">{name}{address ? ` · ${street(address)}` : ""}</span>
+        <span className="block truncate font-mono text-xs uppercase tracking-wider text-slate-500">{[crew?.name ?? "No crew yet", status].join(" · ")}</span>
       </span>
     </Link>
   );
 }
 
 function EmptyLine({ children }: { children: React.ReactNode }) {
-  return <p className="rounded-2xl bg-white px-5 py-4 text-sm text-slate-500 ring-1 ring-slate-200">{children}</p>;
+  return <p className="rounded-[22px] bg-white px-5 py-4 text-sm text-slate-500 ring-1 ring-slate-200">{children}</p>;
 }
 
 type Hit = { key: string; name: string; sub: string; href: string; stage?: string };

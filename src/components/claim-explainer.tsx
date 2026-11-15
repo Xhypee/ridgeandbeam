@@ -8,7 +8,7 @@ import { EXPLAINER_FOOTNOTE, homeownerExplainer } from "@/lib/claims";
 export function ClaimExplainer({ excess, settlementPath, insurer, orgName, compact }: { excess?: number | string | null; settlementPath?: string | null; insurer?: string | null; orgName: string; compact?: boolean }) {
   const sections = homeownerExplainer({ excess, settlement_path: settlementPath, insurer, orgName });
   return (
-    <section className="rounded-2xl bg-white p-4 ring-1 ring-slate-200 sm:p-6" data-testid="claim-explainer">
+    <section className="rounded-[22px] bg-white p-4 ring-1 ring-slate-200 sm:p-6" data-testid="claim-explainer">
       <h2 className="font-display text-base font-semibold text-slate-900">Your insurance claim, in plain English</h2>
       <div className={compact ? "mt-3 grid gap-4 sm:grid-cols-2" : "mt-3 space-y-4"}>
         {sections.map((s) => (

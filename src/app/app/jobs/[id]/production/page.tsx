@@ -110,7 +110,7 @@ export default async function ProductionPage({ params }: PageProps<"/app/jobs/[i
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <Card title="Readiness checklist">
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y-2 divide-dashed divide-slate-200">
               <Row ok={byKey.permit.ok} title={READINESS_LABEL.permit} detail={byKey.permit.detail + (job.permit_number ? ` · #${job.permit_number}` : "")}>
                 <StatusButtons jobId={id} field="permit_status" value={job.permit_status} options={PERMIT_STATUSES} labels={READINESS_STATUS_LABEL.permit} disabled={readOnly} />
                 <p className="mt-1.5 text-xs text-slate-500" data-testid="approval-state-slot">
@@ -134,7 +134,7 @@ export default async function ProductionPage({ params }: PageProps<"/app/jobs/[i
               </Row>
             </ul>
             {!readOnly && (
-              <ActionForm action={saveReadinessDetails} className="mt-2 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_auto]">
+              <ActionForm action={saveReadinessDetails} className="mt-2 grid gap-3 border-t-2 border-dashed border-slate-200 pt-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_auto]">
                 <input type="hidden" name="job_id" value={id} />
                 <Field label="Approval / permit number"><Input name="permit_number" defaultValue={job.permit_number ?? ""} /></Field>
                 <Field label="Colour / profile"><Input name="shingle_color" defaultValue={job.shingle_color ?? ""} placeholder="e.g. COLORBOND Monument, Trimdek" /></Field>
@@ -183,7 +183,7 @@ export default async function ProductionPage({ params }: PageProps<"/app/jobs/[i
               {(orders ?? []).length === 0 ? (
                 <p className="mb-3 text-sm text-slate-500">No orders yet. Build one from the accepted estimate&apos;s takeoff so quantities, colours and profiles match what was sold.</p>
               ) : (
-                <ul className="mb-3 divide-y divide-slate-100">
+                <ul className="mb-3 divide-y-2 divide-dashed divide-slate-200">
                   {(orders ?? []).map((o) => (
                     <li key={o.id}>
                       <Link href={`/app/orders/${o.id}`} className="flex items-center justify-between gap-3 py-2 text-sm hover:text-brand-600">
@@ -222,7 +222,7 @@ export default async function ProductionPage({ params }: PageProps<"/app/jobs/[i
                     <p className="text-sm text-slate-500">This crew&apos;s pay sheet is empty. <Link className="text-brand-600 underline" href="/app/settings/crews">Set rates</Link>.</p>
                   ) : (
                     <table className="w-full text-sm">
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y-2 divide-dashed divide-slate-200">
                         {pay!.lines.map((l) => (
                           <tr key={l.key}><td className="py-1.5">{l.label}</td><td className="py-1.5 text-right text-slate-500 tabular-nums">{l.qty} {l.unit} × {money(l.rate)}/{l.unit}</td><td className="py-1.5 text-right font-medium tabular-nums">{money(l.amount)}</td></tr>
                         ))}
