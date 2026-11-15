@@ -16,7 +16,7 @@ const SEND = "M4 12l16-8-6 16-2.5-6.5z";
 const PEN = "M4 20l4-1 11-11-3-3L5 16zM14 6l3 3";
 const SOURCE: Record<string, string> = { website: "From your website", instant_quote: "From your instant quote", gmail: "From Gmail", email: "From email", manual: "Added by hand" };
 
-export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: string; meId: string }) {
+export function LeadPanel({ d, previewHref, meId, bookOpen = false }: { d: Docket; previewHref: string; meId: string; bookOpen?: boolean }) {
   const lead = d.lead!;
   const first = d.customer.name.split(" ")[0] || "them";
   const q = d.quote;
@@ -51,6 +51,7 @@ export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: st
         plans={lead.docs.length}
         quote={q ? { id: q.id, number: q.number, status: q.status, total: q.total, lines: topLines, more: Math.max(0, included.length - topLines.length) } : null}
         roof={d.roof ? roofSheet(d.roof.summary, d.roof.m) : null} caption={d.job.site_address} previewHref={previewHref}
+        startOpen={bookOpen ? "book" : null}
       />
       <JobContact d={d} />
       <JobNotes d={d} leadNote={lead.message ? { by: sourceLabel, at: lead.receivedAt, body: lead.message } : null} />

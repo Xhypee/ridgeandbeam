@@ -102,6 +102,8 @@ function Icon({ d, className = "h-4 w-4" }: { d: string; className?: string }) {
 
 export type LeadStepsProps = {
   jobId: string;
+  /** Open the booking calendar straight away (from the New lead task's "Book an inspection"). */
+  startOpen?: "book" | null;
   first: string;
   phone: string | null;
   receivedAt: string | null;
@@ -147,7 +149,7 @@ function OwnerPicker({ jobId, owner, people, meId }: { jobId: string; owner: str
 }
 
 export function LeadSteps(p: LeadStepsProps) {
-  const [open, setOpen] = useState<"book" | "lost" | "delete" | null>(null);
+  const [open, setOpen] = useState<"book" | "lost" | "delete" | null>(p.startOpen ?? null);
   const [reason, setReason] = useState<string>("");
   const planless = p.plans === 0 && !p.roof;
   const headline = planless ? `Upload ${p.first}\u2019s plans` : p.quote ? `Check ${p.first}\u2019s quote` : `Write ${p.first}\u2019s quote`;
