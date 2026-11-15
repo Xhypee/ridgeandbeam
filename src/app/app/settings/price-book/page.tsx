@@ -82,9 +82,9 @@ export default async function Page({ searchParams }: PageProps<"/app/settings/pr
                 <option value="material">Material</option><option value="labor">Labour</option><option value="other">Other</option>
               </Select>
               <SubmitButton variant="secondary">Save</SubmitButton>
-              <label className="col-span-2 flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm text-slate-700 ring-1 ring-slate-200 has-[:checked]:bg-brand-50 has-[:checked]:ring-brand-500 sm:col-span-1 lg:col-span-1 lg:justify-self-start lg:pr-5" title="Extras show under “Often added” on the docket: the customer can tap to add them">
+              <label className="col-span-2 flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm text-slate-700 ring-1 ring-slate-200 has-[:checked]:bg-brand-50 has-[:checked]:ring-ink sm:col-span-1 lg:col-span-1 lg:justify-self-start lg:pr-5" title="Extras show under “Often added” on the docket: the customer can tap to add them">
                 <input type="hidden" name="extra_present" value="1" />
-                <input type="checkbox" name="is_extra" defaultChecked={isExtraItem(c)} className="h-4 w-4 accent-brand-500" aria-label="Extra" data-testid="extra-flag" />
+                <input type="checkbox" name="is_extra" defaultChecked={isExtraItem(c)} className="h-4 w-4 accent-ink" aria-label="Extra" data-testid="extra-flag" />
                 Extra
               </label>
               <Input name="blurb" defaultValue={c.blurb ?? ""} placeholder={isExtraItem(c) ? blurbFor(c.calc_key, []) ?? "Why add it (shown to the customer)" : "Why add it (shown to the customer)"} aria-label="Why add it" maxLength={200} className="col-span-2 sm:col-span-3 lg:col-span-7" />

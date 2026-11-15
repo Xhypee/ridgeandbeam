@@ -286,7 +286,7 @@ export default async function JobPage({ params }: PageProps<"/app/jobs/[id]">) {
                 aria-pressed={s === job.stage}
                 className={cx(
                   "min-h-9 rounded-full px-3 text-xs font-semibold ring-1 ring-inset transition",
-                  s === job.stage ? "bg-brand-500 text-white ring-brand-500" : "bg-white text-slate-600 ring-slate-200 hover:ring-brand-500",
+                  s === job.stage ? "bg-ink text-white ring-ink" : "bg-white text-slate-600 ring-slate-200 hover:ring-ink",
                 )}
               >
                 {STAGE_LABEL[s]}

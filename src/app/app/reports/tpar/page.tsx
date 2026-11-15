@@ -79,7 +79,7 @@ export default async function TparPage({ searchParams }: PageProps<"/app/reports
                   <input type="hidden" name="crew_id" value={c.id} />
                   <span className="font-medium text-slate-800">{c.name}</span>
                   <Input name="abn" aria-label={`ABN for ${c.name}`} defaultValue={c.abn ? formatAbn(c.abn) : ""} inputMode="numeric" placeholder="11 digits" />
-                  <label className="flex min-h-11 items-center gap-2 text-sm text-slate-700"><input type="checkbox" name="gst_registered" defaultChecked={c.gst_registered} className="h-5 w-5 accent-brand-500" /> GST registered</label>
+                  <label className="flex min-h-11 items-center gap-2 text-sm text-slate-700"><input type="checkbox" name="gst_registered" defaultChecked={c.gst_registered} className="h-5 w-5 accent-ink" /> GST registered</label>
                   <SubmitButton variant="secondary" className="min-h-11">Save</SubmitButton>
                 </ActionForm>
               </li>

@@ -39,7 +39,7 @@ export function DirectoryPicker({ directory, serviceStates, addedIds }: { direct
         </Field>
         {serviceStates.length > 0 && (
           <label className="flex min-h-11 items-center gap-2 text-sm text-slate-600">
-            <input type="checkbox" checked={allStates} onChange={(e) => setAllStates(e.target.checked)} className="h-5 w-5 accent-brand-500" />
+            <input type="checkbox" checked={allStates} onChange={(e) => setAllStates(e.target.checked)} className="h-5 w-5 accent-ink" />
             Show suppliers outside {serviceStates.join(", ")}
           </label>
         )}

@@ -347,7 +347,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
 
       <div className="mb-5 flex items-center gap-2" aria-label="Progress">
         {STEPS.map((s, i) => (
-          <span key={s} className={cx("h-2 rounded-full transition-all duration-500", STEPS.indexOf(step) >= i ? "w-10 bg-brand-500" : "w-2 bg-slate-300")} />
+          <span key={s} className={cx("h-2 rounded-full transition-all duration-500", STEPS.indexOf(step) >= i ? "w-10 bg-ink" : "w-2 bg-slate-300")} />
         ))}
       </div>
 
@@ -396,7 +396,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                 const done = ticks[i];
                 return (
                   <li key={k} className={cx("flex items-center gap-3 transition-all duration-500", done ? "opacity-100" : "translate-x-3 opacity-25")} data-testid="scan-tick">
-                    <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold", done ? "bg-brand-500 text-white" : "bg-slate-200 text-slate-400")}>{done ? "✓" : i + 1}</span>
+                    <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold", done ? "bg-ink text-white" : "bg-slate-200 text-slate-400")}>{done ? "✓" : i + 1}</span>
                     <span className="text-slate-700">{k}</span>
                     <span className="ml-auto text-right font-semibold text-ink">{done?.v ?? ""}</span>
                   </li>
@@ -429,7 +429,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                   </button>
                 ))}
                 <button type="button" onClick={undo} disabled={!history.length} className="min-h-11 rounded-full bg-white px-4 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 disabled:opacity-40" data-testid="tool-undo">↶ Undo</button>
-                {canHip && <button type="button" onClick={addHipRoof} className="min-h-11 rounded-full bg-brand-50 px-4 font-semibold text-brand-700 ring-1 ring-brand-500 font-mono text-xs uppercase tracking-wider" data-testid="hip-roof">Hip roof: work out hips and ridges</button>}
+                {canHip && <button type="button" onClick={addHipRoof} className="min-h-11 rounded-full bg-brand-50 px-4 font-semibold text-brand-700 ring-1 ring-ink font-mono text-xs uppercase tracking-wider" data-testid="hip-roof">Hip roof: work out hips and ridges</button>}
                 <span className="ml-auto flex flex-wrap gap-3 text-xs text-slate-500">
                   {(["eave", "ridge", "hip", "valley", "barge", "apron"] as const).map((k) => <span key={k} className="inline-flex items-center gap-1"><span className="h-1.5 w-4 rounded-full" style={{ background: KIND_COLOR[k] }} />{k === "eave" ? "Gutter" : k === "apron" ? "Apron" : k[0].toUpperCase() + k.slice(1)}</span>)}
                 </span>
@@ -461,7 +461,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                     <span className="flex items-center gap-1">
                       <input id="pitch" type="number" min={1} max={60} step={0.5} value={model.pitch} disabled={readOnly} data-testid="pitch-input"
                         onChange={(e) => { const v = Number(e.target.value); if (v > 0 && v <= 60) setModel({ ...model, pitch: v }, false); }}
-                        className="min-h-11 w-20 rounded-xl px-2 text-right text-base font-semibold tabular-nums ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                        className="min-h-11 w-20 rounded-xl px-2 text-right text-base font-semibold tabular-nums ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-ink" />
                       <span className="text-slate-500">°</span>
                     </span>
                   </div>
@@ -469,7 +469,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                     <label htmlFor="dps" className="text-sm font-semibold text-slate-600">Downpipes</label>
                     <input id="dps" type="number" min={0} max={200} value={downpipes} disabled={readOnly} data-testid="downpipes-input"
                       onChange={(e) => setDownpipes(Math.max(0, Math.round(Number(e.target.value) || 0)))}
-                      className="min-h-11 w-20 rounded-xl px-2 text-right text-base font-semibold tabular-nums ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                      className="min-h-11 w-20 rounded-xl px-2 text-right text-base font-semibold tabular-nums ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-ink" />
                   </div>
                   <div className="border-t-2 border-dashed border-slate-200 pt-3" data-testid="scale-card">
                     <p className="text-sm font-semibold text-slate-600">Scale <span className="font-bold text-ink" data-testid="scale-text">{scaleText}</span>
@@ -481,7 +481,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                         <div className="flex gap-2">
                           <input inputMode="decimal" autoFocus value={realLen} onChange={(e) => setRealLen(e.target.value)} placeholder="e.g. 10.19" data-testid="real-length"
                             onKeyDown={(e) => { if (e.key === "Enter") applyScale(); }}
-                            className="min-h-11 w-full rounded-xl px-3 text-base ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                            className="min-h-11 w-full rounded-xl px-3 text-base ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-ink" />
                           <span className="self-center text-slate-500">m</span>
                           <button type="button" onClick={applyScale} className="min-h-11 rounded-xl bg-ink px-4 text-sm font-semibold text-white" data-testid="apply-scale">Set</button>
                         </div>
@@ -505,7 +505,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                   )}
                 </div>
                 <button type="button" onClick={() => { setStep("sheets"); setBump((b) => b + 1); setTool("type"); setDraft(null); setSelected(null); }} disabled={!analysis.faces.length}
-                  className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-brand-500 text-lg font-semibold text-white transition hover:scale-[1.02] disabled:opacity-50" data-testid="pick-sheets">
+                  className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-ink text-lg font-semibold text-white transition hover:scale-[1.02] disabled:opacity-50" data-testid="pick-sheets">
                   {readOnly ? "See the sheets →" : "Looks good. Pick the sheets →"}
                 </button>
               </>
@@ -575,7 +575,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                   <button type="button" onClick={() => setStep("roof")} className="flex min-h-14 w-full items-center justify-center rounded-[22px] bg-white text-lg font-semibold text-ink ring-1 ring-slate-300">← Back to the roof</button>
                 ) : (
                   <>
-                    <button type="button" onClick={() => void addToQuote()} disabled={saving} className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-brand-500 text-lg font-semibold text-white transition hover:scale-[1.02] disabled:opacity-60" data-testid="add-to-quote">
+                    <button type="button" onClick={() => void addToQuote()} disabled={saving} className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-ink text-lg font-semibold text-white transition hover:scale-[1.02] disabled:opacity-60" data-testid="add-to-quote">
                       {saving ? "Adding…" : "Add to quote 🎉"}
                     </button>
                     <button type="button" onClick={() => setStep("roof")} className="w-full text-center text-sm font-semibold text-slate-500 hover:text-ink">← Back to the roof</button>
@@ -683,12 +683,12 @@ function DetailsStep({ details, setDetails, apply, setApply, current, aiNote, on
               return (
                 <li key={r.key} className="flex flex-wrap items-center gap-3 py-3" data-testid="detail-row" data-detail={r.key}>
                   {canTick ? (
-                    <input type="checkbox" checked={apply.has(r.key)} onChange={() => toggle(r.key)} aria-label={`Use ${r.label}`} className="h-6 w-6 shrink-0 rounded accent-brand-500" />
+                    <input type="checkbox" checked={apply.has(r.key)} onChange={() => toggle(r.key)} aria-label={`Use ${r.label}`} className="h-6 w-6 shrink-0 rounded accent-ink" />
                   ) : <span className="grid h-6 w-6 shrink-0 place-items-center text-brand-600">✓</span>}
                   <span className="w-36 shrink-0 text-sm font-semibold text-slate-600">{r.label}</span>
                   <span className="min-w-[12rem] flex-1">
                     <input value={d.value} onChange={(e) => setDetails((ds) => ds.map((x) => (x.key === vk ? { ...x, value: e.target.value } : x)))} aria-label={r.label}
-                      className="block min-h-11 w-full rounded-xl px-3 text-base text-ink ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500" data-testid={`detail-${r.key}`} />
+                      className="block min-h-11 w-full rounded-xl px-3 text-base text-ink ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-ink" data-testid={`detail-${r.key}`} />
                     {(r.now || r.note) && <span className="mt-1 block text-xs text-slate-500">{r.now ? <>Now: <b className="text-slate-700">{r.now}</b>{r.note ? ` · ${r.note}` : " · tick to replace it"}</> : r.note}</span>}
                   </span>
                   <span className={cx("shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold", d.via === "ai" ? "bg-violet-50 text-violet-700" : "bg-slate-100 text-slate-600")}>
@@ -699,7 +699,7 @@ function DetailsStep({ details, setDetails, apply, setApply, current, aiNote, on
             })}
             {hasAddress && (
               <li className="flex flex-wrap items-center gap-3 py-3" data-testid="detail-row" data-detail="customerAddress">
-                <input type="checkbox" checked={apply.has("customerAddress")} onChange={() => toggle("customerAddress")} aria-label="Use the site address for the customer" className="h-6 w-6 shrink-0 rounded accent-brand-500" />
+                <input type="checkbox" checked={apply.has("customerAddress")} onChange={() => toggle("customerAddress")} aria-label="Use the site address for the customer" className="h-6 w-6 shrink-0 rounded accent-ink" />
                 <span className="text-sm text-slate-600">Also save the site address as the customer&apos;s address{current.customerAddress.address ? <> (now <b className="text-slate-700">{[current.customerAddress.address, current.customerAddress.city].filter(Boolean).join(", ")}</b>)</> : ""}</span>
               </li>
             )}
@@ -712,7 +712,7 @@ function DetailsStep({ details, setDetails, apply, setApply, current, aiNote, on
           <p className="font-display mt-1 text-5xl font-bold tabular-nums">{found}<span className="ml-2 text-2xl">details</span></p>
           <p className="mt-2 text-sm text-white/70">{fromAi ? `${fromAi} double-checked by AI · ` : ""}{apply.size} ticked to fill in</p>
         </div>
-        <button type="button" onClick={onNext} className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-brand-500 text-lg font-semibold text-white transition hover:scale-[1.02]" data-testid="details-next">
+        <button type="button" onClick={onNext} className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-ink text-lg font-semibold text-white transition hover:scale-[1.02]" data-testid="details-next">
           Looks right. Show me the roof →
         </button>
       </aside>

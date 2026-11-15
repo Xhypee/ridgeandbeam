@@ -44,7 +44,7 @@ export default async function Page() {
               <Field label="Crew mobile" hint="Gets rain-day texts"><Input name="phone" type="tel" defaultValue={c.phone ?? ""} placeholder="04xx xxx xxx" /></Field>
               <Field label="Colour"><input name="color" type="color" defaultValue={c.color} className="h-9 w-full cursor-pointer rounded-lg border border-slate-300 bg-white p-1" /></Field>
             </div>
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="is_subcontractor" defaultChecked={c.is_subcontractor} className="h-4 w-4 accent-brand-500" />Subcontractor (paid from the pay sheet, reported on the TPAR)</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="is_subcontractor" defaultChecked={c.is_subcontractor} className="h-4 w-4 accent-ink" />Subcontractor (paid from the pay sheet, reported on the TPAR)</label>
             <fieldset>
               <legend className="mb-2 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Pay sheet (ex GST)</legend>
               <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">

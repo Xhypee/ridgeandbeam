@@ -216,7 +216,7 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
             Update from measurements
           </button>
         )}
-        <Link href={`/app/estimates/${id}?view=editor`} onClick={guardLeave} className="ml-auto inline-flex min-h-11 items-center rounded-xl px-4 font-medium text-brand-700 ring-1 ring-brand-500/40 hover:bg-brand-50" data-testid="detailed-editor">
+        <Link href={`/app/estimates/${id}?view=editor`} onClick={guardLeave} className="ml-auto inline-flex min-h-11 items-center rounded-xl px-4 font-medium text-brand-700 ring-1 ring-ink/40 hover:bg-brand-50" data-testid="detailed-editor">
           Detailed editor →
         </Link>
         <span className="min-w-16 text-right text-xs text-slate-500" aria-live="polite" data-testid="save-state">{locked ? "Locked" : saving ? "Saving…" : dirty ? "Unsaved" : "Saved"}</span>
@@ -251,7 +251,7 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
                 ))}
               </div>
               <label className="mt-2 inline-flex min-h-11 items-center gap-2 text-sm text-slate-600">
-                <input type="checkbox" className="h-4 w-4 accent-brand-500" checked={customerColour} onChange={(e) => change({ customerColour: e.target.checked })} data-testid="customer-colour-toggle" />
+                <input type="checkbox" className="h-4 w-4 accent-ink" checked={customerColour} onChange={(e) => change({ customerColour: e.target.checked })} data-testid="customer-colour-toggle" />
                 Let the customer choose the colour
               </label>
               {problem && (

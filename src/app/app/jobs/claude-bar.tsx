@@ -260,7 +260,7 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready, dock
         </div>
       </>)}
       <form onSubmit={onSubmit} className="flex items-center gap-2 px-3 py-3">
-        <label className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-2xl bg-cream px-3 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-brand-500">
+        <label className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-2xl bg-cream px-3 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-ink">
           <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#d97757] text-white"><Spark className="h-3.5 w-3.5" /></span>
           <input ref={input} value={text} onChange={(e) => setText(e.target.value)} onFocus={() => { if (ready) setFocused(true); }} onClick={() => { if (ready) setFocused(true); }} disabled={call !== "off"} aria-label="Ask Claude"
             placeholder={status ?? (!ready ? "Claude isn't connected yet" : turns.length ? "Reply to Claude…" : firstName ? `Ask Claude about ${firstName} or your business…` : "Ask Claude about your business…")}

@@ -56,7 +56,7 @@ export function BookingCalendar({ jobId, first, phone, people, defaultStaff, meI
       <input type="hidden" name="time" value={time} />
 
       <label className="block"><span className="mb-1 block text-xs font-medium text-slate-600">Who&rsquo;s going</span>
-        <select name="staff_id" value={staff} onChange={(e) => setStaff(e.target.value)} className="h-11 w-full rounded-xl bg-white px-3 text-sm font-semibold text-ink ring-1 ring-slate-300 focus:outline-2 focus:outline-brand-500">
+        <select name="staff_id" value={staff} onChange={(e) => setStaff(e.target.value)} className="h-11 w-full rounded-xl bg-white px-3 text-sm font-semibold text-ink ring-1 ring-slate-300 focus:outline-2 focus:outline-ink">
           {people.map((p) => <option key={p.user_id} value={p.user_id}>{p.user_id === meId ? `${p.name} (me)` : p.name}</option>)}
         </select>
       </label>
@@ -88,7 +88,7 @@ export function BookingCalendar({ jobId, first, phone, people, defaultStaff, meI
             return (
               <button key={d} type="button" disabled={past} onClick={() => setDay(d)} aria-pressed={sel} aria-label={`${d}${n ? `, ${n} booked` : ""}`}
                 className={cx("relative mx-auto grid h-9 w-9 place-items-center rounded-full text-sm tabular-nums",
-                  sel ? "bg-brand-500 font-bold text-white" : past ? "text-slate-300" : weekend ? "text-slate-400 hover:bg-slate-100" : "text-ink hover:bg-slate-100",
+                  sel ? "bg-ink font-bold text-white" : past ? "text-slate-300" : weekend ? "text-slate-400 hover:bg-slate-100" : "text-ink hover:bg-slate-100",
                   d === today && !sel && "ring-1 ring-brand-400")}>
                 {Number(d.slice(8))}
                 {n > 0 && <span className={cx("absolute bottom-1 left-1/2 flex -translate-x-1/2 gap-0.5")} aria-hidden>{Array.from({ length: Math.min(n, 3) }, (_, k) => <span key={k} className={cx("h-1 w-1 rounded-full", sel ? "bg-white" : "bg-amber-500")} />)}</span>}
@@ -111,7 +111,7 @@ export function BookingCalendar({ jobId, first, phone, people, defaultStaff, meI
       </div>
 
       <label className="block"><span className="mb-1 block text-xs font-medium text-slate-600">Time</span>
-        <select value={time} onChange={(e) => setTime(e.target.value)} className="h-11 w-full rounded-xl bg-white px-3 text-sm text-ink ring-1 ring-slate-300 focus:outline-2 focus:outline-brand-500">
+        <select value={time} onChange={(e) => setTime(e.target.value)} className="h-11 w-full rounded-xl bg-white px-3 text-sm text-ink ring-1 ring-slate-300 focus:outline-2 focus:outline-ink">
           {INSPECTION_TIMES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
       </label>
@@ -119,7 +119,7 @@ export function BookingCalendar({ jobId, first, phone, people, defaultStaff, meI
 
       {phone && (
         <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input type="checkbox" name="text_customer" defaultChecked className="h-4 w-4 accent-brand-500" />Text {first} the time
+          <input type="checkbox" name="text_customer" defaultChecked className="h-4 w-4 accent-ink" />Text {first} the time
         </label>
       )}
       <SubmitButton className="min-h-11 w-full gap-2"><svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={CAL} /></svg>Book inspection</SubmitButton>

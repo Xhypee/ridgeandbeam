@@ -34,7 +34,7 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
           <Link href="/app"><Logo /></Link>
           <Link href="/app/notifications" className="relative rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900" aria-label={`Notifications${unread ? ` (${unread} unread)` : ""}`}>
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 004 0" /></svg>
-            {unread ? <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-brand-500 px-1 text-center text-[10px] font-semibold leading-4 text-white">{unread > 99 ? "99+" : unread}</span> : null}
+            {unread ? <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-ink px-1 text-center text-[10px] font-semibold leading-4 text-white">{unread > 99 ? "99+" : unread}</span> : null}
           </Link>
         </div>
         <div className="mb-4 px-2">{orgSwitcher}</div>
@@ -62,7 +62,7 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
             <div className="flex items-center gap-2">
             <Link href="/app/notifications" className="relative rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900" aria-label={`Notifications${unread ? ` (${unread} unread)` : ""}`}>
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 004 0" /></svg>
-              {unread ? <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-brand-500 px-1 text-center text-[10px] font-semibold leading-4 text-white">{unread > 99 ? "99+" : unread}</span> : null}
+              {unread ? <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-ink px-1 text-center text-[10px] font-semibold leading-4 text-white">{unread > 99 ? "99+" : unread}</span> : null}
             </Link>
             <form action="/auth/signout" method="post">
               <button className="text-xs font-medium text-slate-500">Sign out</button>

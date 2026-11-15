@@ -39,6 +39,12 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Buttons take their parent's capitals (Tailwind's reset turns that off), so a row of typewriter-capital
+   actions reads the same whether each one is a link or a button. */
+@layer base {
+  button { text-transform: inherit; }
+}
+
 h1, h2, h3, .font-display {
   font-family: var(--font-display);
   letter-spacing: -0.015em;

@@ -16,7 +16,7 @@ const BTN = {
 };
 // 44px minimum tap target everywhere (field-first rule).
 const btnBase =
-  "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-4 py-2 font-mono text-xs font-semibold uppercase tracking-wider transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap";
+  "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-4 py-2 font-mono text-xs font-semibold uppercase tracking-wider transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap";
 
 export function Button({ variant = "primary", className, ...p }: ComponentProps<"button"> & { variant?: keyof typeof BTN }) {
   return <button className={cx(btnBase, BTN[variant], className)} {...p} />;
@@ -27,7 +27,7 @@ export function LinkButton({ variant = "primary", className, ...p }: ComponentPr
 }
 
 const inputCls =
-  "block min-h-11 w-full rounded-xl border-0 bg-white px-3 py-2 text-sm text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:outline-none";
+  "block min-h-11 w-full rounded-xl border-0 bg-white px-3 py-2 text-sm text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-ink focus:outline-none";
 
 export function Input({ className, ...p }: ComponentProps<"input">) {
   return <input className={cx(inputCls, className)} {...p} />;

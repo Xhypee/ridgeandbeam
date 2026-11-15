@@ -238,7 +238,7 @@ export function OftenAdded({ rows, onAdd, busy, title = "Often added", className
           </span>
           <span className="shrink-0 tabular-nums">+{money(e.amount)}</span>
           {onAdd && (
-            <button type="button" disabled={busy} onClick={() => onAdd(e)} className="no-print ml-1 min-h-11 shrink-0 rounded-full px-4 font-semibold text-brand-700 ring-1 ring-brand-500 hover:bg-brand-50 disabled:opacity-50 font-mono text-xs uppercase tracking-wider" aria-label={`Add ${e.name}`}>
+            <button type="button" disabled={busy} onClick={() => onAdd(e)} className="no-print ml-1 min-h-11 shrink-0 rounded-full px-4 font-semibold text-brand-700 ring-1 ring-ink hover:bg-brand-50 disabled:opacity-50 font-mono text-xs uppercase tracking-wider" aria-label={`Add ${e.name}`}>
               Add
             </button>
           )}

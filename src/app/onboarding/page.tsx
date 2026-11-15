@@ -29,7 +29,7 @@ export default async function OnboardingPage() {
           </div>
           <Field label="ABN" hint="Shown on every quote and tax invoice. You can add it later in Settings."><AbnInput defaultValue="" /></Field>
           <label className="flex items-center gap-2 text-sm text-slate-700">
-            <input type="checkbox" name="gst_registered" defaultChecked className="h-5 w-5 accent-brand-500" />
+            <input type="checkbox" name="gst_registered" defaultChecked className="h-5 w-5 accent-ink" />
             Registered for GST (quotes and tax invoices include 10% GST)
           </label>
           <SubmitButton className="w-full">Create company</SubmitButton>

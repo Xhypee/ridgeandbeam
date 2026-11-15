@@ -47,7 +47,7 @@ function Block({ n, title, hint, right, children }: { n: number; title: string; 
     </section>
   );
 }
-const box = "w-full rounded-xl bg-white px-3.5 py-2.5 text-[15px] text-ink ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500";
+const box = "w-full rounded-xl bg-white px-3.5 py-2.5 text-[15px] text-ink ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-ink";
 const Mark = ({ name, dark, size = "h-10 w-10" }: { name: string; dark?: boolean; size?: string }) => <span className={cx("grid shrink-0 place-items-center rounded-lg font-display text-xs font-bold text-white", size, dark ? "bg-ink" : "bg-[#5b6b62]")}>{mark(name)}</span>;
 
 export function OrderBoard(p: BoardProps) {
@@ -256,7 +256,7 @@ function Envelope({ o, tz, dark, busy, onSend, onPreview, onAdd, onEdit, onRemov
   const groups: [string, Line[]][] = [];
   for (const l of o.items) { const g = l.group_label ?? ""; const hit = groups.find(([x]) => x === g); if (hit) hit[1].push(l); else groups.push([g, [l]]); }
   const when = o.supplierDate ? new Date(`${o.supplierDate}T12:00:00`).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" }) : null;
-  const status = o.status === "confirmed" ? <span className="flex items-center gap-1.5 rounded-full bg-brand-500 px-3 py-1.5 text-sm font-semibold text-white"><Icon d={CHECK} />Confirmed{when ? ` · ${when}` : ""}</span>
+  const status = o.status === "confirmed" ? <span className="flex items-center gap-1.5 rounded-full bg-ink px-3 py-1.5 text-sm font-semibold text-white"><Icon d={CHECK} />Confirmed{when ? ` · ${when}` : ""}</span>
     : o.status === "delivered" ? <span className="flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider"><Icon d={CHECK} />Delivered</span>
     : o.status === "sent" ? <span className="flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider"><Icon d={CHECK} />Sent {o.sentAt ? new Date(o.sentAt).toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit", timeZone: tz }) : ""}{o.openedAt ? " · opened" : ""}</span>
     : !o.items.length ? null
@@ -283,7 +283,7 @@ function Envelope({ o, tz, dark, busy, onSend, onPreview, onAdd, onEdit, onRemov
         {addEmail && !o.email && (
           <ActionForm action={setSupplierEmail} className="mt-3">
             <input type="hidden" name="order_id" value={o.id} />
-            <div className="flex gap-2"><input name="email" type="email" required autoFocus placeholder={`${o.supplier} branch email`} className="min-h-10 min-w-0 flex-1 rounded-lg px-3 text-sm ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500" /><SubmitButton className="min-h-10 px-3 text-sm">Save</SubmitButton></div>
+            <div className="flex gap-2"><input name="email" type="email" required autoFocus placeholder={`${o.supplier} branch email`} className="min-h-10 min-w-0 flex-1 rounded-lg px-3 text-sm ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-ink" /><SubmitButton className="min-h-10 px-3 text-sm">Save</SubmitButton></div>
           </ActionForm>
         )}
         <p className="mt-3 flex items-center border-t border-dashed border-slate-200 pt-2.5 text-sm text-slate-500">
@@ -312,7 +312,7 @@ function Envelope({ o, tz, dark, busy, onSend, onPreview, onAdd, onEdit, onRemov
                       <option value="">{o.supplier}</option>{supplierOptions}
                     </select>
                   </label>
-                  <input inputMode="decimal" className="rounded-lg bg-cream px-2 py-1 text-right text-sm tabular-nums text-ink ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500" value={String(l.quantity)} onChange={(e) => onEdit(l.key, { quantity: Number(e.target.value.replace(/[^\d.]/g, "")) || 0 })} aria-label="Quantity" />
+                  <input inputMode="decimal" className="rounded-lg bg-cream px-2 py-1 text-right text-sm tabular-nums text-ink ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-ink" value={String(l.quantity)} onChange={(e) => onEdit(l.key, { quantity: Number(e.target.value.replace(/[^\d.]/g, "")) || 0 })} aria-label="Quantity" />
                   {l.length_m !== null || LENGTH_UNITS.has(l.unit) ? (
                     <span className="flex items-center gap-1 text-sm text-slate-500"><span className="text-slate-400">×</span>
                       <LengthInput line={l} onCommit={(patch) => onEdit(l.key, patch)} /></span>
@@ -348,7 +348,7 @@ function LengthInput({ line, onCommit }: { line: Line; onCommit: (patch: Partial
     } else onCommit({ length_m: len });
   };
   return (
-    <span className="flex flex-1 items-center rounded-lg bg-cream px-2 py-1 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-brand-500">
+    <span className="flex flex-1 items-center rounded-lg bg-cream px-2 py-1 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-ink">
       <input inputMode="decimal" className="w-full min-w-0 bg-transparent text-right tabular-nums text-ink focus:outline-none" value={draft ?? (line.length_m === null ? "" : String(line.length_m))} placeholder="–"
         onChange={(e) => setDraft(e.target.value)} onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} aria-label="Length (m)" />
       <span className="ml-0.5 text-slate-400">m</span>
@@ -359,7 +359,7 @@ function LengthInput({ line, onCommit }: { line: Line; onCommit: (patch: Partial
 function Toggle({ on, label, onClick, disabled }: { on: boolean; label: string; onClick: () => void; disabled?: boolean }) {
   return (
     <button type="button" role="switch" aria-checked={on} disabled={disabled} onClick={onClick} className="flex items-center gap-2 text-xs font-semibold text-slate-600 disabled:opacity-40">{label}
-      <span className={cx("relative h-5 w-9 rounded-full transition-colors", on ? "bg-brand-500" : "bg-slate-300")}><span className={cx("absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all", on ? "left-[18px]" : "left-0.5")} /></span></button>
+      <span className={cx("relative h-5 w-9 rounded-full transition-colors", on ? "bg-ink" : "bg-slate-300")}><span className={cx("absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all", on ? "left-[18px]" : "left-0.5")} /></span></button>
   );
 }
 
@@ -399,7 +399,7 @@ export function AttachmentPanel({ orderId, plans, report, files, planNames, hasR
           <div className="mt-2 space-y-1.5">
             {others.map((f) => (
               <label key={f.id} className="flex items-center gap-2 text-sm text-slate-700">
-                <input type="checkbox" className="h-4 w-4 accent-[#1f5f3f]" checked={s.ids.includes(f.id)} onChange={(e) => void save({ ...s, ids: e.target.checked ? [...s.ids, f.id] : s.ids.filter((x) => x !== f.id) })} />
+                <input type="checkbox" className="h-4 w-4 accent-[#13221a]" checked={s.ids.includes(f.id)} onChange={(e) => void save({ ...s, ids: e.target.checked ? [...s.ids, f.id] : s.ids.filter((x) => x !== f.id) })} />
                 <span className="truncate">{f.name}</span>
               </label>
             ))}

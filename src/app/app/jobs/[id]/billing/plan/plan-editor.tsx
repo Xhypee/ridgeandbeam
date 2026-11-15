@@ -11,7 +11,7 @@ import {
 import { savePaymentPlan } from "./actions";
 
 const COLOURS = ["#1f5f3f", "#14b8a6", "#0f766e", "#5eead4", "#99e2d8", "#b9d8c3", "#d8eadd", "#4f9c72"];
-const inputCls = "block min-h-10 rounded-lg border-0 bg-white px-2.5 text-sm text-ink ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-brand-500 focus:outline-none";
+const inputCls = "block min-h-10 rounded-lg border-0 bg-white px-2.5 text-sm text-ink ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-ink focus:outline-none";
 
 export type EditorProps = {
   jobId: string;
@@ -139,7 +139,7 @@ export function PlanEditor(p: EditorProps) {
               const off = m === "card" && !p.onlineReady;
               return (
                 <label key={m} className={cx("flex cursor-pointer gap-3 rounded-xl bg-white px-3 py-2.5 ring-1", on ? "ring-brand-300" : "ring-slate-200")}>
-                  <input type="checkbox" className="mt-1 h-4 w-4 accent-[#1f5f3f]" checked={on} data-method={m}
+                  <input type="checkbox" className="mt-1 h-4 w-4 accent-[#13221a]" checked={on} data-method={m}
                     onChange={(e) => setMethods((ms) => (e.target.checked ? [...ms, m] : ms.filter((x) => x !== m)))} />
                   <span className="min-w-0">
                     <span className="block font-display text-[15px] font-bold text-ink">{PAY_METHOD_LABEL[m]}</span>
@@ -151,7 +151,7 @@ export function PlanEditor(p: EditorProps) {
           </div>
         </div>
         <label className="flex cursor-pointer gap-3 rounded-xl bg-white px-3 py-2.5 ring-1 ring-slate-200">
-          <input type="checkbox" className="mt-1 h-4 w-4 accent-[#1f5f3f]" checked={reminders} onChange={(e) => setReminders(e.target.checked)} />
+          <input type="checkbox" className="mt-1 h-4 w-4 accent-[#13221a]" checked={reminders} onChange={(e) => setReminders(e.target.checked)} />
           <span><span className="block font-display text-[15px] font-bold text-ink">Reminders</span><span className="block font-mono text-xs text-slate-500">Dated payments go out 3 days early, with a reminder on the day. Email now; texts once Twilio is connected.</span></span>
         </label>
         <div className="rounded-xl bg-brand-50 p-3 text-xs text-brand-800"><p className="font-semibold">Each payment is its own tax invoice</p><p>Sent when it&apos;s due and marked paid when the money lands. Parts already paid stay as they are.</p></div>

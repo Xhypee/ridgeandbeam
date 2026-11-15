@@ -89,7 +89,7 @@ export function ChangeOrderBuilder({ jobId, orgId, battens, photos }: {
             <button type="button" aria-label="One metre less" onClick={() => setMetres((s) => Math.max(1, s - 1))} className="h-16 w-16 rounded-[22px] bg-white text-4xl font-bold ring-2 ring-slate-900">−</button>
             <input aria-label="Lineal metres" type="number" min={1} value={metres} onChange={(e) => setMetres(Math.max(1, Math.round(Number(e.target.value) || 1)))}
               className="h-16 w-24 rounded-2xl text-center text-4xl font-black tabular-nums ring-1 ring-slate-300" />
-            <button type="button" aria-label="One metre more" onClick={() => setMetres((s) => s + 1)} className="h-16 flex-1 rounded-2xl bg-brand-500 text-4xl font-bold text-white">+</button>
+            <button type="button" aria-label="One metre more" onClick={() => setMetres((s) => s + 1)} className="h-16 flex-1 rounded-2xl bg-ink text-4xl font-bold text-white">+</button>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
             <label>Price per lm<input type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(Number(e.target.value) || 0)} className="mt-1 block min-h-11 w-full rounded-lg px-2 ring-1 ring-slate-300" /></label>
@@ -122,16 +122,16 @@ export function ChangeOrderBuilder({ jobId, orgId, battens, photos }: {
       <div>
         <p className="mb-1 text-sm font-semibold">Photos ({picked.length} attached)</p>
         <div className="flex gap-2 overflow-x-auto pb-1">
-          <label className="flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-brand-500 text-center text-xs font-bold text-white">
+          <label className="flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-ink text-center text-xs font-bold text-white">
             <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={(e) => void takePhoto(e.target.files?.[0])} />
             Take photo
           </label>
           {allPhotos.map((p) => (
             <button key={p.id} type="button" aria-pressed={picked.includes(p.id)} onClick={() => setPicked((x) => x.includes(p.id) ? x.filter((y) => y !== p.id) : [...x, p.id])}
-              className={cx("relative h-20 w-20 shrink-0 overflow-hidden rounded-xl ring-4", picked.includes(p.id) ? "ring-brand-500" : "ring-transparent")}>
+              className={cx("relative h-20 w-20 shrink-0 overflow-hidden rounded-xl ring-4", picked.includes(p.id) ? "ring-ink" : "ring-transparent")}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {p.url && <img src={p.url} alt={p.caption ?? ""} className="h-full w-full object-cover" />}
-              {picked.includes(p.id) && <span className="absolute right-1 top-1 rounded bg-brand-500 px-1 text-xs font-bold text-white">✓</span>}
+              {picked.includes(p.id) && <span className="absolute right-1 top-1 rounded bg-ink px-1 text-xs font-bold text-white">✓</span>}
             </button>
           ))}
         </div>
@@ -143,7 +143,7 @@ export function ChangeOrderBuilder({ jobId, orgId, battens, photos }: {
       {err && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{err}</p>}
       <div className="grid grid-cols-2 gap-2">
         <button type="button" disabled={Boolean(busy)} onClick={() => save("none")} className="min-h-14 rounded-xl text-base font-bold ring-1 ring-slate-300">Save draft</button>
-        <button type="button" disabled={Boolean(busy)} onClick={() => save("both")} className="min-h-14 rounded-xl bg-brand-500 text-base font-black text-white">{busy ?? "Send for approval"}</button>
+        <button type="button" disabled={Boolean(busy)} onClick={() => save("both")} className="min-h-14 rounded-xl bg-ink text-base font-black text-white">{busy ?? "Send for approval"}</button>
       </div>
       <p className="text-xs text-slate-500">Sending texts and emails the homeowner a link to review the photos and sign the variation. Or save a draft and have them sign on your phone.</p>
     </div>

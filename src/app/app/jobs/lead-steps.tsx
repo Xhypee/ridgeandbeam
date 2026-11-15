@@ -41,7 +41,7 @@ const TORN = (() => {
  *  email exactly as the customer gets it) beside it. */
 function QuoteSummary({ q, first, previewHref }: { q: NonNullable<LeadStepsProps["quote"]>; first: string; previewHref: string | null }) {
   return (
-    <div className="border-t border-brand-200 bg-cream px-3 pt-3" data-lead-quote-summary>
+    <div className="border-t-2 border-dashed border-slate-200 bg-cream px-3 pt-3" data-lead-quote-summary>
       <div className="bg-white px-4 pb-6 pt-3.5 ring-1 ring-slate-200" style={{ clipPath: TORN }} data-lead-receipt>
         {q.lines.length ? (
           <ul className="font-mono text-[12.5px] text-slate-600">
@@ -90,7 +90,7 @@ function IconToggle({ on, onClick, label, d, tone, align }: { on: boolean; onCli
   return (
     <button type="button" onClick={onClick} aria-label={label} aria-expanded={on}
       className={cx("group relative grid h-12 w-full place-items-center rounded-xl ring-1 ring-inset transition",
-        on ? (tone === "red" ? "bg-red-50 text-red-700 ring-red-300" : "bg-brand-50 text-brand-700 ring-brand-400") : (tone === "red" ? "bg-white text-red-700 ring-slate-300 hover:bg-red-50" : "bg-white text-ink ring-slate-300 hover:bg-slate-50"))}>
+        on ? (tone === "red" ? "bg-red-50 text-red-700 ring-red-300" : "bg-ink text-white ring-ink") : (tone === "red" ? "bg-white text-red-700 ring-slate-300 hover:bg-red-50" : "bg-white text-ink ring-slate-300 hover:bg-slate-50"))}>
       <Icon d={d} className="h-5 w-5" /><Tip align={align}>{label}</Tip>
     </button>
   );
@@ -137,7 +137,7 @@ function OwnerPicker({ jobId, owner, people, meId }: { jobId: string; owner: str
       <ActionForm action={setLeadOwner}>
         <input type="hidden" name="job_id" value={jobId} />
         <select name="assigned_to" defaultValue={owner} onChange={submit} aria-label="Who's looking after this lead"
-          className="h-11 w-full rounded-xl bg-white px-3 text-sm font-semibold text-ink ring-1 ring-slate-300 focus:outline-2 focus:outline-brand-500">
+          className="h-11 w-full rounded-xl bg-white px-3 text-sm font-semibold text-ink ring-1 ring-slate-300 focus:outline-2 focus:outline-ink">
           {people.map((p) => <option key={p.user_id} value={p.user_id}>{p.user_id === meId ? `${p.name} (me)` : p.name}</option>)}
         </select>
         <span className="sr-only"><SubmitButton>Save</SubmitButton></span>
@@ -168,7 +168,7 @@ export function LeadSteps(p: LeadStepsProps) {
       {/* One box: the plan sheet, and once the plans are in, the quote right under it. The sheet keeps its place in
           both states, so Claude's summary survives the refresh. */}
       {/* Full bleed: the sheet (and receipt) run the whole width of the sidebar, lines top and bottom only. */}
-      <div className="-mx-5 mt-3 border-y border-brand-200" data-lead-drop>
+      <div className="-mx-5 mt-3 border-y-2 border-dashed border-slate-200" data-lead-drop>
         <DocumentDrop jobId={p.jobId} variant="plans" compact={!planless} measured={Boolean(p.roof)} joined
           estimateId={p.quote?.status === "draft" ? p.quote.id : undefined}
           sheet={p.roof ? <RoofDrawing labels={p.roof} /> : undefined} caption={p.caption ?? undefined} />
@@ -186,7 +186,7 @@ export function LeadSteps(p: LeadStepsProps) {
       </div>
 
       {open === "book" && (
-        <div className="mt-3 rounded-xl bg-brand-50 p-3.5 ring-1 ring-brand-200" data-lead-book>
+        <div className="mt-3 rounded-xl bg-cream p-3.5 ring-1 ring-slate-200" data-lead-book>
           <p className="mb-2 font-display text-[15px] font-bold text-ink">Book the inspection <span className="font-normal text-slate-500">· then write the quote</span></p>
           {booking}
         </div>
@@ -202,7 +202,7 @@ export function LeadSteps(p: LeadStepsProps) {
               </label>
             ))}
           </div>
-          <input name="detail" placeholder="Anything to remember (optional)" className="mt-2 h-10 w-full rounded-lg bg-white px-3 text-sm ring-1 ring-slate-300 focus:outline-2 focus:outline-brand-500" />
+          <input name="detail" placeholder="Anything to remember (optional)" className="mt-2 h-10 w-full rounded-lg bg-white px-3 text-sm ring-1 ring-slate-300 focus:outline-2 focus:outline-ink" />
           <div className="mt-2 flex gap-2">
             <SubmitButton variant="danger" className="min-h-10 flex-1">Mark as not going ahead</SubmitButton>
             <button type="button" onClick={() => setOpen(null)} className="min-h-10 rounded-xl px-4 font-mono text-xs font-semibold uppercase tracking-wider text-slate-600 ring-1 ring-slate-300 hover:bg-white">Cancel</button>
@@ -232,7 +232,7 @@ export function LeadSteps(p: LeadStepsProps) {
 
       <div className="mt-4 rounded-xl px-3.5 py-3 ring-1 ring-slate-200" data-lead-step="owner">
         <div className="flex items-center gap-3">
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-500 text-white"><Icon d={CHECK} className="h-3.5 w-3.5" /></span>
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-white"><Icon d={CHECK} className="h-3.5 w-3.5" /></span>
           <span className="min-w-0 flex-1">
             <span className="block font-display text-[15px] font-bold text-ink">Who&rsquo;s looking after it</span>
             <span className="block font-mono text-xs text-slate-500">They get the reminders for this lead</span>

@@ -65,7 +65,7 @@ export function Annotator({ src, initial, onSave, onClose }: {
       <div className="flex items-center gap-2 p-2">
         {(["circle", "arrow"] as const).map((t) => (
           <button key={t} type="button" onClick={() => setTool(t)}
-            className={`min-h-12 flex-1 rounded-xl text-base font-semibold ${tool === t ? "bg-brand-500 text-white" : "bg-slate-800 text-white"}`}>
+            className={`min-h-12 flex-1 rounded-xl text-base font-semibold ${tool === t ? "bg-ink text-white" : "bg-slate-800 text-white"}`}>
             {t === "circle" ? "◯ Circle" : "➚ Arrow"}
           </button>
         ))}
@@ -104,7 +104,7 @@ export function Annotator({ src, initial, onSave, onClose }: {
               setSaving(false);
             }
           }}
-          className="min-h-14 rounded-xl bg-brand-500 text-lg font-semibold text-white disabled:opacity-50">
+          className="min-h-14 rounded-xl bg-ink text-lg font-semibold text-white disabled:opacity-50">
           {saving ? "Saving…" : "Save markup"}
         </button>
       </div>

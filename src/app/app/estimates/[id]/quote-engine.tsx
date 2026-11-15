@@ -68,8 +68,8 @@ function Block({ n, title, hint, right, children }: { n: number; title: string; 
     </section>
   );
 }
-const field = "w-full rounded-xl bg-white px-3.5 py-2.5 text-[15px] text-ink ring-1 ring-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500";
-const small = "rounded-lg bg-cream px-2 py-1.5 text-sm text-ink ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500";
+const field = "w-full rounded-xl bg-white px-3.5 py-2.5 text-[15px] text-ink ring-1 ring-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-ink";
+const small = "rounded-lg bg-cream px-2 py-1.5 text-sm text-ink ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-ink";
 
 export function QuoteEngine(p: EngineProps) {
   const router = useRouter();
@@ -372,7 +372,7 @@ function MoneyInput({ value, onChange, onBlur, className }: { value: number; onC
   const focused = useRef(false);
   useEffect(() => { if (!focused.current) setText(value ? value.toFixed(2) : ""); }, [value]);
   return (
-    <span className={cx("flex items-center rounded-lg bg-cream px-2 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-brand-500", className)}>
+    <span className={cx("flex items-center rounded-lg bg-cream px-2 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-ink", className)}>
       <span className="text-sm text-slate-400">$</span>
       <input inputMode="decimal" value={text} placeholder="0.00" onFocus={() => { focused.current = true; }}
         onChange={(e) => { const t = e.target.value.replace(/[^\d.]/g, ""); setText(t); onChange(Number(t) || 0); }}
@@ -437,7 +437,7 @@ function Stages({ stages, total, onChange }: { stages: Stage[]; total: number; o
     const fixed = k === 0 || k === stages.length - 1;
     return (
       <div key={k} className="grid grid-cols-[28px_minmax(0,1fr)_76px_20px] items-center gap-x-3 gap-y-2 border-b-2 border-dashed border-slate-200 px-4 py-3 sm:grid-cols-[28px_minmax(0,1fr)_170px_76px_104px_20px]" data-stage>
-        <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-500 font-display text-xs font-bold text-white">{k + 1}</span>
+        <span className="grid h-7 w-7 place-items-center rounded-full bg-ink font-display text-xs font-bold text-white">{k + 1}</span>
         <input className="min-w-0 bg-transparent font-semibold text-ink focus:outline-none" value={s.label} onChange={(e) => set(k, { label: e.target.value })} aria-label="Stage name" />
         {fixed ? <span className="order-5 col-start-2 rounded-lg bg-cream px-2.5 py-1.5 text-xs text-slate-600 ring-1 ring-slate-200 sm:order-none sm:col-start-auto">{STAGE_TRIGGER_LABEL[s.trigger]}</span> : (
           <select value={s.trigger} onChange={(e) => set(k, { trigger: e.target.value as StageTrigger })} className="order-5 col-start-2 rounded-lg bg-cream px-2 py-1.5 text-xs text-slate-600 ring-1 ring-slate-200 sm:order-none sm:col-start-auto" aria-label="When">
@@ -498,7 +498,7 @@ function SupplierPicker({ p, current, onChosen, flush }: { p: EngineProps; curre
       <li key={s.supplierId + (closest ? "n" : "")}>
         <button type="button" disabled={busy} onClick={() => void choose(s)} className={cx("flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-slate-50", on && "bg-brand-50")}>
           <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-lg font-display text-xs font-bold text-white", on ? "bg-ink" : "bg-[#5b6b62]")}>{s.name.slice(0, 2)}</span>
-          <span className="min-w-0 flex-1"><span className="flex items-center gap-1.5 truncate text-sm font-semibold text-ink">{s.name}{closest && <span className="rounded-full bg-brand-500 px-1.5 py-0.5 text-[10px] font-bold text-white">Closest</span>}</span>
+          <span className="min-w-0 flex-1"><span className="flex items-center gap-1.5 truncate text-sm font-semibold text-ink">{s.name}{closest && <span className="rounded-full bg-ink px-1.5 py-0.5 text-[10px] font-bold text-white">Closest</span>}</span>
             <span className="block truncate text-xs text-slate-500">{s.branch ? `${s.place ?? s.branch}${s.km !== null ? ` · ${s.km < 10 ? s.km.toFixed(1) : Math.round(s.km)} km` : ""}` : s.branches ? `${s.branches} branches · ${s.states.join(", ")}` : "Use their store finder"}</span></span>
           {s.hasGuide ? <span className="text-xs font-semibold text-brand-700">✓ Price guide</span> : <span className="text-xs text-slate-400">No price guide</span>}
           {on && <Icon d="M5 12l5 5 9-10" className="h-5 w-5 text-brand-700" />}
@@ -516,7 +516,7 @@ function SupplierPicker({ p, current, onChosen, flush }: { p: EngineProps; curre
       </button>
       {open && (
         <div className="absolute right-0 top-14 z-40 flex max-h-[70vh] w-[min(440px,90vw)] flex-col overflow-hidden rounded-[22px] bg-white ring-2 ring-ink" data-supplier-panel>
-          <div className="border-b-2 border-dashed border-slate-200 p-3"><input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search suppliers across Australia" className="min-h-10 w-full rounded-lg bg-cream px-3 text-sm ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500" /></div>
+          <div className="border-b-2 border-dashed border-slate-200 p-3"><input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search suppliers across Australia" className="min-h-10 w-full rounded-lg bg-cream px-3 text-sm ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-ink" /></div>
           <div className="min-h-0 flex-1 overflow-y-auto">
             {near.length > 0 && <><p className="px-4 pt-3 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">{p.nearLabel ?? "Nearest to you"}</p><ul className="px-2 pb-2 pt-1">{near.map((s, k) => row(s, k === 0 && !words))}</ul></>}
             <div className="border-t-2 border-dashed border-slate-200 pb-2">
@@ -531,7 +531,7 @@ function SupplierPicker({ p, current, onChosen, flush }: { p: EngineProps; curre
           {note && <p className="border-t-2 border-dashed border-slate-200 bg-red-50 px-4 py-2 text-xs text-red-700">{note}</p>}
           {p.canSetDefault && (
             <label className="flex items-center gap-2.5 border-t-2 border-dashed border-slate-200 bg-cream px-4 py-3 text-sm text-ink">
-              <input type="checkbox" checked={makeDefault} onChange={(e) => setMakeDefault(e.target.checked)} className="h-4 w-4 accent-[#1f5f3f]" />Use the one I pick for all my quotes
+              <input type="checkbox" checked={makeDefault} onChange={(e) => setMakeDefault(e.target.checked)} className="h-4 w-4 accent-[#13221a]" />Use the one I pick for all my quotes
             </label>
           )}
         </div>
@@ -556,7 +556,7 @@ function GuideSearch({ orgSupplierId, name, hasGuide, onPick }: { orgSupplierId:
       <button type="button" onClick={() => setOpen((o) => !o)} className="flex items-center gap-2" data-guide-search><Icon d="M11 18a7 7 0 100-14 7 7 0 000 14M20 20l-4-4" />From {name ?? "the"} price guide</button>
       {open && (
         <div className="absolute left-0 top-8 z-40 w-[min(460px,85vw)] rounded-[22px] bg-white p-3 font-normal text-ink ring-2 ring-ink">
-          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search, e.g. valley 0.55 or ridge cap" className="min-h-10 w-full rounded-lg bg-cream px-3 text-sm ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search, e.g. valley 0.55 or ridge cap" className="min-h-10 w-full rounded-lg bg-cream px-3 text-sm ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-ink" />
           <ul className="mt-2 max-h-72 overflow-y-auto">
             {res?.error && <li className="px-2 py-3 text-sm text-slate-500">{res.error}</li>}
             {res?.items.map((g) => (

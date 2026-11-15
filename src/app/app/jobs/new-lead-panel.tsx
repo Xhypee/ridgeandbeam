@@ -63,7 +63,7 @@ export function NewLeadPanel({ closeHref, filter = null, defaultState, variant =
             <Section title="The job">
               {variant === "customer" && (
                 <label className="flex min-h-11 items-center gap-2.5 rounded-xl bg-slate-50 px-3 text-sm font-medium text-ink">
-                  <input type="checkbox" name="create_job" defaultChecked className="h-4 w-4 accent-brand-500" />
+                  <input type="checkbox" name="create_job" defaultChecked className="h-4 w-4 accent-ink" />
                   Also open a job for this customer
                 </label>
               )}

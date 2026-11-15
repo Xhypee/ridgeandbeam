@@ -32,11 +32,11 @@ function ReadingSteps({ done, total }: { done: number; total: number }) {
     <>
       <p className="rounded-md px-2 text-sm font-semibold text-ink" style={{ background: SHEET }} data-reading aria-live="polite">{READ_STEPS[step]}…</p>
       <p className="rounded-md px-2 text-xs text-slate-500" style={{ background: SHEET }}>Claude is reading {total === 1 ? "the plans" : `file ${Math.min(done + 1, total)} of ${total}`}</p>
-      <div className="mt-1.5 h-1.5 w-44 overflow-hidden rounded-full bg-white"><div className="h-full rounded-full bg-brand-500 transition-[width] duration-700" style={{ width: `${pct}%` }} /></div>
+      <div className="mt-1.5 h-1.5 w-44 overflow-hidden rounded-full bg-white"><div className="h-full rounded-full bg-ink transition-[width] duration-700" style={{ width: `${pct}%` }} /></div>
     </>
   );
 }
-const SHEET = "#eef4f0";
+const SHEET = "#f5f4ee"; // plain paper, like the docket
 
 /**
  * A roof in plan view on the blueprint sheet. Waiting for plans: faint and dashed. Measured: a dimensioned
@@ -49,7 +49,7 @@ export function RoofDrawing({ labels }: { labels?: RoofSheet }) {
   if (!labels) {
     return (
       <svg viewBox="0 0 300 150" className="block h-auto w-full" aria-hidden>
-        <g fill="none" stroke="#1f5f3f" strokeWidth={1.5} strokeLinejoin="round" strokeDasharray="5 5" opacity={0.4}>
+        <g fill="none" stroke="#13221a" strokeWidth={1.5} strokeLinejoin="round" strokeDasharray="5 5" opacity={0.4}>
           <rect x="30" y="20" width="240" height="106" />
           <path d="M30 20L100 73L30 126M270 20L200 73L270 126M100 73H200" />
         </g>
@@ -66,19 +66,19 @@ export function RoofDrawing({ labels }: { labels?: RoofSheet }) {
   return (
     <svg viewBox="0 0 320 196" className="block h-auto w-full" role="img" aria-label={`Roof plan: ${said}`} data-roof-drawing>
       <defs>
-        <marker id="dim-arrow" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L8 4L0 8z" fill="#1f5f3f" /></marker>
+        <marker id="dim-arrow" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L8 4L0 8z" fill="#13221a" /></marker>
       </defs>
-      <rect x={x0} y={y0} width={w} height={h} fill="#d8eadd" stroke="#1f5f3f" strokeWidth="2" strokeLinejoin="round" />
-      <path d={`M${x0} ${y0}L${rx1} ${cy}L${x0} ${y0 + h}M${x0 + w} ${y0}L${rx2} ${cy}L${x0 + w} ${y0 + h}M${rx1} ${cy}H${rx2}`} fill="none" stroke="#1f5f3f" strokeWidth="2" strokeLinejoin="round" />
+      <rect x={x0} y={y0} width={w} height={h} fill="#dcdcd2" stroke="#13221a" strokeWidth="2" strokeLinejoin="round" />
+      <path d={`M${x0} ${y0}L${rx1} ${cy}L${x0} ${y0 + h}M${x0 + w} ${y0}L${rx2} ${cy}L${x0 + w} ${y0 + h}M${rx1} ${cy}H${rx2}`} fill="none" stroke="#13221a" strokeWidth="2" strokeLinejoin="round" />
       {labels.dims && (
-        <g stroke="#1f5f3f" strokeWidth="1">
+        <g stroke="#13221a" strokeWidth="1">
           <line x1={x0} y1={dy - 5} x2={x0} y2={y0 - 3} /><line x1={x0 + w} y1={dy - 5} x2={x0 + w} y2={y0 - 3} />
           <line x1={x0} y1={dy} x2={x0 + w} y2={dy} markerStart="url(#dim-arrow)" markerEnd="url(#dim-arrow)" />
           <line x1={x0 + w + 3} y1={y0} x2={dx + 5} y2={y0} /><line x1={x0 + w + 3} y1={y0 + h} x2={dx + 5} y2={y0 + h} />
           <line x1={dx} y1={y0} x2={dx} y2={y0 + h} markerStart="url(#dim-arrow)" markerEnd="url(#dim-arrow)" />
         </g>
       )}
-      <g fill="#14402a" textAnchor="middle" fontWeight="700">
+      <g fill="#13221a" textAnchor="middle" fontWeight="700">
         {labels.dims && (
           <g fontFamily={MONO} fontSize="11" fontWeight="600" data-roof-dims>
             <text x={x0 + w / 2} y={dy - 6}>{`\u2248 ${labels.dims.long}`}</text>
@@ -231,15 +231,15 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
           onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(false); }}
           onDrop={onDrop}
           data-plan-sheet={compact && sheet ? "drawn" : "blank"}
-          className={cx("overflow-hidden transition", joined ? (over ? "ring-2 ring-inset ring-ink" : "") : cx("rounded-2xl", over ? "ring-2 ring-ink" : "ring-1 ring-brand-200"))}
-          style={{ backgroundColor: SHEET, backgroundImage: "linear-gradient(rgba(31,95,63,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(31,95,63,.08) 1px, transparent 1px)", backgroundSize: "22px 22px", backgroundPosition: "-1px -1px" }}>
+          className={cx("overflow-hidden transition", joined ? (over ? "ring-2 ring-inset ring-ink" : "") : cx("rounded-2xl", over ? "ring-2 ring-ink" : "ring-1 ring-slate-200"))}
+          style={{ backgroundColor: SHEET, backgroundImage: "linear-gradient(rgba(19,34,26,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(19,34,26,.06) 1px, transparent 1px)", backgroundSize: "22px 22px", backgroundPosition: "-1px -1px" }}>
           <div className="relative">
             {compact && sheet && !reading && !busy ? sheet : <RoofDrawing />}
             {!(compact && sheet && !reading && !busy) && (
               <div className="absolute inset-0 grid place-content-center justify-items-center gap-1 px-6 text-center">
                 {reading ? <ReadingSteps done={reading.done} total={reading.total} /> : busy ? (<>
                   <p className="rounded-md px-2 text-sm font-semibold text-ink" style={{ background: SHEET }}>Uploading {Math.min(busy.done + 1, busy.total)} of {busy.total}…</p>
-                  <div className="mt-1.5 h-1.5 w-44 overflow-hidden rounded-full bg-white"><div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${busy.total ? (busy.done / busy.total) * 100 : 0}%` }} /></div>
+                  <div className="mt-1.5 h-1.5 w-44 overflow-hidden rounded-full bg-white"><div className="h-full rounded-full bg-ink transition-all" style={{ width: `${busy.total ? (busy.done / busy.total) * 100 : 0}%` }} /></div>
                 </>) : compact ? (<>
                   <p className="rounded-md px-2 text-sm font-semibold text-ink" style={{ background: SHEET }}>{over ? "Drop to upload" : "Plans saved, roof not measured yet"}</p>
                   <p className="rounded-md px-2 text-xs text-slate-500" style={{ background: SHEET }}>Measure it on the quote, or drop clearer plans here</p>
@@ -253,7 +253,7 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
               </div>
             )}
           </div>
-          <div className="flex items-center justify-between gap-3 border-t border-dashed border-brand-200 px-3.5 py-2 text-xs font-semibold text-brand-700">
+          <div className="flex items-center justify-between gap-3 border-t-2 border-dashed border-slate-200 px-3.5 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-ink">
             <span className="min-w-0 truncate">{caption ?? "Roof plan"}</span>
             {!reading && !busy && <button type="button" onClick={() => (compact ? files : folder).current?.click()} className="shrink-0 hover:underline" data-plans-more>{compact ? "+ Add plans" : "Or choose a folder"}</button>}
           </div>
@@ -267,18 +267,18 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
         onDrop={onDrop}
         className={cx("flex flex-col items-center justify-center gap-1 border-2 border-dashed text-center transition",
           measure && measured ? "rounded-xl px-4 py-3" : measure ? "rounded-2xl px-5 py-6" : "rounded-xl px-4 py-5",
-          over ? "border-brand-500 bg-brand-50" : measure ? "border-slate-300 bg-white" : "border-slate-300 bg-slate-50/60")}>
-        <svg viewBox="0 0 24 24" className={cx(measure && measured ? "hidden" : "h-7 w-7", over ? "text-brand-600" : "text-slate-400")} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" /></svg>
+          over ? "border-ink bg-white" : measure ? "border-slate-300 bg-white" : "border-slate-300 bg-slate-50/60")}>
+        <svg viewBox="0 0 24 24" className={cx(measure && measured ? "hidden" : "h-7 w-7", over ? "text-ink" : "text-slate-400")} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" /></svg>
         {reading ? (
           <>
             <p className="font-display text-[15px] font-bold text-ink" data-reading>Claude is reading {reading.total === 1 ? "your file" : `${Math.min(reading.done + 1, reading.total)} of ${reading.total}`}…</p>
             <p className="text-xs text-slate-500">Looking for roof measurements and job details</p>
-            <div className="mt-1 h-1.5 w-40 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${reading.total ? Math.max(8, (reading.done / reading.total) * 100) : 0}%` }} /></div>
+            <div className="mt-1 h-1.5 w-40 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-ink transition-all" style={{ width: `${reading.total ? Math.max(8, (reading.done / reading.total) * 100) : 0}%` }} /></div>
           </>
         ) : busy ? (
           <>
             <p className="font-display text-[15px] font-bold text-ink">Uploading {Math.min(busy.done + 1, busy.total)} of {busy.total}…</p>
-            <div className="mt-1 h-1.5 w-40 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${busy.total ? (busy.done / busy.total) * 100 : 0}%` }} /></div>
+            <div className="mt-1 h-1.5 w-40 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-ink transition-all" style={{ width: `${busy.total ? (busy.done / busy.total) * 100 : 0}%` }} /></div>
           </>
         ) : (
           <>
@@ -289,8 +289,8 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
               <p className="max-w-md text-sm text-slate-500">Drop plans, a roof report or a whole folder here. Claude reads them, fills in the roof measurements and sorts the rest into the job. Or measure from the plans, on the satellite map, or by hand.</p>
             </>) : <p className="font-display text-[15px] font-bold text-ink">{over ? "Drop to upload" : "Drag files or folders here"}</p>}
             <p className="text-xs text-slate-500">
-              or <button type="button" onClick={() => files.current?.click()} className="font-semibold text-brand-700 hover:underline">browse files</button>
-              {" · "}<button type="button" onClick={() => folder.current?.click()} className="font-semibold text-brand-700 hover:underline">choose a folder</button>
+              or <button type="button" onClick={() => files.current?.click()} className="font-semibold text-ink underline underline-offset-2">browse files</button>
+              {" · "}<button type="button" onClick={() => folder.current?.click()} className="font-semibold text-ink underline underline-offset-2">choose a folder</button>
             </p>
           </>
         )}
@@ -298,7 +298,7 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
         <input ref={folder} type="file" multiple className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => fromInput(e.target.files)} {...{ webkitdirectory: "", directory: "" }} />
       </div>
       )}
-      {msg && <p role={msg.error ? "alert" : "status"} className={cx(joined ? "border-t border-brand-200 px-3.5 py-2 text-[13px]" : "mt-2 rounded-lg px-3 py-2 text-sm", msg.error ? "bg-amber-50 text-amber-900" : "bg-green-50 text-green-700")}>{msg.error ?? msg.ok}</p>}
+      {msg && <p role={msg.error ? "alert" : "status"} className={cx(joined ? "border-t-2 border-dashed border-slate-200 px-3.5 py-2 text-[13px]" : "mt-2 rounded-lg px-3 py-2 text-sm", msg.error ? "bg-amber-50 text-amber-900" : "bg-green-50 text-green-700")}>{msg.error ?? msg.ok}</p>}
     </div>
   );
 }

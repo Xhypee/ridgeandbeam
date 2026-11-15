@@ -205,8 +205,8 @@ export function ImportWizard({ orgSupplierId, supplierName, today, saved, previo
               <legend className="px-1 text-sm font-medium text-slate-800">Are the prices in this sheet ex GST or inc GST?</legend>
               <div className="mt-1 flex flex-wrap gap-2">
                 {(["ex", "inc"] as const).map((g) => (
-                  <label key={g} className={cx("flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-3 ring-1", gst === g ? "bg-white ring-brand-500" : "ring-slate-300")}>
-                    <input type="radio" name="gst" value={g} checked={gst === g} onChange={() => setGst(g)} className="h-5 w-5 accent-brand-500" />
+                  <label key={g} className={cx("flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-3 ring-1", gst === g ? "bg-white ring-ink" : "ring-slate-300")}>
+                    <input type="radio" name="gst" value={g} checked={gst === g} onChange={() => setGst(g)} className="h-5 w-5 accent-ink" />
                     {g === "ex" ? "Ex GST (trade prices)" : "Inc GST"}
                   </label>
                 ))}
@@ -318,7 +318,7 @@ export function ImportWizard({ orgSupplierId, supplierName, today, saved, previo
               {unmapped > 0 && <> {unmapped} rows aren&apos;t mapped to an estimating item yet.</>} Your current price list is kept as an inactive version.
             </p>
             <label className="flex items-start gap-3 rounded-lg bg-slate-50 p-3 text-sm ring-1 ring-slate-200">
-              <input type="checkbox" checked={authorised} onChange={(e) => setAuthorised(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 accent-brand-500" data-testid="authorised" />
+              <input type="checkbox" checked={authorised} onChange={(e) => setAuthorised(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 accent-ink" data-testid="authorised" />
               <span>
                 <b>I&apos;m authorised to use this price list for my business.</b>
                 <span className="block font-mono text-xs text-slate-500">These are your account prices. They stay private to your business and are never shown to homeowners or crew leads.</span>

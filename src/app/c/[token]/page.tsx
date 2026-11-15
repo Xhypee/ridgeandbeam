@@ -72,7 +72,7 @@ export default async function PublicChangeOrder({ params }: PageProps<"/c/[token
             <Input name="name" placeholder="Your full name" autoComplete="name" required className="min-h-12 text-base" />
             <SignaturePad name="signature" required height={170} />
             <label className="flex items-start gap-2 text-sm">
-              <input type="checkbox" name="agree" required className="mt-0.5 h-5 w-5 accent-brand-500" />
+              <input type="checkbox" name="agree" required className="mt-0.5 h-5 w-5 accent-ink" />
               I approve this change to my roofing contract with {co.org.name} for the amount shown.
             </label>
             <SubmitButton className="min-h-14 w-full text-base">Approve & sign</SubmitButton>

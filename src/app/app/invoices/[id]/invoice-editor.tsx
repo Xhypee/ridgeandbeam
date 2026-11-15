@@ -127,7 +127,7 @@ export function InvoiceEditor({ id, locked, catalog, paid, gstRegistered, custom
         <div className="mt-6 flex flex-col items-end gap-1.5 text-sm" data-testid="editor-totals">
           {gstRegistered && (
             <label className="mb-1 flex items-center gap-2 text-slate-600">
-              <input type="checkbox" className="h-5 w-5 accent-brand-500" checked={inclusive} disabled={ro} onChange={(e) => { setInclusive(e.target.checked); touch(); }} />
+              <input type="checkbox" className="h-5 w-5 accent-ink" checked={inclusive} disabled={ro} onChange={(e) => { setInclusive(e.target.checked); touch(); }} />
               Prices include GST
             </label>
           )}

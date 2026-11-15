@@ -53,7 +53,7 @@ export function SupplierPayForm({ orgId, jobId, orderId, supplier, orderCode, or
     }
   }
   const copy = (k: string, v: string | null) => { if (v) { void navigator.clipboard?.writeText(v); setCopied(k); setTimeout(() => setCopied(null), 1200); } };
-  const box = "min-h-10 w-full rounded-lg bg-white px-3 text-sm text-ink ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500";
+  const box = "min-h-10 w-full rounded-lg bg-white px-3 text-sm text-ink ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-ink";
   const field = (labelText: string, name: string, def: string | null, extra?: { type?: string; value?: string; onChange?: (v: string) => void; inputMode?: "decimal" }) => (
     <label className="block"><span className="mb-1 block text-[11px] font-semibold text-slate-500">{labelText}</span>
       {extra?.onChange

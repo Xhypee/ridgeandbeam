@@ -18,7 +18,7 @@ export default async function ReportsPage() {
       <PageHeader title="Reports" />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {reports.map((r) => (
-          <Link key={r.href} href={r.href} className="block rounded-xl bg-white p-5 ring-1 ring-slate-200 transition hover:ring-brand-500">
+          <Link key={r.href} href={r.href} className="block rounded-xl bg-white p-5 ring-1 ring-slate-200 transition hover:ring-ink">
             <p className="font-semibold text-slate-900">{r.title}</p>
             <p className="mt-1 text-sm text-slate-500">{r.body}</p>
           </Link>

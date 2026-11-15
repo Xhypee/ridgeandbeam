@@ -103,7 +103,7 @@ export default async function CloseoutPage({ params }: PageProps<"/app/jobs/[id]
               <Input name="name" placeholder="Homeowner's full name" required className="min-h-12 text-base" />
               <SignaturePad name="signature" required height={180} />
               <label className="flex items-start gap-2 text-sm">
-                <input type="checkbox" name="agree" required className="mt-0.5 h-5 w-5 accent-brand-500" />
+                <input type="checkbox" name="agree" required className="mt-0.5 h-5 w-5 accent-ink" />
                 I walked the finished job and confirm the work is complete{openPunch ? `, except the ${openPunch} punch item${openPunch > 1 ? "s" : ""} listed` : ""}.
               </label>
               <SubmitButton className="min-h-14 w-full text-base">Homeowner signs off</SubmitButton>

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { cx } from "@/components/ui";
 import type { TimelineStep } from "@/lib/next-step";
 
-const BAR = { done: "bg-green-600", current: "bg-brand-500", todo: "bg-slate-200" };
+const BAR = { done: "bg-ink", current: "bg-ink/40", todo: "bg-slate-200" };
 
 /**
  * The job's 7 phases (Lead · Inspect · Quote · Claim · Build · Close · Paid) as the job page navigation.

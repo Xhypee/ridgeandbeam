@@ -15,7 +15,7 @@ export function JobFields({ j, defaultAddress }: { j?: Partial<Job>; defaultAddr
       <Field label="Roof material"><Input name="roof_material" defaultValue={j?.roof_material ?? ""} placeholder="COLORBOND Trimdek, concrete tile, terracotta…" /></Field>
       <div className="sm:col-span-2"><AddressLookup label="Job site address" line="site_address" initialLine={j?.site_address ?? defaultAddress ?? null} /></div>
       <label className="flex items-center gap-2 text-sm text-slate-700 sm:col-span-2">
-        <input type="checkbox" name="is_insurance" defaultChecked={j?.is_insurance ?? false} className="h-4 w-4 accent-brand-500" />
+        <input type="checkbox" name="is_insurance" defaultChecked={j?.is_insurance ?? false} className="h-4 w-4 accent-ink" />
         Insurance claim job
       </label>
       <Field label="Notes" className="sm:col-span-2"><Textarea name="notes" defaultValue={j?.notes ?? ""} /></Field>

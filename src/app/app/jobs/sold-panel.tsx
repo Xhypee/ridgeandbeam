@@ -73,7 +73,7 @@ export function SoldPanel({ d }: { d: Docket }) {
         {steps.map((x, k) => {
           const body = (
             <>
-              <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-full", x.state === "done" ? "bg-brand-500 text-white" : x.state === "now" ? "bg-ink text-white" : x.state === "wait" ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200" : "bg-white text-slate-500 ring-1 ring-slate-200")}>
+              <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-full", x.state === "done" ? "bg-ink text-white" : x.state === "now" ? "bg-ink text-white" : x.state === "wait" ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200" : "bg-white text-slate-500 ring-1 ring-slate-200")}>
                 <Icon d={x.state === "done" ? I.check : x.icon} />
               </span>
               <span className="min-w-0 flex-1">
