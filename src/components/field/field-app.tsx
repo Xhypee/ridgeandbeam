@@ -11,7 +11,7 @@ import type { ServerEvent, ServerFile } from "./types";
 import { useFieldQueue } from "./use-field-queue";
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
-const chip = "min-h-11 rounded-xl px-3 text-sm font-semibold ring-1 transition";
+const chip = "min-h-11 rounded-xl px-3 font-mono text-xs font-semibold uppercase tracking-wider ring-1 transition";
 const chipOn = "bg-slate-900 text-white ring-slate-900";
 const chipOff = "bg-white text-slate-800 ring-slate-300";
 
@@ -216,7 +216,7 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
             </div>
             <div className="mt-2 flex flex-wrap gap-2">
               <button type="button" onClick={applyCount} className="min-h-11 rounded-xl bg-slate-900 px-3 text-sm font-semibold text-white">Save count to last tile photo on this slope</button>
-              <button type="button" onClick={() => setCounts(slope, 0)} className="min-h-11 rounded-xl px-3 text-sm font-semibold ring-1 ring-slate-300">Reset</button>
+              <button type="button" onClick={() => setCounts(slope, 0)} className="min-h-11 rounded-xl px-3 font-mono text-xs font-semibold uppercase tracking-wider ring-1 ring-slate-300">Reset</button>
             </div>
             <p className="mt-2 text-xs text-amber-900">New photos on this slope carry the count. The photo report totals it per slope for the assessor.</p>
           </div>
@@ -241,7 +241,7 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
       <section aria-labelledby="gal-h">
         <div className="mb-2 flex items-center justify-between">
           <h2 id="gal-h" className="text-lg font-bold">Photos <span className="text-sm font-medium text-slate-500">({tiles.length})</span></h2>
-          <a href={`/app/jobs/${jobId}/field/report`} className="min-h-11 rounded-xl bg-white px-3 py-2.5 text-sm font-semibold ring-1 ring-slate-300">Photo report</a>
+          <a href={`/app/jobs/${jobId}/field/report`} className="min-h-11 rounded-xl bg-white px-3 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider ring-1 ring-slate-300">Photo report</a>
         </div>
         <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
           {["all", ...SLOPES].map((s) => (
@@ -553,7 +553,7 @@ function PhotoSheet({ tile, onClose, onMarkup, onQueuePatch, onDiscard, onServer
         )}
         {err && <p className="mb-2 text-sm text-red-700">{err}</p>}
         <div className="grid grid-cols-2 gap-2">
-          <button type="button" onClick={onMarkup} className="min-h-14 rounded-xl bg-white text-base font-bold ring-2 ring-brand-500 text-brand-700">Mark up</button>
+          <button type="button" onClick={onMarkup} className="min-h-14 rounded-xl bg-white text-base font-bold ring-2 ring-ink text-brand-700">Mark up</button>
           <button type="button" onClick={save} disabled={pending} className="min-h-14 rounded-xl bg-brand-500 text-base font-bold text-white">{pending ? "Saving…" : "Save"}</button>
           <button type="button" onClick={onClose} className="min-h-12 rounded-xl font-semibold ring-1 ring-slate-300">Close</button>
           <button type="button" className="min-h-12 rounded-xl font-semibold text-red-700 ring-1 ring-red-200"

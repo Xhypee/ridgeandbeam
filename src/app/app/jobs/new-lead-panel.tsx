@@ -21,7 +21,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <fieldset className="border-t-2 border-dashed border-slate-200 px-5 py-5 first:border-t-0">
       <legend className="sr-only">{title}</legend>
-      <p aria-hidden className="mb-3 text-[15px] font-bold text-ink">{title}</p>
+      <p aria-hidden className="mb-3 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">{title}</p>
       <div className="space-y-3">{children}</div>
     </fieldset>
   );
@@ -42,13 +42,14 @@ export function NewLeadPanel({ closeHref, filter = null, defaultState, variant =
           <input type="hidden" name="return_to" value="board" />
           {filter && <input type="hidden" name="filter" value={filter} />}
           <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-            <div className="bg-brand-500 px-5 pb-5 pt-4 text-white">
-              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-200">
+            <div className="px-5 pb-5 pt-4">
+              <div className="flex items-center gap-2 text-[11px] uppercase text-slate-400 font-mono tracking-[0.12em]">
                 <span className="min-w-0 flex-1 truncate">{t.kicker}</span>
-                <Link href={closeHref} scroll={false} aria-label="Close" className="-my-1 -mr-2 grid h-8 w-8 place-items-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"><Icon d="M6 6l12 12M18 6L6 18" /></Link>
+                <Link href={closeHref} scroll={false} aria-label="Close" className="-my-1 -mr-2 grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-ink"><Icon d="M6 6l12 12M18 6L6 18" /></Link>
               </div>
-              <h2 className="mt-2 font-display text-2xl font-bold leading-tight">{t.title}</h2>
-              <p className="text-sm text-white/70">{t.sub}</p>
+              <div className="mt-3 border-t-2 border-dashed border-slate-200" />
+            <h2 className="mt-3 font-display text-[26px] font-bold leading-tight text-ink">{t.title}</h2>
+              <p className="text-sm text-slate-500">{t.sub}</p>
             </div>
 
             <Section title="Contact">
@@ -80,9 +81,9 @@ export function NewLeadPanel({ closeHref, filter = null, defaultState, variant =
             </Section>
           </div>
 
-          <div className="flex gap-2 border-t border-slate-200 bg-white p-4">
+          <div className="flex gap-2 border-t-2 border-dashed border-slate-200 bg-white p-4">
             <SubmitButton className="min-h-12 flex-1 text-[15px]">{t.save}</SubmitButton>
-            <Link href={closeHref} scroll={false} className="inline-flex min-h-12 items-center rounded-xl px-5 text-[15px] font-semibold text-slate-600 ring-1 ring-slate-300 hover:ring-slate-400">Cancel</Link>
+            <Link href={closeHref} scroll={false} className="inline-flex min-h-12 items-center rounded-xl px-5 font-mono text-xs font-semibold uppercase tracking-wider text-slate-600 ring-1 ring-slate-300 hover:ring-slate-400">Cancel</Link>
           </div>
         </ActionForm>
         <ClaudeBar ready={aiEnabled()} />

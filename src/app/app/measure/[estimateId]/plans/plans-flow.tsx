@@ -365,7 +365,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
           <span className="text-7xl" style={{ animation: "rb-float 2.4s ease-in-out infinite" }} aria-hidden>🏠</span>
           <span className="font-display mt-6 text-3xl font-bold text-ink sm:text-4xl">Drop the plans here</span>
           <span className="mt-3 max-w-lg text-lg text-slate-600">The architect&apos;s PDF is all we need. We&apos;ll find the roof, measure every line and fill in the job details.</span>
-          <span className="mt-8 inline-flex min-h-14 items-center rounded-2xl bg-brand-500 px-8 text-lg font-semibold text-white transition group-hover:scale-105">Choose the PDF</span>
+          <span className="mt-8 inline-flex min-h-14 items-center rounded-2xl bg-ink px-8 text-lg text-white transition group-hover:scale-105 font-mono text-xs font-semibold uppercase tracking-wider">Choose the PDF</span>
           <span className="mt-4 text-sm text-slate-400">or drag it onto this box · PDF up to 50 MB</span>
           {saved && <button type="button" onClick={(e) => { e.preventDefault(); setStep("roof"); }} className="mt-6 font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 underline">Back to the saved roof</button>}
         </label>
@@ -377,7 +377,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
             {Array.from({ length: Math.max(pageCount, readCount, 1) }).map((_, i) => {
               const roofHit = ticks.length >= 1 && detected[0]?.page === i;
               return (
-                <figure key={i} className={cx("rounded-xl p-1.5 ring-1 transition-all duration-500", roofHit ? "scale-110 bg-brand-50 ring-2 ring-brand-500" : ticks.length >= 1 ? "opacity-40 ring-slate-200" : "ring-slate-200")} style={{ animation: `rb-pop .4s ${i * 0.05}s both` }}>
+                <figure key={i} className={cx("rounded-xl p-1.5 ring-1 transition-all duration-500", roofHit ? "scale-110 bg-brand-50 ring-2 ring-ink" : ticks.length >= 1 ? "opacity-40 ring-slate-200" : "ring-slate-200")} style={{ animation: `rb-pop .4s ${i * 0.05}s both` }}>
                   {thumbs[i] ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={thumbs[i]} alt="" className="aspect-[1.41] w-full rounded-md bg-white object-cover" />
@@ -429,7 +429,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                   </button>
                 ))}
                 <button type="button" onClick={undo} disabled={!history.length} className="min-h-11 rounded-full bg-white px-4 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 disabled:opacity-40" data-testid="tool-undo">↶ Undo</button>
-                {canHip && <button type="button" onClick={addHipRoof} className="min-h-11 rounded-full bg-brand-50 px-4 text-sm font-semibold text-brand-700 ring-1 ring-brand-500" data-testid="hip-roof">Hip roof: work out hips and ridges</button>}
+                {canHip && <button type="button" onClick={addHipRoof} className="min-h-11 rounded-full bg-brand-50 px-4 font-semibold text-brand-700 ring-1 ring-brand-500 font-mono text-xs uppercase tracking-wider" data-testid="hip-roof">Hip roof: work out hips and ridges</button>}
                 <span className="ml-auto flex flex-wrap gap-3 text-xs text-slate-500">
                   {(["eave", "ridge", "hip", "valley", "barge", "apron"] as const).map((k) => <span key={k} className="inline-flex items-center gap-1"><span className="h-1.5 w-4 rounded-full" style={{ background: KIND_COLOR[k] }} />{k === "eave" ? "Gutter" : k === "apron" ? "Apron" : k[0].toUpperCase() + k.slice(1)}</span>)}
                 </span>
@@ -518,9 +518,9 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                   <div className="mt-3 grid grid-cols-3 gap-2">
                     {PROFILE_IDS.map((id) => (
                       <button key={id} type="button" disabled={step === "done" || readOnly} onClick={() => { setProfile(id); setBump((b) => b + 1); }} data-testid={`profile-${id}`} aria-pressed={profile === id}
-                        className={cx("rounded-2xl p-3 text-left ring-1 transition", profile === id ? "bg-brand-50 ring-2 ring-brand-500" : "ring-slate-200 hover:bg-slate-50")}>
+                        className={cx("rounded-2xl p-3 text-left ring-1 transition", profile === id ? "bg-brand-50 ring-2 ring-ink" : "ring-slate-200 hover:bg-slate-50")}>
                         <span className="block text-sm font-bold text-ink">{SHEET_PROFILES[id].label}</span>
-                        <span className="block text-xs text-slate-500">{SHEET_PROFILES[id].blurb}</span>
+                        <span className="block font-mono text-xs text-slate-500">{SHEET_PROFILES[id].blurb}</span>
                       </button>
                     ))}
                   </div>
@@ -528,7 +528,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                   <div className="mt-3 flex flex-wrap gap-2.5">
                     {COLOURS.map((c) => (
                       <button key={c.name} type="button" title={c.name} aria-label={c.name} disabled={step === "done" || readOnly} onClick={() => { setColour(c); setBump((b) => b + 1); }} data-testid="colour"
-                        className={cx("h-11 w-11 rounded-full ring-offset-2 transition hover:scale-110", colour.name === c.name ? "ring-2 ring-brand-500" : "ring-1 ring-slate-300")} style={{ background: c.hex }} />
+                        className={cx("h-11 w-11 rounded-full ring-offset-2 transition hover:scale-110", colour.name === c.name ? "ring-2 ring-ink" : "ring-1 ring-slate-300")} style={{ background: c.hex }} />
                     ))}
                   </div>
                 </div>
@@ -582,7 +582,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                   </>
                 ))}
                 {step === "done" && result && (
-                  <div ref={(el) => { el?.scrollIntoView({ behavior: "smooth", block: "center" }); }} className="rounded-[28px] bg-brand-50 p-6 ring-2 ring-brand-500" style={{ animation: "rb-pop .5s both" }} data-testid="done-card">
+                  <div ref={(el) => { el?.scrollIntoView({ behavior: "smooth", block: "center" }); }} className="rounded-[28px] bg-brand-50 p-6 ring-2 ring-ink" style={{ animation: "rb-pop .5s both" }} data-testid="done-card">
                     <p className="font-display text-2xl font-bold text-ink">On the quote!</p>
                     <p className="mt-2 text-slate-700">{result.lines} lines added from the measurements, and the job details filled in.</p>
                     {result.seconds > 0 && <p className="mt-3 text-sm text-slate-600">Measured in <b>{Math.floor(result.seconds / 60)} min {result.seconds % 60} s</b>, straight from the plans.</p>}

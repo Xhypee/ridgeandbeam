@@ -41,7 +41,7 @@ export function PublicPayPlan({ plan, current, cardOnline }: { plan: PublicPlan;
             <>
               <span className="min-w-0">
                 <span className={cx("block font-semibold", p.public_token === current ? "text-brand-700" : "text-ink")}>{p.label}{p.public_token === current ? " (this invoice)" : ""}</span>
-                <span className="block text-xs text-slate-500">{label}</span>
+                <span className="block font-mono text-xs text-slate-500">{label}</span>
               </span>
               <span className="shrink-0 text-right">
                 <span className="block tabular-nums text-ink">{aud(p.total)}</span>

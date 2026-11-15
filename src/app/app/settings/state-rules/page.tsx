@@ -50,7 +50,7 @@ export default async function StateRulesPage({ searchParams }: PageProps<"/app/s
       <nav aria-label="States" className="flex flex-wrap gap-2">
         {tabs.map((s) => (
           <Link key={s} href={href(s)} aria-current={s === state ? "page" : undefined}
-            className={cx("inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-semibold ring-1 ring-inset", s === state ? "bg-ink text-white ring-ink" : "bg-white text-ink ring-slate-300 hover:bg-slate-50")}>
+            className={cx("inline-flex min-h-11 items-center rounded-xl px-4 font-mono text-xs font-semibold uppercase tracking-wider ring-1 ring-inset", s === state ? "bg-ink text-white ring-ink" : "bg-white text-ink ring-slate-300 hover:bg-slate-50")}>
             {s}
           </Link>
         ))}
@@ -58,13 +58,13 @@ export default async function StateRulesPage({ searchParams }: PageProps<"/app/s
 
       <Card
         title={<span>{AU_STATE_NAME[state]} <span className="font-normal text-slate-500">as at {formatAuDate(ref.asOf)}</span></span>}
-        actions={<a href={ref.regulator.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-700">{ref.regulator.name} ↗</a>}
+        actions={<a href={ref.regulator.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider">{ref.regulator.name} ↗</a>}
       >
         {ref.changes.map((c) => <p key={c} className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">Coming change — {c}</p>)}
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm" data-testid="state-rules-table">
             <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
+              <tr className="text-left text-xs uppercase text-slate-400 font-mono tracking-[0.12em]">
                 <th className="py-2 pr-4 font-medium">Topic</th>
                 <th className="py-2 pr-4 font-medium">Rule</th>
                 <th className="py-2 font-medium">Source</th>

@@ -63,8 +63,8 @@ const dayMonth = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString("en
 function Row({ icon, k, v, href }: { icon: string; k: string; v: React.ReactNode; href?: string }) {
   const inner = (
     <>
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-cream text-slate-600 ring-1 ring-slate-200"><Icon d={icon} /></span>
-      <span className="min-w-0 flex-1"><span className="block text-[11px] text-slate-500">{k}</span><span className="block text-sm font-medium text-ink [overflow-wrap:anywhere]">{v}</span></span>
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-white text-ink ring-1 ring-slate-300"><Icon d={icon} /></span>
+      <span className="min-w-0 flex-1"><span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400">{k}</span><span className="block font-mono text-[13px] text-ink [overflow-wrap:anywhere]">{v}</span></span>
     </>
   );
   return href ? <a href={href} className="flex items-center gap-3 rounded-lg py-1.5 hover:bg-slate-50">{inner}</a> : <div className="flex items-center gap-3 py-1.5">{inner}</div>;
@@ -75,26 +75,27 @@ export function CustomerDocket({ d, closeHref, canSeeMoney, today, edit }: { d: 
   const address = [c.address, [c.city, c.state, c.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
   const insurance = d.jobs.some((j) => j.is_insurance);
   const tag = ["Customer", insurance ? "Insurance" : null].filter(Boolean).join(" · ");
-  const btn = "inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl text-[15px] font-semibold";
+  const btn = "inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl font-mono text-xs font-semibold uppercase tracking-wider";
   const overdue = c.follow_up_on && c.follow_up_on <= today;
 
   return (
     <div className="flex h-full flex-col bg-cream p-4" data-customer-docket={c.id}>
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200">
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-          <div className="bg-brand-500 px-5 pb-5 pt-4 text-white">
-            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-200">
+          <div className="px-5 pb-5 pt-4">
+            <div className="flex items-center gap-2 text-[11px] uppercase text-slate-400 font-mono tracking-[0.12em]">
               <span className="min-w-0 flex-1 truncate">{tag}</span>
               <span className="shrink-0">Since {since(c.created_at)}</span>
-              <Link href={closeHref} scroll={false} aria-label="Close" className="-my-1 -mr-2 grid h-8 w-8 place-items-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"><Icon d="M6 6l12 12M18 6L6 18" /></Link>
+              <Link href={closeHref} scroll={false} aria-label="Close" className="-my-1 -mr-2 grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-ink"><Icon d="M6 6l12 12M18 6L6 18" /></Link>
             </div>
-            <h2 className="mt-2 font-display text-2xl font-bold leading-tight">{c.name}</h2>
-            <p className="truncate text-sm text-white/70">{address || c.email || c.phone || "No address yet"}</p>
-            <dl className={cx("mt-5 grid gap-2", canSeeMoney ? "grid-cols-3" : "grid-cols-1")} data-customer-stats>
-              <div><dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-200">Jobs</dt><dd className="font-display text-[22px] font-bold leading-tight">{d.jobs.length}</dd></div>
+            <div className="mt-3 border-t-2 border-dashed border-slate-200" />
+            <h2 className="mt-3 font-display text-[26px] font-bold leading-tight text-ink">{c.name}</h2>
+            <p className="truncate font-mono text-xs text-slate-500">{address || c.email || c.phone || "No address yet"}</p>
+            <dl className={cx("mt-4 grid gap-2 border-t-2 border-dashed border-slate-200 pt-3", canSeeMoney ? "grid-cols-3" : "grid-cols-1")} data-customer-stats>
+              <div><dt className="text-[10px] uppercase text-slate-400 font-mono tracking-[0.12em]">Jobs</dt><dd className="font-display text-[22px] font-bold leading-tight text-ink">{d.jobs.length}</dd></div>
               {canSeeMoney && <>
-                <div><dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-200">Signed</dt><dd className="font-display text-[22px] font-bold leading-tight">{aud(d.contract)}</dd></div>
-                <div><dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-200">Owing</dt><dd className={cx("font-display text-[22px] font-bold leading-tight", d.owing > 0 ? "text-amber-200" : "")}>{aud(d.owing)}</dd></div>
+                <div><dt className="text-[10px] uppercase text-slate-400 font-mono tracking-[0.12em]">Signed</dt><dd className="font-display text-[22px] font-bold leading-tight text-ink">{aud(d.contract)}</dd></div>
+                <div><dt className="text-[10px] uppercase text-slate-400 font-mono tracking-[0.12em]">Owing</dt><dd className={cx("font-display text-[22px] font-bold leading-tight text-ink", d.owing > 0 ? "text-amber-700" : "")}>{aud(d.owing)}</dd></div>
               </>}
             </dl>
           </div>
@@ -124,7 +125,7 @@ export function CustomerDocket({ d, closeHref, canSeeMoney, today, edit }: { d: 
                     <Link href={`/app/jobs?job=${j.id}`} className="flex items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-slate-50">
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold text-ink">{j.title}</span>
-                        <span className="block text-xs text-slate-500">
+                        <span className="block font-mono text-xs text-slate-500">
                           {STAGE_LABEL[j.stage] ?? label(j.stage)}{j.is_insurance ? " · Insurance" : ""}
                           {canSeeMoney && j.owing > 0 ? <span className="font-semibold text-amber-700"> · {aud(j.owing)} owing</span> : null}
                         </span>

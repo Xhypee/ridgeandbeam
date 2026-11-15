@@ -125,7 +125,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/app/sch
 
       {/* Desktop: crew swimlanes */}
       <div className="hidden overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200 md:block" data-testid="swimlanes">
-        <div className="grid border-b border-slate-200 bg-cream" style={{ gridTemplateColumns: gridCols }}>
+        <div className="grid border-b-2 border-dashed border-slate-200 bg-cream" style={{ gridTemplateColumns: gridCols }}>
           <div className="px-4 py-2.5 text-[13px] font-semibold text-slate-500">Crew</div>
           {days.map((d) => {
             const risk = weatherRisk(fc.get(d));
@@ -169,7 +169,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/app/sch
           if (isWeekend(d) && dayJobs.length === 0) return null;
           const risk = weatherRisk(fc.get(d));
           return (
-            <li key={d} className={cx("rounded-[22px] bg-white p-4 ring-1", d === today ? "ring-2 ring-brand-500" : risk ? "ring-red-300" : "ring-slate-200")}>
+            <li key={d} className={cx("rounded-[22px] bg-white p-4 ring-1", d === today ? "ring-2 ring-ink" : risk ? "ring-red-300" : "ring-slate-200")}>
               <div className="mb-2 flex items-center justify-between gap-2">
                 <p className={cx("font-display text-[15px] font-bold", d === today ? "text-brand-700" : "text-ink")}>{date(d, { weekday: "long", month: "short", day: "numeric" })}</p>
                 <Weather f={fc.get(d)} />

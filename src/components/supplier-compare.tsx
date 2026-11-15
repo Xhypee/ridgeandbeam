@@ -26,7 +26,7 @@ export function SupplierCompare({ data, emptyText }: { data: SupplierComparison;
             <tr key={r.calc_key}>
               <td className="px-3 py-2">
                 <span className="font-medium text-slate-800">{r.label}</span>
-                <span className="block text-xs text-slate-500">per {UNIT_SHORT[r.per] ?? r.per}{r.per !== r.unit ? ` (${UNIT_SHORT[r.unit] ?? r.unit} price ÷ pack)` : ""}, ex GST</span>
+                <span className="block font-mono text-xs text-slate-500">per {UNIT_SHORT[r.per] ?? r.per}{r.per !== r.unit ? ` (${UNIT_SHORT[r.unit] ?? r.unit} price ÷ pack)` : ""}, ex GST</span>
               </td>
               {data.suppliers.map((s) => {
                 const c = r.cells[s.id];

@@ -60,7 +60,7 @@ export default async function PaymentPlanPage({ params }: PageProps<"/app/jobs/[
 
       {ctx.invoices.length > 0 && (
         <section aria-label="Payments" className="rounded-[22px] bg-white ring-1 ring-slate-200">
-          <h3 className="border-b-2 border-dashed border-slate-200 px-5 py-3 text-[15px] font-bold text-ink">Payments</h3>
+          <h3 className="font-display border-b-2 border-dashed border-slate-200 px-5 py-3 text-[15px] font-bold text-ink">Payments</h3>
           <ul className="divide-y-2 divide-dashed divide-slate-200">
             {ctx.invoices.map((i) => {
               const [label, cls] = STATUS[i.status] ?? [i.status, "bg-slate-100 text-slate-600"];
@@ -97,7 +97,7 @@ export default async function PaymentPlanPage({ params }: PageProps<"/app/jobs/[
       )}
 
       <section aria-label="Change the plan">
-        <h3 className="mb-3 text-[15px] font-bold text-ink">{ctx.invoices.length ? "Change the plan" : "Set up the plan"}{ctx.locked.length ? <span className="font-normal text-slate-500"> · paid parts stay as they are, {aud(ctx.remaining)} left to plan</span> : null}</h3>
+        <h3 className="font-display mb-3 text-[15px] font-bold text-ink">{ctx.invoices.length ? "Change the plan" : "Set up the plan"}{ctx.locked.length ? <span className="font-normal text-slate-500"> · paid parts stay as they are, {aud(ctx.remaining)} left to plan</span> : null}</h3>
         <PlanEditor
           jobId={id} contractTotal={ctx.contract.total} remaining={ctx.remaining} lockedCount={ctx.locked.length} initial={initial}
           schedule={ctx.schedule} start={ctx.start} today={ctx.today} depositRoom={ctx.depositRoom} depositCap={ctx.depositCap} depositNote={ctx.depositNote} stateName={ctx.stateName}

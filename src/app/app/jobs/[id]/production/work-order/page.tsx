@@ -8,7 +8,7 @@ import { crewLeadCanSee } from "@/lib/production-server";
 
 export const metadata: Metadata = { title: "Work order" };
 
-const L = ({ k }: { k: keyof typeof T }) => <span className="text-xs font-medium uppercase tracking-wide text-slate-500">{T[k]}</span>;
+const L = ({ k }: { k: keyof typeof T }) => <span className="text-xs uppercase text-slate-400 font-mono tracking-[0.12em]">{T[k]}</span>;
 
 /** Printable work order for the office to hand to the crew. Metric, plain English, no prices. */
 export default async function WorkOrderPage({ params }: PageProps<"/app/jobs/[id]/production/work-order">) {
@@ -37,7 +37,7 @@ export default async function WorkOrderPage({ params }: PageProps<"/app/jobs/[id
     <div className="mx-auto max-w-3xl">
       <div className="no-print mb-4 flex justify-end"><PrintButton /></div>
       <article className="space-y-5 bg-white p-6 ring-1 ring-slate-200 sm:rounded-2xl print:p-0 print:ring-0" data-testid="work-order">
-        <header className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-4">
+        <header className="flex flex-wrap items-start justify-between gap-4 border-b-2 border-dashed border-slate-200 pb-4">
           <div>
             <p className="text-xl font-semibold">{org.name}</p>
             <p className="text-sm text-slate-500">{org.phone}</p>
@@ -72,7 +72,7 @@ export default async function WorkOrderPage({ params }: PageProps<"/app/jobs/[id
           <L k="materials" />
           {mats.items.length === 0 ? <p className="text-sm text-slate-500">{T.noMaterials}</p> : (
             <table className="mt-1 w-full text-sm">
-              <thead><tr className="border-b border-slate-200 text-left text-xs text-slate-500"><th className="py-1">{T.qty}</th><th className="py-1">{T.item}</th></tr></thead>
+              <thead><tr className="border-b-2 border-dashed border-slate-200 text-left text-xs text-slate-500"><th className="py-1">{T.qty}</th><th className="py-1">{T.item}</th></tr></thead>
               <tbody className="divide-y-2 divide-dashed divide-slate-200">
                 {mats.items.map((i, n) => (
                   <tr key={n}><td className="w-32 py-1.5 font-medium tabular-nums">{i.quantity} {unitLabel(i.unit)}</td><td className="py-1.5">{i.description}</td></tr>

@@ -58,7 +58,7 @@ export function DirectoryPicker({ directory, serviceStates, addedIds }: { direct
               >
                 <span className="min-w-0">
                   <span className="block font-medium text-slate-900">{s.name}</span>
-                  <span className="block text-xs text-slate-500">
+                  <span className="block font-mono text-xs text-slate-500">
                     {CATEGORY[s.category] ?? s.category}
                     {" · "}
                     {s.states.length ? s.states.join(", ") : "Coverage not confirmed"}

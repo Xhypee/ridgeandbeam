@@ -81,7 +81,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ap
                     <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
                       <span className="min-w-0">
                         <span className="font-medium">{r.quantity} × {r.description}</span>
-                        <span className="block text-xs text-slate-500">
+                        <span className="block font-mono text-xs text-slate-500">
                           Credit {money(r.credit_amount)}{Number(r.restocking_fee) > 0 && ` − ${money(r.restocking_fee)} restocking`} = <b>{money(netCredit(r))}</b>
                           {r.credit_window_ends_on && r.status !== "credited" && (
                             <span className={cx("ml-2 font-medium", left !== null && left < 0 ? "text-red-700" : left !== null && left <= 7 ? "text-amber-700" : "text-slate-600")}>

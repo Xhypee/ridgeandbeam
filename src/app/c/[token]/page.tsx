@@ -60,7 +60,7 @@ export default async function PublicChangeOrder({ params }: PageProps<"/c/[token
           ))}
         </ul>
         {tax > 0 && <div className="flex justify-between text-sm text-slate-600"><span>Tax</span><span>{money(tax)}</span></div>}
-        <div className="mt-1 flex justify-between border-t border-slate-200 pt-2 text-lg font-bold"><span>Added to your project</span><span className="tabular-nums">{money(subtotal + tax)}</span></div>
+        <div className="mt-1 flex justify-between border-t-2 border-dashed border-slate-200 pt-2 text-lg font-bold"><span>Added to your project</span><span className="tabular-nums">{money(subtotal + tax)}</span></div>
         <p className="mt-1 text-xs text-slate-500">This amount is added to your final invoice.</p>
       </article>
 

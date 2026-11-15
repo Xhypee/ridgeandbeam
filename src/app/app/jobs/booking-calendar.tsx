@@ -70,7 +70,7 @@ export function BookingCalendar({ jobId, first, phone, people, defaultStaff, meI
       <div className="rounded-xl bg-white p-3 ring-1 ring-slate-200" data-booking-calendar>
         <div className="mb-2 flex items-center justify-between">
           <span className="flex w-[66px] items-center"><button type="button" onClick={() => step(-1)} disabled={!canPrev} aria-label="Previous month" className="grid h-8 w-8 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-30"><Chev d="M15 6l-6 6 6 6" /></button></span>
-          <p className="text-sm font-semibold text-ink">{monthName}</p>
+          <p className="font-display text-[15px] font-bold text-ink">{monthName}</p>
           <span className="flex items-center gap-0.5">
             <button type="button" onClick={() => setFull(true)} data-open-full-calendar aria-label={`${who}'s full calendar and projects`}
               className="group relative grid h-8 w-8 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 hover:text-ink">

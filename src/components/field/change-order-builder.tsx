@@ -112,12 +112,12 @@ export function ChangeOrderBuilder({ jobId, orgId, battens, photos }: {
               <button type="button" onClick={() => setLines(lines.filter((_, j) => j !== i))} disabled={lines.length === 1} className="col-span-1 min-h-11 rounded-lg text-red-700 ring-1 ring-red-200 disabled:opacity-40" aria-label="Remove line">×</button>
             </div>
           ))}
-          <button type="button" onClick={() => setLines([...lines, { description: "", quantity: 1, unit: "ea", unit_price: 0, unit_cost: 0, category: "material" }])} className="min-h-11 rounded-xl px-3 text-sm font-semibold ring-1 ring-slate-300">+ Add line</button>
+          <button type="button" onClick={() => setLines([...lines, { description: "", quantity: 1, unit: "ea", unit_price: 0, unit_cost: 0, category: "material" }])} className="min-h-11 rounded-xl px-3 font-mono text-xs font-semibold uppercase tracking-wider ring-1 ring-slate-300">+ Add line</button>
         </div>
       )}
 
-      <label className="block text-sm font-semibold">Title<input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 block min-h-12 w-full rounded-xl px-3 text-base font-normal ring-1 ring-slate-300" /></label>
-      <label className="block text-sm font-semibold">What the homeowner sees<textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} className="mt-1 block w-full rounded-xl p-3 text-base font-normal ring-1 ring-slate-300" /></label>
+      <label className="block font-display text-[15px] font-bold">Title<input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 block min-h-12 w-full rounded-xl px-3 text-base font-normal ring-1 ring-slate-300" /></label>
+      <label className="block font-display text-[15px] font-bold">What the homeowner sees<textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} className="mt-1 block w-full rounded-xl p-3 text-base font-normal ring-1 ring-slate-300" /></label>
 
       <div>
         <p className="mb-1 text-sm font-semibold">Photos ({picked.length} attached)</p>

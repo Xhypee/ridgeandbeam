@@ -22,7 +22,7 @@ export default async function OrderSheet({ params }: PageProps<"/app/orders/[id]
     <div className="mx-auto max-w-3xl">
       <div className="no-print mb-4 flex justify-end"><PrintButton /></div>
       <article className="space-y-5 bg-white p-6 ring-1 ring-slate-200 sm:rounded-2xl print:p-0 print:ring-0">
-        <header className="flex flex-wrap justify-between gap-4 border-b border-slate-200 pb-4">
+        <header className="flex flex-wrap justify-between gap-4 border-b-2 border-dashed border-slate-200 pb-4">
           <div>
             <p className="text-xl font-semibold">{org.name}</p>
             <p className="text-sm text-slate-500">{[org.phone, org.email].filter(Boolean).join(" · ")}</p>

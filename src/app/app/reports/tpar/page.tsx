@@ -54,7 +54,7 @@ export default async function TparPage({ searchParams }: PageProps<"/app/reports
           <tbody className="divide-y-2 divide-dashed divide-slate-200" data-testid="tpar-rows">
             {rows.map((r) => (
               <tr key={r.key}>
-                <td className={td}><span className="font-medium text-slate-900">{r.name}</span>{!r.crewId && <span className="block text-xs text-slate-500">Not set up as a crew</span>}</td>
+                <td className={td}><span className="font-medium text-slate-900">{r.name}</span>{!r.crewId && <span className="block font-mono text-xs text-slate-500">Not set up as a crew</span>}</td>
                 <td className={td}>{r.abn ? formatAbn(r.abn) : <Badge tone="red">ABN missing</Badge>}</td>
                 <td className={cx(td, "text-right tabular-nums")}>{r.payments}</td>
                 <td className={cx(td, "text-right tabular-nums")}>{money(r.gst)}</td>

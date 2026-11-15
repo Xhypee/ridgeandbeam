@@ -34,7 +34,7 @@ export function TaxInvoice({ doc }: { doc: TaxInvoiceDoc }) {
   const balance = r2(t.total - Number(doc.paid || 0));
   return (
     <article className="mx-auto max-w-3xl bg-white p-5 ring-1 ring-slate-200 sm:rounded-2xl sm:p-10 print:p-0 print:ring-0" data-testid="tax-invoice">
-      <header className="flex flex-wrap items-start justify-between gap-6 border-b border-slate-200 pb-6">
+      <header className="flex flex-wrap items-start justify-between gap-6 border-b-2 border-dashed border-slate-200 pb-6">
         <div className="min-w-0">
           <p className="font-display text-xl font-semibold text-ink">{doc.seller.name}</p>
           <div className="mt-1 space-y-0.5 text-sm text-slate-600">
@@ -53,13 +53,13 @@ export function TaxInvoice({ doc }: { doc: TaxInvoiceDoc }) {
 
       <section className="grid gap-6 py-6 sm:grid-cols-2">
         <div className="min-w-0">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Bill to</p>
+          <p className="text-xs uppercase text-slate-400 font-mono tracking-[0.12em]">Bill to</p>
           <p className="mt-1 font-medium text-slate-900" data-testid="buyer-name">{doc.buyer.name ?? "—"}</p>
           {doc.buyer.abn && <p className="text-sm text-slate-600">ABN {formatAbn(doc.buyer.abn)}</p>}
           {doc.buyer.address && <p className="text-sm text-slate-600">{doc.buyer.address}</p>}
         </div>
         <div className="min-w-0">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Job</p>
+          <p className="text-xs uppercase text-slate-400 font-mono tracking-[0.12em]">Job</p>
           <p className="mt-1 font-medium text-slate-900">{doc.job.title}</p>
           {doc.job.site_address && <p className="text-sm text-slate-600">{doc.job.site_address}</p>}
         </div>
@@ -67,7 +67,7 @@ export function TaxInvoice({ doc }: { doc: TaxInvoiceDoc }) {
 
       <table className="w-full table-fixed text-sm">
         <thead>
-          <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+          <tr className="border-b-2 border-dashed border-slate-200 text-left text-xs uppercase text-slate-400 font-mono tracking-[0.12em]">
             <th className="w-1/2 py-2 font-medium sm:w-auto">Description</th>
             <th className="py-2 text-right font-medium">Qty</th>
             <th className="hidden py-2 text-right font-medium sm:table-cell">{doc.amounts_include_gst && gst ? "Price inc GST" : "Price"}</th>
@@ -94,7 +94,7 @@ export function TaxInvoice({ doc }: { doc: TaxInvoiceDoc }) {
             <div className="flex w-full max-w-72 justify-between"><span className="text-slate-500">GST</span><span className="tabular-nums">{money(t.gst)}</span></div>
           </>
         )}
-        <div className="flex w-full max-w-72 justify-between border-t border-slate-200 pt-2 text-base font-semibold">
+        <div className="flex w-full max-w-72 justify-between border-t-2 border-dashed border-slate-200 pt-2 text-base font-semibold">
           <span>{gst ? "Total inc GST" : "Total"}</span><span className="tabular-nums">{money(t.total)}</span>
         </div>
         {gst && doc.amounts_include_gst && <p className="text-slate-600" data-testid="gst-line">Includes GST of {money(t.gst)}</p>}
@@ -108,9 +108,9 @@ export function TaxInvoice({ doc }: { doc: TaxInvoiceDoc }) {
       )}
 
       {(doc.notes || doc.terms) && (
-        <section className="mt-8 grid gap-6 border-t border-slate-200 pt-6 text-sm sm:grid-cols-2">
-          {doc.notes && <div><p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">Notes</p><p className="whitespace-pre-wrap text-slate-700">{doc.notes}</p></div>}
-          {doc.terms && <div><p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">Terms</p><p className="whitespace-pre-wrap text-slate-700">{doc.terms}</p></div>}
+        <section className="mt-8 grid gap-6 border-t-2 border-dashed border-slate-200 pt-6 text-sm sm:grid-cols-2">
+          {doc.notes && <div><p className="mb-1 text-xs uppercase text-slate-400 font-mono tracking-[0.12em]">Notes</p><p className="whitespace-pre-wrap text-slate-700">{doc.notes}</p></div>}
+          {doc.terms && <div><p className="mb-1 text-xs uppercase text-slate-400 font-mono tracking-[0.12em]">Terms</p><p className="whitespace-pre-wrap text-slate-700">{doc.terms}</p></div>}
         </section>
       )}
     </article>

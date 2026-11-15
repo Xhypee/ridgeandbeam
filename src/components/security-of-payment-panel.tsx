@@ -20,7 +20,7 @@ export function SecurityOfPaymentPanel({ state, ownerOccupier = true, subcontrac
   if (!st) {
     return (
       <section data-testid="sop-panel" data-sop-panel className={cx("rounded-[22px] bg-white p-5 ring-1 ring-slate-200", className)}>
-        <h2 className="text-[15px] font-bold text-ink">Security of payment</h2>
+        <h2 className="font-display text-[15px] font-bold text-ink">Security of payment</h2>
         <p className="mt-1 text-sm text-slate-600">Set the job&apos;s state to see the payment-claim rules.</p>
       </section>
     );
@@ -34,7 +34,7 @@ export function SecurityOfPaymentPanel({ state, ownerOccupier = true, subcontrac
   return (
     <section data-testid="sop-panel" data-sop-panel={st} className={cx("rounded-[22px] bg-white ring-1 ring-slate-200", className)}>
       <header className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-dashed border-slate-200 px-5 py-3.5">
-        <h2 className="text-[15px] font-bold text-ink">Getting paid (security of payment) · {AU_STATE_NAME[st]}</h2>
+        <h2 className="font-display text-[15px] font-bold text-ink">Getting paid (security of payment) · {AU_STATE_NAME[st]}</h2>
         <Badge tone={applies === true ? "teal" : applies === "depends" ? "violet" : "slate"}>
           {applies === true ? "Act applies to this job" : applies === "depends" ? "Depends on the customer" : "Doesn't apply to this job"}
         </Badge>

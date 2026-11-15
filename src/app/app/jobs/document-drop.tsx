@@ -231,7 +231,7 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
           onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(false); }}
           onDrop={onDrop}
           data-plan-sheet={compact && sheet ? "drawn" : "blank"}
-          className={cx("overflow-hidden transition", joined ? (over ? "ring-2 ring-inset ring-brand-500" : "") : cx("rounded-2xl", over ? "ring-2 ring-brand-500" : "ring-1 ring-brand-200"))}
+          className={cx("overflow-hidden transition", joined ? (over ? "ring-2 ring-inset ring-ink" : "") : cx("rounded-2xl", over ? "ring-2 ring-ink" : "ring-1 ring-brand-200"))}
           style={{ backgroundColor: SHEET, backgroundImage: "linear-gradient(rgba(31,95,63,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(31,95,63,.08) 1px, transparent 1px)", backgroundSize: "22px 22px", backgroundPosition: "-1px -1px" }}>
           <div className="relative">
             {compact && sheet && !reading && !busy ? sheet : <RoofDrawing />}
@@ -271,13 +271,13 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
         <svg viewBox="0 0 24 24" className={cx(measure && measured ? "hidden" : "h-7 w-7", over ? "text-brand-600" : "text-slate-400")} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" /></svg>
         {reading ? (
           <>
-            <p className="text-sm font-semibold text-ink" data-reading>Claude is reading {reading.total === 1 ? "your file" : `${Math.min(reading.done + 1, reading.total)} of ${reading.total}`}…</p>
+            <p className="font-display text-[15px] font-bold text-ink" data-reading>Claude is reading {reading.total === 1 ? "your file" : `${Math.min(reading.done + 1, reading.total)} of ${reading.total}`}…</p>
             <p className="text-xs text-slate-500">Looking for roof measurements and job details</p>
             <div className="mt-1 h-1.5 w-40 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${reading.total ? Math.max(8, (reading.done / reading.total) * 100) : 0}%` }} /></div>
           </>
         ) : busy ? (
           <>
-            <p className="text-sm font-semibold text-ink">Uploading {Math.min(busy.done + 1, busy.total)} of {busy.total}…</p>
+            <p className="font-display text-[15px] font-bold text-ink">Uploading {Math.min(busy.done + 1, busy.total)} of {busy.total}…</p>
             <div className="mt-1 h-1.5 w-40 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${busy.total ? (busy.done / busy.total) * 100 : 0}%` }} /></div>
           </>
         ) : (
@@ -287,7 +287,7 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
             ) : measure ? (<>
               <p className="font-semibold text-ink">{over ? "Drop to upload" : "Not measured yet"}</p>
               <p className="max-w-md text-sm text-slate-500">Drop plans, a roof report or a whole folder here. Claude reads them, fills in the roof measurements and sorts the rest into the job. Or measure from the plans, on the satellite map, or by hand.</p>
-            </>) : <p className="text-sm font-semibold text-ink">{over ? "Drop to upload" : "Drag files or folders here"}</p>}
+            </>) : <p className="font-display text-[15px] font-bold text-ink">{over ? "Drop to upload" : "Drag files or folders here"}</p>}
             <p className="text-xs text-slate-500">
               or <button type="button" onClick={() => files.current?.click()} className="font-semibold text-brand-700 hover:underline">browse files</button>
               {" · "}<button type="button" onClick={() => folder.current?.click()} className="font-semibold text-brand-700 hover:underline">choose a folder</button>

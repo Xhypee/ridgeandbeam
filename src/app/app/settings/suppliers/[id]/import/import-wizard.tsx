@@ -268,9 +268,9 @@ export function ImportWizard({ orgSupplierId, supplierName, today, saved, previo
                       <tr key={r.line} className={cx(r.errors.length ? "bg-red-50/70" : !r.calc_key && "bg-amber-50/60")} data-testid="preview-row">
                         <td className="px-2 py-2 text-xs text-slate-500">{r.line}</td>
                         <td className="px-2 py-2">
-                          <span className="block text-xs text-slate-500">{r.product_code}</span>
+                          <span className="block font-mono text-xs text-slate-500">{r.product_code}</span>
                           {r.description || <i className="text-slate-400">no description</i>}
-                          <span className="block text-xs text-slate-500">{[r.profile, r.finish, r.length_mm && `${r.length_mm / 1000} m`, r.pack_qty && `pack ${r.pack_qty}`].filter(Boolean).join(" · ")}</span>
+                          <span className="block font-mono text-xs text-slate-500">{[r.profile, r.finish, r.length_mm && `${r.length_mm / 1000} m`, r.pack_qty && `pack ${r.pack_qty}`].filter(Boolean).join(" · ")}</span>
                           {iss.map((m) => <span key={m} className="block text-xs text-red-700">{m}</span>)}
                           {r.warnings.map((m) => <span key={m} className="block text-xs text-amber-700">{m}</span>)}
                         </td>
@@ -321,7 +321,7 @@ export function ImportWizard({ orgSupplierId, supplierName, today, saved, previo
               <input type="checkbox" checked={authorised} onChange={(e) => setAuthorised(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 accent-brand-500" data-testid="authorised" />
               <span>
                 <b>I&apos;m authorised to use this price list for my business.</b>
-                <span className="block text-xs text-slate-500">These are your account prices. They stay private to your business and are never shown to homeowners or crew leads.</span>
+                <span className="block font-mono text-xs text-slate-500">These are your account prices. They stay private to your business and are never shown to homeowners or crew leads.</span>
               </span>
             </label>
             <div className="flex flex-wrap gap-2">

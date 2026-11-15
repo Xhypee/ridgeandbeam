@@ -105,7 +105,7 @@ export function SupplierPayForm({ orgId, jobId, orderId, supplier, orderCode, or
           <div className="flex items-center gap-3 px-3.5 py-2.5"><span className="w-24 shrink-0 text-xs text-slate-500">Reference</span><span className="flex-1 text-sm font-medium text-ink">{inv.no ?? orderCode ?? "Invoice number"}</span></div>
         </div>
       </div>
-      <div className="flex items-center gap-3 border-t border-slate-200 bg-white px-5 py-3">
+      <div className="flex items-center gap-3 border-t-2 border-dashed border-slate-200 bg-white px-5 py-3">
         <div className="min-w-0 flex-1"><p className="text-xs text-slate-500">Total inc GST</p><p className="font-display text-2xl font-bold leading-none text-ink" data-pay-total>{aud(total)}</p></div>
         <SubmitButton className="min-h-12 gap-2 px-5"><Ico d="M5 12l5 5 9-10" />I&apos;ve paid it</SubmitButton>
       </div>

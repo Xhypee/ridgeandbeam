@@ -104,7 +104,7 @@ export function WrapPanel({ d, askHref, payHref }: { d: Docket; askHref: string;
                 <Icon d={s.state === "done" ? CHECK : s.icon} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className={cx("block text-sm font-semibold", s.state === "todo" ? "text-slate-600" : "text-ink")}>{s.label}</span>
+                <span className={cx("block font-display text-[15px] font-bold", s.state === "todo" ? "text-slate-600" : "text-ink")}>{s.label}</span>
                 <span className="block text-xs leading-snug text-slate-500">{s.detail}</span>
                 {s.wide}
               </span>

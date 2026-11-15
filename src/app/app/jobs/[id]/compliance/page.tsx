@@ -223,8 +223,8 @@ function ItemRow({ it, jobId, orgId, files, file }: { it: ChecklistItem; jobId: 
             {it.manual && <span className="text-xs text-slate-500">ticked{it.tick?.updated_by_name ? ` by ${it.tick.updated_by_name}` : ""}</span>}
           </div>
           <p className="mt-1 text-sm text-slate-600">{it.detail}</p>
-          {it.due && it.status !== "done" && <p className="mt-1 text-sm font-semibold text-ink">Date: {formatAuDate(it.due)}</p>}
-          {it.link && <a href={it.link.url} target={it.link.url.startsWith("/") ? undefined : "_blank"} rel="noreferrer" className="mt-1 inline-flex min-h-9 items-center text-sm font-semibold text-brand-700 underline underline-offset-2">{it.link.label}{it.link.url.startsWith("/") ? "" : " ↗"}</a>}
+          {it.due && it.status !== "done" && <p className="mt-1 font-display text-[15px] font-bold text-ink">Date: {formatAuDate(it.due)}</p>}
+          {it.link && <a href={it.link.url} target={it.link.url.startsWith("/") ? undefined : "_blank"} rel="noreferrer" className="mt-1 inline-flex min-h-9 items-center font-semibold text-brand-700 underline underline-offset-2 font-mono text-xs uppercase tracking-wider">{it.link.label}{it.link.url.startsWith("/") ? "" : " ↗"}</a>}
           {(it.tick?.reference || it.tick?.note) && <p className="mt-1 text-sm text-slate-700">{it.tick?.reference && <span className="font-semibold">Ref {it.tick.reference}. </span>}{it.tick?.note}</p>}
           {file && (
             <p className="mt-1 text-sm">

@@ -35,7 +35,7 @@ export function BuildPanel({ d, askHref, payHref }: { d: Docket; askHref: string
         <div className="flex gap-2 px-5 pb-4" data-last-day>
           {tel && <a href={`sms:${tel}?&body=${encodeURIComponent(`Hi ${first}, the new roof's done. Thanks for having us!`)}`} className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-ink px-3 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90"><Icon d="M4 5h16v11H9l-5 4z" />Text {first}: the roof&apos;s done</a>}
           <form action={setStage}><input type="hidden" name="id" value={j.id} /><input type="hidden" name="stage" value="completed" />
-            <button className="flex min-h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold text-ink ring-1 ring-slate-300 hover:bg-slate-50">Finish build</button></form>
+            <button className="flex min-h-11 items-center justify-center rounded-xl px-4 font-mono text-xs font-semibold uppercase tracking-wider text-ink ring-1 ring-slate-300 hover:bg-slate-50">Finish build</button></form>
         </div>
       )}
 
@@ -54,7 +54,7 @@ export function BuildPanel({ d, askHref, payHref }: { d: Docket; askHref: string
                 <li key={r.label + k} className={cx("flex items-center gap-3 px-3.5 py-2.5", k > 0 && "border-t-2 border-dashed border-slate-200", live && "bg-brand-50")} data-pay-row={r.state}>
                   <span className={cx("grid h-7 w-7 shrink-0 place-items-center rounded-full", r.state === "paid" ? "bg-brand-500 text-white" : live ? "bg-ink text-white" : "bg-white text-slate-400 ring-1 ring-slate-200")}><Icon d={r.state === "paid" ? CHECK : DOLLAR} className="h-3.5 w-3.5" /></span>
                   <span className="min-w-0 flex-1">
-                    <span className={cx("block text-sm font-semibold", r.state === "later" ? "text-slate-500" : "text-ink")}>{r.label}{r.pct < 100 ? ` · ${r.pct}%` : ""}</span>
+                    <span className={cx("block font-display text-[15px] font-bold", r.state === "later" ? "text-slate-500" : "text-ink")}>{r.label}{r.pct < 100 ? ` · ${r.pct}%` : ""}</span>
                     <span className="block truncate text-xs text-slate-500">{sub}{r.extra > 0 ? ` · incl. ${aud(r.extra)} extra work` : ""}</span>
                   </span>
                   <span className={cx("font-display text-[15px] font-bold tabular-nums", r.state === "paid" ? "text-teal-700" : r.state === "later" ? "text-slate-400" : "text-ink")}>{aud(r.amount)}</span>
@@ -72,7 +72,7 @@ export function BuildPanel({ d, askHref, payHref }: { d: Docket; askHref: string
           )}
           {next?.state === "asked" && (
             <div className="mt-3 flex items-center gap-3 rounded-xl bg-amber-50/60 px-3.5 py-2.5 ring-1 ring-amber-200" data-requested>
-              <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-ink">Requested {next.invoice?.issue_date ? wkday(next.invoice.issue_date) : ""} · not paid yet</span><span className="block text-xs text-slate-500">{next.invoice?.last_reminder_on && next.invoice.last_reminder_on !== next.invoice.issue_date ? `Last reminder ${wkday(next.invoice.last_reminder_on)}` : `Emailed${d.customer.phone ? " and texted" : ""} to ${first} with a pay link`}</span></span>
+              <span className="min-w-0 flex-1"><span className="block font-display text-[15px] font-bold text-ink">Requested {next.invoice?.issue_date ? wkday(next.invoice.issue_date) : ""} · not paid yet</span><span className="block font-mono text-xs text-slate-500">{next.invoice?.last_reminder_on && next.invoice.last_reminder_on !== next.invoice.issue_date ? `Last reminder ${wkday(next.invoice.last_reminder_on)}` : `Emailed${d.customer.phone ? " and texted" : ""} to ${first} with a pay link`}</span></span>
               <Link href={askHref} scroll={false} className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-ink ring-1 ring-slate-300 hover:bg-slate-50">Remind</Link>
             </div>
           )}
@@ -91,7 +91,7 @@ export function BuildPanel({ d, askHref, payHref }: { d: Docket; askHref: string
                 <li key={o.id} className="flex items-center gap-3 px-5 py-3" data-delivery={o.supplier} data-state={o.paidAt ? "paid" : delivered ? "delivered" : "coming"}>
                   <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-full", delivered ? "bg-brand-500 text-white" : "bg-white text-slate-500 ring-1 ring-slate-200")}><Icon d={delivered ? CHECK : TRUCK} /></span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold text-ink">{o.supplier}{o.branch ? ` ${o.branch}` : ""}</span>
+                    <span className="block font-display text-[15px] font-bold text-ink">{o.supplier}{o.branch ? ` ${o.branch}` : ""}</span>
                     <span className="block truncate text-xs text-slate-500">{o.what} · {when}</span>
                     {delivered && (o.paidAt
                       ? <span className="mt-0.5 flex items-center gap-1 text-xs font-medium text-slate-600">{o.invoice?.source === "gmail" && <GmailMark />}{o.invoice?.total ? `${aud(o.invoice.total, true)} · ` : ""}paid {dayTime(o.paidAt)}</span>

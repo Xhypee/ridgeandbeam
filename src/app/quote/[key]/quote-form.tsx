@@ -152,7 +152,7 @@ export function QuoteForm({ intakeKey, orgName, rates, phone, defaultState }: { 
           <p className="text-sm text-white/80">{orgName} will send you a price after a quick look at your roof.</p>
         ) : range ? (
           <>
-            <p className="text-xs uppercase tracking-wide text-white/70">Estimated price range, including GST</p>
+            <p className="text-xs uppercase text-white/70 font-mono tracking-[0.12em]">Estimated price range, including GST</p>
             <p className="mt-1 text-3xl font-bold tabular-nums">{aud(range.low)} – {aud(range.high)}</p>
             <p className="mt-1 text-xs text-white/70">About {range.m2} m² of roof. Final price after a free inspection.</p>
           </>

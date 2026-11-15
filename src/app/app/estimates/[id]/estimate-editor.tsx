@@ -568,7 +568,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
           </div>
           {!hasOptions && (
             <>
-              <div className="flex w-80 max-w-full justify-between border-t border-slate-200 pt-2 text-base font-semibold">
+              <div className="flex w-80 max-w-full justify-between border-t-2 border-dashed border-slate-200 pt-2 text-base font-semibold">
                 <span>Total{taxRate > 0 ? " (inc GST)" : ""}</span><span className="tabular-nums" data-testid="estimate-total">{money(single.t.total)}</span>
               </div>
               {taxRate > 0 && (inclusive

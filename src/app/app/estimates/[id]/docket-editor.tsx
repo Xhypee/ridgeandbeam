@@ -239,7 +239,7 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
               <div className="flex flex-wrap gap-2" role="group" aria-label="Sheet profile">
                 {DOCKET_PROFILES.map((p) => (
                   <button key={p} type="button" onClick={() => pickProfile(p)} aria-pressed={p === profile} data-testid={`docket-profile-${p}`}
-                    className={cx("min-h-11 rounded-xl px-3.5 text-sm font-bold ring-1", p === profile ? "bg-brand-50 text-ink ring-2 ring-brand-500" : "bg-white text-ink ring-slate-200 hover:bg-slate-50")}>
+                    className={cx("min-h-11 rounded-xl px-3.5 text-sm font-bold ring-1", p === profile ? "bg-brand-50 text-ink ring-2 ring-ink" : "bg-white text-ink ring-slate-200 hover:bg-slate-50")}>
                     {PROFILE_SHORT[p]}
                   </button>
                 ))}
@@ -247,7 +247,7 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
               <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Colour">
                 {COLOURS.map((c) => (
                   <button key={c.name} type="button" onClick={() => pickColour(c.name)} aria-label={c.name} title={c.name} aria-pressed={c.name === colour} data-testid="docket-colour"
-                    className={cx("h-9 w-9 rounded-full ring-offset-2 sm:h-8 sm:w-8", c.name === colour ? "ring-2 ring-brand-500" : "ring-1 ring-slate-300")} style={{ background: c.hex }} />
+                    className={cx("h-9 w-9 rounded-full ring-offset-2 sm:h-8 sm:w-8", c.name === colour ? "ring-2 ring-ink" : "ring-1 ring-slate-300")} style={{ background: c.hex }} />
                 ))}
               </div>
               <label className="mt-2 inline-flex min-h-11 items-center gap-2 text-sm text-slate-600">

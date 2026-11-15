@@ -27,7 +27,7 @@ const iconBtn = "grid h-10 w-10 shrink-0 place-items-center rounded-xl text-ink 
 function Stamp({ label, value, on, tilt }: { label: string; value: string; on: boolean; tilt?: string }) {
   return (
     <div className={cx("rounded-lg px-2 py-2.5 text-center font-mono", on ? cx("border-2 border-brand-500 text-brand-700", tilt) : "border-2 border-dashed border-slate-300 text-slate-400")} data-stamp={label.toLowerCase()} data-on={on ? "1" : "0"}>
-      <p className="text-[11px] font-bold uppercase tracking-[0.18em]">{label}</p>
+      <p className="text-[11px] uppercase font-mono tracking-[0.12em]">{label}</p>
       <p className="mt-0.5 text-sm font-bold">{value}</p>
     </div>
   );
@@ -118,8 +118,8 @@ function GettingToQuote({ d, previewHref }: { d: Docket; previewHref: string }) 
       <ol className="mt-3 overflow-hidden rounded-xl ring-1 ring-slate-200">
         {steps.map((s, n) => (
           <li key={s.k} className={cx("flex items-center gap-3 px-3.5 py-3", n > 0 && "border-t-2 border-dashed border-slate-200", n === nowIx && "bg-brand-50")} data-quote-step={s.k} data-done={s.done ? "1" : "0"}>
-            <span className={cx("grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold", s.done ? "bg-brand-500 text-white" : n === nowIx ? "bg-white text-brand-700 ring-2 ring-brand-500" : "bg-white text-slate-400 ring-1 ring-slate-200")}>{s.done ? <Icon d={CHECK} className="h-3.5 w-3.5" /> : n + 1}</span>
-            <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-ink">{s.label}</span><span className="block text-xs text-slate-500">{s.detail}</span></span>
+            <span className={cx("grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold", s.done ? "bg-brand-500 text-white" : n === nowIx ? "bg-white text-brand-700 ring-2 ring-ink" : "bg-white text-slate-400 ring-1 ring-slate-200")}>{s.done ? <Icon d={CHECK} className="h-3.5 w-3.5" /> : n + 1}</span>
+            <span className="min-w-0 flex-1"><span className="block font-display text-[15px] font-bold text-ink">{s.label}</span><span className="block font-mono text-xs text-slate-500">{s.detail}</span></span>
             {s.href && <Link href={s.href} className="text-xs font-semibold text-brand-700">{s.done ? "View" : "Open"}</Link>}
           </li>
         ))}

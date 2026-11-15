@@ -11,7 +11,7 @@ import { jobTypeLabel } from "@/lib/job-types";
 
 
 const btn = "inline-flex min-h-11 items-center rounded-xl bg-white px-4 font-mono text-xs font-semibold uppercase tracking-wider text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50";
-const primary = "inline-flex min-h-13 items-center rounded-xl bg-brand-300 px-6 text-base font-bold text-ink hover:bg-brand-200";
+const primary = "font-display inline-flex min-h-13 items-center rounded-xl bg-brand-300 px-6 text-base font-bold text-ink hover:bg-brand-200";
 
 type Row = NextStepJob & { title: string; site_address: string | null; job_type: string; crew_id: string | null; public_token: string; customers: { id: string; name: string; phone: string | null } };
 
