@@ -6,13 +6,13 @@ import type { Docket } from "./job-docket-server";
 
 export type RecordState = "done" | "now" | "later";
 export type RecordRow = { key: RecordKey; label: string; value: string; state: RecordState; href?: string };
-export type RecordKey = "lead" | "plans" | "inspection" | "quote" | "contract" | "legal" | "payments" | "materials" | "crew" | "photos" | "warranty" | "messages";
+export type RecordKey = "lead" | "plans" | "inspection" | "quote" | "contract" | "legal" | "payments" | "materials" | "crew" | "safety" | "photos" | "variations" | "signoff" | "warranty" | "messages";
 
-export type RecordInput = Pick<Docket, "job" | "quote" | "roof" | "invoices" | "files" | "messages" | "compliance" | "sold" | "build" | "quoting" | "wrap" | "team"> & { column: Docket["column"] };
+export type RecordInput = Pick<Docket, "job" | "quote" | "roof" | "invoices" | "files" | "messages" | "compliance" | "sold" | "build" | "quoting" | "wrap" | "team"> & { column: Docket["column"]; extra?: Docket["extra"]; docs?: Docket["docs"] };
 
-const LABEL: Record<RecordKey, string> = {
+export const LABEL: Record<RecordKey, string> = {
   lead: "Lead", plans: "Plans", inspection: "Inspection", quote: "Quote", contract: "Contract", legal: "Legal steps",
-  payments: "Payments", materials: "Materials", crew: "Crew", photos: "Photos", warranty: "Warranty", messages: "Messages",
+  payments: "Payments", materials: "Materials", crew: "Crew", safety: "Site safety", photos: "Photos", variations: "Variations", signoff: "Sign-off", warranty: "Warranty", messages: "Messages",
 };
 const SOURCE: Record<string, string> = { website: "Website", instant_quote: "Instant quote", gmail: "Gmail", email: "Email", manual: "Added by hand", phone: "Phone", referral: "Referral", door_knock: "Door knock" };
 const aud = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: n % 1 ? 2 : 0 });
@@ -42,10 +42,12 @@ export function focusKey(d: RecordInput, now = new Date()): RecordKey | null {
     return "crew";
   }
   if (d.quote.status === "accepted" && d.column === "quoted") return "payments"; // signed, deposit not in yet
-  if (j.stage === "in_progress") return d.files.photos > 0 ? "payments" : "photos";
+  if (j.stage === "in_progress" && !d.extra?.variations.some((v) => v.status === "draft" || v.status === "sent")) return d.files.photos > 0 ? "payments" : "photos";
+  if (j.stage === "in_progress" && d.extra?.variations.some((v) => v.status === "draft" || v.status === "sent")) return "variations";
   if (j.stage === "completed") {
     if (d.invoices.some((i) => i.balance > 0)) return "payments";
     if (d.build?.deliveries.some((o) => !o.paidAt)) return "materials";
+    if (d.extra && !d.extra.signoff) return "signoff";
     if (!d.wrap?.handoverSentAt) return "warranty";
   }
   return null;
@@ -70,8 +72,12 @@ export function jobRecord(d: RecordInput, now = new Date()): RecordRow[] {
 
   // Plans: what the quote was measured from.
   const area = d.roof?.summary.trueArea ?? 0;
+  const planDocs = (d.docs ?? []).filter((f) => f.category === "plans");
+  const currentPlan = planDocs.find((f) => !f.superseded && !f.report);
+  const report = planDocs.find((f) => f.report);
   const plans = [
-    d.files.plans ? plural(d.files.plans, "plan") : null,
+    currentPlan?.revision ?? (d.files.plans ? plural(d.files.plans - (report ? 1 : 0) || d.files.plans, "plan") : null),
+    report ? `${report.report?.source ?? "Roof"} report` : null,
     area > 0 ? `${Math.round(area * 10) / 10} m²` : null,
     d.roof && d.roof.summary.maxPitch > 0 ? `${Math.round(d.roof.summary.maxPitch)}°` : null,
     !d.files.plans && area > 0 ? (q?.measurement_source === "satellite" ? "satellite" : "measured") : null,
@@ -124,8 +130,27 @@ export function jobRecord(d: RecordInput, now = new Date()): RecordRow[] {
   const end = j.scheduled_end ?? s?.crew.end ?? null;
   add("crew", crewName || start ? [crewName, start ? `${day(start)}${end && end !== start ? ` – ${day(end)}` : ""}` : null].filter(Boolean).join(" · ") : null, "/app/schedule");
 
-  // Photos
-  add("photos", d.files.photos ? plural(d.files.photos, "photo") : null, `${base}/files`);
+  // Site safety: the SWMS (compliance item) and the days the crew logged on site.
+  const x = d.extra;
+  const swmsDone = x?.swms?.status === "done";
+  const days = x?.siteDays.days ?? 0;
+  add("safety", swmsDone || days ? [swmsDone ? `SWMS${x?.swms?.by ? ` by ${x.swms.by.split(" ")[0]}` : " done"}` : null, days ? `${plural(days, "day")} logged` : null].filter(Boolean).join(" · ") : null, `${base}/compliance`);
+
+  // Photos, by stage when they're sorted.
+  const ps = x?.photoStages;
+  add("photos", d.files.photos ? (ps && ps.before + ps.during + ps.after > 0 ? [ps.before ? `Before ${ps.before}` : null, ps.during ? `during ${ps.during}` : null, ps.after ? `after ${ps.after}` : null].filter(Boolean).join(" · ").replace(/^./, (c) => c.toUpperCase()) : plural(d.files.photos, "photo")) : null, `${base}/files`);
+
+  // Variations (change orders)
+  const vs = x?.variations ?? [];
+  const signedV = vs.filter((v) => v.status === "approved");
+  const extraTotal = signedV.reduce((t, v) => t + v.amount, 0);
+  const waitingV = vs.length - signedV.length;
+  add("variations", vs.length ? [plural(vs.length, "variation"), signedV.length ? `+${aud(extraTotal)}` : null, waitingV ? `${waitingV} not signed` : signedV.length ? "all signed" : null].filter(Boolean).join(" · ") : null, `${base}/change-orders`);
+
+  // Sign-off: the homeowner's final walkthrough signature; open touch-ups (punch list) show here too.
+  const so = x?.signoff;
+  const open = x?.defects.open ?? 0;
+  add("signoff", so ? `Signed${so.name ? ` by ${so.name.split(" ")[0]}` : ""} · ${day(so.at)}${open ? ` · ${plural(open, "touch-up")} open` : ""}` : null, `${base}/closeout`);
 
   // Warranty & handover
   const w = d.wrap;
@@ -133,7 +158,8 @@ export function jobRecord(d: RecordInput, now = new Date()): RecordRow[] {
 
   // Messages
   const m = d.messages;
-  add("messages", m.length ? `Latest ${m[0].channel === "sms" ? "text" : m[0].channel} · ${day(m[0].at)}` : null, base);
+  const mc = x?.messageCount ?? m.length;
+  add("messages", m.length ? `${plural(mc, "message")} · latest ${day(m[0].at)}` : null, base);
 
   const focus = focusKey(d, now);
   return rows.map((r) => ({ ...r, state: r.key === focus ? "now" : has.has(r.key) ? "done" : "later" }));
@@ -149,5 +175,8 @@ export const NOW_EMPTY: Partial<Record<RecordKey, string>> = {
   materials: "Not ordered yet",
   crew: "Not booked yet",
   photos: "No photos yet",
+  variations: "Not sent to sign yet",
+  signoff: "Not signed yet",
+  safety: "SWMS not done yet",
   warranty: "Handover pack not sent",
 };
