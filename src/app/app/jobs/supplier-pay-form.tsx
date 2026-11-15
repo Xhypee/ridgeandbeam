@@ -53,7 +53,7 @@ export function SupplierPayForm({ orgId, jobId, orderId, supplier, orderCode, or
     }
   }
   const copy = (k: string, v: string | null) => { if (v) { void navigator.clipboard?.writeText(v); setCopied(k); setTimeout(() => setCopied(null), 1200); } };
-  const box = "min-h-10 w-full rounded-lg bg-white px-3 text-sm text-ink ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500";
+  const box = "min-h-10 w-full rounded-lg bg-white px-3 text-sm text-ink ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-ink";
   const field = (labelText: string, name: string, def: string | null, extra?: { type?: string; value?: string; onChange?: (v: string) => void; inputMode?: "decimal" }) => (
     <label className="block"><span className="mb-1 block text-[11px] font-semibold text-slate-500">{labelText}</span>
       {extra?.onChange
@@ -105,7 +105,7 @@ export function SupplierPayForm({ orgId, jobId, orderId, supplier, orderCode, or
           <div className="flex items-center gap-3 px-3.5 py-2.5"><span className="w-24 shrink-0 text-xs text-slate-500">Reference</span><span className="flex-1 text-sm font-medium text-ink">{inv.no ?? orderCode ?? "Invoice number"}</span></div>
         </div>
       </div>
-      <div className="flex items-center gap-3 border-t border-slate-200 bg-white px-5 py-3">
+      <div className="flex items-center gap-3 border-t-2 border-dashed border-slate-200 bg-white px-5 py-3">
         <div className="min-w-0 flex-1"><p className="text-xs text-slate-500">Total inc GST</p><p className="font-display text-2xl font-bold leading-none text-ink" data-pay-total>{aud(total)}</p></div>
         <SubmitButton className="min-h-12 gap-2 px-5"><Ico d="M5 12l5 5 9-10" />I&apos;ve paid it</SubmitButton>
       </div>

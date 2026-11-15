@@ -83,9 +83,9 @@ export default async function OrdersPage({ searchParams }: PageProps<"/app/order
           <tbody className="divide-y-2 divide-dashed divide-slate-200">
             {list.map((o) => (
               <tr key={o.id} className="hover:bg-slate-50">
-                <td className={cx(td, "whitespace-nowrap")}><Link href={`/app/orders/${o.id}`} className="font-medium text-brand-700 hover:underline">{o.delivery_date ? date(o.delivery_date, { weekday: "short", day: "2-digit", month: "2-digit" }) : "No date"}</Link><span className="block text-xs text-slate-500">{label(o.delivery_type)}</span></td>
-                <td className={td}><Link href={`/app/orders/${o.id}`} className="hover:text-brand-600">{o.jobs?.customers?.name}<span className="block text-xs text-slate-500">{o.jobs?.title}</span></Link></td>
-                <td className={td}>{o.supplier}<span className="block text-xs text-slate-500">{[o.branch, o.po_number && `PO ${o.po_number}`].filter(Boolean).join(" · ")}</span></td>
+                <td className={cx(td, "whitespace-nowrap")}><Link href={`/app/orders/${o.id}`} className="font-medium text-brand-700 hover:underline">{o.delivery_date ? date(o.delivery_date, { weekday: "short", day: "2-digit", month: "2-digit" }) : "No date"}</Link><span className="block font-mono text-xs text-slate-500">{label(o.delivery_type)}</span></td>
+                <td className={td}><Link href={`/app/orders/${o.id}`} className="hover:text-brand-600">{o.jobs?.customers?.name}<span className="block font-mono text-xs text-slate-500">{o.jobs?.title}</span></Link></td>
+                <td className={td}>{o.supplier}<span className="block font-mono text-xs text-slate-500">{[o.branch, o.po_number && `PO ${o.po_number}`].filter(Boolean).join(" · ")}</span></td>
                 <td className={td}><Badge tone={TONE[o.status]}>{label(o.status)}</Badge></td>
                 <td className={cx(td, "text-right")}>{money(orderTotal(o.material_order_items))}</td>
               </tr>

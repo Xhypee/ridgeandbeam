@@ -313,7 +313,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
           </div>
         )}
         {hasPlans && (
-          <Link href={`/app/measure/${id}/plans`} className="mb-4 flex items-center justify-between gap-3 rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-700 ring-1 ring-brand-500/30 hover:bg-brand-100" data-testid="view-roof">
+          <Link href={`/app/measure/${id}/plans`} className="mb-4 flex items-center justify-between gap-3 rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-700 ring-1 ring-ink/30 hover:bg-brand-100" data-testid="view-roof">
             <span><b>View the roof</b> · plan, 3D model and sheet cut list from the plans</span>
             <span aria-hidden>→</span>
           </Link>
@@ -429,8 +429,8 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
               ["includeEdgeProtection", "Edge protection"],
               ["includeSkip", "Skip bins"],
             ] as const).map(([k, l]) => (
-              <label key={k} className="flex min-h-10 items-center gap-2 rounded-lg px-3 ring-1 ring-slate-200 has-[:checked]:bg-brand-50 has-[:checked]:ring-brand-500">
-                <input type="checkbox" className="h-4 w-4 accent-brand-500" checked={m[k]} onChange={(e) => setMeas({ [k]: e.target.checked } as Partial<Measurements>)} />{l}
+              <label key={k} className="flex min-h-10 items-center gap-2 rounded-lg px-3 ring-1 ring-slate-200 has-[:checked]:bg-brand-50 has-[:checked]:ring-ink">
+                <input type="checkbox" className="h-4 w-4 accent-ink" checked={m[k]} onChange={(e) => setMeas({ [k]: e.target.checked } as Partial<Measurements>)} />{l}
               </label>
             ))}
           </div>
@@ -503,7 +503,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
         title={hasOptions ? (optionLabel === "alternates" ? "Alternates" : "Good / better / best options") : "Options"}
         actions={!ro && (
           <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-            <input type="checkbox" className="h-5 w-5 accent-brand-500" checked={hasOptions} onChange={(e) => toggleOptions(e.target.checked)} aria-label="Offer options" />
+            <input type="checkbox" className="h-5 w-5 accent-ink" checked={hasOptions} onChange={(e) => toggleOptions(e.target.checked)} aria-label="Offer options" />
             Offer options
           </label>
         )}
@@ -525,7 +525,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
             </div>
             <div className="grid gap-3 lg:grid-cols-3">
               {options.map((o, i) => (
-                <fieldset key={o.key} disabled={ro} className={cx("space-y-2 rounded-lg p-3 ring-1", o.recommended ? "bg-brand-50 ring-brand-500" : "ring-slate-200")} data-testid="option-card">
+                <fieldset key={o.key} disabled={ro} className={cx("space-y-2 rounded-lg p-3 ring-1", o.recommended ? "bg-brand-50 ring-ink" : "ring-slate-200")} data-testid="option-card">
                   <div className="flex items-center gap-2">
                     <Input value={o.name} onChange={(e) => setOpt(o.key, { name: e.target.value })} aria-label={`${word} name`} className="font-medium" />
                     <button type="button" className="h-9 w-9 shrink-0 rounded text-slate-500 hover:bg-white disabled:opacity-30" disabled={i === 0} onClick={() => move(o.key, -1)} aria-label="Move left">←</button>
@@ -533,7 +533,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
                   </div>
                   <div className="flex flex-wrap items-center gap-3 text-sm">
                     <label className="flex items-center gap-1.5">
-                      <input type="radio" name={`rec-${id}`} className="h-4 w-4 accent-brand-500" checked={o.recommended} onChange={() => { setOptions((p) => p.map((x) => ({ ...x, recommended: x.key === o.key }))); touch(); }} />
+                      <input type="radio" name={`rec-${id}`} className="h-4 w-4 accent-ink" checked={o.recommended} onChange={() => { setOptions((p) => p.map((x) => ({ ...x, recommended: x.key === o.key }))); touch(); }} />
                       Recommended
                     </label>
                     <Select className="w-auto" value={o.tier ?? ""} onChange={(e) => setOpt(o.key, { tier: (e.target.value || null) as Tier | null })} aria-label="Price-book tier">
@@ -568,7 +568,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
           </div>
           {!hasOptions && (
             <>
-              <div className="flex w-80 max-w-full justify-between border-t border-slate-200 pt-2 text-base font-semibold">
+              <div className="flex w-80 max-w-full justify-between border-t-2 border-dashed border-slate-200 pt-2 text-base font-semibold">
                 <span>Total{taxRate > 0 ? " (inc GST)" : ""}</span><span className="tabular-nums" data-testid="estimate-total">{money(single.t.total)}</span>
               </div>
               {taxRate > 0 && (inclusive
@@ -581,8 +581,8 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
           <div className="mt-2 flex w-80 max-w-full flex-col gap-1.5 rounded-lg bg-slate-50 p-2 text-xs text-slate-700">
             {gstRegistered ? (
               <>
-                <label className="flex items-center gap-2"><input type="checkbox" disabled={ro} className="h-4 w-4 accent-brand-500" checked={taxRate > 0} onChange={(e) => { setTaxRate(e.target.checked ? 10 : 0); touch(); }} aria-label="Charge GST" />Charge GST (10%)</label>
-                <label className="flex items-center gap-2"><input type="checkbox" disabled={ro || taxRate === 0} className="h-4 w-4 accent-brand-500" checked={inclusive} onChange={(e) => toggleInclusive(e.target.checked)} aria-label="Prices include GST" />Prices include GST (homeowner quotes)</label>
+                <label className="flex items-center gap-2"><input type="checkbox" disabled={ro} className="h-4 w-4 accent-ink" checked={taxRate > 0} onChange={(e) => { setTaxRate(e.target.checked ? 10 : 0); touch(); }} aria-label="Charge GST" />Charge GST (10%)</label>
+                <label className="flex items-center gap-2"><input type="checkbox" disabled={ro || taxRate === 0} className="h-4 w-4 accent-ink" checked={inclusive} onChange={(e) => toggleInclusive(e.target.checked)} aria-label="Prices include GST" />Prices include GST (homeowner quotes)</label>
               </>
             ) : (
               <span>Your company is set as not registered for GST, so no GST is charged.</span>

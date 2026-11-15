@@ -38,15 +38,15 @@ function ClaudeNoteBody({ n }: { n: ClaudeNote }) {
       {n.summary && <p className="mt-1 text-slate-600">{n.summary}</p>}
       {n.added.length > 0 && (
         <div className="mt-2.5" data-claude-added>
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-700">Added</p>
+          <p className="text-[10px] uppercase text-brand-700 font-mono tracking-[0.12em]">Added</p>
           <ul className="mt-1 space-y-1">
-            {n.added.map((t, i) => <li key={i} className="flex gap-2 text-ink"><span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-brand-500 text-white"><Icon d={TICK} className="h-2.5 w-2.5" /></span><span className="[overflow-wrap:anywhere]">{t}</span></li>)}
+            {n.added.map((t, i) => <li key={i} className="flex gap-2 text-ink"><span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-ink text-white"><Icon d={TICK} className="h-2.5 w-2.5" /></span><span className="[overflow-wrap:anywhere]">{t}</span></li>)}
           </ul>
         </div>
       )}
       {n.check.length > 0 && (
         <div className="mt-2.5 rounded-lg bg-amber-50 px-2.5 py-2" data-claude-check>
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-800">Check</p>
+          <p className="text-[10px] uppercase text-amber-800 font-mono tracking-[0.12em]">Check</p>
           <ul className="mt-1 space-y-1">
             {n.check.map((t, i) => <li key={i} className="flex gap-2 text-amber-950"><span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-amber-500 text-[10px] font-bold text-white">!</span><span className="[overflow-wrap:anywhere]">{t}</span></li>)}
           </ul>
@@ -54,7 +54,7 @@ function ClaudeNoteBody({ n }: { n: ClaudeNote }) {
       )}
       {n.details.length > 0 && (
         <div className="mt-2.5" data-claude-details>
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Details</p>
+          <p className="text-[10px] uppercase text-slate-400 font-mono tracking-[0.12em]">Details</p>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {n.details.map((t, i) => <span key={i} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-700">{t}</span>)}
           </div>
@@ -111,7 +111,7 @@ export function JobNotes({ d, leadNote }: { d: Docket; leadNote?: { by: string; 
         <ActionForm action={addNote} className="mt-2">
           <input type="hidden" name="job_id" value={d.job.id} />
           <div className="flex gap-2">
-            <input name="body" aria-label="Add a note" placeholder="Add a note…" className="min-h-10 min-w-0 flex-1 rounded-lg px-3 text-sm ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            <input name="body" aria-label="Add a note" placeholder="Add a note…" className="min-h-10 min-w-0 flex-1 rounded-lg px-3 text-sm ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-ink" />
             <SubmitButton variant="secondary" className="min-h-10 px-3 text-sm">Add</SubmitButton>
           </div>
         </ActionForm>

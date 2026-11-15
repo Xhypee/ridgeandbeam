@@ -192,12 +192,12 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready, dock
     await deleteChat(id).catch(() => {});
   }
   return (
-    <div ref={root} className="border-t border-slate-200 bg-white" data-claude-bar data-focused={open ? "true" : "false"}>
+    <div ref={root} className="border-t-2 border-dashed border-slate-200 bg-white" data-claude-bar data-focused={open ? "true" : "false"}>
       {open && (<>
         {/* Everything above the chat blurs; tap it to go back to the job. */}
         {!docked && <button type="button" aria-label="Back to the sidebar" onClick={() => setFocused(false)} data-claude-dim
           className="absolute inset-x-0 top-0 z-20 h-[30%] cursor-default bg-white/60 backdrop-blur-md" />}
-        <div ref={panel} className={cx("absolute inset-x-0 z-30 flex flex-col bg-white", docked ? "top-0" : "top-[30%] rounded-t-[22px] border-t border-slate-200")} style={{ bottom: barH }} data-claude-panel>
+        <div ref={panel} className={cx("absolute inset-x-0 z-30 flex flex-col bg-white", docked ? "top-0" : "top-[30%] rounded-t-[22px] border-t-2 border-dashed border-slate-200")} style={{ bottom: barH }} data-claude-panel>
           <div className={cx("flex items-center justify-between px-4 pb-1", docked ? "pt-6" : "pt-3")}>
             {docked
               ? <p className="flex items-center gap-2 font-display text-xl font-bold text-ink"><span className="grid h-7 w-7 place-items-center rounded-full bg-[#d97757] text-white"><Spark className="h-3.5 w-3.5" /></span>Ask Claude</p>
@@ -260,7 +260,7 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready, dock
         </div>
       </>)}
       <form onSubmit={onSubmit} className="flex items-center gap-2 px-3 py-3">
-        <label className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-2xl bg-cream px-3 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-brand-500">
+        <label className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-2xl bg-cream px-3 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-ink">
           <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#d97757] text-white"><Spark className="h-3.5 w-3.5" /></span>
           <input ref={input} value={text} onChange={(e) => setText(e.target.value)} onFocus={() => { if (ready) setFocused(true); }} onClick={() => { if (ready) setFocused(true); }} disabled={call !== "off"} aria-label="Ask Claude"
             placeholder={status ?? (!ready ? "Claude isn't connected yet" : turns.length ? "Reply to Claude…" : firstName ? `Ask Claude about ${firstName} or your business…` : "Ask Claude about your business…")}

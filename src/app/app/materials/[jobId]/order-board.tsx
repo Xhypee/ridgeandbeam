@@ -36,7 +36,7 @@ function Icon({ d, className = "h-4 w-4" }: { d: string; className?: string }) {
 }
 function Block({ n, title, hint, right, children }: { n: number; title: string; hint?: string; right?: ReactNode; children: ReactNode }) {
   return (
-    <section className="border-t border-slate-200 py-7 first:border-t-0" data-block={title}>
+    <section className="border-t-2 border-dashed border-slate-200 py-7 first:border-t-0" data-block={title}>
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <span className="font-mono text-xs font-bold text-slate-400">0{n}</span>
         <h2 className="font-display text-xl font-bold text-ink">{title}</h2>
@@ -47,7 +47,7 @@ function Block({ n, title, hint, right, children }: { n: number; title: string; 
     </section>
   );
 }
-const box = "w-full rounded-xl bg-white px-3.5 py-2.5 text-[15px] text-ink ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500";
+const box = "w-full rounded-xl bg-white px-3.5 py-2.5 text-[15px] text-ink ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-ink";
 const Mark = ({ name, dark, size = "h-10 w-10" }: { name: string; dark?: boolean; size?: string }) => <span className={cx("grid shrink-0 place-items-center rounded-lg font-display text-xs font-bold text-white", size, dark ? "bg-ink" : "bg-[#5b6b62]")}>{mark(name)}</span>;
 
 export function OrderBoard(p: BoardProps) {
@@ -169,16 +169,16 @@ export function OrderBoard(p: BoardProps) {
       <main className="mx-auto max-w-[860px] px-4 pb-6 pt-4 sm:px-6">
         <Block n={1} title="Delivery">
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">Deliver on</span>
+            <label className="block"><span className="mb-1 block font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Deliver on</span>
               <span className="flex gap-2"><input type="date" className={box} value={delivery.date ?? ""} onChange={(e) => setD({ date: e.target.value || null })} data-field="date" />
                 <input className={cx(box, "w-28")} value={delivery.time ?? ""} placeholder="7 am" onChange={(e) => setD({ time: e.target.value || null })} aria-label="Time" /></span></label>
-            <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">Delivery</span>
+            <label className="block"><span className="mb-1 block font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Delivery</span>
               <select className={box} value={delivery.type} onChange={(e) => setD({ type: e.target.value })}>
                 <option value="crane">Truck with crane</option><option value="roof_load">Roof load</option><option value="ground_drop">Ground drop</option><option value="pickup">We&apos;ll pick up</option>
               </select></label>
-            <label className="block sm:col-span-2"><span className="mb-1 block text-xs font-semibold text-slate-500">Deliver to</span><div className={cx(box, "bg-slate-50")}>{p.address ?? "Add the site address on the job"}</div></label>
-            <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">On site</span><input className={box} value={delivery.contact ?? ""} placeholder="Who meets the truck, and their number" onChange={(e) => setD({ contact: e.target.value || null })} /></label>
-            <label className="block sm:col-span-2"><span className="mb-1 block text-xs font-semibold text-slate-500">Notes for the driver</span><textarea className={cx(box, "min-h-16 text-sm")} value={delivery.notes ?? ""} placeholder="Access, where to drop, gate code" onChange={(e) => setD({ notes: e.target.value || null })} /></label>
+            <label className="block sm:col-span-2"><span className="mb-1 block font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Deliver to</span><div className={cx(box, "bg-slate-50")}>{p.address ?? "Add the site address on the job"}</div></label>
+            <label className="block"><span className="mb-1 block font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">On site</span><input className={box} value={delivery.contact ?? ""} placeholder="Who meets the truck, and their number" onChange={(e) => setD({ contact: e.target.value || null })} /></label>
+            <label className="block sm:col-span-2"><span className="mb-1 block font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Notes for the driver</span><textarea className={cx(box, "min-h-16 text-sm")} value={delivery.notes ?? ""} placeholder="Access, where to drop, gate code" onChange={(e) => setD({ notes: e.target.value || null })} /></label>
           </div>
           {p.coolingOffEnds && delivery.date && delivery.date <= p.coolingOffEnds && <p className="mt-2 text-xs font-medium text-amber-700">Cooling-off ends {new Date(`${p.coolingOffEnds}T12:00:00`).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}. Deliver after that, in case {p.firstName} cancels.</p>}
         </Block>
@@ -207,7 +207,7 @@ export function OrderBoard(p: BoardProps) {
         {all.length > 0 && <Block n={3} title="Totals">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-[22px] bg-white p-5 ring-1 ring-slate-200">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">Order total</p>
+              <p className="text-[11px] uppercase text-slate-400 font-mono tracking-[0.12em]">Order total</p>
               <p className="mt-1 font-display text-4xl font-bold leading-none text-ink" data-order-total>{aud(ex + gst)}</p>
               <p className="mt-1 text-sm text-slate-500">{aud(ex)} + GST {aud(gst)} · at your costs</p>
               <ul className="mt-4 space-y-1.5 border-t-2 border-dashed border-slate-200 pt-3 text-sm">
@@ -218,7 +218,7 @@ export function OrderBoard(p: BoardProps) {
             </div>
             {p.quotedCost !== null && (
               <div className="rounded-2xl bg-ink p-5 text-white">
-                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-200">Against the quote · only you</p>
+                <p className="text-[11px] uppercase text-brand-200 font-mono tracking-[0.12em]">Against the quote · only you</p>
                 <p className="mt-1 font-display text-4xl font-bold leading-none" style={{ color: ex <= p.quotedCost ? "#8fd0a8" : "#f4c66b" }}>{aud(Math.abs(p.quotedCost - ex)).replace(".00", "")} {ex <= p.quotedCost ? "under" : "over"}</p>
                 <p className="mt-4 text-sm text-white/70">Materials quoted at {aud(p.quotedCost)} cost ex GST</p>
               </div>
@@ -227,7 +227,7 @@ export function OrderBoard(p: BoardProps) {
         </Block>}
       </main>
 
-      <div className="sticky bottom-0 z-30 border-t border-slate-200 bg-white" data-materials-bar>
+      <div className="sticky bottom-0 z-30 border-t-2 border-dashed border-slate-200 bg-white" data-materials-bar>
         <div className="mx-auto flex max-w-[860px] flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
           <div className="min-w-0 flex-1">
             <p className="text-xs text-slate-500">{sent} of {orders.filter((o) => o.items.length).length} sent{ready ? ` · ${ready} ready` : ""}{noEmail ? ` · ${noEmail} need${noEmail === 1 ? "s" : ""} an email` : ""} · <span data-save-state>{state === "saving" ? "Saving…" : state === "error" ? "Not saved" : "Saved"}</span></p>
@@ -256,9 +256,9 @@ function Envelope({ o, tz, dark, busy, onSend, onPreview, onAdd, onEdit, onRemov
   const groups: [string, Line[]][] = [];
   for (const l of o.items) { const g = l.group_label ?? ""; const hit = groups.find(([x]) => x === g); if (hit) hit[1].push(l); else groups.push([g, [l]]); }
   const when = o.supplierDate ? new Date(`${o.supplierDate}T12:00:00`).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" }) : null;
-  const status = o.status === "confirmed" ? <span className="flex items-center gap-1.5 rounded-full bg-brand-500 px-3 py-1.5 text-sm font-semibold text-white"><Icon d={CHECK} />Confirmed{when ? ` · ${when}` : ""}</span>
-    : o.status === "delivered" ? <span className="flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 text-sm font-semibold text-brand-700"><Icon d={CHECK} />Delivered</span>
-    : o.status === "sent" ? <span className="flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 text-sm font-semibold text-brand-700"><Icon d={CHECK} />Sent {o.sentAt ? new Date(o.sentAt).toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit", timeZone: tz }) : ""}{o.openedAt ? " · opened" : ""}</span>
+  const status = o.status === "confirmed" ? <span className="flex items-center gap-1.5 rounded-full bg-ink px-3 py-1.5 text-sm font-semibold text-white"><Icon d={CHECK} />Confirmed{when ? ` · ${when}` : ""}</span>
+    : o.status === "delivered" ? <span className="flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider"><Icon d={CHECK} />Delivered</span>
+    : o.status === "sent" ? <span className="flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider"><Icon d={CHECK} />Sent {o.sentAt ? new Date(o.sentAt).toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit", timeZone: tz }) : ""}{o.openedAt ? " · opened" : ""}</span>
     : !o.items.length ? null
     : o.email ? <button type="button" disabled={busy || !o.id} onClick={(e) => { e.preventDefault(); onSend(); }} className="flex items-center gap-1.5 rounded-lg bg-ink px-3.5 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90 disabled:opacity-50" data-send-one><Icon d={SEND} />Send</button>
     : <button type="button" onClick={(e) => { e.preventDefault(); setAddEmail(true); setOpen(true); }} className="rounded-lg px-3.5 py-2 text-sm font-semibold text-ink ring-1 ring-slate-300 hover:bg-slate-50" data-add-email>Add email</button>;
@@ -283,7 +283,7 @@ function Envelope({ o, tz, dark, busy, onSend, onPreview, onAdd, onEdit, onRemov
         {addEmail && !o.email && (
           <ActionForm action={setSupplierEmail} className="mt-3">
             <input type="hidden" name="order_id" value={o.id} />
-            <div className="flex gap-2"><input name="email" type="email" required autoFocus placeholder={`${o.supplier} branch email`} className="min-h-10 min-w-0 flex-1 rounded-lg px-3 text-sm ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500" /><SubmitButton className="min-h-10 px-3 text-sm">Save</SubmitButton></div>
+            <div className="flex gap-2"><input name="email" type="email" required autoFocus placeholder={`${o.supplier} branch email`} className="min-h-10 min-w-0 flex-1 rounded-lg px-3 text-sm ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-ink" /><SubmitButton className="min-h-10 px-3 text-sm">Save</SubmitButton></div>
           </ActionForm>
         )}
         <p className="mt-3 flex items-center border-t border-dashed border-slate-200 pt-2.5 text-sm text-slate-500">
@@ -312,7 +312,7 @@ function Envelope({ o, tz, dark, busy, onSend, onPreview, onAdd, onEdit, onRemov
                       <option value="">{o.supplier}</option>{supplierOptions}
                     </select>
                   </label>
-                  <input inputMode="decimal" className="rounded-lg bg-cream px-2 py-1 text-right text-sm tabular-nums text-ink ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500" value={String(l.quantity)} onChange={(e) => onEdit(l.key, { quantity: Number(e.target.value.replace(/[^\d.]/g, "")) || 0 })} aria-label="Quantity" />
+                  <input inputMode="decimal" className="rounded-lg bg-cream px-2 py-1 text-right text-sm tabular-nums text-ink ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-ink" value={String(l.quantity)} onChange={(e) => onEdit(l.key, { quantity: Number(e.target.value.replace(/[^\d.]/g, "")) || 0 })} aria-label="Quantity" />
                   {l.length_m !== null || LENGTH_UNITS.has(l.unit) ? (
                     <span className="flex items-center gap-1 text-sm text-slate-500"><span className="text-slate-400">×</span>
                       <LengthInput line={l} onCommit={(patch) => onEdit(l.key, patch)} /></span>
@@ -323,7 +323,7 @@ function Envelope({ o, tz, dark, busy, onSend, onPreview, onAdd, onEdit, onRemov
               ))}
             </div>
           ))}
-          <div className="flex items-center gap-5 border-t-2 border-dashed border-slate-200 px-4 py-2.5 text-sm font-semibold text-brand-700">
+          <div className="flex items-center gap-5 border-t-2 border-dashed border-slate-200 px-4 py-2.5 font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider">
             <button type="button" onClick={onAdd} className="flex items-center gap-2" data-add-item><Icon d="M12 5v14M5 12h14" />Add an item</button>
             {o.status !== "draft" && <span className="ml-auto text-xs font-normal text-slate-500">Changes after sending: send it again so {o.supplier} has the latest.</span>}
           </div>
@@ -348,7 +348,7 @@ function LengthInput({ line, onCommit }: { line: Line; onCommit: (patch: Partial
     } else onCommit({ length_m: len });
   };
   return (
-    <span className="flex flex-1 items-center rounded-lg bg-cream px-2 py-1 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-brand-500">
+    <span className="flex flex-1 items-center rounded-lg bg-cream px-2 py-1 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-ink">
       <input inputMode="decimal" className="w-full min-w-0 bg-transparent text-right tabular-nums text-ink focus:outline-none" value={draft ?? (line.length_m === null ? "" : String(line.length_m))} placeholder="–"
         onChange={(e) => setDraft(e.target.value)} onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} aria-label="Length (m)" />
       <span className="ml-0.5 text-slate-400">m</span>
@@ -359,7 +359,7 @@ function LengthInput({ line, onCommit }: { line: Line; onCommit: (patch: Partial
 function Toggle({ on, label, onClick, disabled }: { on: boolean; label: string; onClick: () => void; disabled?: boolean }) {
   return (
     <button type="button" role="switch" aria-checked={on} disabled={disabled} onClick={onClick} className="flex items-center gap-2 text-xs font-semibold text-slate-600 disabled:opacity-40">{label}
-      <span className={cx("relative h-5 w-9 rounded-full transition-colors", on ? "bg-brand-500" : "bg-slate-300")}><span className={cx("absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all", on ? "left-[18px]" : "left-0.5")} /></span></button>
+      <span className={cx("relative h-5 w-9 rounded-full transition-colors", on ? "bg-ink" : "bg-slate-300")}><span className={cx("absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all", on ? "left-[18px]" : "left-0.5")} /></span></button>
   );
 }
 
@@ -399,7 +399,7 @@ export function AttachmentPanel({ orderId, plans, report, files, planNames, hasR
           <div className="mt-2 space-y-1.5">
             {others.map((f) => (
               <label key={f.id} className="flex items-center gap-2 text-sm text-slate-700">
-                <input type="checkbox" className="h-4 w-4 accent-[#1f5f3f]" checked={s.ids.includes(f.id)} onChange={(e) => void save({ ...s, ids: e.target.checked ? [...s.ids, f.id] : s.ids.filter((x) => x !== f.id) })} />
+                <input type="checkbox" className="h-4 w-4 accent-[#13221a]" checked={s.ids.includes(f.id)} onChange={(e) => void save({ ...s, ids: e.target.checked ? [...s.ids, f.id] : s.ids.filter((x) => x !== f.id) })} />
                 <span className="truncate">{f.name}</span>
               </label>
             ))}

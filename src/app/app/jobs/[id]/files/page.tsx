@@ -111,7 +111,7 @@ export default async function FilesPage({ params, searchParams }: PageProps<"/ap
               <div className="grid h-[60vh] place-items-center p-6 text-center text-slate-500">Upload plans to see them here, full size.</div>
             )}
             {selected && urls.get(selected.storage_path) && (
-              <div className="flex items-center justify-between gap-2 border-t border-slate-200 bg-white px-4 py-2 text-sm">
+              <div className="flex items-center justify-between gap-2 border-t-2 border-dashed border-slate-200 bg-white px-4 py-2 text-sm">
                 <span className="truncate text-slate-600">{nameOf(selected)}</span>
                 <span className="flex shrink-0 items-center gap-3">
                   {!isCrewLead && (
@@ -128,7 +128,7 @@ export default async function FilesPage({ params, searchParams }: PageProps<"/ap
 
           <aside className="space-y-3 lg:col-span-2 xl:col-span-1" data-roof-panel>
             <div className="rounded-[22px] bg-white p-4 ring-1 ring-slate-200">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Roof</p>
+              <p className="text-xs uppercase text-slate-400 font-mono tracking-[0.12em]">Roof</p>
               {s && m && s.trueArea > 0 ? (
                 <dl className="mt-2 divide-y-2 divide-dashed divide-slate-200 text-sm">
                   {m.sections.filter((x) => x.area > 0).map((x, i) => <div key={i} className="flex justify-between gap-3 py-1.5"><dt className="text-slate-500">{x.label || `Section ${i + 1}`}</dt><dd className="font-medium text-ink">{x.area} m² · {x.pitch}°</dd></div>)}

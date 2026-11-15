@@ -72,7 +72,7 @@ export function WrapPanel({ d, askHref, payHref }: { d: Docket; askHref: string;
     : !allPaid ? { key: "review", icon: STAR, label: "Ask for a Google review", detail: "Sent once they've paid", state: "wait" }
     : !w.reviewUrl ? { key: "review", icon: STAR, label: "Ask for a Google review", detail: "Paste your Google review link once and it's used on every job", state: "todo", wide: (
       <ActionForm action={saveReviewLink} className="mt-2">
-        <div className="flex gap-2"><input name="google_review_url" inputMode="url" placeholder="https://g.page/r/…/review" aria-label="Google review link" className="min-h-9 min-w-0 flex-1 rounded-lg bg-white px-2.5 text-xs ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+        <div className="flex gap-2"><input name="google_review_url" inputMode="url" placeholder="https://g.page/r/…/review" aria-label="Google review link" className="min-h-9 min-w-0 flex-1 rounded-lg bg-white px-2.5 text-xs ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-ink" />
           <SubmitButton variant="secondary" className="min-h-9 px-3 text-xs">Save</SubmitButton></div>
         <p className="mt-1 text-[11px] text-slate-500">Google Business Profile → Ask for reviews → copy the link.</p>
       </ActionForm>) }
@@ -100,11 +100,11 @@ export function WrapPanel({ d, askHref, payHref }: { d: Docket; askHref: string;
         <ol className="mt-3 overflow-hidden rounded-xl ring-1 ring-slate-200">
           {steps.map((s, k) => (
             <li key={s.key} className={cx("flex items-center gap-3 px-3.5 py-3", k > 0 && "border-t-2 border-dashed border-slate-200", s.state === "now" && "bg-brand-50")} data-wrap-step={s.key} data-state={s.state}>
-              <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-full", s.state === "done" ? "bg-brand-500 text-white" : s.state === "now" ? "bg-ink text-white" : s.state === "wait" ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200" : "bg-white text-slate-500 ring-1 ring-slate-200")}>
+              <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-full", s.state === "done" ? "bg-ink text-white" : s.state === "now" ? "bg-ink text-white" : s.state === "wait" ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200" : "bg-white text-slate-500 ring-1 ring-slate-200")}>
                 <Icon d={s.state === "done" ? CHECK : s.icon} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className={cx("block text-sm font-semibold", s.state === "todo" ? "text-slate-600" : "text-ink")}>{s.label}</span>
+                <span className={cx("block font-display text-[15px] font-bold", s.state === "todo" ? "text-slate-600" : "text-ink")}>{s.label}</span>
                 <span className="block text-xs leading-snug text-slate-500">{s.detail}</span>
                 {s.wide}
               </span>

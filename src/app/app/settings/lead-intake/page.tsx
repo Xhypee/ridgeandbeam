@@ -71,7 +71,7 @@ export default async function LeadIntakePage() {
         <Card title="Instant quote">
           <ActionForm action={saveInstantQuote} className="space-y-4">
             <label className="flex items-center gap-2 text-sm text-slate-700">
-              <input type="checkbox" name="enabled" defaultChecked={iq.enabled} disabled={!isAdmin} className="h-5 w-5 accent-brand-500" /> Show the instant quote widget
+              <input type="checkbox" name="enabled" defaultChecked={iq.enabled} disabled={!isAdmin} className="h-5 w-5 accent-ink" /> Show the instant quote widget
             </label>
             <p className="text-sm text-slate-600">
               Homeowners pick metal or tile, draw their roof on the map and see a price range per m², GST inclusive — never a firm price.
@@ -91,7 +91,7 @@ export default async function LeadIntakePage() {
           )}
           <ActionForm action={saveResponder} className="mt-3">
             <label className="flex items-center gap-2 text-sm text-slate-700">
-              <input type="checkbox" name="ai_responder_enabled" defaultChecked={(org as unknown as { ai_responder_enabled?: boolean }).ai_responder_enabled ?? true} disabled={!isAdmin} className="h-5 w-5 accent-brand-500" /> Text new web leads automatically
+              <input type="checkbox" name="ai_responder_enabled" defaultChecked={(org as unknown as { ai_responder_enabled?: boolean }).ai_responder_enabled ?? true} disabled={!isAdmin} className="h-5 w-5 accent-ink" /> Text new web leads automatically
             </label>
             {isAdmin && <div className="mt-3"><SubmitButton variant="secondary">Save</SubmitButton></div>}
           </ActionForm>

@@ -372,7 +372,7 @@ function Territories({ territories, people, names, onDraw, pendingRings, onClear
               <span className="h-3 w-3 shrink-0 rounded" style={{ background: t.color }} />
               <span className="min-w-0">
                 <span className="block truncate text-sm font-medium">{t.name}</span>
-                <span className="block text-xs text-slate-500">{t.kind === "hail_swath" ? `Hail swath${t.storm_date ? ` · ${t.storm_date}` : ""}` : "Territory"}{t.assigned_to ? ` · ${names.get(t.assigned_to) ?? ""}` : ""}</span>
+                <span className="block font-mono text-xs text-slate-500">{t.kind === "hail_swath" ? `Hail swath${t.storm_date ? ` · ${t.storm_date}` : ""}` : "Territory"}{t.assigned_to ? ` · ${names.get(t.assigned_to) ?? ""}` : ""}</span>
               </span>
             </span>
             <Button type="button" variant="ghost" onClick={() => start(async () => { const r = await deleteTerritory(t.id); onFlash(r.error ?? "Deleted."); })}>Delete</Button>

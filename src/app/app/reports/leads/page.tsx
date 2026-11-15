@@ -52,7 +52,7 @@ export default async function LeadSourcesReport({ searchParams }: PageProps<"/ap
       />
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
         {[3, 6, 12].map((m) => (
-          <Link key={m} href={q({ months: String(m) })} className={cx("rounded-full px-3 py-1.5 ring-1", m === months ? "bg-brand-500 text-white ring-brand-500" : "bg-white ring-slate-200")}>Last {m} months</Link>
+          <Link key={m} href={q({ months: String(m) })} className={cx("rounded-full px-3 py-1.5 ring-1", m === months ? "bg-ink text-white ring-ink" : "bg-white ring-slate-200")}>Last {m} months</Link>
         ))}
         <span className="mx-1 self-center text-slate-300">|</span>
         <Link href={q({ group: "month" })} className={cx("rounded-full px-3 py-1.5 ring-1", byMonth ? "bg-slate-800 text-white ring-slate-800" : "bg-white ring-slate-200")}>By month</Link>

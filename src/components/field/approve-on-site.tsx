@@ -26,7 +26,7 @@ export function ApproveOnSite({ id }: { id: string }) {
         <SignaturePad name="signature" required height={180} />
       ) : (
         <label className="flex items-start gap-2 text-sm">
-          <input type="checkbox" name="confirm" className="mt-0.5 h-5 w-5 accent-brand-500" required />
+          <input type="checkbox" name="confirm" className="mt-0.5 h-5 w-5 accent-ink" required />
           The homeowner approved this change and its price verbally / in person. (Check your contract allows verbal approval; get a signature when you can.)
         </label>
       )}

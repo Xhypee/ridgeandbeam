@@ -54,7 +54,7 @@ export default async function TparPage({ searchParams }: PageProps<"/app/reports
           <tbody className="divide-y-2 divide-dashed divide-slate-200" data-testid="tpar-rows">
             {rows.map((r) => (
               <tr key={r.key}>
-                <td className={td}><span className="font-medium text-slate-900">{r.name}</span>{!r.crewId && <span className="block text-xs text-slate-500">Not set up as a crew</span>}</td>
+                <td className={td}><span className="font-medium text-slate-900">{r.name}</span>{!r.crewId && <span className="block font-mono text-xs text-slate-500">Not set up as a crew</span>}</td>
                 <td className={td}>{r.abn ? formatAbn(r.abn) : <Badge tone="red">ABN missing</Badge>}</td>
                 <td className={cx(td, "text-right tabular-nums")}>{r.payments}</td>
                 <td className={cx(td, "text-right tabular-nums")}>{money(r.gst)}</td>
@@ -79,7 +79,7 @@ export default async function TparPage({ searchParams }: PageProps<"/app/reports
                   <input type="hidden" name="crew_id" value={c.id} />
                   <span className="font-medium text-slate-800">{c.name}</span>
                   <Input name="abn" aria-label={`ABN for ${c.name}`} defaultValue={c.abn ? formatAbn(c.abn) : ""} inputMode="numeric" placeholder="11 digits" />
-                  <label className="flex min-h-11 items-center gap-2 text-sm text-slate-700"><input type="checkbox" name="gst_registered" defaultChecked={c.gst_registered} className="h-5 w-5 accent-brand-500" /> GST registered</label>
+                  <label className="flex min-h-11 items-center gap-2 text-sm text-slate-700"><input type="checkbox" name="gst_registered" defaultChecked={c.gst_registered} className="h-5 w-5 accent-ink" /> GST registered</label>
                   <SubmitButton variant="secondary" className="min-h-11">Save</SubmitButton>
                 </ActionForm>
               </li>

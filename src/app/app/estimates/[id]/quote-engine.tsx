@@ -57,7 +57,7 @@ function Icon({ d, className = "h-4 w-4" }: { d: string; className?: string }) {
 }
 function Block({ n, title, hint, right, children }: { n: number; title: string; hint?: string; right?: ReactNode; children: ReactNode }) {
   return (
-    <section className="border-t border-slate-200 py-7 first:border-t-0" data-engine-block={title}>
+    <section className="border-t-2 border-dashed border-slate-200 py-7 first:border-t-0" data-engine-block={title}>
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <span className="font-mono text-xs font-bold text-slate-400">0{n}</span>
         <h2 className="font-display text-xl font-bold text-ink">{title}</h2>
@@ -68,8 +68,8 @@ function Block({ n, title, hint, right, children }: { n: number; title: string; 
     </section>
   );
 }
-const field = "w-full rounded-xl bg-white px-3.5 py-2.5 text-[15px] text-ink ring-1 ring-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500";
-const small = "rounded-lg bg-cream px-2 py-1.5 text-sm text-ink ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500";
+const field = "w-full rounded-xl bg-white px-3.5 py-2.5 text-[15px] text-ink ring-1 ring-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-ink";
+const small = "rounded-lg bg-cream px-2 py-1.5 text-sm text-ink ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-ink";
 
 export function QuoteEngine(p: EngineProps) {
   const router = useRouter();
@@ -201,27 +201,27 @@ export function QuoteEngine(p: EngineProps) {
   const STEP_TITLE: Record<number, string> = { 1: "Roof plan", 2: "Who it's for", 3: "The job", 4: "Price", 5: "Payment", 6: "Terms" };
   const step = (n: number, block: ReactNode) => {
     if (n === active) return (
-      <div className="my-3 rounded-3xl bg-cream px-5 pb-5 ring-2 ring-brand-500" data-step-active={n}>
+      <div className="my-3 rounded-[22px] bg-cream px-5 pb-5 ring-2 ring-ink" data-step-active={n}>
         {block}
-        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-slate-200 pt-4">
-          {!done[n - 1] && <span className="text-sm text-slate-500">{NEED[n]}</span>}
+        <div className="flex flex-wrap items-center justify-end gap-3 border-t-2 border-dashed border-slate-200 pt-4">
+          {!done[n - 1] && <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-slate-400">{NEED[n]}</span>}
           <button type="button" disabled={!done[n - 1]} onClick={() => goNext(n)} data-step-next
-            className="min-h-11 rounded-xl bg-ink px-5 text-sm font-semibold text-white hover:bg-ink/90 disabled:opacity-40">
-            {n === 6 ? "Finish" : `Next: ${STEP_TITLE[n + 1]}`}
+            className="min-h-11 rounded-xl bg-ink px-5 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90 disabled:opacity-40">
+            {n === 6 ? "Finish" : `Next: ${STEP_TITLE[n + 1]} →`}
           </button>
         </div>
       </div>
     );
     if (n <= reached) return (
-      <div className="my-2 flex items-center gap-3 rounded-[22px] bg-white px-4 py-3 ring-1 ring-slate-200" data-step-folded={n}>
-        <span className={cx("grid h-7 w-7 shrink-0 place-items-center rounded-full", done[n - 1] ? "bg-brand-500 text-white" : "bg-amber-100 text-amber-800")}>
+      <div className="flex items-center gap-3 border-b-2 border-dashed border-slate-200 px-1 py-3" data-step-folded={n}>
+        <span className={cx("grid h-7 w-7 shrink-0 place-items-center rounded-full", done[n - 1] ? "bg-ink text-white" : "bg-amber-100 text-amber-800")}>
           <Icon d={done[n - 1] ? "M5 12l5 5 9-10" : "M12 8v5M12 16.5v.5"} className="h-3.5 w-3.5" />
         </span>
-        <span className="min-w-0 flex-1"><b className="block text-sm text-ink">{STEP_TITLE[n]}</b><span className="block truncate text-xs text-slate-500">{summary[n]}</span></span>
-        <button type="button" onClick={() => open(n)} className="shrink-0 rounded-lg px-2 py-1 text-sm font-semibold text-brand-700 hover:bg-brand-50" data-step-change>Change</button>
+        <span className="w-6 shrink-0 font-mono text-xs text-slate-400">0{n}</span><b className="shrink-0 font-display text-[15px] text-ink">{STEP_TITLE[n]}</b><span className="min-w-0 flex-1 truncate text-right font-mono text-xs text-slate-500">{summary[n]}</span>
+        <button type="button" onClick={() => open(n)} className="shrink-0 rounded-lg px-2 py-1 font-semibold text-brand-700 hover:bg-brand-50 font-mono text-xs uppercase tracking-wider" data-step-change>Change</button>
       </div>
     );
-    return <div className="my-2 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-400 ring-1 ring-dashed ring-slate-300" data-step-later={n}>0{n} {STEP_TITLE[n]}</div>;
+    return <div className="my-2 rounded-[18px] px-4 py-3 font-mono text-xs uppercase tracking-[0.12em] text-slate-400 ring-1 ring-dashed ring-slate-300" data-step-later={n}>0{n} {STEP_TITLE[n]}</div>;
   };
 
   return (
@@ -229,7 +229,7 @@ export function QuoteEngine(p: EngineProps) {
       <div className="min-w-0">
       <main className="mx-auto max-w-[780px] px-4 pb-6 pt-4 sm:px-6">
         {step(1, <Block n={1} title="Roof plan" hint="start here · our roof report"
-          right={!p.roofMeasured && !roofSkipped ? <button type="button" onClick={() => { setRoofSkipped(true); goNext(1); }} className="text-sm font-semibold text-slate-500 underline-offset-2 hover:text-ink hover:underline" data-skip-roof>No measuring needed</button> : null}>
+          right={!p.roofMeasured && !roofSkipped ? <button type="button" onClick={() => { setRoofSkipped(true); goNext(1); }} className="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-500 underline-offset-2 hover:text-ink hover:underline" data-skip-roof>No measuring needed</button> : null}>
           {p.roofPlan}
         </Block>)}
 
@@ -237,11 +237,11 @@ export function QuoteEngine(p: EngineProps) {
           {!editingParty ? (
             // A saved contact by now: their card, with a pencil to change the details.
             <div className="flex items-start gap-4 rounded-[22px] bg-white p-4 ring-1 ring-slate-200" data-party-card>
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-50 font-display text-[15px] font-bold text-brand-700 ring-1 ring-brand-200" aria-hidden>{initials(party.name)}</span>
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white font-mono text-[13px] font-semibold text-slate-600 ring-1 ring-slate-300" aria-hidden>{initials(party.name)}</span>
               <div className="min-w-0 flex-1 space-y-1">
                 <p className="truncate font-display text-lg font-bold leading-tight text-ink" data-field="customer">{party.name}</p>
-                <p className="flex min-w-0 items-center gap-2 text-sm text-slate-600"><Icon d={MAIL} className="h-4 w-4 text-slate-400" />{party.email ? <span className="truncate">{party.email}</span> : <span className="font-semibold text-red-700">No email yet: add one to send the quote</span>}</p>
-                <p className="flex min-w-0 items-center gap-2 text-sm text-slate-600"><Icon d={PIN} className="h-4 w-4 text-slate-400" /><span className="truncate">{party.site}</span></p>
+                <p className="flex min-w-0 items-center gap-2 font-mono text-xs text-slate-600"><Icon d={MAIL} className="h-4 w-4 text-slate-400" />{party.email ? <span className="truncate">{party.email}</span> : <span className="font-semibold text-red-700">No email yet: add one to send the quote</span>}</p>
+                <p className="flex min-w-0 items-center gap-2 font-mono text-xs text-slate-600"><Icon d={PIN} className="h-4 w-4 text-slate-400" /><span className="truncate">{party.site}</span></p>
               </div>
               <button type="button" onClick={() => setEditingParty(true)} aria-label="Edit customer details" title="Edit customer details" data-edit-party
                 className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-slate-500 ring-1 ring-slate-200 hover:bg-slate-50 hover:text-ink">
@@ -251,8 +251,8 @@ export function QuoteEngine(p: EngineProps) {
           ) : (
             <div className="space-y-3 rounded-[22px] bg-white p-4 ring-1 ring-slate-200" data-party-edit>
               <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">Customer</span><input className={field} value={party.name} onChange={(e) => editParty("name", e.target.value)} onBlur={() => void flush()} data-field="customer" /></label>
-                <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">Email</span><input type="email" className={field} value={party.email} placeholder="Where the quote goes" onChange={(e) => editParty("email", e.target.value)} onBlur={() => void flush()} data-field="email" /></label>
+                <label className="block"><span className="mb-1 block font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Customer</span><input className={field} value={party.name} onChange={(e) => editParty("name", e.target.value)} onBlur={() => void flush()} data-field="customer" /></label>
+                <label className="block"><span className="mb-1 block font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Email</span><input type="email" className={field} value={party.email} placeholder="Where the quote goes" onChange={(e) => editParty("email", e.target.value)} onBlur={() => void flush()} data-field="email" /></label>
               </div>
               <AddressLookup label="Site" initialLine={party.site || null} onChange={(_, line) => editParty("site", line)} />
               {party.name.trim() && party.site.trim() && (
@@ -263,21 +263,21 @@ export function QuoteEngine(p: EngineProps) {
         </Block>)}
 
         {step(3, <Block n={3} title="The job">
-          <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">Title</span><input className={cx(field, "font-display text-lg font-bold")} value={party.title} onChange={(e) => editParty("title", e.target.value)} onBlur={() => void flush()} data-field="title" /></label>
-          <label className="mt-3 block"><span className="mb-1 block text-xs font-semibold text-slate-500">What we&apos;ll do</span>
+          <label className="block"><span className="mb-1 block font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Title</span><input className={cx(field, "font-display text-lg font-bold")} value={party.title} onChange={(e) => editParty("title", e.target.value)} onBlur={() => void flush()} data-field="title" /></label>
+          <label className="mt-3 block"><span className="mb-1 block font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">What we&apos;ll do</span>
             <textarea className={cx(field, "min-h-28 leading-relaxed")} value={notes} placeholder="In plain words: what you'll do, in the order it happens." onChange={(e) => { setNotes(e.target.value); touch("content"); }} onBlur={() => void flush()} data-field="notes" />
           </label>
         </Block>)}
 
         {step(4, <Block n={4} title="Price" hint={inclusive ? "inc GST" : "ex GST"} right={<SupplierPicker p={p} current={orgSupplierId} onChosen={(id) => { setOrgSupplierId(id); router.refresh(); }} flush={flush} />}>
           <div className="overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200">
-            <div className="hidden grid-cols-[minmax(0,1fr)_64px_64px_120px_20px] gap-3 border-b-2 border-dashed border-slate-200 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400 sm:grid">
+            <div className="hidden grid-cols-[minmax(0,1fr)_64px_64px_120px_20px] gap-3 border-b-2 border-ink px-4 pb-2 pt-3 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400 sm:grid">
               <span>Item</span><span className="text-right">Qty</span><span>Unit</span><span className="text-right">Price</span><span />
             </div>
             {main.map((i) => <LineRow key={i.id} i={i} supplierName={p.supplier.name} margin={margin ?? shownMargin} onEdit={editItem} onCost={setCost} onRemove={removeItem} flush={flush} />)}
-            {main.length === 0 && <p className="px-4 py-6 text-center text-sm text-slate-500">No lines yet. Add one, or pick from a price guide.</p>}
-            <div className="flex flex-wrap items-center gap-5 px-4 py-3 text-sm font-semibold text-brand-700">
-              <button type="button" onClick={() => addLine()} className="flex items-center gap-2" data-add-line><Icon d="M12 5v14M5 12h14" />Add a line</button>
+            {main.length === 0 && <p className="px-4 py-6 text-center font-mono text-xs uppercase tracking-[0.12em] text-slate-400">No lines yet. Add one, or pick from a price guide.</p>}
+            <div className="flex flex-wrap items-center gap-5 px-4 py-3 font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider">
+              <button type="button" onClick={() => addLine()} className="flex items-center gap-2 uppercase" data-add-line><Icon d="M12 5v14M5 12h14" />Add a line</button>
               <GuideSearch orgSupplierId={orgSupplierId} name={p.supplier.name} hasGuide={p.supplier.hasGuide} onPick={(g) => addLine({ description: g.description, unit: g.unit || "ea", unit_cost: g.cost, supplier_price_item_id: g.id, calc_key: g.calc_key })} />
             </div>
           </div>
@@ -292,12 +292,12 @@ export function QuoteEngine(p: EngineProps) {
                 <button type="button" aria-label="Remove extra" onClick={() => removeItem(x.id!)} className="text-slate-300 hover:text-red-600"><Icon d="M6 6l12 12M18 6L6 18" /></button>
               </div>
             ))}
-            <button type="button" onClick={() => addLine({ extra_status: "offered", description: "" })} className="mt-2 text-sm font-semibold text-brand-700" data-add-extra>+ Add an extra</button>
+            <button type="button" onClick={() => addLine({ extra_status: "offered", description: "" })} className="mt-2 font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider" data-add-extra>+ Add an extra</button>
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2" data-you-make>
             <div className="rounded-2xl bg-ink p-5 text-white">
-              <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-brand-200"><Icon d={LOCK} className="h-3.5 w-3.5" />You make</p>
+              <p className="flex items-center gap-1.5 text-[11px] uppercase text-brand-200 font-mono tracking-[0.12em]"><Icon d={LOCK} className="h-3.5 w-3.5" />You make</p>
               <p className="mt-1 font-display text-4xl font-bold leading-none" style={{ color: "#8fd0a8" }} data-profit>{aud(money.profit)}</p>
               <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-white/70">
                 <span className="flex items-center rounded-lg bg-white/10 px-2 ring-1 ring-white/20 focus-within:ring-white/60">
@@ -310,7 +310,7 @@ export function QuoteEngine(p: EngineProps) {
               {money.uncosted > 0 && <p className="mt-2 text-xs text-white/50">{money.uncosted} line{money.uncosted === 1 ? " has" : "s have"} no cost, so {money.uncosted === 1 ? "it's" : "they're"} not in the margin.</p>}
             </div>
             <div className="rounded-[22px] bg-white p-5 ring-1 ring-slate-200">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">{p.firstName} pays</p>
+              <p className="text-[11px] uppercase text-slate-400 font-mono tracking-[0.12em]">{p.firstName} pays</p>
               <p className="mt-1 font-display text-4xl font-bold leading-none text-ink" data-total>{aud(money.total)}</p>
               <p className="mt-4 text-sm text-slate-500">{aud(money.exGst)} + GST {aud(money.gst)}</p>
             </div>
@@ -318,7 +318,7 @@ export function QuoteEngine(p: EngineProps) {
         </Block>)}
 
         {step(5, <Block n={5} title="Payment" right={
-          <span className="flex rounded-xl bg-white p-1 text-sm font-semibold ring-1 ring-slate-300" role="radiogroup" aria-label="How they pay">
+          <span className="flex rounded-xl bg-white p-1 font-mono text-xs font-semibold uppercase tracking-wider ring-1 ring-slate-300" role="radiogroup" aria-label="How they pay">
             {(["full", "instalments"] as const).map((m) => (
               <button key={m} type="button" role="radio" aria-checked={payment.mode === m} onClick={() => setPlan({ ...payment, mode: m })} data-pay-mode={m}
                 className={cx("rounded-lg px-4 py-1.5", payment.mode === m ? "bg-ink text-white" : "text-slate-600 hover:text-ink")}>{m === "full" ? "Full" : "Instalments"}</button>
@@ -327,7 +327,7 @@ export function QuoteEngine(p: EngineProps) {
           {payment.mode === "full" ? (
             <div className="flex flex-wrap items-center gap-4 rounded-[22px] bg-white px-4 py-4 ring-1 ring-slate-200">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><Icon d="M5 12l5 5 9-10" className="h-5 w-5" /></span>
-              <div className="min-w-0 flex-1"><p className="font-semibold text-ink">Paid in full</p><p className="text-sm text-slate-500">One invoice, due 7 days after it&apos;s sent</p></div>
+              <div className="min-w-0 flex-1"><p className="font-display font-bold text-ink">Paid in full</p><p className="font-mono text-xs text-slate-500">One invoice, due 7 days after it&apos;s sent</p></div>
               <select aria-label="When they pay" value={payment.when} onChange={(e) => setPlan({ ...payment, when: e.target.value as PaymentPlan["when"] })} className="rounded-lg bg-cream px-3 py-2 text-sm font-semibold text-ink ring-1 ring-slate-200">
                 <option value="completed">Upon completion</option><option value="delivered">When materials are delivered</option><option value="signed">When they accept</option>
               </select>
@@ -343,18 +343,18 @@ export function QuoteEngine(p: EngineProps) {
         </Block>)}
       </main>
 
-      <div className="sticky bottom-0 z-30 border-t border-slate-200 bg-white" data-engine-bar>
+      <div className="sticky bottom-0 z-30 border-t-2 border-dashed border-slate-200 bg-white" data-engine-bar>
         <div className="mx-auto flex max-w-[780px] flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
           <div className="min-w-0 flex-1">
-            <p className="whitespace-nowrap text-xs text-slate-500">Total{inclusive ? "" : " ex GST"} · <span data-save-state>{state === "saving" ? "Saving…" : state === "error" ? "Not saved" : "Saved"}</span></p>
+            <p className="whitespace-nowrap font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Total{inclusive ? "" : " ex GST"} · <span data-save-state>{state === "saving" ? "Saving…" : state === "error" ? "Not saved" : "Saved"}</span></p>
             <p className="font-display text-2xl font-bold leading-none text-ink">{aud(money.total)}</p>
           </div>
           {msg?.error && <p role="alert" className="w-full rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 sm:order-first">{msg.error}</p>}
           {msg?.ok && <p className="w-full rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 sm:order-first">{msg.ok}</p>}
-          <button type="button" onClick={() => void preview()} className={cx("flex min-h-12 items-center gap-2 rounded-xl px-3.5 font-semibold text-ink ring-1 ring-slate-300 hover:bg-slate-50 sm:px-4", Boolean(p.email) && "lg:hidden")} data-preview aria-label="Preview">
+          <button type="button" onClick={() => void preview()} className={cx("flex min-h-12 items-center gap-2 rounded-xl px-3.5 font-mono text-xs font-semibold uppercase tracking-wider text-ink ring-1 ring-slate-300 hover:bg-slate-50 sm:px-4", Boolean(p.email) && "lg:hidden")} data-preview aria-label="Preview">
             <Icon d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6" className="h-5 w-5" /><span className="hidden sm:inline">Preview</span>
           </button>
-          <button type="button" onClick={() => void send()} disabled={sending || main.length === 0} className="flex min-h-12 items-center gap-2 rounded-xl bg-ink px-4 font-semibold text-white sm:px-6 hover:bg-ink/90 disabled:opacity-50" data-send>
+          <button type="button" onClick={() => void send()} disabled={sending || main.length === 0} className="flex min-h-12 items-center gap-2 rounded-xl bg-ink px-4 font-mono text-xs font-semibold uppercase tracking-wider text-white sm:px-6 hover:bg-ink/90 disabled:opacity-50" data-send>
             <Icon d="M4 12l16-8-6 16-2.5-6.5z" />{sending ? "Sending…" : p.status === "sent" ? "Send again" : `Send to ${p.firstName}`}
           </button>
         </div>
@@ -372,7 +372,7 @@ function MoneyInput({ value, onChange, onBlur, className }: { value: number; onC
   const focused = useRef(false);
   useEffect(() => { if (!focused.current) setText(value ? value.toFixed(2) : ""); }, [value]);
   return (
-    <span className={cx("flex items-center rounded-lg bg-cream px-2 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-brand-500", className)}>
+    <span className={cx("flex items-center rounded-lg bg-cream px-2 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-ink", className)}>
       <span className="text-sm text-slate-400">$</span>
       <input inputMode="decimal" value={text} placeholder="0.00" onFocus={() => { focused.current = true; }}
         onChange={(e) => { const t = e.target.value.replace(/[^\d.]/g, ""); setText(t); onChange(Number(t) || 0); }}
@@ -393,23 +393,23 @@ function LineRow({ i, supplierName, margin, onEdit, onCost, onRemove, flush }: {
   return (
     <div className="grid grid-cols-[64px_64px_minmax(0,1fr)_20px] items-center gap-x-3 gap-y-2 border-b-2 border-dashed border-slate-200 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_64px_64px_120px_20px]" data-line>
       <span className="col-span-4 min-w-0 sm:col-span-1">
-        <input className="w-full bg-transparent font-semibold text-ink placeholder:font-normal placeholder:text-slate-400 focus:outline-none" value={i.description} placeholder="What it is" onChange={(e) => onEdit(i.id!, { description: e.target.value })} onBlur={() => void flush()} aria-label="Item" />
+        <input className="w-full bg-transparent font-mono text-[13.5px] text-ink placeholder:text-slate-400 focus:outline-none" value={i.description} placeholder="What it is" onChange={(e) => onEdit(i.id!, { description: e.target.value })} onBlur={() => void flush()} aria-label="Item" />
         <input className="w-full bg-transparent text-xs text-slate-500 placeholder:text-slate-300 focus:outline-none" value={i.blurb ?? ""} placeholder="Details (optional)" onChange={(e) => onEdit(i.id!, { blurb: e.target.value || null })} onBlur={() => void flush()} aria-label="Details" />
       </span>
       <input inputMode="decimal" className={cx(small, "w-full text-right")} value={String(i.quantity)} onChange={(e) => onEdit(i.id!, { quantity: Number(e.target.value.replace(/[^\d.]/g, "")) || 0 })} onBlur={() => void flush()} aria-label="Quantity" />
-      <select className="w-full appearance-none bg-transparent text-sm text-slate-500 focus:outline-none" value={i.unit} onChange={(e) => onEdit(i.id!, { unit: e.target.value })} aria-label="Unit">
+      <select className="w-full appearance-none bg-transparent font-mono text-[13px] text-slate-500 focus:outline-none" value={i.unit} onChange={(e) => onEdit(i.id!, { unit: e.target.value })} aria-label="Unit">
         {[...new Set([i.unit, ...UNITS])].map((u) => <option key={u} value={u}>{u === "m2" ? "m²" : u}</option>)}
       </select>
       <span className="text-right">
         {editCost ? (
           <span className="block">
             <MoneyInput value={i.unit_cost * i.quantity} onChange={(v) => onCost(i.id!, i.quantity ? v / i.quantity : v)} onBlur={() => { setEditCost(false); void flush(); }} />
-            <span className="mt-0.5 block text-[10px] font-semibold text-slate-400">Your cost ex GST{margin !== null ? ` · +${margin}%` : ""}</span>
+            <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-wider text-slate-400">Your cost ex GST{margin !== null ? ` · +${margin}%` : ""}</span>
           </span>
         ) : (
           <button type="button" onClick={() => setEditCost(true)} className="block w-full text-right" title="Change the cost">
-            <span className="block font-semibold tabular-nums text-ink">{aud(i.quantity * i.unit_price)}</span>
-            <span className="block text-[10px] font-semibold text-slate-400">{source}</span>
+            <span className="block font-mono text-[13.5px] tabular-nums text-ink">{aud(i.quantity * i.unit_price)}</span>
+            <span className="block font-mono text-[10px] uppercase tracking-wider text-slate-400">{source}</span>
           </button>
         )}
       </span>
@@ -437,7 +437,7 @@ function Stages({ stages, total, onChange }: { stages: Stage[]; total: number; o
     const fixed = k === 0 || k === stages.length - 1;
     return (
       <div key={k} className="grid grid-cols-[28px_minmax(0,1fr)_76px_20px] items-center gap-x-3 gap-y-2 border-b-2 border-dashed border-slate-200 px-4 py-3 sm:grid-cols-[28px_minmax(0,1fr)_170px_76px_104px_20px]" data-stage>
-        <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-500 font-display text-xs font-bold text-white">{k + 1}</span>
+        <span className="grid h-7 w-7 place-items-center rounded-full bg-ink font-display text-xs font-bold text-white">{k + 1}</span>
         <input className="min-w-0 bg-transparent font-semibold text-ink focus:outline-none" value={s.label} onChange={(e) => set(k, { label: e.target.value })} aria-label="Stage name" />
         {fixed ? <span className="order-5 col-start-2 rounded-lg bg-cream px-2.5 py-1.5 text-xs text-slate-600 ring-1 ring-slate-200 sm:order-none sm:col-start-auto">{STAGE_TRIGGER_LABEL[s.trigger]}</span> : (
           <select value={s.trigger} onChange={(e) => set(k, { trigger: e.target.value as StageTrigger })} className="order-5 col-start-2 rounded-lg bg-cream px-2 py-1.5 text-xs text-slate-600 ring-1 ring-slate-200 sm:order-none sm:col-start-auto" aria-label="When">
@@ -453,7 +453,7 @@ function Stages({ stages, total, onChange }: { stages: Stage[]; total: number; o
   return (
     <div className="overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200" data-stages>
       {stages.slice(0, -1).map((s, k) => row(s, k))}
-      <button type="button" onClick={addStage} className="flex w-full items-center gap-2 border-b border-dashed border-slate-200 px-4 py-2.5 text-sm font-semibold text-brand-700"><Icon d="M12 5v14M5 12h14" />Add a stage</button>
+      <button type="button" onClick={addStage} className="flex w-full items-center gap-2 border-b border-dashed border-slate-200 px-4 py-2.5 font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider"><Icon d="M12 5v14M5 12h14" />Add a stage</button>
       {row(stages[stages.length - 1], stages.length - 1)}
       <div className="flex flex-wrap items-center justify-between gap-2 bg-cream px-4 py-2.5 text-xs text-slate-500">
         <span>Deposit and Upon completion are always the first and last stages.</span>
@@ -498,7 +498,7 @@ function SupplierPicker({ p, current, onChosen, flush }: { p: EngineProps; curre
       <li key={s.supplierId + (closest ? "n" : "")}>
         <button type="button" disabled={busy} onClick={() => void choose(s)} className={cx("flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-slate-50", on && "bg-brand-50")}>
           <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-lg font-display text-xs font-bold text-white", on ? "bg-ink" : "bg-[#5b6b62]")}>{s.name.slice(0, 2)}</span>
-          <span className="min-w-0 flex-1"><span className="flex items-center gap-1.5 truncate text-sm font-semibold text-ink">{s.name}{closest && <span className="rounded-full bg-brand-500 px-1.5 py-0.5 text-[10px] font-bold text-white">Closest</span>}</span>
+          <span className="min-w-0 flex-1"><span className="flex items-center gap-1.5 truncate text-sm font-semibold text-ink">{s.name}{closest && <span className="rounded-full bg-ink px-1.5 py-0.5 text-[10px] font-bold text-white">Closest</span>}</span>
             <span className="block truncate text-xs text-slate-500">{s.branch ? `${s.place ?? s.branch}${s.km !== null ? ` · ${s.km < 10 ? s.km.toFixed(1) : Math.round(s.km)} km` : ""}` : s.branches ? `${s.branches} branches · ${s.states.join(", ")}` : "Use their store finder"}</span></span>
           {s.hasGuide ? <span className="text-xs font-semibold text-brand-700">✓ Price guide</span> : <span className="text-xs text-slate-400">No price guide</span>}
           {on && <Icon d="M5 12l5 5 9-10" className="h-5 w-5 text-brand-700" />}
@@ -510,13 +510,13 @@ function SupplierPicker({ p, current, onChosen, flush }: { p: EngineProps; curre
     <div className="relative" ref={ref} data-supplier-picker>
       <button type="button" onClick={() => setOpen((o) => !o)} className={cx("flex min-h-11 items-center gap-2.5 rounded-xl bg-white py-1.5 pl-1.5 pr-3 ring-1", open ? "ring-2 ring-ink" : "ring-slate-300")} aria-expanded={open}>
         <span className="grid h-8 w-8 place-items-center rounded-lg bg-ink font-display text-xs font-bold text-white">{(p.supplier.name ?? "?").slice(0, 2)}</span>
-        <span className="text-left leading-tight"><span className="block text-[11px] text-slate-500">Prices from</span><span className="block text-sm font-semibold text-ink">{p.supplier.name ? `${p.supplier.name}${p.supplier.branch ? ` · ${p.supplier.branch}` : ""}` : "Choose a supplier"}</span></span>
+        <span className="text-left leading-tight"><span className="block text-[11px] text-slate-500">Prices from</span><span className="block font-display text-[15px] font-bold text-ink">{p.supplier.name ? `${p.supplier.name}${p.supplier.branch ? ` · ${p.supplier.branch}` : ""}` : "Choose a supplier"}</span></span>
         {p.supplier.isDefault && <span className="ml-1 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700">Default</span>}
         <Icon d="M6 9l6 6 6-6" className="h-4 w-4 text-slate-500" />
       </button>
       {open && (
         <div className="absolute right-0 top-14 z-40 flex max-h-[70vh] w-[min(440px,90vw)] flex-col overflow-hidden rounded-[22px] bg-white ring-2 ring-ink" data-supplier-panel>
-          <div className="border-b-2 border-dashed border-slate-200 p-3"><input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search suppliers across Australia" className="min-h-10 w-full rounded-lg bg-cream px-3 text-sm ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500" /></div>
+          <div className="border-b-2 border-dashed border-slate-200 p-3"><input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search suppliers across Australia" className="min-h-10 w-full rounded-lg bg-cream px-3 text-sm ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-ink" /></div>
           <div className="min-h-0 flex-1 overflow-y-auto">
             {near.length > 0 && <><p className="px-4 pt-3 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">{p.nearLabel ?? "Nearest to you"}</p><ul className="px-2 pb-2 pt-1">{near.map((s, k) => row(s, k === 0 && !words))}</ul></>}
             <div className="border-t-2 border-dashed border-slate-200 pb-2">
@@ -531,7 +531,7 @@ function SupplierPicker({ p, current, onChosen, flush }: { p: EngineProps; curre
           {note && <p className="border-t-2 border-dashed border-slate-200 bg-red-50 px-4 py-2 text-xs text-red-700">{note}</p>}
           {p.canSetDefault && (
             <label className="flex items-center gap-2.5 border-t-2 border-dashed border-slate-200 bg-cream px-4 py-3 text-sm text-ink">
-              <input type="checkbox" checked={makeDefault} onChange={(e) => setMakeDefault(e.target.checked)} className="h-4 w-4 accent-[#1f5f3f]" />Use the one I pick for all my quotes
+              <input type="checkbox" checked={makeDefault} onChange={(e) => setMakeDefault(e.target.checked)} className="h-4 w-4 accent-[#13221a]" />Use the one I pick for all my quotes
             </label>
           )}
         </div>
@@ -556,12 +556,12 @@ function GuideSearch({ orgSupplierId, name, hasGuide, onPick }: { orgSupplierId:
       <button type="button" onClick={() => setOpen((o) => !o)} className="flex items-center gap-2" data-guide-search><Icon d="M11 18a7 7 0 100-14 7 7 0 000 14M20 20l-4-4" />From {name ?? "the"} price guide</button>
       {open && (
         <div className="absolute left-0 top-8 z-40 w-[min(460px,85vw)] rounded-[22px] bg-white p-3 font-normal text-ink ring-2 ring-ink">
-          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search, e.g. valley 0.55 or ridge cap" className="min-h-10 w-full rounded-lg bg-cream px-3 text-sm ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search, e.g. valley 0.55 or ridge cap" className="min-h-10 w-full rounded-lg bg-cream px-3 text-sm ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-ink" />
           <ul className="mt-2 max-h-72 overflow-y-auto">
             {res?.error && <li className="px-2 py-3 text-sm text-slate-500">{res.error}</li>}
             {res?.items.map((g) => (
               <li key={g.id}><button type="button" onClick={() => { onPick(g); setOpen(false); setQ(""); }} className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm hover:bg-slate-50">
-                <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{g.description}</span><span className="block text-xs text-slate-500">{[g.code, g.unit].filter(Boolean).join(" · ")}</span></span>
+                <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{g.description}</span><span className="block font-mono text-xs text-slate-500">{[g.code, g.unit].filter(Boolean).join(" · ")}</span></span>
                 <span className="tabular-nums text-slate-600">{aud(g.cost)} <span className="text-xs text-slate-400">cost</span></span>
               </button></li>
             ))}

@@ -39,7 +39,7 @@ export function DirectoryPicker({ directory, serviceStates, addedIds }: { direct
         </Field>
         {serviceStates.length > 0 && (
           <label className="flex min-h-11 items-center gap-2 text-sm text-slate-600">
-            <input type="checkbox" checked={allStates} onChange={(e) => setAllStates(e.target.checked)} className="h-5 w-5 accent-brand-500" />
+            <input type="checkbox" checked={allStates} onChange={(e) => setAllStates(e.target.checked)} className="h-5 w-5 accent-ink" />
             Show suppliers outside {serviceStates.join(", ")}
           </label>
         )}
@@ -58,7 +58,7 @@ export function DirectoryPicker({ directory, serviceStates, addedIds }: { direct
               >
                 <span className="min-w-0">
                   <span className="block font-medium text-slate-900">{s.name}</span>
-                  <span className="block text-xs text-slate-500">
+                  <span className="block font-mono text-xs text-slate-500">
                     {CATEGORY[s.category] ?? s.category}
                     {" · "}
                     {s.states.length ? s.states.join(", ") : "Coverage not confirmed"}

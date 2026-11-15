@@ -54,7 +54,7 @@ function Section({ id, title, hint, children, actions }: { id: string; title: st
 
 function SearchBox({ q }: { q: string }) {
   return (
-    <form action="/app" role="search" className="flex h-12 min-w-0 flex-1 basis-72 items-center gap-2 rounded-xl bg-white px-3.5 ring-1 ring-inset ring-slate-300 focus-within:ring-2 focus-within:ring-brand-500 lg:max-w-md">
+    <form action="/app" role="search" className="flex h-12 min-w-0 flex-1 basis-72 items-center gap-2 rounded-xl bg-white px-3.5 ring-1 ring-inset ring-slate-300 focus-within:ring-2 focus-within:ring-ink lg:max-w-md">
       <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] shrink-0 text-slate-500" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
       <label htmlFor="today-search" className="sr-only">Search customers and jobs</label>
       <input id="today-search" type="search" name="q" defaultValue={q} placeholder="Name, address, phone or claim #" className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-slate-400" />

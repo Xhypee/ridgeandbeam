@@ -100,7 +100,7 @@ export default async function CommissionsPage({ searchParams }: PageProps<"/app/
             <tbody className="divide-y-2 divide-dashed divide-slate-200">
               {statements.map((s) => (
                 <tr key={s.rep.user_id} className={cx(selected?.rep.user_id === s.rep.user_id && "bg-brand-50")}>
-                  <td className={td}><Link className="font-medium text-brand-700 hover:underline" href={`/app/reports/commissions?rep=${s.rep.user_id}`}>{s.rep.name}</Link><span className="block text-xs text-slate-500">{ROLE_LABEL[s.rep.role]}</span></td>
+                  <td className={td}><Link className="font-medium text-brand-700 hover:underline" href={`/app/reports/commissions?rep=${s.rep.user_id}`}>{s.rep.name}</Link><span className="block font-mono text-xs text-slate-500">{ROLE_LABEL[s.rep.role]}</span></td>
                   <td className={td}>{s.plan?.name ?? <span className="text-slate-400">—</span>}</td>
                   <td className={cx(td, "text-right")}>{s.jobs.length}</td>
                   <td className={cx(td, "text-right")}>{money(s.totals.earned)}</td>

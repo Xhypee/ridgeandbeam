@@ -94,7 +94,7 @@ export default async function CloseoutPage({ params }: PageProps<"/app/jobs/[id]
           {job.walkthrough_signed_at ? (
             <div className="space-y-2 text-sm">
               <p>Signed by <b>{job.walkthrough_name}</b> on {date(job.walkthrough_signed_at)}.</p>
-              <Link href={`/app/jobs/${id}/closeout/certificate`} className="inline-flex min-h-11 items-center rounded-lg bg-brand-500 px-4 font-semibold text-white">Certificate of Completion</Link>
+              <Link href={`/app/jobs/${id}/closeout/certificate`} className="inline-flex min-h-11 items-center rounded-lg bg-ink px-4 text-white font-mono text-xs font-semibold uppercase tracking-wider">Certificate of Completion</Link>
             </div>
           ) : (
             <ActionForm action={signWalkthrough} className="space-y-3">
@@ -103,7 +103,7 @@ export default async function CloseoutPage({ params }: PageProps<"/app/jobs/[id]
               <Input name="name" placeholder="Homeowner's full name" required className="min-h-12 text-base" />
               <SignaturePad name="signature" required height={180} />
               <label className="flex items-start gap-2 text-sm">
-                <input type="checkbox" name="agree" required className="mt-0.5 h-5 w-5 accent-brand-500" />
+                <input type="checkbox" name="agree" required className="mt-0.5 h-5 w-5 accent-ink" />
                 I walked the finished job and confirm the work is complete{openPunch ? `, except the ${openPunch} punch item${openPunch > 1 ? "s" : ""} listed` : ""}.
               </label>
               <SubmitButton className="min-h-14 w-full text-base">Homeowner signs off</SubmitButton>
@@ -160,7 +160,7 @@ export default async function CloseoutPage({ params }: PageProps<"/app/jobs/[id]
             <input type="hidden" name="job_id" value={id} />
             <p className="text-sm text-slate-600">Texts and emails the homeowner your Google review link.{job.review_requested_at ? ` Last sent ${date(job.review_requested_at)}.` : ""}</p>
             {reviewBlock && <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-700" data-testid="review-blocked">{reviewBlock}</p>}
-            <button type="submit" disabled={Boolean(reviewBlock)} className="min-h-12 rounded-lg bg-brand-500 px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
+            <button type="submit" disabled={Boolean(reviewBlock)} className="min-h-12 rounded-lg bg-ink px-4 text-white disabled:cursor-not-allowed disabled:opacity-40 font-mono text-xs font-semibold uppercase tracking-wider">
               {job.review_requested_at ? "Send review request again" : "Send review request"}
             </button>
           </ActionForm>

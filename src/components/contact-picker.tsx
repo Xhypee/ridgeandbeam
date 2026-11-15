@@ -96,7 +96,7 @@ export function ContactPicker({ name, initial = null, placeholder = "Search cont
       </div>
       {shown && (
         <ul ref={list} id={listId} role="listbox" className="mt-1 scroll-mb-4 overflow-hidden rounded-xl bg-white py-1 ring-1 ring-slate-300" data-contact-picker-list>
-          {!term && <li className="px-3 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Recent</li>}
+          {!term && <li className="px-3 pb-1 pt-1.5 text-[11px] uppercase text-slate-400 font-mono tracking-[0.12em]">Recent</li>}
           {items.map((c, i) => (
             <li key={`${c.type}-${c.id}`} role="option" aria-selected={i === active} onMouseDown={(e) => { e.preventDefault(); choose(c); }} onMouseEnter={() => setActive(i)}
               className={cx("cursor-pointer px-3 py-2.5", i === active && "bg-brand-50")}>
@@ -106,7 +106,7 @@ export function ContactPicker({ name, initial = null, placeholder = "Search cont
           ))}
           {canAdd && (
             <li role="option" aria-selected={active === items.length} onMouseDown={(e) => { e.preventDefault(); addNew(); }} onMouseEnter={() => setActive(items.length)} data-contact-picker-add
-              className={cx("flex cursor-pointer items-center gap-2 px-3 py-2.5 text-sm font-semibold text-brand-700", items.length > 0 && "border-t-2 border-dashed border-slate-200", active === items.length && "bg-brand-50")}>
+              className={cx("flex cursor-pointer items-center gap-2 px-3 py-2.5 font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider", items.length > 0 && "border-t-2 border-dashed border-slate-200", active === items.length && "bg-brand-50")}>
               <Svg d={PLUS} />Add &ldquo;{term}&rdquo; as a new contact
             </li>
           )}

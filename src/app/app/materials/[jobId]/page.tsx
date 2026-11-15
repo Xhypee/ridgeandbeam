@@ -31,7 +31,7 @@ export default async function MaterialsPage({ params, searchParams }: PageProps<
 
   return (
     <>
-      <header className="no-print sticky top-0 z-30 border-b border-slate-200 bg-white" data-materials-top>
+      <header className="no-print sticky top-0 z-30 border-b-2 border-dashed border-slate-200 bg-white" data-materials-top>
         <div className="flex min-h-16 flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 sm:px-6">
           <Link href={`/app/jobs?job=${jobId}`} aria-label="Back to the job" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-ink ring-1 ring-slate-300 hover:bg-slate-50">
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M15 6l-6 6 6 6" /></svg>
@@ -56,9 +56,9 @@ export default async function MaterialsPage({ params, searchParams }: PageProps<
       {pv && preview && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-ink/50 p-4 sm:p-6" role="dialog" aria-modal="true" aria-label={`What ${pv.supplier} will get`} data-supplier-preview>
           <Link href={base} scroll={false} aria-label="Close preview" className="absolute inset-0 cursor-default" />
-          <div className="relative flex h-full max-h-[1000px] w-full max-w-[1080px] flex-col overflow-hidden rounded-3xl bg-white">
+          <div className="relative flex h-full max-h-[1000px] w-full max-w-[1080px] flex-col overflow-hidden rounded-[22px] bg-white">
             <div className="flex flex-wrap items-center gap-3 border-b-2 border-dashed border-slate-200 px-6 py-4">
-              <div className="min-w-0 flex-1"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Preview</p><p className="font-display text-xl font-bold text-ink">What {pv.supplier}{pv.branch ? ` ${pv.branch}` : ""} will get</p></div>
+              <div className="min-w-0 flex-1"><p className="text-xs uppercase text-slate-400 font-mono tracking-[0.12em]">Preview</p><p className="font-display text-xl font-bold text-ink">What {pv.supplier}{pv.branch ? ` ${pv.branch}` : ""} will get</p></div>
               <SendFromPreview jobId={jobId} orderId={pv.id} supplier={pv.supplier} status={pv.status} hasEmail={Boolean(pv.email)} />
               <Link href={base} scroll={false} aria-label="Close" className="grid h-11 w-11 place-items-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-ink">
                 <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg>

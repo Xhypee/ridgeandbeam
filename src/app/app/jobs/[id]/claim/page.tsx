@@ -46,7 +46,7 @@ export default async function ClaimPage({ params }: PageProps<"/app/jobs/[id]/cl
             const current = s === stage || (outcome && s === "approved");
             return (
               <li key={s} className="flex shrink-0 flex-col items-center gap-1 px-1" aria-current={current ? "step" : undefined}>
-                <span className={cx("flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold", current ? "bg-brand-500 text-white" : done ? "bg-green-100 text-green-800" : "bg-slate-100 text-slate-500")}>
+                <span className={cx("flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold", current ? "bg-ink text-white" : done ? "bg-green-100 text-green-800" : "bg-slate-100 text-slate-500")}>
                   {done ? "✓" : i + 1}
                 </span>
                 <span className={cx("w-20 text-center text-[11px] leading-tight", current ? "font-semibold text-slate-900" : "text-slate-500")}>

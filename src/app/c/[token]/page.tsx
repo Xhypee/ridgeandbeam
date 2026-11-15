@@ -60,7 +60,7 @@ export default async function PublicChangeOrder({ params }: PageProps<"/c/[token
           ))}
         </ul>
         {tax > 0 && <div className="flex justify-between text-sm text-slate-600"><span>Tax</span><span>{money(tax)}</span></div>}
-        <div className="mt-1 flex justify-between border-t border-slate-200 pt-2 text-lg font-bold"><span>Added to your project</span><span className="tabular-nums">{money(subtotal + tax)}</span></div>
+        <div className="mt-1 flex justify-between border-t-2 border-dashed border-slate-200 pt-2 text-lg font-bold"><span>Added to your project</span><span className="tabular-nums">{money(subtotal + tax)}</span></div>
         <p className="mt-1 text-xs text-slate-500">This amount is added to your final invoice.</p>
       </article>
 
@@ -72,7 +72,7 @@ export default async function PublicChangeOrder({ params }: PageProps<"/c/[token
             <Input name="name" placeholder="Your full name" autoComplete="name" required className="min-h-12 text-base" />
             <SignaturePad name="signature" required height={170} />
             <label className="flex items-start gap-2 text-sm">
-              <input type="checkbox" name="agree" required className="mt-0.5 h-5 w-5 accent-brand-500" />
+              <input type="checkbox" name="agree" required className="mt-0.5 h-5 w-5 accent-ink" />
               I approve this change to my roofing contract with {co.org.name} for the amount shown.
             </label>
             <SubmitButton className="min-h-14 w-full text-base">Approve & sign</SubmitButton>

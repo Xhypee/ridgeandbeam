@@ -39,7 +39,7 @@ function StatusButtons({ jobId, field, value, options, labels, disabled }: { job
           aria-pressed={o === value}
           className={cx(
             "min-h-11 rounded-lg px-3 text-sm font-medium ring-1 transition disabled:cursor-default",
-            o === value ? "bg-slate-900 text-white ring-slate-900" : "bg-white text-slate-700 ring-slate-300 hover:ring-brand-500",
+            o === value ? "bg-slate-900 text-white ring-slate-900" : "bg-white text-slate-700 ring-slate-300 hover:ring-ink",
           )}
         >
           {labels?.[o] ?? label(o)}

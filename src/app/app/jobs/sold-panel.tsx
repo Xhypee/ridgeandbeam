@@ -73,11 +73,11 @@ export function SoldPanel({ d }: { d: Docket }) {
         {steps.map((x, k) => {
           const body = (
             <>
-              <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-full", x.state === "done" ? "bg-brand-500 text-white" : x.state === "now" ? "bg-ink text-white" : x.state === "wait" ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200" : "bg-white text-slate-500 ring-1 ring-slate-200")}>
+              <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-full", x.state === "done" ? "bg-ink text-white" : x.state === "now" ? "bg-ink text-white" : x.state === "wait" ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200" : "bg-white text-slate-500 ring-1 ring-slate-200")}>
                 <Icon d={x.state === "done" ? I.check : x.icon} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className={cx("block text-sm font-semibold", x.state === "todo" ? "text-slate-600" : "text-ink")}>{x.label}</span>
+                <span className={cx("block font-display text-[15px] font-bold", x.state === "todo" ? "text-slate-600" : "text-ink")}>{x.label}</span>
                 <span className="block truncate text-xs text-slate-500">{x.detail}</span>
                 {x.note && <span className="block text-xs font-medium text-amber-700">{x.note}</span>}
               </span>
@@ -93,7 +93,7 @@ export function SoldPanel({ d }: { d: Docket }) {
         <div className="mt-3 flex gap-2">
           {tel && <a href={`sms:${tel}?&body=${encodeURIComponent(`Hi ${first}, just confirming we start on your roof ${j.scheduled_start ? day(j.scheduled_start) : "soon"}. See you then!`)}`} className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-ink px-3 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90"><Icon d={I.sms} />Text {first}: we start {j.scheduled_start ? day(j.scheduled_start).split(" ")[0] : "soon"}</a>}
           <form action={setStage}><input type="hidden" name="id" value={j.id} /><input type="hidden" name="stage" value="in_progress" />
-            <button className="flex min-h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold text-ink ring-1 ring-slate-300 hover:bg-slate-50">Start build</button></form>
+            <button className="flex min-h-11 items-center justify-center rounded-xl px-4 font-mono text-xs font-semibold uppercase tracking-wider text-ink ring-1 ring-slate-300 hover:bg-slate-50">Start build</button></form>
         </div>
       )}
       {s.rule && <p className="mt-3 flex gap-2 rounded-xl bg-cream px-3 py-2.5 text-xs leading-relaxed text-slate-600 ring-1 ring-slate-200"><Icon d={I.shield} className="mt-0.5 h-4 w-4 text-brand-700" />{s.rule}</p>}

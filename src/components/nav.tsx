@@ -113,7 +113,7 @@ export function NavRail({ canSeeMoney = true, crewLead = false, unread = 0 }: { 
       </nav>
       <Link href="/app/notifications" title="Notifications" aria-label={`Notifications${unread ? ` (${unread} unread)` : ""}`} className="relative mt-auto grid h-11 w-11 place-items-center rounded-xl text-slate-500 hover:bg-slate-100">
         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 004 0" /></svg>
-        {unread ? <span className="absolute right-1 top-1 min-w-4 rounded-full bg-brand-500 px-1 text-center text-[10px] font-semibold leading-4 text-white">{unread > 99 ? "99+" : unread}</span> : null}
+        {unread ? <span className="absolute right-1 top-1 min-w-4 rounded-full bg-ink px-1 text-center text-[10px] font-semibold leading-4 text-white">{unread > 99 ? "99+" : unread}</span> : null}
       </Link>
     </aside>
   );

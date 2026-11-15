@@ -153,7 +153,7 @@ export default async function BillingPage({ params }: PageProps<"/app/jobs/[id]/
                     const owed = Math.max(0, l.expected - l.received);
                     return (
                       <li key={l.key} className={cx("flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm", !l.counted && "text-slate-400")}>
-                        <span className="min-w-0"><Link href={l.href} className="font-medium hover:text-brand-600">{l.source}</Link><span className="block text-xs text-slate-500">{l.detail}</span></span>
+                        <span className="min-w-0"><Link href={l.href} className="font-medium hover:text-brand-600">{l.source}</Link><span className="block font-mono text-xs text-slate-500">{l.detail}</span></span>
                         <span className="text-right tabular-nums">{money(l.expected)}<span className="block text-xs">{owed > 0 ? <span className="text-amber-700">owed {money(owed)}</span> : <span className="text-green-700">received</span>}</span></span>
                       </li>
                     );

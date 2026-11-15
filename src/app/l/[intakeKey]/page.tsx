@@ -5,7 +5,7 @@ import { anonClient } from "@/lib/public";
 
 export const metadata: Metadata = { title: "Request a free roof inspection", robots: { index: false } };
 
-const input = "block w-full rounded-lg border-0 bg-white px-3 py-3 text-base text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:outline-none";
+const input = "block w-full rounded-lg border-0 bg-white px-3 py-3 text-base text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-ink focus:outline-none";
 
 /** Hosted lead form. Works standalone or inside an <iframe> on the roofer's website; posts without JavaScript. */
 export default async function LeadForm({ params, searchParams }: PageProps<"/l/[intakeKey]">) {
@@ -43,7 +43,7 @@ export default async function LeadForm({ params, searchParams }: PageProps<"/l/[
             </div>
             <AddressLookup label="Street address" known={false} />
             <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">What&apos;s going on with your roof?</span><textarea className={`${input} min-h-24`} name="message" placeholder="Leak over the kitchen, storm damage, getting quotes for a replacement…" /></label>
-            <label className="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" name="insurance" value="yes" className="h-5 w-5 accent-brand-500" /> This may be an insurance claim (storm, hail or wind damage)</label>
+            <label className="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" name="insurance" value="yes" className="h-5 w-5 accent-ink" /> This may be an insurance claim (storm, hail or wind damage)</label>
             <button className="w-full rounded-lg bg-ink px-4 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90">Request inspection</button>
             <p className="text-xs text-slate-500">Enter a phone number or email so we can reach you. We never sell your information.</p>
           </form>

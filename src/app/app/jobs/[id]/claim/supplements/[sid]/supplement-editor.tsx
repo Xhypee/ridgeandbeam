@@ -105,14 +105,14 @@ export function SupplementEditor({ id, locked, initial, notes: initialNotes, pho
                     const on = it.file_ids.includes(p.id);
                     return (
                       <button key={p.id} type="button" onClick={() => togglePhoto(i, p.id)} aria-pressed={on}
-                        className={cx("relative overflow-hidden rounded-lg ring-2", on ? "ring-brand-500" : "ring-transparent")}>
+                        className={cx("relative overflow-hidden rounded-lg ring-2", on ? "ring-ink" : "ring-transparent")}>
                         {p.url ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={p.url} alt={p.caption ?? p.category} className="aspect-square w-full object-cover" />
                         ) : (
                           <span className="flex aspect-square items-center justify-center bg-slate-100 text-xs">{p.caption ?? p.category}</span>
                         )}
-                        {on && <span className="absolute right-1 top-1 rounded-full bg-brand-500 px-1.5 text-xs text-white">✓</span>}
+                        {on && <span className="absolute right-1 top-1 rounded-full bg-ink px-1.5 text-xs text-white">✓</span>}
                       </button>
                     );
                   })}

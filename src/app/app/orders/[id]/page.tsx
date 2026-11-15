@@ -81,7 +81,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ap
                     <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
                       <span className="min-w-0">
                         <span className="font-medium">{r.quantity} × {r.description}</span>
-                        <span className="block text-xs text-slate-500">
+                        <span className="block font-mono text-xs text-slate-500">
                           Credit {money(r.credit_amount)}{Number(r.restocking_fee) > 0 && ` − ${money(r.restocking_fee)} restocking`} = <b>{money(netCredit(r))}</b>
                           {r.credit_window_ends_on && r.status !== "credited" && (
                             <span className={cx("ml-2 font-medium", left !== null && left < 0 ? "text-red-700" : left !== null && left <= 7 ? "text-amber-700" : "text-slate-600")}>
@@ -118,7 +118,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ap
           <Card title="Status">
             <ol className="mb-4 flex flex-wrap gap-1 text-xs">
               {["draft", "sent", "confirmed", "delivered"].map((s, i, arr) => (
-                <li key={s} className={cx("rounded-full px-2.5 py-1", arr.indexOf(o.status) >= i ? "bg-brand-500 text-white" : "bg-slate-100 text-slate-500")}>{label(s)}</li>
+                <li key={s} className={cx("rounded-full px-2.5 py-1", arr.indexOf(o.status) >= i ? "bg-ink text-white" : "bg-slate-100 text-slate-500")}>{label(s)}</li>
               ))}
             </ol>
             {!locked && (
@@ -147,8 +147,8 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ap
                 {thumbs.length === 0 ? <p className="text-sm text-slate-500">No job photos yet. Take a delivery photo from the Field tab, or mark delivered without one.</p> : (
                   <div className="grid grid-cols-3 gap-2">
                     {thumbs.map((f) => (
-                      <label key={f.id} className="relative block cursor-pointer overflow-hidden rounded-lg ring-1 ring-slate-200 has-checked:ring-2 has-checked:ring-brand-500">
-                        <input type="checkbox" name="file_ids" value={f.id} defaultChecked={f.category === "delivery"} className="absolute left-1 top-1 h-5 w-5 accent-brand-500" />
+                      <label key={f.id} className="relative block cursor-pointer overflow-hidden rounded-lg ring-1 ring-slate-200 has-checked:ring-2 has-checked:ring-ink">
+                        <input type="checkbox" name="file_ids" value={f.id} defaultChecked={f.category === "delivery"} className="absolute left-1 top-1 h-5 w-5 accent-ink" />
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         {f.url ? <img src={f.url} alt={f.caption ?? ""} className="aspect-square w-full object-cover" /> : <span className="block aspect-square bg-slate-100" />}
                       </label>

@@ -78,7 +78,7 @@ export function FinancingEditor({ initial, disabled }: { initial: { enabled?: bo
         {rows.map((r, i) => (
           <div key={r.provider} className="grid gap-2 rounded-lg bg-slate-50 p-3 sm:grid-cols-[12rem_1fr]" data-lender={r.provider}>
             <label className="flex min-h-11 items-center gap-2 text-sm font-medium text-slate-800">
-              <input type="checkbox" className="h-5 w-5 accent-brand-500" checked={r.on} disabled={disabled} onChange={(e) => set(i, { on: e.target.checked })} />
+              <input type="checkbox" className="h-5 w-5 accent-ink" checked={r.on} disabled={disabled} onChange={(e) => set(i, { on: e.target.checked })} />
               <span>{r.name}<span className="block text-xs font-normal text-slate-500">{r.hint}</span></span>
             </label>
             <Input aria-label={`${r.name} link`} placeholder="https://… your merchant / referral link" value={r.url} disabled={disabled || !r.on} onChange={(e) => set(i, { url: e.target.value })} />
@@ -86,11 +86,11 @@ export function FinancingEditor({ initial, disabled }: { initial: { enabled?: bo
         ))}
       </div>
       <label className="flex items-start gap-2 text-sm text-slate-700">
-        <input type="checkbox" className="mt-0.5 h-5 w-5 accent-brand-500" checked={ack} disabled={disabled} onChange={(e) => setAck(e.target.checked)} />
+        <input type="checkbox" className="mt-0.5 h-5 w-5 accent-ink" checked={ack} disabled={disabled} onChange={(e) => setAck(e.target.checked)} />
         <span>We hold an Australian credit licence, are an authorised credit representative, or act only as a referrer under the provider&apos;s arrangements.</span>
       </label>
       <label className="flex items-center gap-2 text-sm text-slate-700">
-        <input type="checkbox" className="h-5 w-5 accent-brand-500" checked={enabled} disabled={disabled} onChange={(e) => setEnabled(e.target.checked)} />
+        <input type="checkbox" className="h-5 w-5 accent-ink" checked={enabled} disabled={disabled} onChange={(e) => setEnabled(e.target.checked)} />
         Show these finance links on invoices
       </label>
       {!disabled && (

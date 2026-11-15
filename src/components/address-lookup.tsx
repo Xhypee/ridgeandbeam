@@ -233,7 +233,7 @@ export function AddressLookup({ defaultState, initial, initialLine, label = "Sit
                 </li>
               ))}
               <li role="option" aria-selected={false} data-address-manual-option onMouseDown={(e) => { e.preventDefault(); toManual(); }}
-                className={cx("flex cursor-pointer items-center gap-2.5 px-3 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-50", shown.length > 0 && "border-t-2 border-dashed border-slate-200")}>
+                className={cx("flex cursor-pointer items-center gap-2.5 px-3 py-2.5 font-semibold text-brand-700 hover:bg-brand-50 font-mono text-xs uppercase tracking-wider", shown.length > 0 && "border-t-2 border-dashed border-slate-200")}>
                 <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" /></svg>
                 <span className="min-w-0 truncate">Enter &ldquo;{query.trim()}&rdquo; manually</span>
               </li>

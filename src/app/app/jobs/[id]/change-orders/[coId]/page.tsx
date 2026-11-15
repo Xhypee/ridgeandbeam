@@ -41,7 +41,7 @@ export default async function ChangeOrderPage({ params, searchParams }: PageProp
             </li>
           ))}
         </ul>
-        <div className="mt-2 flex justify-between border-t border-slate-200 pt-2 font-semibold"><span>Total (before tax)</span><span className="tabular-nums">{money(total)}</span></div>
+        <div className="mt-2 flex justify-between border-t-2 border-dashed border-slate-200 pt-2 font-semibold"><span>Total (before tax)</span><span className="tabular-nums">{money(total)}</span></div>
         <p className="text-xs text-slate-500">Our cost {money(cost)} · margin {total > 0 ? Math.round(((total - cost) / total) * 100) : 0}%</p>
         {(files ?? []).length > 0 && (
           <div className="mt-3 grid grid-cols-3 gap-2">

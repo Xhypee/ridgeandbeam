@@ -60,29 +60,30 @@ export async function loadContactDocket(supabase: DB, id: string, opts: { canSee
 function Row({ icon, k, v, href }: { icon: string; k: string; v: React.ReactNode; href?: string }) {
   const inner = (
     <>
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-cream text-slate-600 ring-1 ring-slate-200"><Icon d={icon} /></span>
-      <span className="min-w-0 flex-1"><span className="block text-[11px] text-slate-500">{k}</span><span className="block text-sm font-medium text-ink [overflow-wrap:anywhere]">{v}</span></span>
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-white text-ink ring-1 ring-slate-300"><Icon d={icon} /></span>
+      <span className="min-w-0 flex-1"><span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400">{k}</span><span className="block font-mono text-[13px] text-ink [overflow-wrap:anywhere]">{v}</span></span>
     </>
   );
   return href ? <a href={href} className="flex items-center gap-3 rounded-lg py-1.5 hover:bg-slate-50">{inner}</a> : <div className="flex items-center gap-3 py-1.5">{inner}</div>;
 }
 
 function Shell({ id, tag, sinceIso, name, sub, stats, closeHref, phone, email, children, claude }: { id: string; tag: string; sinceIso: string; name: string; sub: string; stats: { k: string; v: string; warn?: boolean }[]; closeHref: string; phone: string | null; email: string | null; children: React.ReactNode; claude?: React.ReactNode }) {
-  const btn = "inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl text-[15px] font-semibold";
+  const btn = "inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl font-mono text-xs font-semibold uppercase tracking-wider";
   return (
     <div className="flex h-full flex-col bg-cream p-4" data-contact-docket={id}>
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200">
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-          <div className="bg-brand-500 px-5 pb-5 pt-4 text-white">
-            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-200">
+          <div className="px-5 pb-5 pt-4">
+            <div className="flex items-center gap-2 text-[11px] uppercase text-slate-400 font-mono tracking-[0.12em]">
               <span className="min-w-0 flex-1 truncate" data-contact-tag>{tag}</span>
               <span className="shrink-0">Since {since(sinceIso)}</span>
-              <Link href={closeHref} scroll={false} aria-label="Close" className="-my-1 -mr-2 grid h-8 w-8 place-items-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"><Icon d="M6 6l12 12M18 6L6 18" /></Link>
+              <Link href={closeHref} scroll={false} aria-label="Close" className="-my-1 -mr-2 grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-ink"><Icon d="M6 6l12 12M18 6L6 18" /></Link>
             </div>
-            <h2 className="mt-2 font-display text-2xl font-bold leading-tight">{name}</h2>
-            <p className="truncate text-sm text-white/70">{sub}</p>
-            {stats.length > 0 && <dl className={cx("mt-5 grid gap-2", stats.length === 3 ? "grid-cols-3" : stats.length === 2 ? "grid-cols-2" : "grid-cols-1")} data-contact-stats>
-              {stats.map((s) => <div key={s.k}><dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-200">{s.k}</dt><dd className={cx("font-display text-[22px] font-bold leading-tight", s.warn && "text-amber-200")}>{s.v}</dd></div>)}
+            <div className="mt-3 border-t-2 border-dashed border-slate-200" />
+            <h2 className="mt-3 font-display text-[26px] font-bold leading-tight text-ink">{name}</h2>
+            <p className="truncate font-mono text-xs text-slate-500">{sub}</p>
+            {stats.length > 0 && <dl className={cx("mt-4 grid gap-2 border-t-2 border-dashed border-slate-200 pt-3", stats.length === 3 ? "grid-cols-3" : stats.length === 2 ? "grid-cols-2" : "grid-cols-1")} data-contact-stats>
+              {stats.map((s) => <div key={s.k}><dt className="text-[10px] uppercase text-slate-400 font-mono tracking-[0.12em]">{s.k}</dt><dd className={cx("font-display text-[22px] font-bold leading-tight text-ink", s.warn && "text-amber-700")}>{s.v}</dd></div>)}
             </dl>}
           </div>
           <div className="flex gap-2 px-5 py-4">
@@ -124,7 +125,7 @@ function JobList({ d, canSeeMoney, newHref, newLabel }: { d: ContactDocketData; 
               <Link href={`/app/jobs?job=${j.id}`} className="flex items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-slate-50">
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-ink">{j.title}</span>
-                  <span className="block text-xs text-slate-500">{STAGE_LABEL[j.stage] ?? label(j.stage)}{canSeeMoney && j.owing > 0 ? <span className="font-semibold text-amber-700"> · {aud(j.owing)} owing</span> : null}</span>
+                  <span className="block font-mono text-xs text-slate-500">{STAGE_LABEL[j.stage] ?? label(j.stage)}{canSeeMoney && j.owing > 0 ? <span className="font-semibold text-amber-700"> · {aud(j.owing)} owing</span> : null}</span>
                 </span>
                 {canSeeMoney && <span className="shrink-0 text-sm font-semibold tabular-nums text-ink">{j.value === null ? <span className="font-normal text-slate-400">Not quoted</span> : aud(j.value)}</span>}
                 <Icon d={CHEV} className="h-4 w-4 text-slate-400" />
@@ -227,7 +228,7 @@ function ContractorDocket({ d, closeHref, today, canSeeMoney }: { d: ContactDock
             {d.onJobs.map((j) => (
               <li key={j.job_id} className="flex items-center gap-2">
                 <Link href={`/app/jobs?job=${j.job_id}`} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-slate-50">
-                  <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-ink">{[j.who, j.where].filter(Boolean).join(" · ") || j.title}</span><span className="block text-xs text-slate-500">{[STAGE_LABEL[j.stage] ?? label(j.stage), j.role].filter(Boolean).join(" · ")}</span></span>
+                  <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-ink">{[j.who, j.where].filter(Boolean).join(" · ") || j.title}</span><span className="block font-mono text-xs text-slate-500">{[STAGE_LABEL[j.stage] ?? label(j.stage), j.role].filter(Boolean).join(" · ")}</span></span>
                   <Icon d={CHEV} className="h-4 w-4 text-slate-400" />
                 </Link>
                 <form action={removeFromJob}><input type="hidden" name="job_id" value={j.job_id} /><input type="hidden" name="contact_id" value={c.id} /><button aria-label="Take off this job" className="grid h-9 w-9 place-items-center rounded-lg text-slate-300 hover:bg-slate-100 hover:text-red-700">✕</button></form>

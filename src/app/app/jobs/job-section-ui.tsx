@@ -15,8 +15,8 @@ export function Section({ title, count, action, children }: { title: string; cou
   return (
     <details open className="group border-t-2 border-dashed border-slate-200" data-lead-section={title}>
       <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-5 [&::-webkit-details-marker]:hidden">
-        <span className="font-semibold text-ink">{title}</span>
-        {count !== undefined && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">{count}</span>}
+        <span className="font-display font-bold text-ink">{title}</span>
+        {count !== undefined && <span className="font-mono text-xs text-slate-400">{count}</span>}
         {action && <span className="ml-auto">{action}</span>}
         <Icon d="M6 9l6 6 6-6" className={cx(action ? "" : "ml-auto", "h-4 w-4 text-slate-400 transition-transform group-open:rotate-180")} />
       </summary>
@@ -28,8 +28,8 @@ export function Section({ title, count, action, children }: { title: string; cou
 export function ContactRow({ icon, label, value, children }: { icon: string; label: string; value: ReactNode; children?: ReactNode }) {
   return (
     <div className="flex items-center gap-3 py-1.5">
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-cream text-slate-600 ring-1 ring-slate-200"><Icon d={icon} /></span>
-      <span className="min-w-0 flex-1"><span className="block text-[11px] text-slate-500">{label}</span><span className="block text-sm font-medium text-ink [overflow-wrap:anywhere]">{value}</span></span>
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-white text-ink ring-1 ring-slate-300"><Icon d={icon} /></span>
+      <span className="min-w-0 flex-1"><span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400">{label}</span><span className="block font-mono text-[13px] text-ink [overflow-wrap:anywhere]">{value}</span></span>
       {children}
     </div>
   );

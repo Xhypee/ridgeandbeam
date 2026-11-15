@@ -46,8 +46,8 @@ export function RainDay({ crews, defaultDate, riskyDates }: { crews: { id: strin
           <Input type="number" name="rain_days" min={1} max={10} value={Number(input.days)} onChange={(e) => set({ days: Number(e.target.value) || 1 })} />
         </Field>
         <div className="space-y-1 text-sm">
-          <label className="flex min-h-9 items-center gap-2"><input type="checkbox" checked={input.notifyHomeowners} onChange={(e) => set({ notifyHomeowners: e.target.checked })} className="h-4 w-4 accent-brand-500" />Text homeowners</label>
-          <label className="flex min-h-9 items-center gap-2"><input type="checkbox" checked={input.notifyCrews} onChange={(e) => set({ notifyCrews: e.target.checked })} className="h-4 w-4 accent-brand-500" />Text crews</label>
+          <label className="flex min-h-9 items-center gap-2"><input type="checkbox" checked={input.notifyHomeowners} onChange={(e) => set({ notifyHomeowners: e.target.checked })} className="h-4 w-4 accent-ink" />Text homeowners</label>
+          <label className="flex min-h-9 items-center gap-2"><input type="checkbox" checked={input.notifyCrews} onChange={(e) => set({ notifyCrews: e.target.checked })} className="h-4 w-4 accent-ink" />Text crews</label>
         </div>
       </div>
       <p className="mt-2 text-xs text-slate-500">Moves every job on that day plus the same crew&apos;s later jobs in the next two weeks, skipping weekends. Moved jobs become tentative. Assigned reps and crew leads get an in-app notice.</p>

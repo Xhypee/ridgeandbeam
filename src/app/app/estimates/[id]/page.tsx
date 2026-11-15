@@ -129,7 +129,7 @@ export default async function EstimatePage({ params, searchParams }: PageProps<"
   return (
     <>
       {/* Full-screen quoting engine: its own top bar instead of the app menu. */}
-      <header className="no-print sticky top-0 z-30 border-b border-slate-200 bg-white" data-quote-bar>
+      <header className="no-print sticky top-0 z-30 border-b-2 border-dashed border-slate-200 bg-white" data-quote-bar>
         <div className="flex min-h-16 flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 sm:px-6">
           <Link href={`/app/jobs?job=${job.id}`} aria-label="Back to the job" title="Back to the job" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-ink ring-1 ring-slate-300 hover:bg-slate-50">
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M15 6l-6 6 6 6" /></svg>

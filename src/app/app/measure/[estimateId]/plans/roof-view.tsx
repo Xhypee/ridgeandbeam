@@ -340,7 +340,7 @@ export function RoofView({ analysis: a, pitch, tab, onTab, image, showSheets, co
       </div>
       {panel && hoverFace !== null && tt > 0.95 && (
         <div className="pointer-events-none absolute bottom-5 right-5 z-20 w-64 rounded-[22px] bg-white p-4 ring-1 ring-slate-200" data-testid="panel-card">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{a.faces[hoverFace].name}</p>
+          <p className="text-xs uppercase text-slate-400 font-mono tracking-[0.12em]">{a.faces[hoverFace].name}</p>
           <p className="font-display text-3xl font-bold text-ink">{a.faces[hoverFace].area.toFixed(1)} m²</p>
           <p className="text-sm text-slate-500">{pitch}° pitch</p>
           <ul className="mt-3 space-y-1.5 text-sm">

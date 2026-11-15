@@ -104,7 +104,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
                 </>
               )}
             </div>
-            {!lost && <div className="mt-4 flex gap-1" aria-label={`Stage ${at + 1} of 5`}>{STAGES.map((s, i) => <span key={s} title={s} className={cx("h-1.5 flex-1 rounded-full", i < at || done ? "bg-brand-500" : i === at ? "bg-ink" : "bg-slate-200")} />)}</div>}
+            {!lost && <div className="mt-4 flex gap-1" aria-label={`Stage ${at + 1} of 5`}>{STAGES.map((s, i) => <span key={s} title={s} className={cx("h-1.5 flex-1 rounded-full", i < at || done ? "bg-ink" : i === at ? "bg-ink/40" : "bg-slate-200")} />)}</div>}
           </div>
 
           {/* Tear line */}
@@ -144,8 +144,8 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
             {canSeeMoney && (d.money.contract !== null || quote) && (
               <div className="mt-4 grid grid-cols-3 gap-2 text-center" data-docket-money>
                 {(d.money.contract !== null
-                  ? [["Contract", whole(d.money.contract), "text-ink"], ["Paid", whole(d.money.paid), "text-teal-700"], ["Owing", whole(d.money.owing), d.money.owing > 0 ? "text-ink" : "text-teal-700"]]
-                  : [["Quote", whole(quote!.total), "text-ink"], ["Status", quote!.status === "sent" ? "Sent" : human(quote!.status), "text-ink"], ["Paid", whole(d.money.paid), "text-teal-700"]]
+                  ? [["Contract", whole(d.money.contract), "text-ink"], ["Paid", whole(d.money.paid), "text-ink"], ["Owing", whole(d.money.owing), d.money.owing > 0 ? "text-ink" : "text-ink"]]
+                  : [["Quote", whole(quote!.total), "text-ink"], ["Status", quote!.status === "sent" ? "Sent" : human(quote!.status), "text-ink"], ["Paid", whole(d.money.paid), "text-ink"]]
                 ).map(([k, v, c]) => <div key={k} className="rounded-xl bg-white py-2 ring-1 ring-slate-200"><p className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400">{k}</p><p className={cx("font-display font-bold", c)} title={k === "Contract" || k === "Paid" || k === "Owing" ? money(k === "Contract" ? d.money.contract : k === "Paid" ? d.money.paid : d.money.owing) : undefined}>{v}</p></div>)}
               </div>
             )}
@@ -195,7 +195,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
                     <ul className="mt-1 max-h-56 divide-y-2 divide-dashed divide-slate-200 overflow-y-auto">
                       {notOnTeam.map((p) => (
                         <li key={p.user_id} className="flex items-center gap-2 py-1.5">
-                          <input type="checkbox" name="user_id" value={p.user_id} aria-label={`Add ${p.full_name ?? p.email}`} className="h-4 w-4 shrink-0 accent-[#1f5f3f]" />
+                          <input type="checkbox" name="user_id" value={p.user_id} aria-label={`Add ${p.full_name ?? p.email}`} className="h-4 w-4 shrink-0 accent-[#13221a]" />
                           <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-ink">{p.full_name || p.email}</span>
                           <select name={`role_${p.user_id}`} defaultValue={p.suggested} aria-label="Role on this job" className="h-8 rounded-md bg-cream px-1 text-[11px] font-semibold text-ink ring-1 ring-slate-300">
                             {JOB_ROLES.map((r) => <option key={r} value={r}>{JOB_ROLE_LABEL[r]}</option>)}
@@ -203,7 +203,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
                         </li>
                       ))}
                     </ul>
-                    <label className="mt-2 flex items-center gap-2 text-[12px] text-slate-600"><input type="checkbox" name="notify" defaultChecked className="h-4 w-4 accent-[#1f5f3f]" />Let them know</label>
+                    <label className="mt-2 flex items-center gap-2 text-[12px] text-slate-600"><input type="checkbox" name="notify" defaultChecked className="h-4 w-4 accent-[#13221a]" />Let them know</label>
                     <SubmitButton className="mt-2 min-h-10 w-full">Add to job</SubmitButton>
                   </ActionForm>
                 ) : <p className="mt-2 text-xs text-slate-500">Everyone on your team is on this job. Invite more people in Settings → Team.</p>}

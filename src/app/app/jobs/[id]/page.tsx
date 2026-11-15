@@ -68,7 +68,7 @@ export default async function JobPage({ params }: PageProps<"/app/jobs/[id]">) {
         {readiness && (
           <section aria-labelledby="h-ready" data-ready-panel className="rounded-[18px] bg-white p-6 ring-1 ring-slate-200">
             <div className="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <h2 id="h-ready" className="text-lg font-bold text-ink">Ready to build?</h2>
+              <h2 id="h-ready" className="font-display text-lg font-bold text-ink">Ready to build?</h2>
               <span className="text-sm text-slate-500">{readiness.done} of {readiness.total} ready · The schedule locks when all {readiness.total} are done.</span>
             </div>
             <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
@@ -172,7 +172,7 @@ export default async function JobPage({ params }: PageProps<"/app/jobs/[id]">) {
                   <li key={f.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm" data-financing={f.status}>
                     <span className="min-w-0">
                       <span className="font-medium">{f.lender}</span> · {money(f.amount)} · dealer fee {Number(f.dealer_fee_pct)}% ({money((Number(f.amount) * Number(f.dealer_fee_pct)) / 100)})
-                      {f.status === "funded" && <span className="block text-xs text-slate-500">Funded{f.funded_on ? ` ${date(f.funded_on)}` : ""} · dealer fee posted to Job cost</span>}
+                      {f.status === "funded" && <span className="block font-mono text-xs text-slate-500">Funded{f.funded_on ? ` ${date(f.funded_on)}` : ""} · dealer fee posted to Job cost</span>}
                     </span>
                     <form action={setFinancingStatus} className="flex items-center gap-1.5">
                       <input type="hidden" name="id" value={f.id} />
@@ -286,7 +286,7 @@ export default async function JobPage({ params }: PageProps<"/app/jobs/[id]">) {
                 aria-pressed={s === job.stage}
                 className={cx(
                   "min-h-9 rounded-full px-3 text-xs font-semibold ring-1 ring-inset transition",
-                  s === job.stage ? "bg-brand-500 text-white ring-brand-500" : "bg-white text-slate-600 ring-slate-200 hover:ring-brand-500",
+                  s === job.stage ? "bg-ink text-white ring-ink" : "bg-white text-slate-600 ring-slate-200 hover:ring-ink",
                 )}
               >
                 {STAGE_LABEL[s]}

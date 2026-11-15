@@ -10,7 +10,7 @@ export type Tab = { href: string; label: string; exact?: boolean; badge?: string
 export function Tabs({ tabs }: { tabs: Tab[] }) {
   const path = usePathname();
   return (
-    <nav className="no-print -mx-4 mb-6 flex gap-1 overflow-x-auto border-b border-slate-200 px-4 sm:-mx-6 sm:px-6" aria-label="Sections">
+    <nav className="no-print -mx-4 mb-6 flex gap-1 overflow-x-auto border-b-2 border-dashed border-slate-200 px-4 sm:-mx-6 sm:px-6" aria-label="Sections">
       {tabs.map((t) => {
         const active = t.exact ? path === t.href : path === t.href || path.startsWith(t.href + "/");
         return (

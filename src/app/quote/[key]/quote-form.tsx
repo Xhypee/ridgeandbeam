@@ -9,8 +9,8 @@ import { submitInstantQuote, type QuoteState } from "./actions";
 import type { QuoteRates } from "./rates";
 
 const aud = (n: number) => `$${Math.round(n).toLocaleString("en-AU")}`;
-const input = "block w-full rounded-lg border-0 bg-white px-3 py-3 text-base text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:outline-none";
-const chip = "flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium ring-1 ring-slate-300 has-[:checked]:bg-brand-50 has-[:checked]:text-brand-700 has-[:checked]:ring-2 has-[:checked]:ring-brand-500";
+const input = "block w-full rounded-lg border-0 bg-white px-3 py-3 text-base text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-ink focus:outline-none";
+const chip = "flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium ring-1 ring-slate-300 has-[:checked]:bg-brand-50 has-[:checked]:text-brand-700 has-[:checked]:ring-2 has-[:checked]:ring-ink";
 
 /** House outline whose roof gets steeper with the pitch (degrees). */
 function PitchIcon({ deg }: { deg: number }) {
@@ -152,7 +152,7 @@ export function QuoteForm({ intakeKey, orgName, rates, phone, defaultState }: { 
           <p className="text-sm text-white/80">{orgName} will send you a price after a quick look at your roof.</p>
         ) : range ? (
           <>
-            <p className="text-xs uppercase tracking-wide text-white/70">Estimated price range, including GST</p>
+            <p className="text-xs uppercase text-white/70 font-mono tracking-[0.12em]">Estimated price range, including GST</p>
             <p className="mt-1 text-3xl font-bold tabular-nums">{aud(range.low)} – {aud(range.high)}</p>
             <p className="mt-1 text-xs text-white/70">About {range.m2} m² of roof. Final price after a free inspection.</p>
           </>

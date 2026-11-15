@@ -92,7 +92,7 @@ export default async function SupplierPage({ params, searchParams }: PageProps<"
                 <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
                   <span className="min-w-0">
                     <span className="flex flex-wrap items-center gap-2 font-medium">{l.name} {l.is_active ? <Badge tone="green">Active</Badge> : <Badge>Inactive</Badge>}</span>
-                    <span className="block text-xs text-slate-500">
+                    <span className="block font-mono text-xs text-slate-500">
                       Effective {dmy(l.effective_date)} · imported {dmy(l.created_at)} · {l.supplier_price_items?.[0]?.count ?? 0} items · {l.prices_include_gst ? "prices were inc GST" : "prices ex GST"}
                       {l.source_filename && ` · ${l.source_filename}`}
                     </span>
@@ -142,7 +142,7 @@ export default async function SupplierPage({ params, searchParams }: PageProps<"
                     <td className="px-3 py-2 text-xs text-slate-500">{i.product_code}</td>
                     <td className="px-3 py-2">
                       {i.description}
-                      <span className="block text-xs text-slate-500">{[i.profile, i.finish, i.thickness_mm && `${Number(i.thickness_mm)} BMT`, i.cover_width_mm && `${Number(i.cover_width_mm)} cover`, i.length_mm && `${Number(i.length_mm) / 1000} m`, i.pack_qty && `pack ${Number(i.pack_qty)}`].filter(Boolean).join(" · ")}</span>
+                      <span className="block font-mono text-xs text-slate-500">{[i.profile, i.finish, i.thickness_mm && `${Number(i.thickness_mm)} BMT`, i.cover_width_mm && `${Number(i.cover_width_mm)} cover`, i.length_mm && `${Number(i.length_mm) / 1000} m`, i.pack_qty && `pack ${Number(i.pack_qty)}`].filter(Boolean).join(" · ")}</span>
                       {i.problem && <span className="block text-xs text-red-700">{i.problem}</span>}
                     </td>
                     <td className="px-3 py-2">{UNIT_SHORT[i.unit] ?? i.unit}</td>

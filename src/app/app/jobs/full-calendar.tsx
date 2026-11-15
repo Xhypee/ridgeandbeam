@@ -76,7 +76,7 @@ export function FullCalendar({ people, staff: staff0, day: day0, time, today, tz
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4" role="dialog" aria-modal aria-label={`${name}'s calendar`} data-full-calendar onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="flex h-[min(860px,92vh)] w-[min(1280px,96vw)] flex-col overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200">
         {/* Header: who, week/month, navigation */}
-        <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 px-5 py-3.5">
+        <div className="flex flex-wrap items-center gap-3 border-b-2 border-dashed border-slate-200 px-5 py-3.5">
           <div className="min-w-0">
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">Book {leadName}&rsquo;s inspection</p>
             <p className="font-display text-xl font-bold text-ink">{first}&rsquo;s calendar</p>
@@ -193,7 +193,7 @@ export function FullCalendar({ people, staff: staff0, day: day0, time, today, tz
             </ul>
           </aside>
         </div>
-        <div className="flex items-center gap-4 border-t border-slate-200 px-5 py-2.5 text-xs text-slate-500">
+        <div className="flex items-center gap-4 border-t-2 border-dashed border-slate-200 px-5 py-2.5 text-xs text-slate-500">
           <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-slate-200" />Inspection</span>
           <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-violet-100" />Build</span>
           <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded border-2 border-dashed border-brand-500" />This booking</span>

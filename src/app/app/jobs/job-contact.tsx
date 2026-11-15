@@ -42,7 +42,7 @@ export function ContactSection({ jobId, customer: c, site, state, referredBy }: 
   const initial = site ? { ...parseAuAddress(site), lat: null, lng: null } : null;
 
   const edit = !editing && (
-    <button type="button" onClick={startEdit} data-contact-edit className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-50">
+    <button type="button" onClick={startEdit} data-contact-edit className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 font-semibold text-brand-700 hover:bg-brand-50 font-mono text-xs uppercase tracking-wider">
       <Icon d={PENCIL} className="h-3.5 w-3.5" />Edit
     </button>
   );
