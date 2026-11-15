@@ -122,7 +122,7 @@ export default async function ClaimMoneyPage({ params }: PageProps<"/app/jobs/[i
                     )}
                   </div>
                   <details className="mt-2">
-                    <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-medium text-brand-700">Record details</summary>
+                    <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-medium text-ink">Record details</summary>
                     <KeepForm action={recordCheck} className="mt-2 grid gap-3 rounded-lg bg-slate-50 p-3 sm:grid-cols-2">
                       <input type="hidden" name="id" value={c.id} />
                       <Field label="Amount received"><Input name="received_amount" type="number" step="0.01" min="0" inputMode="decimal" defaultValue={Number(c.received_amount) || Number(c.expected_amount) || ""} /></Field>
@@ -156,7 +156,7 @@ export default async function ClaimMoneyPage({ params }: PageProps<"/app/jobs/[i
           </ul>
         )}
         <details className="mt-3">
-          <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-medium text-brand-700">+ Add another expected payment</summary>
+          <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-medium text-ink">+ Add another expected payment</summary>
           <KeepForm action={addCheck} className="mt-2 grid gap-3 rounded-lg bg-white p-3 ring-1 ring-slate-200 sm:grid-cols-2">
             <input type="hidden" name="claim_id" value={claim.id} />
             <Field label="What for"><Select name="kind" defaultValue="other">{CHECK_KINDS.map((k) => <option key={k} value={k}>{CHECK_KIND_LABEL[k]}</option>)}</Select></Field>
@@ -190,7 +190,7 @@ export default async function ClaimMoneyPage({ params }: PageProps<"/app/jobs/[i
         </ul>
         {docs.length > 0 && (
           <details className="mt-3">
-            <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-medium text-brand-700">Link files to paperwork</summary>
+            <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-medium text-ink">Link files to paperwork</summary>
             <ul className="mt-2 divide-y-2 divide-dashed divide-slate-200 rounded-[22px] bg-white ring-1 ring-slate-200">
               {docs.map((d) => (
                 <li key={d.id} className="p-3">
@@ -213,17 +213,17 @@ export default async function ClaimMoneyPage({ params }: PageProps<"/app/jobs/[i
                 </li>
               ))}
             </ul>
-            {files.length === 0 && <p className="mt-2 text-xs text-slate-500">No job files yet. Upload photos and documents on the <Link className="text-brand-700" href={`/app/jobs/${id}/field`}>Field</Link> tab.</p>}
+            {files.length === 0 && <p className="mt-2 text-xs text-slate-500">No job files yet. Upload photos and documents on the <Link className="text-ink" href={`/app/jobs/${id}/field`}>Field</Link> tab.</p>}
           </details>
         )}
       </section>
       <Card title="Invoices on this job">
         {invoices.length === 0 ? (
-          <p className="text-sm text-slate-500">No invoices yet. Create tax invoices on the <Link className="text-brand-700" href={`/app/jobs/${id}/billing`}>Billing</Link> tab.</p>
+          <p className="text-sm text-slate-500">No invoices yet. Create tax invoices on the <Link className="text-ink" href={`/app/jobs/${id}/billing`}>Billing</Link> tab.</p>
         ) : (
           <ul className="space-y-1 text-sm">
             {invoices.map((i) => (
-              <li key={i.id} className="flex justify-between gap-2"><Link href={`/app/invoices/${i.id}`} className="font-medium text-slate-800 hover:text-brand-600">#{i.number} · {i.milestone_label || INVOICE_KIND_LABEL[i.kind]}</Link><span className="tabular-nums text-slate-600">balance {money(invBalance(i))}</span></li>
+              <li key={i.id} className="flex justify-between gap-2"><Link href={`/app/invoices/${i.id}`} className="font-medium text-slate-800 hover:text-ink">#{i.number} · {i.milestone_label || INVOICE_KIND_LABEL[i.kind]}</Link><span className="tabular-nums text-slate-600">balance {money(invBalance(i))}</span></li>
             ))}
           </ul>
         )}

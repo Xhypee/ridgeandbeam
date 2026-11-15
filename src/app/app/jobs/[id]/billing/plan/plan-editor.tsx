@@ -65,7 +65,7 @@ export function PlanEditor(p: EditorProps) {
         <p className="text-xs uppercase text-slate-400 font-mono tracking-[0.12em]">Split it</p>
         {PRESETS.map((k) => (
           <button key={k} type="button" onClick={() => applyPreset(k)} data-preset={k}
-            className={cx("block w-full rounded-xl px-3 py-2.5 text-left ring-1 transition", preset === k ? "bg-brand-50 ring-2 ring-ink" : "bg-white ring-slate-200 hover:ring-slate-400")}>
+            className={cx("block w-full rounded-xl px-3 py-2.5 text-left ring-1 transition", preset === k ? "bg-slate-100 ring-2 ring-ink" : "bg-white ring-slate-200 hover:ring-slate-400")}>
             <span className="block font-semibold text-ink">{PRESET_LABEL[k].title}</span>
             <span className="block font-mono text-xs text-slate-500">{PRESET_LABEL[k].hint}</span>
           </button>
@@ -119,7 +119,7 @@ export function PlanEditor(p: EditorProps) {
           })}
         </ul>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <button type="button" className="font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider" onClick={() => setParts((ps) => [...ps, { label: `Payment ${ps.length + 1}`, trigger: "date", amount: diff > 0 ? diff : 0, due_date: p.start }])}>+ Add a payment</button>
+          <button type="button" className="font-semibold text-ink font-mono text-xs uppercase tracking-wider" onClick={() => setParts((ps) => [...ps, { label: `Payment ${ps.length + 1}`, trigger: "date", amount: diff > 0 ? diff : 0, due_date: p.start }])}>+ Add a payment</button>
           {diff !== 0 && parts.length > 0 && (
             <button type="button" className="text-sm font-semibold text-slate-600 underline" onClick={() => setParts((ps) => ps.map((x, j) => (j === ps.length - 1 ? { ...x, amount: round2((Number(x.amount) || 0) + diff) } : x)))}>
               Put the {diff > 0 ? "difference" : "extra"} on the last payment
@@ -138,7 +138,7 @@ export function PlanEditor(p: EditorProps) {
               const on = methods.includes(m);
               const off = m === "card" && !p.onlineReady;
               return (
-                <label key={m} className={cx("flex cursor-pointer gap-3 rounded-xl bg-white px-3 py-2.5 ring-1", on ? "ring-brand-300" : "ring-slate-200")}>
+                <label key={m} className={cx("flex cursor-pointer gap-3 rounded-xl bg-white px-3 py-2.5 ring-1", on ? "ring-slate-300" : "ring-slate-200")}>
                   <input type="checkbox" className="mt-1 h-4 w-4 accent-[#13221a]" checked={on} data-method={m}
                     onChange={(e) => setMethods((ms) => (e.target.checked ? [...ms, m] : ms.filter((x) => x !== m)))} />
                   <span className="min-w-0">
@@ -154,7 +154,7 @@ export function PlanEditor(p: EditorProps) {
           <input type="checkbox" className="mt-1 h-4 w-4 accent-[#13221a]" checked={reminders} onChange={(e) => setReminders(e.target.checked)} />
           <span><span className="block font-display text-[15px] font-bold text-ink">Reminders</span><span className="block font-mono text-xs text-slate-500">Dated payments go out 3 days early, with a reminder on the day. Email now; texts once Twilio is connected.</span></span>
         </label>
-        <div className="rounded-xl bg-brand-50 p-3 text-xs text-brand-800"><p className="font-semibold">Each payment is its own tax invoice</p><p>Sent when it&apos;s due and marked paid when the money lands. Parts already paid stay as they are.</p></div>
+        <div className="rounded-xl bg-slate-100 p-3 text-xs text-ink"><p className="font-semibold">Each payment is its own tax invoice</p><p>Sent when it&apos;s due and marked paid when the money lands. Parts already paid stay as they are.</p></div>
         <button type="button" onClick={save} disabled={pending || diff !== 0 || overCap || parts.length === 0 || methods.length === 0} data-save-plan
           className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-ink px-4 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90 disabled:opacity-50">
           {pending ? "Saving…" : "Save plan and send what's due"}

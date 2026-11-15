@@ -216,7 +216,7 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
             Update from measurements
           </button>
         )}
-        <Link href={`/app/estimates/${id}?view=editor`} onClick={guardLeave} className="ml-auto inline-flex min-h-11 items-center rounded-xl px-4 font-medium text-brand-700 ring-1 ring-ink/40 hover:bg-brand-50" data-testid="detailed-editor">
+        <Link href={`/app/estimates/${id}?view=editor`} onClick={guardLeave} className="ml-auto inline-flex min-h-11 items-center rounded-xl px-4 font-medium text-ink ring-1 ring-ink/40 hover:bg-slate-100" data-testid="detailed-editor">
           Detailed editor →
         </Link>
         <span className="min-w-16 text-right text-xs text-slate-500" aria-live="polite" data-testid="save-state">{locked ? "Locked" : saving ? "Saving…" : dirty ? "Unsaved" : "Saved"}</span>
@@ -239,7 +239,7 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
               <div className="flex flex-wrap gap-2" role="group" aria-label="Sheet profile">
                 {DOCKET_PROFILES.map((p) => (
                   <button key={p} type="button" onClick={() => pickProfile(p)} aria-pressed={p === profile} data-testid={`docket-profile-${p}`}
-                    className={cx("min-h-11 rounded-xl px-3.5 text-sm font-bold ring-1", p === profile ? "bg-brand-50 text-ink ring-2 ring-ink" : "bg-white text-ink ring-slate-200 hover:bg-slate-50")}>
+                    className={cx("min-h-11 rounded-xl px-3.5 text-sm font-bold ring-1", p === profile ? "bg-slate-100 text-ink ring-2 ring-ink" : "bg-white text-ink ring-slate-200 hover:bg-slate-50")}>
                     {PROFILE_SHORT[p]}
                   </button>
                 ))}
@@ -273,7 +273,7 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
                 </button>
               </>
             ) : (
-              <p className="text-slate-600">Measure the roof first: from the plans, on the satellite map, or by hand in the <Link href={`/app/estimates/${id}?view=editor`} className="font-semibold text-brand-700 underline">detailed editor</Link>.</p>
+              <p className="text-slate-600">Measure the roof first: from the plans, on the satellite map, or by hand in the <Link href={`/app/estimates/${id}?view=editor`} className="font-semibold text-ink underline">detailed editor</Link>.</p>
             )}
           </div>
         ) : (

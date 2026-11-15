@@ -63,7 +63,7 @@ export default async function CrewJobPage({ params }: PageProps<"/w/[token]/[job
   return (
     <main className="mx-auto min-h-screen max-w-xl space-y-4 px-4 py-5" lang="en-AU">
       <header className="flex items-center justify-between gap-3">
-        <Link href={`/w/${token}`} className="flex min-h-11 items-center text-sm font-medium text-brand-600">{t.back}</Link>
+        <Link href={`/w/${token}`} className="flex min-h-11 items-center text-sm font-medium text-ink">{t.back}</Link>
       </header>
 
       <div>
@@ -142,7 +142,7 @@ export default async function CrewJobPage({ params }: PageProps<"/w/[token]/[job
         <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-300">{t.safetyTitle}</h2>
         <p>{t.safetyReminder}</p>
       </section>
-      {w.org.phone && <p className="text-center text-sm text-slate-500">{t.officePhone}: <a className="font-medium text-brand-600" href={`tel:${w.org.phone}`}>{w.org.phone}</a></p>}
+      {w.org.phone && <p className="text-center text-sm text-slate-500">{t.officePhone}: <a className="font-medium text-ink" href={`tel:${w.org.phone}`}>{w.org.phone}</a></p>}
     </main>
   );
 }

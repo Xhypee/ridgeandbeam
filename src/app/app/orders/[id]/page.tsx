@@ -46,7 +46,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ap
     <>
       <PageHeader
         title={<span className="flex items-center gap-2">{o.supplier} order {o.po_number && <span className="text-slate-500">PO {o.po_number}</span>} <Badge tone={ORDER_TONE[o.status as keyof typeof ORDER_TONE]}>{label(o.status)}</Badge></span>}
-        subtitle={<Link href={`/app/jobs/${job.id}/production`} className="hover:text-brand-600">{job.customers?.name} · {job.title}{job.site_address ? ` · ${job.site_address}` : ""}</Link>}
+        subtitle={<Link href={`/app/jobs/${job.id}/production`} className="hover:text-ink">{job.customers?.name} · {job.title}{job.site_address ? ` · ${job.site_address}` : ""}</Link>}
         actions={
           <>
             <LinkButton variant="secondary" href={`/app/orders/${id}/print`}>Order sheet</LinkButton>
@@ -57,7 +57,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ap
       {empty && <p className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">The job has no accepted estimate with material lines, so this order started blank.</p>}
       <p className="mb-4 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
         “Send to branch” emails this order — product codes and quantities, no prices{account ? `, with your account number ${account}` : ""} — to the branch. You can also print it or download a CSV.
-        {suppliers.length === 0 && <> <Link href="/app/settings/suppliers" className="font-medium text-brand-600 hover:underline">Add your suppliers</Link> to use their product codes.</>}
+        {suppliers.length === 0 && <> <Link href="/app/settings/suppliers" className="font-medium text-ink hover:underline">Add your suppliers</Link> to use their product codes.</>}
       </p>
 
       <div className="grid gap-6 lg:grid-cols-3">

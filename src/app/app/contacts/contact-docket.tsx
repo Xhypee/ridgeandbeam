@@ -134,7 +134,7 @@ function JobList({ d, canSeeMoney, newHref, newLabel }: { d: ContactDocketData; 
           ))}
         </ul>
       )}
-      <Link href={newHref} className="mt-2 inline-flex min-h-11 items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 hover:text-brand-700">{newLabel}</Link>
+      <Link href={newHref} className="mt-2 inline-flex min-h-11 items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-ink hover:text-ink">{newLabel}</Link>
     </Section>
   );
 }
@@ -153,15 +153,15 @@ function BuilderDocket({ d, closeHref, canSeeMoney }: { d: ContactDocketData; cl
               <li key={p.id} className="flex items-center gap-3 px-2 py-2.5">
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber-100 text-xs font-bold text-amber-800">{initials(p.name)}</span>
                 <span className="min-w-0 flex-1"><b className="block truncate text-sm text-ink">{p.name}</b><span className="block truncate text-xs text-slate-500">{[p.role, p.phone, !p.phone ? p.email : null].filter(Boolean).join(" · ")}</span></span>
-                {p.phone && <a href={tel(p.phone)} aria-label={`Call ${p.name}`} className="grid h-9 w-9 place-items-center rounded-lg text-brand-600 hover:bg-brand-50"><Icon d={PHONE} /></a>}
-                {p.email && <a href={`mailto:${p.email}`} aria-label={`Email ${p.name}`} className="grid h-9 w-9 place-items-center rounded-lg text-brand-600 hover:bg-brand-50"><Icon d={MAIL} /></a>}
+                {p.phone && <a href={tel(p.phone)} aria-label={`Call ${p.name}`} className="grid h-9 w-9 place-items-center rounded-lg text-ink hover:bg-slate-100"><Icon d={PHONE} /></a>}
+                {p.email && <a href={`mailto:${p.email}`} aria-label={`Email ${p.name}`} className="grid h-9 w-9 place-items-center rounded-lg text-ink hover:bg-slate-100"><Icon d={MAIL} /></a>}
                 <form action={removePerson}><input type="hidden" name="id" value={p.id} /><button aria-label={`Remove ${p.name}`} className="grid h-9 w-9 place-items-center rounded-lg text-slate-300 hover:bg-slate-100 hover:text-red-700">✕</button></form>
               </li>
             ))}
           </ul>
         )}
         <details className="mt-1" data-add-person>
-          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 hover:text-brand-700 [&::-webkit-details-marker]:hidden">+ Add a person</summary>
+          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center font-mono text-xs font-semibold uppercase tracking-wider text-ink hover:text-ink [&::-webkit-details-marker]:hidden">+ Add a person</summary>
           <ActionForm action={addPerson} className="mt-1 grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-3">
             <input type="hidden" name="contact_id" value={c.id} />
             <Input name="name" placeholder="Name" required aria-label="Name" />
@@ -190,7 +190,7 @@ function BuilderDocket({ d, closeHref, canSeeMoney }: { d: ContactDocketData; cl
 }
 
 const TONE: Record<ExpiryState, { box: string; icon: string; text: string }> = {
-  ok: { box: "bg-brand-50", icon: "text-brand-600", text: "text-slate-600" },
+  ok: { box: "bg-slate-100", icon: "text-ink", text: "text-slate-600" },
   soon: { box: "bg-amber-50", icon: "text-amber-700", text: "font-semibold text-amber-800" },
   expired: { box: "bg-red-50", icon: "text-red-700", text: "font-semibold text-red-800" },
   missing: { box: "bg-slate-50", icon: "text-slate-400", text: "text-slate-500" },
@@ -360,7 +360,7 @@ export function SupplierDocket({ d, closeHref, canSeeMoney, canEdit }: { d: Supp
       {canSeeMoney && (
         <Section title="Price list">
           <p className="text-sm text-slate-600" data-price-list>{d.priceList ? <>Using <b className="text-ink">{d.priceList.name ?? "their price list"}</b>{d.priceList.effective_date ? ` · from ${dmy(d.priceList.effective_date)}` : ""}</> : "No price list yet. Quotes use the standard price guide."}</p>
-          <Link href={`/app/settings/suppliers/${s.id}/import`} className="mt-2 inline-flex min-h-11 items-center font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 hover:text-brand-700">{d.priceList ? "Upload a new price list" : "Upload their price list"}</Link>
+          <Link href={`/app/settings/suppliers/${s.id}/import`} className="mt-2 inline-flex min-h-11 items-center font-mono text-xs font-semibold uppercase tracking-wider text-ink hover:text-ink">{d.priceList ? "Upload a new price list" : "Upload their price list"}</Link>
         </Section>
       )}
       <ReferralsSection who={{ id: s.id, type: "supplier", name: s.name }} r={d} canSeeMoney={canSeeMoney} />

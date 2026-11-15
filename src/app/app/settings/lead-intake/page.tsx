@@ -41,7 +41,7 @@ export default async function LeadIntakePage() {
         </p>
         <dl className="mt-4 space-y-3 text-sm">
           <div><dt className="text-xs font-medium text-slate-500">Lead intake URL (POST, JSON or form)</dt><dd className="break-all font-mono text-slate-800">{endpoint}</dd></div>
-          <div><dt className="text-xs font-medium text-slate-500">Hosted lead form</dt><dd className="break-all"><a className="font-mono text-brand-600 hover:underline" href={formUrl} target="_blank">{formUrl}</a></dd></div>
+          <div><dt className="text-xs font-medium text-slate-500">Hosted lead form</dt><dd className="break-all"><a className="font-mono text-ink hover:underline" href={formUrl} target="_blank">{formUrl}</a></dd></div>
           <div><dt className="text-xs font-medium text-slate-500">New leads go to</dt><dd className="text-slate-800">{routeTo.length ? routeTo.map((r) => r.full_name || r.email).join(", ") : "—"} {salesReps.length > 1 && <span className="text-slate-500">(taking turns)</span>}</dd>
             {routeTo.some((r) => !r.phone) && <p className="mt-1 text-xs text-amber-700">Add a mobile number for {routeTo.filter((r) => !r.phone).map((r) => r.full_name || r.email).join(", ")} in Team settings so they get lead texts.</p>}
           </div>
@@ -75,7 +75,7 @@ export default async function LeadIntakePage() {
             </label>
             <p className="text-sm text-slate-600">
               Homeowners pick metal or tile, draw their roof on the map and see a price range per m², GST inclusive — never a firm price.
-              Set the $/m² rates in <a href="/app/settings/price-book" className="font-medium text-brand-600 underline">Price book → Instant quote rates</a>.
+              Set the $/m² rates in <a href="/app/settings/price-book" className="font-medium text-ink underline">Price book → Instant quote rates</a>.
             </p>
             {isAdmin && <SubmitButton variant="secondary">Save instant quote</SubmitButton>}
           </ActionForm>

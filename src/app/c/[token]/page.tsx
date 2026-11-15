@@ -35,7 +35,7 @@ export default async function PublicChangeOrder({ params }: PageProps<"/c/[token
   return (
     <main className="mx-auto min-h-screen max-w-xl px-4 pb-16 pt-6 text-slate-900">
       <header className="mb-4">
-        <p className="text-lg font-bold text-brand-700">{co.org.name}</p>
+        <p className="text-lg font-bold text-ink">{co.org.name}</p>
         <p className="text-sm text-slate-600">{[co.org.license_number && `License #${co.org.license_number}`, co.org.phone].filter(Boolean).join(" · ")}</p>
       </header>
       <article className="rounded-[22px] bg-white p-4 ring-1 ring-slate-200">
@@ -89,7 +89,7 @@ export default async function PublicChangeOrder({ params }: PageProps<"/c/[token
         </p>
       )}
       {co.status === "declined" && <p className="mt-4 rounded-2xl bg-slate-100 p-4 text-slate-700">You declined this change. {co.org.name} will contact you{co.org.phone ? ` (${co.org.phone})` : ""}.</p>}
-      <p className="mt-4 text-center text-sm"><a className="text-brand-700 underline" href={`/p/${co.job.public_token}`}>Back to your project</a></p>
+      <p className="mt-4 text-center text-sm"><a className="text-ink underline" href={`/p/${co.job.public_token}`}>Back to your project</a></p>
     </main>
   );
 }

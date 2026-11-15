@@ -55,7 +55,7 @@ export function ContactPicker({ name, initial = null, placeholder = "Search cont
   if (picked) {
     const isNew = picked.type === "new";
     return (
-      <div className="rounded-xl bg-brand-50 px-3 py-2.5 ring-1 ring-brand-200" data-contact-picker-picked>
+      <div className="rounded-xl bg-slate-100 px-3 py-2.5 ring-1 ring-slate-300" data-contact-picker-picked>
         {isNew ? (<>
           <input type="hidden" name={`${name}_new`} value={picked.name} />
           <input type="hidden" name={`${name}_kind`} value={kind} />
@@ -99,14 +99,14 @@ export function ContactPicker({ name, initial = null, placeholder = "Search cont
           {!term && <li className="px-3 pb-1 pt-1.5 text-[11px] uppercase text-slate-400 font-mono tracking-[0.12em]">Recent</li>}
           {items.map((c, i) => (
             <li key={`${c.type}-${c.id}`} role="option" aria-selected={i === active} onMouseDown={(e) => { e.preventDefault(); choose(c); }} onMouseEnter={() => setActive(i)}
-              className={cx("cursor-pointer px-3 py-2.5", i === active && "bg-brand-50")}>
+              className={cx("cursor-pointer px-3 py-2.5", i === active && "bg-slate-100")}>
               <span className="block truncate text-sm font-semibold text-ink">{c.name}</span>
               <span className="block truncate text-xs text-slate-500">{c.detail}</span>
             </li>
           ))}
           {canAdd && (
             <li role="option" aria-selected={active === items.length} onMouseDown={(e) => { e.preventDefault(); addNew(); }} onMouseEnter={() => setActive(items.length)} data-contact-picker-add
-              className={cx("flex cursor-pointer items-center gap-2 px-3 py-2.5 font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider", items.length > 0 && "border-t-2 border-dashed border-slate-200", active === items.length && "bg-brand-50")}>
+              className={cx("flex cursor-pointer items-center gap-2 px-3 py-2.5 font-semibold text-ink font-mono text-xs uppercase tracking-wider", items.length > 0 && "border-t-2 border-dashed border-slate-200", active === items.length && "bg-slate-100")}>
               <Svg d={PLUS} />Add &ldquo;{term}&rdquo; as a new contact
             </li>
           )}

@@ -99,7 +99,7 @@ export function WrapPanel({ d, askHref, payHref }: { d: Docket; askHref: string;
         </div>
         <ol className="mt-3 overflow-hidden rounded-xl ring-1 ring-slate-200">
           {steps.map((s, k) => (
-            <li key={s.key} className={cx("flex items-center gap-3 px-3.5 py-3", k > 0 && "border-t-2 border-dashed border-slate-200", s.state === "now" && "bg-brand-50")} data-wrap-step={s.key} data-state={s.state}>
+            <li key={s.key} className={cx("flex items-center gap-3 px-3.5 py-3", k > 0 && "border-t-2 border-dashed border-slate-200", s.state === "now" && "bg-slate-100")} data-wrap-step={s.key} data-state={s.state}>
               <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-full", s.state === "done" ? "bg-ink text-white" : s.state === "now" ? "bg-ink text-white" : s.state === "wait" ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200" : "bg-white text-slate-500 ring-1 ring-slate-200")}>
                 <Icon d={s.state === "done" ? CHECK : s.icon} />
               </span>

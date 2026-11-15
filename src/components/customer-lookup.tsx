@@ -26,7 +26,7 @@ const PLUS = "M12 5v14M5 12h14";
 function Icon({ d, className = "h-4 w-4" }: { d: string; className?: string }) {
   return <svg viewBox="0 0 24 24" className={cx("shrink-0", className)} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={d} /></svg>;
 }
-const linkCls = "font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 underline-offset-4 hover:text-brand-700 hover:underline";
+const linkCls = "font-mono text-xs font-semibold uppercase tracking-wider text-ink underline-offset-4 hover:text-ink hover:underline";
 
 /** `search` defaults to the real customer search; a preview or test can pass its own server action. */
 export function CustomerLookup({ search = searchCustomers }: { search?: (q: string) => Promise<CustomerMatch[]> }) {
@@ -99,8 +99,8 @@ export function CustomerLookup({ search = searchCustomers }: { search?: (q: stri
     return (
       <div className="space-y-2" data-contact-mode="picked">
         <input type="hidden" name="customer_id" value={picked.id} />
-        <div className="flex items-center gap-3 rounded-xl bg-brand-50 px-3.5 py-3 ring-1 ring-brand-200" data-contact-picked>
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white text-brand-700 ring-1 ring-brand-200"><Icon d={PERSON} /></span>
+        <div className="flex items-center gap-3 rounded-xl bg-slate-100 px-3.5 py-3 ring-1 ring-slate-300" data-contact-picked>
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white text-ink ring-1 ring-slate-300"><Icon d={PERSON} /></span>
           <span className="min-w-0 flex-1">
             <span className="block font-semibold text-ink">{picked.name}</span>
             {(picked.phone || picked.email) && <span className="block truncate text-sm text-slate-600">{picked.phone || picked.email}</span>}
@@ -137,14 +137,14 @@ export function CustomerLookup({ search = searchCustomers }: { search?: (q: stri
             <ul id={listId} role="listbox" className="absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-xl bg-white py-1 ring-1 ring-slate-300">
               {items.map((c, i) => (
                 <li key={c.id} id={`${listId}-${i}`} role="option" aria-selected={i === active} onMouseDown={(e) => { e.preventDefault(); pick(c); }} onMouseEnter={() => setActive(i)}
-                  className={cx("flex cursor-pointer items-center gap-2.5 px-3 py-2.5", i === active && "bg-brand-50")}>
+                  className={cx("flex cursor-pointer items-center gap-2.5 px-3 py-2.5", i === active && "bg-slate-100")}>
                   <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-cream text-slate-500 ring-1 ring-slate-200"><Icon d={PERSON} className="h-3.5 w-3.5" /></span>
                   <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-ink">{c.name}</span><span className="block truncate text-xs text-slate-500">{[c.phone, c.email, c.city].filter(Boolean).join(" · ")}</span></span>
                   <span className="shrink-0 text-[11px] text-slate-400">{c.jobs} {c.jobs === 1 ? "job" : "jobs"}</span>
                 </li>
               ))}
               <li id={`${listId}-${items.length}`} role="option" aria-selected={active === items.length} onMouseDown={(e) => { e.preventDefault(); addNew(); }} onMouseEnter={() => setActive(items.length)}
-                className={cx("flex cursor-pointer items-center gap-2.5 px-3 py-2.5 text-sm", items.length > 0 && "border-t-2 border-dashed border-slate-200", active === items.length && "bg-brand-50")}>
+                className={cx("flex cursor-pointer items-center gap-2.5 px-3 py-2.5 text-sm", items.length > 0 && "border-t-2 border-dashed border-slate-200", active === items.length && "bg-slate-100")}>
                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-white"><Icon d={PLUS} className="h-3.5 w-3.5" /></span>
                 <span className="min-w-0 flex-1 truncate">{items.length ? <>Add <b className="text-ink">&ldquo;{term}&rdquo;</b> as a new customer</> : <>No customer matches <b className="text-ink">&ldquo;{term}&rdquo;</b>. Add them as new</>}</span>
               </li>

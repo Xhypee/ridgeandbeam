@@ -37,7 +37,7 @@ export default async function SuppliersPage() {
 
   return (
     <div className="space-y-6">
-      <Card title="Your suppliers" actions={<Link href="/app/settings/suppliers/template" prefetch={false} className="text-sm font-medium text-brand-600 hover:underline">Download price sheet template</Link>}>
+      <Card title="Your suppliers" actions={<Link href="/app/settings/suppliers/template" prefetch={false} className="text-sm font-medium text-ink hover:underline">Download price sheet template</Link>}>
         <p className="mb-4 text-sm text-slate-500">
           Import each supplier&apos;s price sheet (your account pricing) and estimates can price materials from it. Your prices stay private to your business —
           they are never shown to homeowners or crew leads, or shared with anyone else.
@@ -53,7 +53,7 @@ export default async function SuppliersPage() {
                 <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 py-3" data-testid="org-supplier">
                   <div className="min-w-0">
                     <p className="flex flex-wrap items-center gap-2 font-medium text-slate-900">
-                      <Link href={`/app/settings/suppliers/${s.id}`} className="hover:text-brand-600">{s.name}</Link>
+                      <Link href={`/app/settings/suppliers/${s.id}`} className="hover:text-ink">{s.name}</Link>
                       {s.is_default && <Badge tone="teal">Default</Badge>}
                       {s.custom && <Badge>Custom</Badge>}
                     </p>

@@ -146,11 +146,11 @@ export function ImportWizard({ orgSupplierId, supplierName, today, saved, previo
     <div className="space-y-4">
       <ol className="flex flex-wrap gap-1 text-xs" aria-label="Import steps">
         {STEPS.map((s, i) => (
-          <li key={s} className={cx("rounded-full px-3 py-1.5 font-medium", i === step ? "bg-ink text-white" : i < step ? "bg-brand-100 text-brand-700" : "bg-slate-100 text-slate-500")}>{i + 1}. {s}</li>
+          <li key={s} className={cx("rounded-full px-3 py-1.5 font-medium", i === step ? "bg-ink text-white" : i < step ? "bg-slate-200 text-ink" : "bg-slate-100 text-slate-500")}>{i + 1}. {s}</li>
         ))}
       </ol>
       {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-      {busy && <p className="rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-700" aria-live="polite">{busy}</p>}
+      {busy && <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm text-ink" aria-live="polite">{busy}</p>}
 
       {step === 0 && (
         <Card>
@@ -162,7 +162,7 @@ export function ImportWizard({ orgSupplierId, supplierName, today, saved, previo
             ))}
           </div>
           {source === "file" ? (
-            <label className="flex min-h-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-white p-6 text-center hover:border-brand-400">
+            <label className="flex min-h-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-white p-6 text-center hover:border-ink">
               <span className="font-medium text-slate-800">Choose your price sheet</span>
               <span className="text-xs text-slate-500">.csv, .txt (tab separated) or .xlsx</span>
               <input type="file" accept=".csv,.txt,.tsv,.xlsx,.xls,text/csv" className="sr-only" data-testid="sheet-file" onChange={(e) => onFile(e.target.files?.[0])} />

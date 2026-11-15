@@ -173,7 +173,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
           ) : (
             <details className="relative min-w-0" data-add-staff>
               <summary className="cursor-pointer list-none truncate rounded-lg px-1.5 py-1 text-sm text-slate-500 hover:bg-slate-50 hover:text-ink [&::-webkit-details-marker]:hidden">
-                {firstNames.length ? firstNames.join(", ") : <span className="font-semibold text-brand-700">+ Add team</span>}
+                {firstNames.length ? firstNames.join(", ") : <span className="font-semibold text-ink">+ Add team</span>}
               </summary>
               <div className="absolute bottom-10 left-0 z-20 w-[300px] rounded-[22px] bg-white p-3.5 ring-2 ring-ink">
                 <p className="font-display text-sm font-bold text-ink">Team on this job</p>

@@ -47,7 +47,7 @@ export default async function CompliancePage({ params }: PageProps<"/app/jobs/[i
     <div className="space-y-6" data-compliance-page>
       {!data.state ? (
         <Empty title="Which state is this job in?">
-          Add the site address with its state on the <Link href={`/app/jobs/${id}`} className="font-semibold text-brand-700 underline">job overview</Link> (or set the customer&apos;s state) to build the compliance checklist.
+          Add the site address with its state on the <Link href={`/app/jobs/${id}`} className="font-semibold text-ink underline">job overview</Link> (or set the customer&apos;s state) to build the compliance checklist.
         </Empty>
       ) : (
         <>
@@ -193,7 +193,7 @@ const formatMoney = (n: number) => aud.format(n);
 function Check({ name, on, label }: { name: string; on: boolean; label: string }) {
   return (
     <label className="flex min-h-11 items-center gap-3 rounded-xl px-3 ring-1 ring-slate-200">
-      <input type="checkbox" name={name} defaultChecked={on} className="h-5 w-5 accent-brand-600" />
+      <input type="checkbox" name={name} defaultChecked={on} className="h-5 w-5 accent-ink" />
       <span className="text-sm text-slate-700">{label}</span>
     </label>
   );
@@ -224,11 +224,11 @@ function ItemRow({ it, jobId, orgId, files, file }: { it: ChecklistItem; jobId: 
           </div>
           <p className="mt-1 text-sm text-slate-600">{it.detail}</p>
           {it.due && it.status !== "done" && <p className="mt-1 font-display text-[15px] font-bold text-ink">Date: {formatAuDate(it.due)}</p>}
-          {it.link && <a href={it.link.url} target={it.link.url.startsWith("/") ? undefined : "_blank"} rel="noreferrer" className="mt-1 inline-flex min-h-9 items-center font-semibold text-brand-700 underline underline-offset-2 font-mono text-xs uppercase tracking-wider">{it.link.label}{it.link.url.startsWith("/") ? "" : " ↗"}</a>}
+          {it.link && <a href={it.link.url} target={it.link.url.startsWith("/") ? undefined : "_blank"} rel="noreferrer" className="mt-1 inline-flex min-h-9 items-center font-semibold text-ink underline underline-offset-2 font-mono text-xs uppercase tracking-wider">{it.link.label}{it.link.url.startsWith("/") ? "" : " ↗"}</a>}
           {(it.tick?.reference || it.tick?.note) && <p className="mt-1 text-sm text-slate-700">{it.tick?.reference && <span className="font-semibold">Ref {it.tick.reference}. </span>}{it.tick?.note}</p>}
           {file && (
             <p className="mt-1 text-sm">
-              Evidence: {file.url ? <a href={file.url} target="_blank" rel="noreferrer" className="font-semibold text-brand-700 underline underline-offset-2" data-evidence-link>{file.caption ?? "file"}</a> : <span className="font-semibold">{file.caption ?? "file"}</span>}
+              Evidence: {file.url ? <a href={file.url} target="_blank" rel="noreferrer" className="font-semibold text-ink underline underline-offset-2" data-evidence-link>{file.caption ?? "file"}</a> : <span className="font-semibold">{file.caption ?? "file"}</span>}
             </p>
           )}
         </div>

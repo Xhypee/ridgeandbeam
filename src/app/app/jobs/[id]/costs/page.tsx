@@ -107,7 +107,7 @@ export default async function CostsPage({ params }: PageProps<"/app/jobs/[id]/co
                   <td className={td}>{COST_CATEGORY_LABEL[c.category as CostCategory] ?? label(c.category)}{c.source !== "manual" && <span className="ml-1"><Badge tone="blue">{label(c.source)}</Badge></span>}</td>
                   <td className={td}><span className="font-medium">{c.vendor}</span> <span className="text-slate-500">{c.description}</span>
                     <details className="mt-1">
-                      <summary className="cursor-pointer text-xs text-brand-600">Edit</summary>
+                      <summary className="cursor-pointer text-xs text-ink">Edit</summary>
                       <ActionForm action={saveCost} className="mt-2 space-y-2">
                         <CostFields c={c} jobId={id} />
                         <SubmitButton variant="secondary">Save</SubmitButton>

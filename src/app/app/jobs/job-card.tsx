@@ -29,7 +29,7 @@ export function JobCard({ href, current, signed, days, tone, value, next, owner,
       <span className="font-display min-w-0 truncate text-[16px] font-bold leading-snug text-ink">{job.name}</span>
       <span className="truncate font-mono text-[11.5px] text-slate-500">{job.address}</span>
       <span className="mt-2 flex items-end gap-2 border-t-2 border-dashed border-slate-200 pt-2.5">
-        <span data-next-step className={cx("min-w-0 flex-1 font-mono text-[10.5px] uppercase leading-snug tracking-[0.1em]", next.waiting ? "text-slate-500" : "text-brand-700")}>→ {next.title}</span>
+        <span data-next-step className={cx("min-w-0 flex-1 font-mono text-[10.5px] uppercase leading-snug tracking-[0.1em]", next.waiting ? "text-slate-500" : "text-ink")}>→ {next.title}</span>
         {value !== null
           ? <span className="shrink-0 font-display text-[17px] font-bold tabular-nums text-ink">{dollars(value)}</span>
           : <span className="shrink-0 font-mono text-[10px] uppercase tracking-wider text-slate-400">Not quoted</span>}

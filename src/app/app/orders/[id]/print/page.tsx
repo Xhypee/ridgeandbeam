@@ -28,7 +28,7 @@ export default async function OrderSheet({ params }: PageProps<"/app/orders/[id]
             <p className="text-sm text-slate-500">{[org.phone, org.email].filter(Boolean).join(" · ")}</p>
           </div>
           <div className="text-right">
-            <p className="text-lg font-semibold uppercase text-brand-600">Material order</p>
+            <p className="text-lg font-semibold uppercase text-ink">Material order</p>
             <p className="text-sm">PO {o.po_number ?? "—"}</p>
             <p className="text-sm text-slate-500">{o.supplier}{o.branch ? ` · ${o.branch}` : ""}</p>
             {(o.org_suppliers as { account_number: string | null } | null)?.account_number && <p className="text-sm text-slate-500">Account {(o.org_suppliers as { account_number: string }).account_number}</p>}

@@ -91,7 +91,7 @@ export function RoofPlanPanel({ estimateId, jobId, measurements, source, canDrop
         </div>)
       )}
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
-        <span className="flex-1">{measured ? <>Roof report · {SOURCE[source ?? ""] ?? "measured"} · <Link href={hasPlans ? `/app/measure/${estimateId}/plans` : `/app/measure/${estimateId}`} className="font-semibold text-brand-700">Open roof report</Link></> : "No roof report yet"}</span>
+        <span className="flex-1">{measured ? <>Roof report · {SOURCE[source ?? ""] ?? "measured"} · <Link href={hasPlans ? `/app/measure/${estimateId}/plans` : `/app/measure/${estimateId}`} className="font-semibold text-ink">Open roof report</Link></> : "No roof report yet"}</span>
         <span className="flex flex-wrap items-center gap-1.5">{measured ? "Measure again:" : "Measure from:"}
           {chip(`/app/measure/${estimateId}/plans`, "Plans", source === "plans")}
           {chip(`/app/measure/${estimateId}`, "Satellite", source === "satellite")}
@@ -116,10 +116,10 @@ export function RulesLine({ state, total, roofMaterial, jobType }: { state: stri
   ].filter(Boolean);
   const big = r.writtenContract.required;
   return (
-    <div className={big ? "flex items-center gap-3 rounded-xl bg-amber-50 px-3.5 py-3 text-sm ring-1 ring-amber-100" : "flex items-center gap-3 rounded-xl bg-brand-50 px-3.5 py-3 text-sm ring-1 ring-brand-100"} data-rules-line>
-      <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-brand-700" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></svg>
+    <div className={big ? "flex items-center gap-3 rounded-xl bg-amber-50 px-3.5 py-3 text-sm ring-1 ring-amber-100" : "flex items-center gap-3 rounded-xl bg-slate-100 px-3.5 py-3 text-sm ring-1 ring-slate-300"} data-rules-line>
+      <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-ink" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></svg>
       <span className="flex-1 text-ink"><b>{AU_STATE_NAME[st]}, {total.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 })}.</b> {bits.join(" · ")}. The quote email adds the notices it needs.</span>
-      <Link href={`/app/settings/state-rules?state=${st}&value=${Math.round(total)}`} className="text-xs font-semibold text-brand-700">Rules</Link>
+      <Link href={`/app/settings/state-rules?state=${st}&value=${Math.round(total)}`} className="text-xs font-semibold text-ink">Rules</Link>
     </div>
   );
 }

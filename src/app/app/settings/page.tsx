@@ -16,7 +16,7 @@ import { updateCompanySettings } from "./company-actions";
 
 export const metadata: Metadata = { title: "Company settings" };
 
-const toggle = "flex min-h-11 items-center gap-3 rounded-lg px-3 ring-1 ring-slate-200 has-[:checked]:bg-brand-50 has-[:checked]:ring-ink";
+const toggle = "flex min-h-11 items-center gap-3 rounded-lg px-3 ring-1 ring-slate-200 has-[:checked]:bg-slate-100 has-[:checked]:ring-ink";
 
 export default async function Page() {
   const { org, isAdmin } = await requireOrg();

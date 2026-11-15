@@ -145,8 +145,8 @@ export function CanvassApp({ knocks, territories, people, center, hasData }: { k
 
       <div className={cx(view !== "map" && view !== "territories" && "hidden")}>
         {drawing && (
-          <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg bg-brand-50 p-2 text-sm">
-            <span className="font-medium text-brand-700">Tap the map to outline the territory · {drawing.length} points</span>
+          <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg bg-slate-100 p-2 text-sm">
+            <span className="font-medium text-ink">Tap the map to outline the territory · {drawing.length} points</span>
             <Button type="button" disabled={drawing.length < 3} onClick={() => { setNewTerritory([drawing]); setDrawing(null); }}>Finish</Button>
             <Button type="button" variant="secondary" onClick={() => setDrawing(drawing.slice(0, -1))} disabled={!drawing.length}>Undo</Button>
             <Button type="button" variant="ghost" onClick={() => setDrawing(null)}>Cancel</Button>

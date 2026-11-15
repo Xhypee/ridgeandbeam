@@ -38,7 +38,7 @@ export default async function MaterialsPage({ params, searchParams }: PageProps<
           </Link>
           <div className="min-w-0 flex-1">
             <p className="flex min-w-0 items-center gap-2"><span className="truncate font-display text-lg font-bold text-ink">Material order · {data.job.customer}</span>
-              <span className={sent && sent === withItems ? "rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700" : sent ? "rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800" : "rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600"}>
+              <span className={sent && sent === withItems ? "rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-ink" : sent ? "rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800" : "rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600"}>
                 {withItems ? (sent ? `${sent} of ${withItems} sent` : "Draft") : "Not started"}
               </span></p>
             <p className="truncate text-xs text-slate-500">{data.quoteNo ? `Job ${data.quoteNo} · ` : ""}{data.job.title}{data.job.address ? ` · ${data.job.address}` : ""}</p>

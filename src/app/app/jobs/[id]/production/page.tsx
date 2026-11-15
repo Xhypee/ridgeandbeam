@@ -130,7 +130,7 @@ export default async function ProductionPage({ params }: PageProps<"/app/jobs/[i
                 <StatusButtons jobId={id} field="dumpster_status" value={job.dumpster_status} options={DUMPSTER_STATUSES} labels={READINESS_STATUS_LABEL.dumpster} disabled={readOnly} />
               </Row>
               <Row ok={byKey.deposit.ok} title={READINESS_LABEL.deposit} detail={byKey.deposit.detail}>
-                {canSeeMoney && <p className="text-sm text-slate-500">Computed from invoices and payments. <Link className="text-brand-600 underline" href={`/app/jobs/${id}/billing`}>Billing</Link></p>}
+                {canSeeMoney && <p className="text-sm text-slate-500">Computed from invoices and payments. <Link className="text-ink underline" href={`/app/jobs/${id}/billing`}>Billing</Link></p>}
               </Row>
             </ul>
             {!readOnly && (
@@ -179,14 +179,14 @@ export default async function ProductionPage({ params }: PageProps<"/app/jobs/[i
           </Card>
 
           {canSeeMoney && (
-            <Card title="Material orders" actions={<Link href="/app/orders" className="text-sm text-brand-600 hover:underline">All orders</Link>}>
+            <Card title="Material orders" actions={<Link href="/app/orders" className="text-sm text-ink hover:underline">All orders</Link>}>
               {(orders ?? []).length === 0 ? (
                 <p className="mb-3 text-sm text-slate-500">No orders yet. Build one from the accepted estimate&apos;s takeoff so quantities, colours and profiles match what was sold.</p>
               ) : (
                 <ul className="mb-3 divide-y-2 divide-dashed divide-slate-200">
                   {(orders ?? []).map((o) => (
                     <li key={o.id}>
-                      <Link href={`/app/orders/${o.id}`} className="flex items-center justify-between gap-3 py-2 text-sm hover:text-brand-600">
+                      <Link href={`/app/orders/${o.id}`} className="flex items-center justify-between gap-3 py-2 text-sm hover:text-ink">
                         <span className="min-w-0 truncate">{o.supplier}{o.po_number ? ` · PO ${o.po_number}` : ""}{o.delivery_date ? ` · deliver ${date(o.delivery_date, { month: "short", day: "numeric" })}` : ""}</span>
                         <span className="flex shrink-0 items-center gap-2">{money(orderTotal(o.material_order_items ?? []))}<Badge tone={ORDER_TONE[o.status]}>{label(o.status)}</Badge></span>
                       </Link>
@@ -219,7 +219,7 @@ export default async function ProductionPage({ params }: PageProps<"/app/jobs/[i
                 <>
                   <p className="mb-2 text-sm text-slate-500" data-testid="crew-pay-basis">{crew.name}&apos;s pay sheet × {pay!.area} m² of true roof area (sloped, no waste). Rates are ex GST.</p>
                   {pay!.lines.length === 0 ? (
-                    <p className="text-sm text-slate-500">This crew&apos;s pay sheet is empty. <Link className="text-brand-600 underline" href="/app/settings/crews">Set rates</Link>.</p>
+                    <p className="text-sm text-slate-500">This crew&apos;s pay sheet is empty. <Link className="text-ink underline" href="/app/settings/crews">Set rates</Link>.</p>
                   ) : (
                     <table className="w-full text-sm">
                       <tbody className="divide-y-2 divide-dashed divide-slate-200">

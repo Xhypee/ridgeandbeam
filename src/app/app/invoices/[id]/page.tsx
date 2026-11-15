@@ -59,7 +59,7 @@ export default async function InvoicePage({ params }: PageProps<"/app/invoices/[
         }
         subtitle={
           <span className="flex flex-wrap items-center gap-2">
-            <Link href={`/app/jobs/${job.id}`} className="font-medium text-slate-700 hover:text-brand-600">{job.title}</Link> · {c.name}
+            <Link href={`/app/jobs/${job.id}`} className="font-medium text-slate-700 hover:text-ink">{job.title}</Link> · {c.name}
             <Badge tone={INVOICE_KIND_TONE[kind]}>{v.milestone_label || INVOICE_KIND_LABEL[kind]}</Badge>
             <span>Bill to {BILL_TO_LABEL[billTo]}</span>
           </span>

@@ -50,7 +50,7 @@ export default async function CustomerPage({ params }: PageProps<"/app/customers
               <ul className="divide-y-2 divide-dashed divide-slate-200">
                 {(jobs as Job[]).map((j) => (
                   <li key={j.id} className="py-2">
-                    <Link href={`/app/jobs/${j.id}`} className="flex items-center justify-between gap-2 hover:text-brand-600">
+                    <Link href={`/app/jobs/${j.id}`} className="flex items-center justify-between gap-2 hover:text-ink">
                       <span className="truncate text-sm font-medium">{j.title}</span>
                       <Badge tone={STAGE_TONE[j.stage]}>{STAGE_LABEL[j.stage]}</Badge>
                     </Link>
@@ -70,7 +70,7 @@ export default async function CustomerPage({ params }: PageProps<"/app/customers
                   const owed = balances.get(claim.id)?.outstanding ?? 0;
                   return (
                     <li key={claim.id} className="py-2">
-                      <Link href={`/app/jobs/${job.id}/claim`} className="flex items-center justify-between gap-2 hover:text-brand-600">
+                      <Link href={`/app/jobs/${job.id}/claim`} className="flex items-center justify-between gap-2 hover:text-ink">
                         <span className="truncate text-sm font-medium">{claim.carrier ?? "Carrier not set"}{claim.claim_number ? ` · #${claim.claim_number}` : ""}</span>
                         <Badge tone={agingTone(days)}>{CLAIM_STAGE_LABEL[claim.stage]}</Badge>
                       </Link>

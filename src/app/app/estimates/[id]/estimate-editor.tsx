@@ -313,7 +313,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
           </div>
         )}
         {hasPlans && (
-          <Link href={`/app/measure/${id}/plans`} className="mb-4 flex items-center justify-between gap-3 rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-700 ring-1 ring-ink/30 hover:bg-brand-100" data-testid="view-roof">
+          <Link href={`/app/measure/${id}/plans`} className="mb-4 flex items-center justify-between gap-3 rounded-xl bg-slate-100 px-4 py-3 text-sm text-ink ring-1 ring-ink/30 hover:bg-slate-200" data-testid="view-roof">
             <span><b>View the roof</b> · plan, 3D model and sheet cut list from the plans</span>
             <span aria-hidden>→</span>
           </Link>
@@ -392,13 +392,13 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
                           <button type="button" className="text-xs text-slate-500 underline" onClick={() => setRiseRun(null)}>Cancel</button>
                         </div>
                       ) : (
-                        <button type="button" className="mt-1 text-xs text-brand-700 hover:underline" onClick={() => setRiseRun({ idx: i, rise: "", run: "" })}>Enter pitch as rise / run</button>
+                        <button type="button" className="mt-1 text-xs text-ink hover:underline" onClick={() => setRiseRun({ idx: i, rise: "", run: "" })}>Enter pitch as rise / run</button>
                       )
                     )}
                   </div>
                 );
               })}
-              <button type="button" className="text-sm font-medium text-brand-600 hover:underline" onClick={() => {
+              <button type="button" className="text-sm font-medium text-ink hover:underline" onClick={() => {
                 const last = m.sections.at(-1);
                 setMeas({ sections: [...m.sections, { label: `Section ${m.sections.length + 1}`, area: 0, pitch: last?.pitch ?? 22.5, system: last?.system ?? "metal", profile: last?.profile, waste: null }] });
               }}>
@@ -429,7 +429,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
               ["includeEdgeProtection", "Edge protection"],
               ["includeSkip", "Skip bins"],
             ] as const).map(([k, l]) => (
-              <label key={k} className="flex min-h-10 items-center gap-2 rounded-lg px-3 ring-1 ring-slate-200 has-[:checked]:bg-brand-50 has-[:checked]:ring-ink">
+              <label key={k} className="flex min-h-10 items-center gap-2 rounded-lg px-3 ring-1 ring-slate-200 has-[:checked]:bg-slate-100 has-[:checked]:ring-ink">
                 <input type="checkbox" className="h-4 w-4 accent-ink" checked={m[k]} onChange={(e) => setMeas({ [k]: e.target.checked } as Partial<Measurements>)} />{l}
               </label>
             ))}
@@ -525,7 +525,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
             </div>
             <div className="grid gap-3 lg:grid-cols-3">
               {options.map((o, i) => (
-                <fieldset key={o.key} disabled={ro} className={cx("space-y-2 rounded-lg p-3 ring-1", o.recommended ? "bg-brand-50 ring-ink" : "ring-slate-200")} data-testid="option-card">
+                <fieldset key={o.key} disabled={ro} className={cx("space-y-2 rounded-lg p-3 ring-1", o.recommended ? "bg-slate-100 ring-ink" : "ring-slate-200")} data-testid="option-card">
                   <div className="flex items-center gap-2">
                     <Input value={o.name} onChange={(e) => setOpt(o.key, { name: e.target.value })} aria-label={`${word} name`} className="font-medium" />
                     <button type="button" className="h-9 w-9 shrink-0 rounded text-slate-500 hover:bg-white disabled:opacity-30" disabled={i === 0} onClick={() => move(o.key, -1)} aria-label="Move left">←</button>
@@ -547,7 +547,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
                 </fieldset>
               ))}
             </div>
-            {!ro && options.length < 4 && <button type="button" className="text-sm font-medium text-brand-600 hover:underline" onClick={addOption}>+ Add {word.toLowerCase()}</button>}
+            {!ro && options.length < 4 && <button type="button" className="text-sm font-medium text-ink hover:underline" onClick={addOption}>+ Add {word.toLowerCase()}</button>}
           </div>
         )}
       </Card>
@@ -630,7 +630,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
             <div className="mb-1 flex items-center justify-between">
               <span className="text-xs font-medium text-slate-600">Notes to customer</span>
               {aiEnabled && !ro && (
-                <button type="button" onClick={aiDraft} disabled={aiBusy} className="rounded-md px-2 py-1 text-xs font-medium text-brand-700 ring-1 ring-brand-100 hover:bg-brand-50 disabled:opacity-50">
+                <button type="button" onClick={aiDraft} disabled={aiBusy} className="rounded-md px-2 py-1 text-xs font-medium text-ink ring-1 ring-slate-300 hover:bg-slate-100 disabled:opacity-50">
                   {aiBusy ? "Drafting…" : "✨ AI draft"}
                 </button>
               )}

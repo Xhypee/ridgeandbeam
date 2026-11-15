@@ -17,7 +17,7 @@ export function ReferralsSection({ who, r, canSeeMoney }: { who: { id: string; t
         <p className="text-sm text-slate-500">No jobs from {first} yet. Log one when they send someone your way.</p>
       ) : (
         <>
-          <p className="mb-2 rounded-xl bg-brand-50 px-3 py-2 text-sm text-brand-700" data-referral-summary>
+          <p className="mb-2 rounded-xl bg-slate-100 px-3 py-2 text-sm text-ink" data-referral-summary>
             <b>{r.referred.length}</b> {r.referred.length === 1 ? "job" : "jobs"} referred · <b>{won}</b> won{canSeeMoney && r.referredSigned > 0 ? <> · <b>{aud(r.referredSigned)}</b> signed</> : null}
           </p>
           <ul className="-mx-2 divide-y-2 divide-dashed divide-slate-200" data-referred-jobs>
@@ -36,7 +36,7 @@ export function ReferralsSection({ who, r, canSeeMoney }: { who: { id: string; t
           </ul>
         </>
       )}
-      <Link href={`/app/jobs?new=1&referred_by=${who.id}&referred_type=${who.type}`} className="mt-2 inline-flex min-h-11 items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 hover:text-brand-700" data-log-referral>
+      <Link href={`/app/jobs?new=1&referred_by=${who.id}&referred_type=${who.type}`} className="mt-2 inline-flex min-h-11 items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-ink hover:text-ink" data-log-referral>
         <Icon d={GIFT} className="h-4 w-4" />Log a referral from {first}
       </Link>
     </Section>

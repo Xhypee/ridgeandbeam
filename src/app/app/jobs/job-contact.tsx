@@ -42,7 +42,7 @@ export function ContactSection({ jobId, customer: c, site, state, referredBy }: 
   const initial = site ? { ...parseAuAddress(site), lat: null, lng: null } : null;
 
   const edit = !editing && (
-    <button type="button" onClick={startEdit} data-contact-edit className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 font-semibold text-brand-700 hover:bg-brand-50 font-mono text-xs uppercase tracking-wider">
+    <button type="button" onClick={startEdit} data-contact-edit className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 font-semibold text-ink hover:bg-slate-100 font-mono text-xs uppercase tracking-wider">
       <Icon d={PENCIL} className="h-3.5 w-3.5" />Edit
     </button>
   );
@@ -83,7 +83,7 @@ export function ContactSection({ jobId, customer: c, site, state, referredBy }: 
           </a>}
         </ContactRow>
         {referredBy && (
-          <ContactRow icon={GIFT} label="Referred by" value={<Link href={referredBy.href} className="hover:text-brand-700 hover:underline" data-contact-referred>{referredBy.name}</Link>}>
+          <ContactRow icon={GIFT} label="Referred by" value={<Link href={referredBy.href} className="hover:text-ink hover:underline" data-contact-referred>{referredBy.name}</Link>}>
             <Link href={referredBy.href} aria-label={`Open ${referredBy.name}`} title={`Open ${referredBy.name}`} className={iconBtn}><Icon d="M9 6l6 6-6 6" /></Link>
           </ContactRow>
         )}

@@ -53,7 +53,7 @@ export function SecurityOfPaymentPanel({ state, ownerOccupier = true, subcontrac
         <p className="text-slate-600">{s.note}</p>
         <p className="text-xs text-slate-500">
           Source:{" "}
-          {s.src.map((c, i) => <span key={c.url}>{i > 0 && " · "}<a className="text-brand-700 underline underline-offset-2" href={c.url} target="_blank" rel="noreferrer">{c.label}</a></span>)}
+          {s.src.map((c, i) => <span key={c.url}>{i > 0 && " · "}<a className="text-ink underline underline-offset-2" href={c.url} target="_blank" rel="noreferrer">{c.label}</a></span>)}
           {" · "}Verified {formatAuDate(r.verifiedOn)}. {r.disclaimer}
         </p>
       </div>

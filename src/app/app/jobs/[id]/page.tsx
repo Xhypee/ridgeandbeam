@@ -74,7 +74,7 @@ export default async function JobPage({ params }: PageProps<"/app/jobs/[id]">) {
             <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
               {readiness.items.map((i) => (
                 <Link key={i.key} href={i.key === "deposit" ? `/app/jobs/${job.id}/billing` : `/app/jobs/${job.id}/production`} data-ready={i.key} data-ok={i.ok ? "true" : "false"}
-                  className={cx("flex min-h-16 items-center gap-3 rounded-2xl px-3.5 py-3 ring-1 transition hover:ring-brand-400", i.ok ? "bg-green-50 ring-green-200" : "bg-white ring-slate-200")}>
+                  className={cx("flex min-h-16 items-center gap-3 rounded-2xl px-3.5 py-3 ring-1 transition hover:ring-slate-400", i.ok ? "bg-green-50 ring-green-200" : "bg-white ring-slate-200")}>
                   <span aria-hidden className={cx("flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold", i.ok ? "bg-green-700 text-white" : "ring-2 ring-inset ring-slate-300")}>{i.ok ? "✓" : ""}</span>
                   <span className="min-w-0">
                     <span className="block text-[15px] font-semibold text-ink">{READY_AU[i.key] ?? i.label}</span>
@@ -104,9 +104,9 @@ export default async function JobPage({ params }: PageProps<"/app/jobs/[id]">) {
                     const total = one(e.estimate_totals as unknown as { total: number }[] | { total: number } | null)?.total;
                     return (
                       <li key={e.id} className="flex flex-wrap items-center justify-between gap-3 py-2">
-                        <Link href={`/app/estimates/${e.id}`} className="inline-flex min-h-11 items-center text-sm font-semibold hover:text-brand-600">Quote #{e.number}</Link>
+                        <Link href={`/app/estimates/${e.id}`} className="inline-flex min-h-11 items-center text-sm font-semibold hover:text-ink">Quote #{e.number}</Link>
                         <span className="flex items-center gap-3 text-sm">
-                          {e.status === "draft" && <Link href={`/app/measure/${e.id}`} className="text-xs font-semibold text-brand-600 hover:underline">Measure on map</Link>}
+                          {e.status === "draft" && <Link href={`/app/measure/${e.id}`} className="text-xs font-semibold text-ink hover:underline">Measure on map</Link>}
                           {money(total)}
                           <Badge tone={STATUS_TONE[e.status]}>{e.status === "accepted" ? "Signed" : label(e.status)}</Badge>
                         </span>
@@ -119,14 +119,14 @@ export default async function JobPage({ params }: PageProps<"/app/jobs/[id]">) {
 
             <Card title="Invoices" actions={<form action={createInvoice}><input type="hidden" name="job_id" value={job.id} /><SubmitButton variant="secondary">New invoice</SubmitButton></form>}>
               {(invoices ?? []).length === 0 ? (
-                <p className="text-sm text-slate-500">No invoices yet. A signed quote becomes an invoice in one click, or set up the payment schedule on <Link className="font-semibold text-brand-600" href={`/app/jobs/${job.id}/billing`}>Paid</Link>.</p>
+                <p className="text-sm text-slate-500">No invoices yet. A signed quote becomes an invoice in one click, or set up the payment schedule on <Link className="font-semibold text-ink" href={`/app/jobs/${job.id}/billing`}>Paid</Link>.</p>
               ) : (
                 <ul className="divide-y-2 divide-dashed divide-slate-200">
                   {(invoices ?? []).map((v) => {
                     const tot = one(v.invoice_totals as unknown as { total: number; balance: number }[] | { total: number; balance: number } | null);
                     return (
                       <li key={v.id}>
-                        <Link href={`/app/invoices/${v.id}`} className="flex min-h-11 items-center justify-between gap-3 py-2 hover:text-brand-600">
+                        <Link href={`/app/invoices/${v.id}`} className="flex min-h-11 items-center justify-between gap-3 py-2 hover:text-ink">
                           <span className="text-sm font-semibold">Invoice #{v.number}</span>
                           <span className="flex items-center gap-3 text-sm">
                             {money(tot?.total)}
@@ -265,11 +265,11 @@ export default async function JobPage({ params }: PageProps<"/app/jobs/[id]">) {
           </ActionForm>
         </Card>
 
-        <Card title="Customer" actions={<Link href={`/app/customers/${c.id}`} className="font-mono text-xs font-semibold uppercase tracking-wider text-brand-700">Open record</Link>}>
+        <Card title="Customer" actions={<Link href={`/app/customers/${c.id}`} className="font-mono text-xs font-semibold uppercase tracking-wider text-ink">Open record</Link>}>
           <dl className="space-y-1.5 text-sm">
             <div><dt className="sr-only">Name</dt><dd className="font-semibold text-ink">{c.name}</dd></div>
-            {c.phone && <div><dt className="sr-only">Phone</dt><dd><a className="text-brand-600 hover:underline" href={`tel:${c.phone.replace(/\s+/g, "")}`}>{c.phone}</a></dd></div>}
-            {c.email && <div><dt className="sr-only">Email</dt><dd className="break-all"><a className="text-brand-600 hover:underline" href={`mailto:${c.email}`}>{c.email}</a></dd></div>}
+            {c.phone && <div><dt className="sr-only">Phone</dt><dd><a className="text-ink hover:underline" href={`tel:${c.phone.replace(/\s+/g, "")}`}>{c.phone}</a></dd></div>}
+            {c.email && <div><dt className="sr-only">Email</dt><dd className="break-all"><a className="text-ink hover:underline" href={`mailto:${c.email}`}>{c.email}</a></dd></div>}
             {c.insurance_company && <div className="pt-2 text-slate-600"><dt className="text-xs text-slate-400">Insurer</dt><dd>{c.insurance_company}{c.claim_number && ` · Claim ${c.claim_number}`}</dd></div>}
             {c.adjuster_name && <div className="text-slate-600"><dt className="text-xs text-slate-400">Assessor</dt><dd>{c.adjuster_name} {c.adjuster_phone}</dd></div>}
           </dl>

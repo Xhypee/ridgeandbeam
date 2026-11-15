@@ -64,7 +64,7 @@ export default async function SupplierPage({ params, searchParams }: PageProps<"
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <Link href="/app/settings/suppliers" className="text-sm text-slate-500 hover:text-brand-600">← Suppliers</Link>
+          <Link href="/app/settings/suppliers" className="text-sm text-slate-500 hover:text-ink">← Suppliers</Link>
           <h2 className="flex flex-wrap items-center gap-2 text-xl font-semibold text-slate-900">{name} {os.is_default && <Badge tone="teal">Default</Badge>}</h2>
           <p className="text-xs text-slate-500">{[dir && SUPPLIER_CATEGORY_LABEL[dir.category], dir?.states?.length ? dir.states.join(", ") : null].filter(Boolean).join(" · ")}</p>
         </div>
@@ -156,9 +156,9 @@ export default async function SupplierPage({ params, searchParams }: PageProps<"
           </div>
           {pages > 1 && (
             <div className="mt-3 flex items-center justify-between text-sm">
-              {page > 1 ? <Link href={href({ page: page - 1 })} className="text-brand-600 hover:underline">← Previous</Link> : <span />}
+              {page > 1 ? <Link href={href({ page: page - 1 })} className="text-ink hover:underline">← Previous</Link> : <span />}
               <span className="text-slate-500">Page {page} of {pages}</span>
-              {page < pages ? <Link href={href({ page: page + 1 })} className="text-brand-600 hover:underline">Next →</Link> : <span />}
+              {page < pages ? <Link href={href({ page: page + 1 })} className="text-ink hover:underline">Next →</Link> : <span />}
             </div>
           )}
         </Card>

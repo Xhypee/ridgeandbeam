@@ -43,7 +43,7 @@ export default async function WorkOrderPage({ params }: PageProps<"/app/jobs/[id
             <p className="text-sm text-slate-500">{org.phone}</p>
           </div>
           <div className="text-right">
-            <p className="text-lg font-semibold uppercase text-brand-600">{T.workOrder}</p>
+            <p className="text-lg font-semibold uppercase text-ink">{T.workOrder}</p>
             <p className="text-sm text-slate-600">{crew?.name ?? "—"}</p>
           </div>
         </header>

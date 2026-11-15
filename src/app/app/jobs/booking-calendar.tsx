@@ -89,7 +89,7 @@ export function BookingCalendar({ jobId, first, phone, people, defaultStaff, meI
               <button key={d} type="button" disabled={past} onClick={() => setDay(d)} aria-pressed={sel} aria-label={`${d}${n ? `, ${n} booked` : ""}`}
                 className={cx("relative mx-auto grid h-9 w-9 place-items-center rounded-full text-sm tabular-nums",
                   sel ? "bg-ink font-bold text-white" : past ? "text-slate-300" : weekend ? "text-slate-400 hover:bg-slate-100" : "text-ink hover:bg-slate-100",
-                  d === today && !sel && "ring-1 ring-brand-400")}>
+                  d === today && !sel && "ring-1 ring-slate-400")}>
                 {Number(d.slice(8))}
                 {n > 0 && <span className={cx("absolute bottom-1 left-1/2 flex -translate-x-1/2 gap-0.5")} aria-hidden>{Array.from({ length: Math.min(n, 3) }, (_, k) => <span key={k} className={cx("h-1 w-1 rounded-full", sel ? "bg-white" : "bg-amber-500")} />)}</span>}
               </button>

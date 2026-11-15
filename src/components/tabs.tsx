@@ -20,7 +20,7 @@ export function Tabs({ tabs }: { tabs: Tab[] }) {
             aria-current={active ? "page" : undefined}
             className={cx(
               "-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium",
-              active ? "border-brand-500 text-brand-700" : "border-transparent text-slate-500 hover:text-slate-800",
+              active ? "border-ink text-ink" : "border-transparent text-slate-500 hover:text-slate-800",
             )}
           >
             {t.label}

@@ -55,7 +55,7 @@ export default async function PhotoReport({ params, searchParams }: PageProps<"/
       {aiOn && <div className="no-print mb-4"><AiPhotoSummary jobId={job.id} /></div>}
       <article className="rounded-[22px] bg-white p-5 ring-1 ring-slate-200 print:p-0 print:ring-0">
         <header className="border-b-2 border-dashed border-slate-200 pb-4">
-          <p className="font-semibold text-brand-700 font-mono text-xs uppercase tracking-wider">{org.name}{org.abn ? ` · ABN ${formatAbn(org.abn)}` : ""}{licence ? ` · ${st} licence ${licence}` : ""}</p>
+          <p className="font-semibold text-ink font-mono text-xs uppercase tracking-wider">{org.name}{org.abn ? ` · ABN ${formatAbn(org.abn)}` : ""}{licence ? ` · ${st} licence ${licence}` : ""}</p>
           <h1 className="text-2xl font-bold">Storm damage photo report</h1>
           <p className="text-sm text-slate-600">Prepared for the insurer&apos;s assessor. Dated photos, grouped by roof slope.</p>
           <p className="text-sm text-slate-600">{c.name} · {job.site_address || [c.address, c.city, c.state, c.zip].filter(Boolean).join(", ")}</p>

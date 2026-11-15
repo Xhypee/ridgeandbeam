@@ -46,7 +46,7 @@ export default async function CrewPortal({ params }: PageProps<"/w/[token]">) {
           ))}
         </ul>
       )}
-      {p.org.phone && <p className="mt-6 text-center text-sm text-slate-500">{t.officePhone}: <a className="font-medium text-brand-600" href={`tel:${p.org.phone}`}>{p.org.phone}</a></p>}
+      {p.org.phone && <p className="mt-6 text-center text-sm text-slate-500">{t.officePhone}: <a className="font-medium text-ink" href={`tel:${p.org.phone}`}>{p.org.phone}</a></p>}
     </main>
   );
 }

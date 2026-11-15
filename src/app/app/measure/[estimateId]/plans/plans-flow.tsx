@@ -355,7 +355,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
 
       {step === "drop" && (
         <label
-          className={cx("group flex w-full cursor-pointer flex-col items-center justify-center rounded-[28px] border-2 border-dashed bg-white px-6 py-16 text-center transition sm:px-8 sm:py-20", dragOver ? "border-brand-500 bg-brand-50" : "border-brand-500/40 hover:border-brand-500 hover:bg-brand-50")}
+          className={cx("group flex w-full cursor-pointer flex-col items-center justify-center rounded-[28px] border-2 border-dashed bg-white px-6 py-16 text-center transition sm:px-8 sm:py-20", dragOver ? "border-ink bg-slate-100" : "border-ink/40 hover:border-ink hover:bg-slate-100")}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={(e) => { e.preventDefault(); setDragOver(false); void onFile(e.dataTransfer.files?.[0]); }}
@@ -367,7 +367,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
           <span className="mt-3 max-w-lg text-lg text-slate-600">The architect&apos;s PDF is all we need. We&apos;ll find the roof, measure every line and fill in the job details.</span>
           <span className="mt-8 inline-flex min-h-14 items-center rounded-2xl bg-ink px-8 text-lg text-white transition group-hover:scale-105 font-mono text-xs font-semibold uppercase tracking-wider">Choose the PDF</span>
           <span className="mt-4 text-sm text-slate-400">or drag it onto this box · PDF up to 50 MB</span>
-          {saved && <button type="button" onClick={(e) => { e.preventDefault(); setStep("roof"); }} className="mt-6 font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 underline">Back to the saved roof</button>}
+          {saved && <button type="button" onClick={(e) => { e.preventDefault(); setStep("roof"); }} className="mt-6 font-mono text-xs font-semibold uppercase tracking-wider text-ink underline">Back to the saved roof</button>}
         </label>
       )}
 
@@ -377,7 +377,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
             {Array.from({ length: Math.max(pageCount, readCount, 1) }).map((_, i) => {
               const roofHit = ticks.length >= 1 && detected[0]?.page === i;
               return (
-                <figure key={i} className={cx("rounded-xl p-1.5 ring-1 transition-all duration-500", roofHit ? "scale-110 bg-brand-50 ring-2 ring-ink" : ticks.length >= 1 ? "opacity-40 ring-slate-200" : "ring-slate-200")} style={{ animation: `rb-pop .4s ${i * 0.05}s both` }}>
+                <figure key={i} className={cx("rounded-xl p-1.5 ring-1 transition-all duration-500", roofHit ? "scale-110 bg-slate-100 ring-2 ring-ink" : ticks.length >= 1 ? "opacity-40 ring-slate-200" : "ring-slate-200")} style={{ animation: `rb-pop .4s ${i * 0.05}s both` }}>
                   {thumbs[i] ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={thumbs[i]} alt="" className="aspect-[1.41] w-full rounded-md bg-white object-cover" />
@@ -386,7 +386,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                 </figure>
               );
             })}
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-transparent via-brand-500/25 to-transparent" style={{ animation: "rb-scan 1.6s linear infinite" }} />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-transparent via-ink/15 to-transparent" style={{ animation: "rb-scan 1.6s linear infinite" }} />
           </div>
           <div>
             <p className="font-display text-3xl font-bold text-ink">Reading your plans…</p>
@@ -429,7 +429,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                   </button>
                 ))}
                 <button type="button" onClick={undo} disabled={!history.length} className="min-h-11 rounded-full bg-white px-4 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 disabled:opacity-40" data-testid="tool-undo">↶ Undo</button>
-                {canHip && <button type="button" onClick={addHipRoof} className="min-h-11 rounded-full bg-brand-50 px-4 font-semibold text-brand-700 ring-1 ring-ink font-mono text-xs uppercase tracking-wider" data-testid="hip-roof">Hip roof: work out hips and ridges</button>}
+                {canHip && <button type="button" onClick={addHipRoof} className="min-h-11 rounded-full bg-slate-100 px-4 font-semibold text-ink ring-1 ring-ink font-mono text-xs uppercase tracking-wider" data-testid="hip-roof">Hip roof: work out hips and ridges</button>}
                 <span className="ml-auto flex flex-wrap gap-3 text-xs text-slate-500">
                   {(["eave", "ridge", "hip", "valley", "barge", "apron"] as const).map((k) => <span key={k} className="inline-flex items-center gap-1"><span className="h-1.5 w-4 rounded-full" style={{ background: KIND_COLOR[k] }} />{k === "eave" ? "Gutter" : k === "apron" ? "Apron" : k[0].toUpperCase() + k.slice(1)}</span>)}
                 </span>
@@ -487,7 +487,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                         </div>
                       </div>
                     ) : (
-                      <button type="button" onClick={() => { setTab("all"); setTool("measure"); }} className="mt-2 font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 hover:underline" data-testid="check-dimension">
+                      <button type="button" onClick={() => { setTab("all"); setTool("measure"); }} className="mt-2 font-mono text-xs font-semibold uppercase tracking-wider text-ink hover:underline" data-testid="check-dimension">
                         Check one dimension: tap a line and type its real length
                       </button>
                     ))}
@@ -501,7 +501,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                     </div>
                   )}
                   {saved && !readOnly && pages.length === 0 && (
-                    <button type="button" onClick={() => setStep("drop")} className="border-t-2 border-dashed border-slate-200 pt-3 font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 hover:underline">Upload new plans</button>
+                    <button type="button" onClick={() => setStep("drop")} className="border-t-2 border-dashed border-slate-200 pt-3 font-mono text-xs font-semibold uppercase tracking-wider text-ink hover:underline">Upload new plans</button>
                   )}
                 </div>
                 <button type="button" onClick={() => { setStep("sheets"); setBump((b) => b + 1); setTool("type"); setDraft(null); setSelected(null); }} disabled={!analysis.faces.length}
@@ -518,7 +518,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                   <div className="mt-3 grid grid-cols-3 gap-2">
                     {PROFILE_IDS.map((id) => (
                       <button key={id} type="button" disabled={step === "done" || readOnly} onClick={() => { setProfile(id); setBump((b) => b + 1); }} data-testid={`profile-${id}`} aria-pressed={profile === id}
-                        className={cx("rounded-2xl p-3 text-left ring-1 transition", profile === id ? "bg-brand-50 ring-2 ring-ink" : "ring-slate-200 hover:bg-slate-50")}>
+                        className={cx("rounded-2xl p-3 text-left ring-1 transition", profile === id ? "bg-slate-100 ring-2 ring-ink" : "ring-slate-200 hover:bg-slate-50")}>
                         <span className="block text-sm font-bold text-ink">{SHEET_PROFILES[id].label}</span>
                         <span className="block font-mono text-xs text-slate-500">{SHEET_PROFILES[id].blurb}</span>
                       </button>
@@ -582,7 +582,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                   </>
                 ))}
                 {step === "done" && result && (
-                  <div ref={(el) => { el?.scrollIntoView({ behavior: "smooth", block: "center" }); }} className="rounded-[28px] bg-brand-50 p-6 ring-2 ring-ink" style={{ animation: "rb-pop .5s both" }} data-testid="done-card">
+                  <div ref={(el) => { el?.scrollIntoView({ behavior: "smooth", block: "center" }); }} className="rounded-[28px] bg-slate-100 p-6 ring-2 ring-ink" style={{ animation: "rb-pop .5s both" }} data-testid="done-card">
                     <p className="font-display text-2xl font-bold text-ink">On the quote!</p>
                     <p className="mt-2 text-slate-700">{result.lines} lines added from the measurements, and the job details filled in.</p>
                     {result.seconds > 0 && <p className="mt-3 text-sm text-slate-600">Measured in <b>{Math.floor(result.seconds / 60)} min {result.seconds % 60} s</b>, straight from the plans.</p>}
@@ -684,7 +684,7 @@ function DetailsStep({ details, setDetails, apply, setApply, current, aiNote, on
                 <li key={r.key} className="flex flex-wrap items-center gap-3 py-3" data-testid="detail-row" data-detail={r.key}>
                   {canTick ? (
                     <input type="checkbox" checked={apply.has(r.key)} onChange={() => toggle(r.key)} aria-label={`Use ${r.label}`} className="h-6 w-6 shrink-0 rounded accent-ink" />
-                  ) : <span className="grid h-6 w-6 shrink-0 place-items-center text-brand-600">✓</span>}
+                  ) : <span className="grid h-6 w-6 shrink-0 place-items-center text-ink">✓</span>}
                   <span className="w-36 shrink-0 text-sm font-semibold text-slate-600">{r.label}</span>
                   <span className="min-w-[12rem] flex-1">
                     <input value={d.value} onChange={(e) => setDetails((ds) => ds.map((x) => (x.key === vk ? { ...x, value: e.target.value } : x)))} aria-label={r.label}

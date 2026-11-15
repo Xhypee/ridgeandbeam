@@ -28,11 +28,11 @@ export default async function ImportPage({ params }: PageProps<"/app/settings/su
   return (
     <div className="space-y-4">
       <div>
-        <Link href={`/app/settings/suppliers/${id}`} className="text-sm text-slate-500 hover:text-brand-600">← {name}</Link>
+        <Link href={`/app/settings/suppliers/${id}`} className="text-sm text-slate-500 hover:text-ink">← {name}</Link>
         <h2 className="text-xl font-semibold text-slate-900">Import {name} price sheet</h2>
         <p className="text-sm text-slate-500">
           Upload the CSV or Excel file from your branch or trade portal, or paste rows copied from Excel. Your previous price list is kept (inactive) so nothing is lost.
-          {" "}<Link href="/app/settings/suppliers/template" prefetch={false} className="font-medium text-brand-600 hover:underline">Download a sample template</Link>.
+          {" "}<Link href="/app/settings/suppliers/template" prefetch={false} className="font-medium text-ink hover:underline">Download a sample template</Link>.
         </p>
       </div>
       <ImportWizard orgSupplierId={id} supplierName={name} today={isoDate(new Date())} saved={saved} previousKeys={previousKeys} />

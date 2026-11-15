@@ -112,7 +112,7 @@ export default async function Today({ searchParams }: PageProps<"/app">) {
               </div>
             )}
           </Section>
-          <Section id="h-next" title="Coming up" hint="The next two weeks" actions={<Link href="/app/schedule" className="font-mono text-xs font-semibold uppercase tracking-wider text-brand-700">Schedule →</Link>}>
+          <Section id="h-next" title="Coming up" hint="The next two weeks" actions={<Link href="/app/schedule" className="font-mono text-xs font-semibold uppercase tracking-wider text-ink">Schedule →</Link>}>
             {later.length === 0 ? <EmptyLine>Nothing else booked.</EmptyLine> : (
               <ul className="divide-y-2 divide-dashed divide-slate-200 overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200">
                 {later.map((j) => (
@@ -219,7 +219,7 @@ export default async function Today({ searchParams }: PageProps<"/app">) {
       {header(true)}
       <div className="flex flex-col gap-8">
         {results && (
-          <Section id="h-search" title={`Results for "${q}"`} actions={<Link href="/app" className="font-mono text-xs font-semibold uppercase tracking-wider text-brand-700">Clear</Link>}>
+          <Section id="h-search" title={`Results for "${q}"`} actions={<Link href="/app" className="font-mono text-xs font-semibold uppercase tracking-wider text-ink">Clear</Link>}>
             <div data-search-results className="overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200">
               {results.length === 0 ? <p className="px-5 py-4 text-sm text-slate-500">No customers or jobs match. Try a surname, street or phone number.</p> : (
                 <ul className="divide-y-2 divide-dashed divide-slate-200">
@@ -257,7 +257,7 @@ export default async function Today({ searchParams }: PageProps<"/app">) {
                   return (
                     <li key={l.id} className="flex flex-wrap items-center gap-x-5 gap-y-3 px-5 py-4">
                       <WaitTimer since={l.lead_received_at ?? new Date().toISOString()} className="min-w-[4.5rem]" />
-                      <Link href={`/app/jobs/${l.id}`} className="min-w-0 flex-1 basis-56 hover:text-brand-600">
+                      <Link href={`/app/jobs/${l.id}`} className="min-w-0 flex-1 basis-56 hover:text-ink">
                         <span className="block truncate font-display text-[17px] font-bold text-ink">{l.customers?.name}</span>
                         <span className="block truncate font-mono text-xs text-slate-500">{[l.title, street(l.site_address), l.lead_source && `from ${l.lead_source.replace(/_/g, " ")}`, owner ? `→ ${displayName(owner)}` : "unassigned"].filter(Boolean).join(" · ")}</span>
                       </Link>
@@ -274,7 +274,7 @@ export default async function Today({ searchParams }: PageProps<"/app">) {
         </Section>
 
         <Section id="h-waiting" title="Waiting on you" hint={tasks.length ? `${tasks.length} thing${tasks.length === 1 ? "" : "s"} to move jobs forward` : undefined}
-          actions={tasks.length > shownTasks.length ? <Link href="/app/jobs" className="font-mono text-xs font-semibold uppercase tracking-wider text-brand-700">All jobs →</Link> : undefined}>
+          actions={tasks.length > shownTasks.length ? <Link href="/app/jobs" className="font-mono text-xs font-semibold uppercase tracking-wider text-ink">All jobs →</Link> : undefined}>
           <div className="overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200">
             {shownTasks.length === 0 ? <p className="px-5 py-4 text-sm text-slate-500">Nothing waiting on you. Every open job is with the homeowner, the insurer or the crew.</p> : (
               <ul className="divide-y-2 divide-dashed divide-slate-200" data-waiting-on-you>
@@ -286,7 +286,7 @@ export default async function Today({ searchParams }: PageProps<"/app">) {
                       <span className="block font-mono text-xs text-slate-500">{t.detail}</span>
                     </span>
                     <span className="flex flex-wrap items-center gap-3">
-                      {t.jobId && <Link href={`/app/jobs/${t.jobId}`} className="inline-flex min-h-11 items-center px-2 font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 hover:text-brand-700">Open job</Link>}
+                      {t.jobId && <Link href={`/app/jobs/${t.jobId}`} className="inline-flex min-h-11 items-center px-2 font-mono text-xs font-semibold uppercase tracking-wider text-ink hover:text-ink">Open job</Link>}
                       {!(t.jobId && t.href === `/app/jobs/${t.jobId}`) && (
                         <a href={t.href} className="inline-flex min-h-11 items-center rounded-xl bg-white px-4 font-mono text-xs font-semibold uppercase tracking-wider text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50">{t.actionLabel}</a>
                       )}
@@ -298,7 +298,7 @@ export default async function Today({ searchParams }: PageProps<"/app">) {
           </div>
         </Section>
 
-        <Section id="h-roofs" title="On roofs today" actions={<Link href="/app/schedule" className="font-mono text-xs font-semibold uppercase tracking-wider text-brand-700">Schedule →</Link>}>
+        <Section id="h-roofs" title="On roofs today" actions={<Link href="/app/schedule" className="font-mono text-xs font-semibold uppercase tracking-wider text-ink">Schedule →</Link>}>
           {onRoofs.length === 0 ? <EmptyLine>No crews on a roof today.</EmptyLine> : (
             <div className="grid gap-4 md:grid-cols-2" data-on-roofs>
               {onRoofs.map((j) => {
@@ -319,7 +319,7 @@ export default async function Today({ searchParams }: PageProps<"/app">) {
 
 function RoofCard({ href, name, address, crew, status }: { href: string; name: string; address: string | null; crew: Crew; status: string }) {
   return (
-    <Link href={href} data-roof-job className="flex gap-4 rounded-[22px] bg-white p-5 ring-1 ring-slate-200 transition hover:ring-brand-400">
+    <Link href={href} data-roof-job className="flex gap-4 rounded-[22px] bg-white p-5 ring-1 ring-slate-200 transition hover:ring-slate-400">
       <span className="w-1.5 shrink-0 rounded-full" style={{ background: crew?.color ?? "#cbd5e1" }} aria-hidden />
       <span className="min-w-0">
         <span className="block truncate font-display text-[17px] font-bold text-ink">{name}{address ? ` · ${street(address)}` : ""}</span>

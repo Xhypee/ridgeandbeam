@@ -153,7 +153,7 @@ export function AddressLookup({ defaultState, initial, initialLine, label = "Sit
     else if (e.key === "Escape") setOpen(false);
   };
 
-  const linkCls = "font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 underline-offset-4 hover:text-brand-700 hover:underline";
+  const linkCls = "font-mono text-xs font-semibold uppercase tracking-wider text-ink underline-offset-4 hover:text-ink hover:underline";
   const toManual = () => { if (!picked && query.trim()) setManual((m) => ({ ...m, address: query.trim() })); setOpen(false); setMode("manual"); };
 
   // What gets posted, in either mode (the visible fields have no names).
@@ -198,8 +198,8 @@ export function AddressLookup({ defaultState, initial, initialLine, label = "Sit
         // Picked: one simple card, like a picked customer.
         <div className="space-y-2">
           <span className="-mb-1 block text-xs font-medium text-slate-600">{label}</span>
-          <div className="flex items-center gap-3 rounded-xl bg-brand-50 px-3.5 py-3 ring-1 ring-brand-200" data-address-picked>
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white text-brand-700 ring-1 ring-brand-200"><svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5" /></svg></span>
+          <div className="flex items-center gap-3 rounded-xl bg-slate-100 px-3.5 py-3 ring-1 ring-slate-300" data-address-picked>
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white text-ink ring-1 ring-slate-300"><svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5" /></svg></span>
             <span className="min-w-0 flex-1">
               <span className="block truncate font-semibold text-ink">{parts.address || "Address"}</span>
               <span className="block truncate text-sm text-slate-600">{[parts.city, parts.state, parts.zip].filter(Boolean).join(" ")}</span>
@@ -227,13 +227,13 @@ export function AddressLookup({ defaultState, initial, initialLine, label = "Sit
               {shown.map((s, i) => (
                 <li key={s.id} id={`${listId}-${i}`} role="option" aria-selected={i === active}
                   onMouseDown={(e) => { e.preventDefault(); void choose(s); }} onMouseEnter={() => setActive(i)}
-                  className={cx("flex cursor-pointer items-start gap-2.5 px-3 py-2.5", i === active && "bg-brand-50")}>
+                  className={cx("flex cursor-pointer items-start gap-2.5 px-3 py-2.5", i === active && "bg-slate-100")}>
                   <svg viewBox="0 0 24 24" className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><path d="M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11z" /></svg>
                   <span className="min-w-0"><span className="block truncate text-sm font-medium text-ink">{s.main}</span><span className="block truncate text-xs text-slate-500">{s.rest}</span></span>
                 </li>
               ))}
               <li role="option" aria-selected={false} data-address-manual-option onMouseDown={(e) => { e.preventDefault(); toManual(); }}
-                className={cx("flex cursor-pointer items-center gap-2.5 px-3 py-2.5 font-semibold text-brand-700 hover:bg-brand-50 font-mono text-xs uppercase tracking-wider", shown.length > 0 && "border-t-2 border-dashed border-slate-200")}>
+                className={cx("flex cursor-pointer items-center gap-2.5 px-3 py-2.5 font-semibold text-ink hover:bg-slate-100 font-mono text-xs uppercase tracking-wider", shown.length > 0 && "border-t-2 border-dashed border-slate-200")}>
                 <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" /></svg>
                 <span className="min-w-0 truncate">Enter &ldquo;{query.trim()}&rdquo; manually</span>
               </li>

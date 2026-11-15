@@ -28,7 +28,7 @@ export default async function InstantQuotePage({ params }: PageProps<"/quote/[ke
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-6">
       <header className="mb-5">
-        <p className="text-sm font-medium text-brand-600">{org.name}</p>
+        <p className="text-sm font-medium text-ink">{org.name}</p>
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Get an instant re-roof price range</h1>
         <p className="mt-1 text-sm text-slate-500">Takes about a minute. No obligation. Prices in AUD including GST.</p>
       </header>
@@ -36,7 +36,7 @@ export default async function InstantQuotePage({ params }: PageProps<"/quote/[ke
         <QuoteForm intakeKey={key} orgName={org.name} rates={quoteRates(org.instant_quote)} phone={org.phone} defaultState={org.state} />
       ) : (
         <p className="rounded-xl bg-white p-6 text-slate-700 ring-1 ring-slate-200">
-          Online quotes are paused right now. {org.phone ? <>Call <a className="font-medium text-brand-700" href={`tel:${org.phone}`}>{org.phone}</a> for a free roof inspection.</> : "Please contact us for a free roof inspection."}
+          Online quotes are paused right now. {org.phone ? <>Call <a className="font-medium text-ink" href={`tel:${org.phone}`}>{org.phone}</a> for a free roof inspection.</> : "Please contact us for a free roof inspection."}
         </p>
       )}
     </main>
