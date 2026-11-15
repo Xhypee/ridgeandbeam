@@ -21,7 +21,7 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
         <button className="rounded-md bg-slate-200 px-2 text-xs text-slate-700 hover:bg-slate-300">Go</button>
       </form>
     ) : (
-      <p className="truncate text-xs text-slate-500">{org.name}</p>
+      <p className="truncate font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">{org.name}</p>
     );
 
   return (
@@ -29,7 +29,7 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
       rail={<NavRail canSeeMoney={canSeeMoney} crewLead={isCrewLead} unread={unread ?? 0} />}
       tabs={<SectionTabs canSeeMoney={canSeeMoney} />}
       full={
-      <aside className="no-print sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-slate-200 bg-white p-4 lg:flex">
+      <aside className="no-print sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r-2 border-dashed border-slate-200 bg-cream p-4 lg:flex">
         <div className="mb-1 flex items-center justify-between px-2">
           <Link href="/app"><Logo /></Link>
           <Link href="/app/notifications" className="relative rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900" aria-label={`Notifications${unread ? ` (${unread} unread)` : ""}`}>
@@ -37,7 +37,8 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
             {unread ? <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-brand-500 px-1 text-center text-[10px] font-semibold leading-4 text-white">{unread > 99 ? "99+" : unread}</span> : null}
           </Link>
         </div>
-        <div className="mb-6 px-2">{orgSwitcher}</div>
+        <div className="mb-4 px-2">{orgSwitcher}</div>
+        <div className="mx-2 mb-4 border-t-2 border-dashed border-slate-200" />
         <Nav canSeeMoney={canSeeMoney} crewLead={isCrewLead} />
         {outboundPaused() && (
           <div className="mx-2 mt-4 rounded-xl bg-amber-50 px-3 py-2.5 text-xs leading-snug text-amber-900 ring-1 ring-amber-200" data-test-mode>
@@ -45,16 +46,17 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
             <p className="mt-0.5">Every email comes to you instead of customers or suppliers. Texts and online payments are off.</p>
           </div>
         )}
-        <div className="mt-auto border-t border-slate-100 px-2 pt-4">
-          <p className="truncate text-sm font-medium text-slate-800">{me?.full_name || user.fullName || user.email}</p>
-          <p className="truncate text-xs text-slate-500">{ROLE_LABEL[role] ?? role} · {user.email}</p>
+        <div className="mt-auto border-t-2 border-dashed border-slate-200 px-2 pt-4">
+          <p className="truncate font-display text-sm font-bold text-ink">{me?.full_name || user.fullName || user.email}</p>
+          <p className="truncate font-mono text-[11px] uppercase tracking-[0.1em] text-slate-400">{ROLE_LABEL[role] ?? role}</p>
+          <p className="truncate font-mono text-[11px] text-slate-400">{user.email}</p>
           <form action="/auth/signout" method="post">
-            <button className="mt-2 text-xs font-medium text-slate-500 hover:text-slate-900">Sign out</button>
+            <button className="mt-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-500 hover:text-ink">Sign out</button>
           </form>
         </div>
       </aside>}
       header={
-        <header className="no-print sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur lg:hidden">
+        <header className="no-print sticky top-0 z-10 border-b-2 border-dashed border-slate-200 bg-cream/95 backdrop-blur lg:hidden">
           <div className="flex items-center justify-between gap-3 px-4 py-3">
             <Link href="/app"><Logo /></Link>
             <div className="flex items-center gap-2">

@@ -74,7 +74,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ap
 
           <Card title={`Returns & credits (${returns.length})`}>
             {returns.length > 0 && (
-              <ul className="mb-4 divide-y divide-slate-100">
+              <ul className="mb-4 divide-y-2 divide-dashed divide-slate-200">
                 {returns.map((r) => {
                   const left = daysUntil(r.credit_window_ends_on, today);
                   return (

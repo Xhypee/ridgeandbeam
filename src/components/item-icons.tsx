@@ -103,7 +103,7 @@ export function IconSheet() {
   return (
     <div className="grid grid-cols-3 gap-4 sm:grid-cols-6">
       {Object.entries(ICONS).map(([k, i]) => (
-        <div key={k} className="flex flex-col items-center gap-3 rounded-2xl bg-white p-5 ring-1 ring-slate-200" data-testid="icon-tile">
+        <div key={k} className="flex flex-col items-center gap-3 rounded-[22px] bg-white p-5 ring-1 ring-slate-200" data-testid="icon-tile">
           <svg viewBox="0 0 24 24" width={72} height={72} className="text-ink" role="img" aria-label={i.label}>{i.svg}</svg>
           <p className="text-center text-sm font-semibold text-ink">{i.label}</p>
         </div>

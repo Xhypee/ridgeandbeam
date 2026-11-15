@@ -206,11 +206,11 @@ export function OrderBoard(p: BoardProps) {
 
         {all.length > 0 && <Block n={3} title="Totals">
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+            <div className="rounded-[22px] bg-white p-5 ring-1 ring-slate-200">
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">Order total</p>
               <p className="mt-1 font-display text-4xl font-bold leading-none text-ink" data-order-total>{aud(ex + gst)}</p>
               <p className="mt-1 text-sm text-slate-500">{aud(ex)} + GST {aud(gst)} · at your costs</p>
-              <ul className="mt-4 space-y-1.5 border-t border-slate-100 pt-3 text-sm">
+              <ul className="mt-4 space-y-1.5 border-t-2 border-dashed border-slate-200 pt-3 text-sm">
                 {orders.filter((o) => o.items.length).map((o, n) => (
                   <li key={o.key} className="flex items-center gap-2"><Mark name={o.supplier} dark={n === 0} size="h-5 w-5 text-[9px]" /><span className="flex-1 text-ink">{o.supplier} <span className="text-slate-400">· {o.items.length} item{o.items.length === 1 ? "" : "s"}</span></span><span className="tabular-nums text-slate-600">{aud(o.items.reduce((a, l) => a + lineCost(l), 0))}</span></li>
                 ))}
@@ -235,7 +235,7 @@ export function OrderBoard(p: BoardProps) {
           </div>
           {msg?.error && <p role="alert" className="w-full rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 sm:order-first">{msg.error}</p>}
           {msg?.ok && <p className="w-full rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 sm:order-first">{msg.ok}</p>}
-          <button type="button" disabled={busy || !ready} onClick={() => void sendAll()} className="flex min-h-12 items-center gap-2 rounded-xl bg-brand-500 px-6 font-semibold text-white hover:bg-brand-600 disabled:opacity-50" data-send-all>
+          <button type="button" disabled={busy || !ready} onClick={() => void sendAll()} className="flex min-h-12 items-center gap-2 rounded-xl bg-ink px-6 font-semibold text-white hover:bg-ink/90 disabled:opacity-50" data-send-all>
             <Icon d={SEND} />{busy ? "Sending…" : ready ? `Send ${ready} email${ready === 1 ? "" : "s"}` : "Nothing to send"}
           </button>
         </div>
@@ -260,10 +260,10 @@ function Envelope({ o, tz, dark, busy, onSend, onPreview, onAdd, onEdit, onRemov
     : o.status === "delivered" ? <span className="flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 text-sm font-semibold text-brand-700"><Icon d={CHECK} />Delivered</span>
     : o.status === "sent" ? <span className="flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 text-sm font-semibold text-brand-700"><Icon d={CHECK} />Sent {o.sentAt ? new Date(o.sentAt).toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit", timeZone: tz }) : ""}{o.openedAt ? " · opened" : ""}</span>
     : !o.items.length ? null
-    : o.email ? <button type="button" disabled={busy || !o.id} onClick={(e) => { e.preventDefault(); onSend(); }} className="flex items-center gap-1.5 rounded-lg bg-brand-500 px-3.5 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50" data-send-one><Icon d={SEND} />Send</button>
+    : o.email ? <button type="button" disabled={busy || !o.id} onClick={(e) => { e.preventDefault(); onSend(); }} className="flex items-center gap-1.5 rounded-lg bg-ink px-3.5 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90 disabled:opacity-50" data-send-one><Icon d={SEND} />Send</button>
     : <button type="button" onClick={(e) => { e.preventDefault(); setAddEmail(true); setOpen(true); }} className="rounded-lg px-3.5 py-2 text-sm font-semibold text-ink ring-1 ring-slate-300 hover:bg-slate-50" data-add-email>Add email</button>;
   return (
-    <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200" data-envelope={o.supplier}>
+    <div className="overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200" data-envelope={o.supplier}>
       <div className="relative px-4 pb-3 pt-4">
         <svg viewBox="0 0 100 12" preserveAspectRatio="none" className="absolute inset-x-0 top-0 h-2.5 w-full" aria-hidden><path d="M0 0 50 12 100 0" fill="none" stroke="#e3e6df" strokeWidth="1" /></svg>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -292,15 +292,15 @@ function Envelope({ o, tz, dark, busy, onSend, onPreview, onAdd, onEdit, onRemov
         </p>
       </div>
       {open && (
-        <div className="border-t border-slate-100">
+        <div className="border-t-2 border-dashed border-slate-200">
           <div className="hidden grid-cols-[16px_minmax(0,1fr)_150px_60px_96px_92px_16px] gap-3 bg-cream px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400 md:grid">
             <span /><span>Item</span><span>Supplier</span><span className="text-right">Qty</span><span>Length</span><span className="text-right">Cost ex GST</span><span />
           </div>
           {groups.map(([g, ls]) => (
             <div key={g || "-"}>
-              {g && groups.length > 1 && <p className={cx("border-t border-slate-100 px-4 py-1.5 text-xs font-semibold", g.startsWith("Extras") ? "bg-brand-50 text-brand-800" : "text-slate-500")}>{g}</p>}
+              {g && groups.length > 1 && <p className={cx("border-t-2 border-dashed border-slate-200 px-4 py-1.5 text-xs font-semibold", g.startsWith("Extras") ? "bg-brand-50 text-brand-800" : "text-slate-500")}>{g}</p>}
               {ls.map((l) => (
-                <div key={l.key} className="grid grid-cols-[minmax(0,1fr)_60px_96px_92px_16px] items-center gap-x-3 gap-y-2 border-t border-slate-100 px-4 py-2.5 md:grid-cols-[16px_minmax(0,1fr)_150px_60px_96px_92px_16px]" data-order-line>
+                <div key={l.key} className="grid grid-cols-[minmax(0,1fr)_60px_96px_92px_16px] items-center gap-x-3 gap-y-2 border-t-2 border-dashed border-slate-200 px-4 py-2.5 md:grid-cols-[16px_minmax(0,1fr)_150px_60px_96px_92px_16px]" data-order-line>
                   <Icon d={GRIP} className="hidden h-4 w-4 text-slate-300 md:block" />
                   <span className="col-span-5 min-w-0 md:col-span-1">
                     <input className="w-full bg-transparent text-sm font-semibold text-ink placeholder:font-normal placeholder:text-slate-400 focus:outline-none" value={l.description} placeholder="What it is" onChange={(e) => onEdit(l.key, { description: e.target.value })} aria-label="Item" />
@@ -323,7 +323,7 @@ function Envelope({ o, tz, dark, busy, onSend, onPreview, onAdd, onEdit, onRemov
               ))}
             </div>
           ))}
-          <div className="flex items-center gap-5 border-t border-slate-100 px-4 py-2.5 text-sm font-semibold text-brand-700">
+          <div className="flex items-center gap-5 border-t-2 border-dashed border-slate-200 px-4 py-2.5 text-sm font-semibold text-brand-700">
             <button type="button" onClick={onAdd} className="flex items-center gap-2" data-add-item><Icon d="M12 5v14M5 12h14" />Add an item</button>
             {o.status !== "draft" && <span className="ml-auto text-xs font-normal text-slate-500">Changes after sending: send it again so {o.supplier} has the latest.</span>}
           </div>
@@ -386,7 +386,7 @@ export function AttachmentPanel({ orderId, plans, report, files, planNames, hasR
   const others = files.filter((f) => !planNames.includes(f.name));
   return (
     <div data-attachments>
-      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Attached</p>
+      <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Attached</p>
       <div className="mt-2 space-y-2">
         {row("Order PDF", "Every item and the delivery details", true)}
         {row(planNames.length ? planNames.join(", ") : "No plans on this job", planNames.length ? "Architectural plans" : "Add them in Plans & files", s.plans && planNames.length > 0, <Toggle on={s.plans && planNames.length > 0} label="Plans" disabled={!planNames.length} onClick={() => void save({ ...s, plans: !s.plans })} />)}
@@ -395,7 +395,7 @@ export function AttachmentPanel({ orderId, plans, report, files, planNames, hasR
       <p className="mt-3 text-xs leading-relaxed text-slate-500">{s.plans || s.report ? `${supplier} gets these so they can check the cut lengths.` : `Off for ${supplier}. Turn on if they need the plans.`}</p>
       {others.length > 0 && (
         <>
-          <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">From the job&apos;s files</p>
+          <p className="mt-5 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">From the job&apos;s files</p>
           <div className="mt-2 space-y-1.5">
             {others.map((f) => (
               <label key={f.id} className="flex items-center gap-2 text-sm text-slate-700">

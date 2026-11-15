@@ -38,8 +38,8 @@ export default async function PublicChangeOrder({ params }: PageProps<"/c/[token
         <p className="text-lg font-bold text-brand-700">{co.org.name}</p>
         <p className="text-sm text-slate-600">{[co.org.license_number && `License #${co.org.license_number}`, co.org.phone].filter(Boolean).join(" · ")}</p>
       </header>
-      <article className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Change order · {date(co.created_at)}</p>
+      <article className="rounded-[22px] bg-white p-4 ring-1 ring-slate-200">
+        <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Change order · {date(co.created_at)}</p>
         <h1 className="mt-1 text-2xl font-bold">{co.title}</h1>
         <p className="text-sm text-slate-600">{co.customer.name} · {co.job.title}{co.job.site_address ? ` · ${co.job.site_address}` : ""}</p>
         {co.description && <p className="mt-3 whitespace-pre-wrap text-base text-slate-800">{co.description}</p>}
@@ -51,7 +51,7 @@ export default async function PublicChangeOrder({ params }: PageProps<"/c/[token
             ))}
           </div>
         )}
-        <ul className="mt-4 divide-y divide-slate-100 text-sm">
+        <ul className="mt-4 divide-y-2 divide-dashed divide-slate-200 text-sm">
           {co.items.map((i, n) => (
             <li key={n} className="flex justify-between gap-3 py-2">
               <span>{i.description}<span className="block text-slate-500">{Number(i.quantity)} {i.unit} × {money(i.unit_price)}</span></span>
@@ -65,7 +65,7 @@ export default async function PublicChangeOrder({ params }: PageProps<"/c/[token
       </article>
 
       {co.status === "sent" && (
-        <section className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+        <section className="mt-4 rounded-[22px] bg-white p-4 ring-1 ring-slate-200">
           <h2 className="text-lg font-bold">Approve this change</h2>
           <ActionForm action={approveChangeOrder} className="mt-3 space-y-3">
             <input type="hidden" name="token" value={token} />

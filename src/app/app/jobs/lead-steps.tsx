@@ -99,7 +99,7 @@ export function LeadSteps(p: LeadStepsProps) {
   return (
     <div className="px-5 pb-4" data-lead-steps>
       <div className="flex items-center gap-2">
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Next up</p>
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">Next up</p>
         {!p.contacted && p.receivedAt && <span className="ml-auto"><LeadTimer since={p.receivedAt} /></span>}
       </div>
       <p className="font-display text-[26px] font-bold leading-tight text-ink">{headline}</p>
@@ -107,7 +107,7 @@ export function LeadSteps(p: LeadStepsProps) {
 
       {!p.contacted && (
         <div className="mt-3 flex gap-2">
-          {tel ? <a href={tel} className={cx(btn, "flex-1 bg-brand-500 text-white hover:bg-brand-600")} data-lead-call><Icon d={PHONE} />Call {p.first}</a>
+          {tel ? <a href={tel} className={cx(btn, "flex-1 bg-ink text-white hover:bg-ink/90")} data-lead-call><Icon d={PHONE} />Call {p.first}</a>
             : <span className={cx(btn, "flex-1 bg-slate-100 text-slate-400")}>No mobile</span>}
           {sms && <a href={sms} aria-label={`Text ${p.first}`} title={`Text ${p.first}`} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-ink ring-1 ring-slate-300 hover:bg-slate-50"><Icon d={SMS} /></a>}
         </div>

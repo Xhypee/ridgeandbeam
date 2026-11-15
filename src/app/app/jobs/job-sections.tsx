@@ -74,7 +74,7 @@ export function JobDocuments({ jobId, docs, meta }: { jobId: string; docs: LeadD
     <>
       <Section title="Documents" count={docs.length}>
         {docs.length ? (
-          <ul className="divide-y divide-slate-100 rounded-xl ring-1 ring-slate-200">
+          <ul className="divide-y-2 divide-dashed divide-slate-200 rounded-xl ring-1 ring-slate-200">
             {docs.map((f) => {
               const pdf = f.mime === "application/pdf" || /\.pdf$/i.test(f.name);
               return (

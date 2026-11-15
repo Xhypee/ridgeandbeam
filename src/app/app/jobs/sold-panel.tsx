@@ -64,7 +64,7 @@ export function SoldPanel({ d }: { d: Docket }) {
     <div className="px-5 pb-4" data-sold-panel>
       <div className="flex items-end justify-between gap-3">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{all ? "Ready to build" : "Getting ready to build"}</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">{all ? "Ready to build" : "Getting ready to build"}</p>
           <p className="font-display text-[26px] font-bold leading-tight text-ink">{all && j.scheduled_start ? `Starts ${day(j.scheduled_start)}` : `${done} of ${steps.length} done`}</p>
         </div>
         <span className="mb-1.5 flex gap-1" aria-hidden>{steps.map((x) => <span key={x.key} className="h-2 w-5 rounded-full" style={{ background: x.state === "done" ? "#1f5f3f" : x.state === "now" ? "#13221a" : x.state === "wait" ? "#f4c66b" : "#e2e8f0" }} />)}</span>
@@ -85,13 +85,13 @@ export function SoldPanel({ d }: { d: Docket }) {
               {x.href && !x.action && (x.key === "crew" && x.state !== "done" ? <span className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold text-ink ring-1 ring-slate-300">Book</span> : <Icon d={I.next} className="h-5 w-5 text-slate-400" />)}
             </>
           );
-          const cls = cx("flex items-center gap-3 px-3.5 py-3", k > 0 && "border-t border-slate-100", x.state === "now" && "bg-brand-50");
+          const cls = cx("flex items-center gap-3 px-3.5 py-3", k > 0 && "border-t-2 border-dashed border-slate-200", x.state === "now" && "bg-brand-50");
           return <li key={x.key} data-ready-step={x.key} data-state={x.state}>{x.href && !x.action ? <Link href={x.href} className={cx(cls, "hover:bg-slate-50")}>{body}</Link> : <div className={cls}>{body}</div>}</li>;
         })}
       </ol>
       {all && (
         <div className="mt-3 flex gap-2">
-          {tel && <a href={`sms:${tel}?&body=${encodeURIComponent(`Hi ${first}, just confirming we start on your roof ${j.scheduled_start ? day(j.scheduled_start) : "soon"}. See you then!`)}`} className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-brand-500 px-3 text-sm font-semibold text-white hover:bg-brand-600"><Icon d={I.sms} />Text {first}: we start {j.scheduled_start ? day(j.scheduled_start).split(" ")[0] : "soon"}</a>}
+          {tel && <a href={`sms:${tel}?&body=${encodeURIComponent(`Hi ${first}, just confirming we start on your roof ${j.scheduled_start ? day(j.scheduled_start) : "soon"}. See you then!`)}`} className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-ink px-3 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90"><Icon d={I.sms} />Text {first}: we start {j.scheduled_start ? day(j.scheduled_start).split(" ")[0] : "soon"}</a>}
           <form action={setStage}><input type="hidden" name="id" value={j.id} /><input type="hidden" name="stage" value="in_progress" />
             <button className="flex min-h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold text-ink ring-1 ring-slate-300 hover:bg-slate-50">Start build</button></form>
         </div>

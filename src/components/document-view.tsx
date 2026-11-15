@@ -61,7 +61,7 @@ export function DocumentView({ doc }: { doc: PublicDocument & { org: PublicDocum
             <th className="py-2 text-right font-medium">Amount</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y-2 divide-dashed divide-slate-200">
           {doc.items.map((it, i) => (
             <tr key={i}>
               <td className="py-2.5 pr-3 text-slate-800">{it.description}</td>

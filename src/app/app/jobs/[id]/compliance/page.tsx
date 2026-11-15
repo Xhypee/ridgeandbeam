@@ -59,7 +59,7 @@ export default async function CompliancePage({ params }: PageProps<"/app/jobs/[i
                   {deposit.ready ? `Nothing in ${AU_STATE_NAME[data.state]} rules is stopping a deposit${rules.deposit.maxAud !== null && rules.deposit.isLegalLimit ? ` (max ${formatMoney(rules.deposit.maxAud)})` : ""}.` : `First: ${deposit.reasons.join("; ")}.`}
                 </p>
               </div>
-              <Link href={`/app/jobs/${id}/billing`} className="inline-flex min-h-11 items-center rounded-xl bg-white px-4 text-sm font-semibold text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50">Billing</Link>
+              <Link href={`/app/jobs/${id}/billing`} className="inline-flex min-h-11 items-center rounded-xl bg-white px-4 font-mono text-xs font-semibold uppercase tracking-wider text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50">Billing</Link>
             </section>
           )}
 

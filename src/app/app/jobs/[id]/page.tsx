@@ -83,7 +83,7 @@ export default async function JobPage({ params }: PageProps<"/app/jobs/[id]">) {
                 </Link>
               ))}
             </div>
-            <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4 text-sm text-slate-700">
+            <div className="mt-4 flex flex-wrap items-center gap-3 border-t-2 border-dashed border-slate-200 pt-4 text-sm text-slate-700">
               <span>
                 {job.scheduled_start ? <b>{date(job.scheduled_start, { day: "numeric", month: "short" })}{job.scheduled_end && job.scheduled_end !== job.scheduled_start ? `–${date(job.scheduled_end, { day: "numeric", month: "short" })}` : ""}</b> : <b>No dates yet</b>}
                 {" · "}{crew?.name ?? "No crew"}
@@ -99,7 +99,7 @@ export default async function JobPage({ params }: PageProps<"/app/jobs/[id]">) {
               {(estimates ?? []).length === 0 ? (
                 <p className="text-sm text-slate-500">No quotes yet. Use <b>New quote</b> to measure the roof and build the options.</p>
               ) : (
-                <ul className="divide-y divide-slate-100">
+                <ul className="divide-y-2 divide-dashed divide-slate-200">
                   {(estimates ?? []).map((e) => {
                     const total = one(e.estimate_totals as unknown as { total: number }[] | { total: number } | null)?.total;
                     return (
@@ -121,7 +121,7 @@ export default async function JobPage({ params }: PageProps<"/app/jobs/[id]">) {
               {(invoices ?? []).length === 0 ? (
                 <p className="text-sm text-slate-500">No invoices yet. A signed quote becomes an invoice in one click, or set up the payment schedule on <Link className="font-semibold text-brand-600" href={`/app/jobs/${job.id}/billing`}>Paid</Link>.</p>
               ) : (
-                <ul className="divide-y divide-slate-100">
+                <ul className="divide-y-2 divide-dashed divide-slate-200">
                   {(invoices ?? []).map((v) => {
                     const tot = one(v.invoice_totals as unknown as { total: number; balance: number }[] | { total: number; balance: number } | null);
                     return (
@@ -150,7 +150,7 @@ export default async function JobPage({ params }: PageProps<"/app/jobs/[id]">) {
             <div className="mt-2"><SubmitButton variant="secondary">Add note</SubmitButton></div>
           </ActionForm>
           {activity.length === 0 ? <p className="text-sm text-slate-500">Nothing yet. Notes, field updates and approvals show up here.</p> : (
-            <ul className="divide-y divide-slate-100" data-activity>
+            <ul className="divide-y-2 divide-dashed divide-slate-200" data-activity>
               {activity.map((a) => (
                 <li key={a.id} className="py-3 text-sm">
                   <p className="whitespace-pre-wrap break-words text-slate-800">
@@ -167,7 +167,7 @@ export default async function JobPage({ params }: PageProps<"/app/jobs/[id]">) {
         {canSeeMoney && (
           <Card title="Finance">
             {fin.length > 0 && (
-              <ul className="mb-4 divide-y divide-slate-100">
+              <ul className="mb-4 divide-y-2 divide-dashed divide-slate-200">
                 {fin.map((f) => (
                   <li key={f.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm" data-financing={f.status}>
                     <span className="min-w-0">
@@ -226,7 +226,7 @@ export default async function JobPage({ params }: PageProps<"/app/jobs/[id]">) {
               </>
             )}
           </div>
-          <ActionForm action={saveLeadInfo} className="mt-4 border-t border-slate-100 pt-4">
+          <ActionForm action={saveLeadInfo} className="mt-4 border-t-2 border-dashed border-slate-200 pt-4">
             <input type="hidden" name="id" value={job.id} />
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
               {([["assigned_to", "Assigned to"], ["sales_rep_id", "Sales rep"], ["setter_id", "Setter / door knocker"]] as const).map(([k, l]) => (
@@ -265,7 +265,7 @@ export default async function JobPage({ params }: PageProps<"/app/jobs/[id]">) {
           </ActionForm>
         </Card>
 
-        <Card title="Customer" actions={<Link href={`/app/customers/${c.id}`} className="text-sm font-semibold text-brand-600">Open record</Link>}>
+        <Card title="Customer" actions={<Link href={`/app/customers/${c.id}`} className="font-mono text-xs font-semibold uppercase tracking-wider text-brand-700">Open record</Link>}>
           <dl className="space-y-1.5 text-sm">
             <div><dt className="sr-only">Name</dt><dd className="font-semibold text-ink">{c.name}</dd></div>
             {c.phone && <div><dt className="sr-only">Phone</dt><dd><a className="text-brand-600 hover:underline" href={`tel:${c.phone.replace(/\s+/g, "")}`}>{c.phone}</a></dd></div>}

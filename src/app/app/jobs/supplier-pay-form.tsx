@@ -94,9 +94,9 @@ export function SupplierPayForm({ orgId, jobId, orderId, supplier, orderCode, or
           <p className="mt-0.5 text-xs text-slate-600">Order {orderCode ?? ""} · {orderItems} item{orderItems === 1 ? "" : "s"} · {aud(orderCost)} ex GST.{Math.abs(diff) >= 0.05 ? " Check for extra items or price changes before you pay." : ""}</p>
         </div>
         <div className="rounded-xl bg-white ring-1 ring-slate-200">
-          <p className="border-b border-slate-100 px-3.5 py-2.5 text-xs font-semibold text-slate-500">Pay by bank transfer</p>
+          <p className="border-b-2 border-dashed border-slate-200 px-3.5 py-2.5 text-xs font-semibold text-slate-500">Pay by bank transfer</p>
           {([["Account name", "bank_name", inv.bankName], ["BSB", "bank_bsb", inv.bsb], ["Account", "bank_account", inv.account]] as const).map(([k, name, v]) => (
-            <div key={k} className="flex items-center gap-3 border-b border-slate-100 px-3.5 py-1.5">
+            <div key={k} className="flex items-center gap-3 border-b-2 border-dashed border-slate-200 px-3.5 py-1.5">
               <span className="w-24 shrink-0 text-xs text-slate-500">{k}</span>
               <input name={name} defaultValue={v ?? ""} placeholder="From the invoice" className="min-h-9 min-w-0 flex-1 bg-transparent text-sm font-medium tabular-nums text-ink placeholder:font-normal placeholder:text-slate-300 focus:outline-none" />
               <button type="button" onClick={(e) => copy(k, (e.currentTarget.previousElementSibling as HTMLInputElement).value)} className="text-xs font-semibold text-brand-700">{copied === k ? "Copied" : "Copy"}</button>

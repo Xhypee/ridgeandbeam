@@ -73,7 +73,7 @@ export default async function WorkOrderPage({ params }: PageProps<"/app/jobs/[id
           {mats.items.length === 0 ? <p className="text-sm text-slate-500">{T.noMaterials}</p> : (
             <table className="mt-1 w-full text-sm">
               <thead><tr className="border-b border-slate-200 text-left text-xs text-slate-500"><th className="py-1">{T.qty}</th><th className="py-1">{T.item}</th></tr></thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y-2 divide-dashed divide-slate-200">
                 {mats.items.map((i, n) => (
                   <tr key={n}><td className="w-32 py-1.5 font-medium tabular-nums">{i.quantity} {unitLabel(i.unit)}</td><td className="py-1.5">{i.description}</td></tr>
                 ))}

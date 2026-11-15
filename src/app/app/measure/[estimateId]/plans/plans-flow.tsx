@@ -367,7 +367,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
           <span className="mt-3 max-w-lg text-lg text-slate-600">The architect&apos;s PDF is all we need. We&apos;ll find the roof, measure every line and fill in the job details.</span>
           <span className="mt-8 inline-flex min-h-14 items-center rounded-2xl bg-brand-500 px-8 text-lg font-semibold text-white transition group-hover:scale-105">Choose the PDF</span>
           <span className="mt-4 text-sm text-slate-400">or drag it onto this box · PDF up to 50 MB</span>
-          {saved && <button type="button" onClick={(e) => { e.preventDefault(); setStep("roof"); }} className="mt-6 text-sm font-semibold text-brand-600 underline">Back to the saved roof</button>}
+          {saved && <button type="button" onClick={(e) => { e.preventDefault(); setStep("roof"); }} className="mt-6 font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 underline">Back to the saved roof</button>}
         </label>
       )}
 
@@ -448,7 +448,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {(["ridge", "hip", "valley", "eave", ...(t.barge > 0 ? ["barge" as const] : []), ...(t.apron > 0 ? ["apron" as const] : [])] as const).map((k, i) => (
-                    <div key={k} className="rounded-2xl bg-white p-4 ring-1 ring-slate-200" style={{ animation: `rb-pop .4s ${0.6 + i * 0.1}s both` }} data-testid={`total-${k}`} data-value={t[k]}>
+                    <div key={k} className="rounded-[22px] bg-white p-4 ring-1 ring-slate-200" style={{ animation: `rb-pop .4s ${0.6 + i * 0.1}s both` }} data-testid={`total-${k}`} data-value={t[k]}>
                       <span className="block h-1.5 w-8 rounded-full" style={{ background: KIND_COLOR[k] }} />
                       <p className="mt-3 text-sm text-slate-500">{k === "eave" ? "Gutters" : k === "apron" ? "Aprons" : `${k[0].toUpperCase()}${k.slice(1)}s`}</p>
                       <p className="font-display text-2xl font-bold tabular-nums text-ink">{fmt(t[k])} m</p>
@@ -471,7 +471,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                       onChange={(e) => setDownpipes(Math.max(0, Math.round(Number(e.target.value) || 0)))}
                       className="min-h-11 w-20 rounded-xl px-2 text-right text-base font-semibold tabular-nums ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500" />
                   </div>
-                  <div className="border-t border-slate-100 pt-3" data-testid="scale-card">
+                  <div className="border-t-2 border-dashed border-slate-200 pt-3" data-testid="scale-card">
                     <p className="text-sm font-semibold text-slate-600">Scale <span className="font-bold text-ink" data-testid="scale-text">{scaleText}</span>
                       <span className="ml-1 text-xs font-normal text-slate-400">{scaleSource === "label" ? "(written on the sheet)" : scaleSource === "dimensions" ? "(from the dimensions)" : scaleSource === "other_sheet" ? "(from the floor plan)" : scaleSource === "checked" ? "(you checked it)" : "(usual for plans)"}</span>
                     </p>
@@ -487,13 +487,13 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                         </div>
                       </div>
                     ) : (
-                      <button type="button" onClick={() => { setTab("all"); setTool("measure"); }} className="mt-2 text-sm font-semibold text-brand-600 hover:underline" data-testid="check-dimension">
+                      <button type="button" onClick={() => { setTab("all"); setTool("measure"); }} className="mt-2 font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 hover:underline" data-testid="check-dimension">
                         Check one dimension: tap a line and type its real length
                       </button>
                     ))}
                   </div>
                   {(detected.length > 1 || pageCount > 1) && pages.length > 0 && (
-                    <div className="border-t border-slate-100 pt-3">
+                    <div className="border-t-2 border-dashed border-slate-200 pt-3">
                       <label htmlFor="sheet" className="text-sm font-semibold text-slate-600">Wrong sheet?</label>
                       <select id="sheet" value={pageIdx} onChange={(e) => void choosePage(Number(e.target.value))} className="mt-1 block min-h-11 w-full rounded-xl px-3 text-sm ring-1 ring-slate-300" data-testid="sheet-select">
                         {pages.map((p) => <option key={p.index} value={p.index}>{sheetNo(p.index)}{sheetTitle(p) ? ` · ${sheetTitle(p).toLowerCase()}` : ""}{detected.find((d) => d.page === p.index)?.candidate ? ` · ${detected.find((d) => d.page === p.index)!.candidate!.faces} panels` : ""}</option>)}
@@ -501,7 +501,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                     </div>
                   )}
                   {saved && !readOnly && pages.length === 0 && (
-                    <button type="button" onClick={() => setStep("drop")} className="border-t border-slate-100 pt-3 text-sm font-semibold text-brand-600 hover:underline">Upload new plans</button>
+                    <button type="button" onClick={() => setStep("drop")} className="border-t-2 border-dashed border-slate-200 pt-3 font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 hover:underline">Upload new plans</button>
                   )}
                 </div>
                 <button type="button" onClick={() => { setStep("sheets"); setBump((b) => b + 1); setTool("type"); setDraft(null); setSelected(null); }} disabled={!analysis.faces.length}
@@ -553,7 +553,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                         {sheetPlan.cutList.map((r) => <li key={r.lengthMm}><b>{r.qty}</b> × {(r.lengthMm / 1000).toFixed(2)} m</li>)}
                       </ul>
                     </div>
-                    <div className="border-t border-slate-100 pt-3">
+                    <div className="border-t-2 border-dashed border-slate-200 pt-3">
                       <p className="mb-1 font-semibold text-slate-600">Flashings (300 mm per run, 100 mm laps, 8 m lengths)</p>
                       <ul className="space-y-1 text-slate-700">
                         {flashings.lines.map((l) => (
@@ -564,7 +564,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                       </ul>
                     </div>
                     {!readOnly && step === "sheets" && (
-                      <label className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3 text-slate-600">
+                      <label className="flex items-center justify-between gap-3 border-t-2 border-dashed border-slate-200 pt-3 text-slate-600">
                         Sheet overhang into the gutter
                         <span className="flex items-center gap-1"><input type="number" min={0} max={300} value={overhang} onChange={(e) => setOverhang(Math.max(0, Math.min(300, Number(e.target.value) || 0)))} className="min-h-11 w-20 rounded-xl px-2 text-right ring-1 ring-slate-300" /> mm</span>
                       </label>
@@ -572,7 +572,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                   </div>
                 </details>
                 {step === "sheets" && (readOnly ? (
-                  <button type="button" onClick={() => setStep("roof")} className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-white text-lg font-semibold text-ink ring-1 ring-slate-300">← Back to the roof</button>
+                  <button type="button" onClick={() => setStep("roof")} className="flex min-h-14 w-full items-center justify-center rounded-[22px] bg-white text-lg font-semibold text-ink ring-1 ring-slate-300">← Back to the roof</button>
                 ) : (
                   <>
                     <button type="button" onClick={() => void addToQuote()} disabled={saving} className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-brand-500 text-lg font-semibold text-white transition hover:scale-[1.02] disabled:opacity-60" data-testid="add-to-quote">
@@ -675,7 +675,7 @@ function DetailsStep({ details, setDetails, apply, setApply, current, aiNote, on
         {found === 0 ? (
           <p className="mt-6 rounded-2xl bg-slate-50 px-4 py-6 text-center text-slate-600">No title block details found on these plans. You can still measure the roof.</p>
         ) : (
-          <ul className="mt-6 divide-y divide-slate-100">
+          <ul className="mt-6 divide-y-2 divide-dashed divide-slate-200">
             {rows.map((r) => {
               const vk = valueKey(r);
               const d = details.find((x) => x.key === vk)!;

@@ -46,7 +46,7 @@ export function QuotingPanel({ d, previewHref, remindHref }: { d: Docket; previe
         <div className="px-5 pb-4" data-quote-sent>
           <div className="flex items-end justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Quote {q.number}{sent.title ? ` · ${sent.title}` : ""}</p>
+              <p className="truncate font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">Quote {q.number}{sent.title ? ` · ${sent.title}` : ""}</p>
               <p className="font-display text-[34px] font-bold leading-none tracking-tight text-ink" data-quote-total>{aud(q.total)}</p>
             </div>
             <span className="flex shrink-0 gap-1.5">
@@ -64,7 +64,7 @@ export function QuotingPanel({ d, previewHref, remindHref }: { d: Docket; previe
             <Stamp label="Signed" value="—" on={false} />
           </div>
           <div className="mt-4 flex gap-2">
-            {tel ? <a href={`tel:${tel}`} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-brand-500 font-semibold text-white hover:bg-brand-600" data-call><Icon d={PHONE} />Call</a>
+            {tel ? <a href={`tel:${tel}`} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-ink font-semibold text-white hover:bg-ink/90" data-call><Icon d={PHONE} />Call</a>
               : <span className="flex min-h-12 flex-1 items-center justify-center rounded-xl bg-slate-100 text-sm font-semibold text-slate-400">No number</span>}
             <Link href={remindHref} scroll={false} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl font-semibold text-ink ring-1 ring-slate-300 hover:bg-slate-50" data-remind><Icon d={BELL} />Remind</Link>
           </div>
@@ -79,8 +79,8 @@ export function QuotingPanel({ d, previewHref, remindHref }: { d: Docket; previe
       <JobDocuments jobId={d.job.id} docs={d.docs} />
 
       {sent && q && (
-        <div className="border-t border-slate-100 px-5 py-4" data-heard-back>
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Heard back another way?</p>
+        <div className="border-t-2 border-dashed border-slate-200 px-5 py-4" data-heard-back>
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">Heard back another way?</p>
           <div className="mt-2 grid grid-cols-2 gap-2">
             <ActionForm action={settleQuote}><input type="hidden" name="id" value={q.id} /><input type="hidden" name="status" value="accepted" />
               <SubmitButton variant="secondary" className="min-h-11 w-full gap-2" confirm={`Mark quote #${q.number} as signed on paper? ${first}'s job moves to Signed & Prepping.`}><Icon d={PEN} />Signed on paper</SubmitButton></ActionForm>
@@ -113,11 +113,11 @@ function GettingToQuote({ d, previewHref }: { d: Docket; previewHref: string }) 
   const ready = steps[0].done && steps[1].done;
   return (
     <div className="px-5 pb-4" data-getting-to-quote>
-      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Getting to a quote</p>
+      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">Getting to a quote</p>
       <p className="font-display text-[26px] font-bold leading-tight text-ink">{draft ? "Quote's drafted" : ready ? "Ready to write the quote" : `${steps.filter((s) => s.done).length} of 3 done`}</p>
       <ol className="mt-3 overflow-hidden rounded-xl ring-1 ring-slate-200">
         {steps.map((s, n) => (
-          <li key={s.k} className={cx("flex items-center gap-3 px-3.5 py-3", n > 0 && "border-t border-slate-100", n === nowIx && "bg-brand-50")} data-quote-step={s.k} data-done={s.done ? "1" : "0"}>
+          <li key={s.k} className={cx("flex items-center gap-3 px-3.5 py-3", n > 0 && "border-t-2 border-dashed border-slate-200", n === nowIx && "bg-brand-50")} data-quote-step={s.k} data-done={s.done ? "1" : "0"}>
             <span className={cx("grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold", s.done ? "bg-brand-500 text-white" : n === nowIx ? "bg-white text-brand-700 ring-2 ring-brand-500" : "bg-white text-slate-400 ring-1 ring-slate-200")}>{s.done ? <Icon d={CHECK} className="h-3.5 w-3.5" /> : n + 1}</span>
             <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-ink">{s.label}</span><span className="block text-xs text-slate-500">{s.detail}</span></span>
             {s.href && <Link href={s.href} className="text-xs font-semibold text-brand-700">{s.done ? "View" : "Open"}</Link>}
@@ -136,7 +136,7 @@ function GettingToQuote({ d, previewHref }: { d: Docket; previewHref: string }) 
       ) : (
         <form action={createEstimate} className="mt-3">
           <input type="hidden" name="job_id" value={d.job.id} />
-          <button className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-500 font-semibold text-white hover:bg-brand-600" data-write-quote><Icon d={QUOTE} />Write the quote</button>
+          <button className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-ink font-semibold text-white hover:bg-ink/90" data-write-quote><Icon d={QUOTE} />Write the quote</button>
           <p className="mt-2 text-xs text-slate-500">Measure from plans, satellite or by hand, price it from your price book, then send it from here.</p>
         </form>
       )}

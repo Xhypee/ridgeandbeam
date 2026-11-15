@@ -296,7 +296,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
           <div className="mb-4 flex flex-wrap gap-2">
             <Link
               href={`/app/measure/${id}/plans`}
-              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-ink px-4 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90"
               onClick={(e) => { if (dirty && !window.confirm("You have unsaved changes. Leave without saving?")) e.preventDefault(); }}
               data-testid="measure-from-plans"
             >
@@ -354,7 +354,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
                 const sys = sectionSystem(s);
                 const isMetal = sys === "metal";
                 return (
-                  <div key={i} className="mb-3 border-b border-slate-100 pb-3 lg:mb-2 lg:border-0 lg:pb-0" data-testid="section-row">
+                  <div key={i} className="mb-3 border-b-2 border-dashed border-slate-200 pb-3 lg:mb-2 lg:border-0 lg:pb-0" data-testid="section-row">
                     <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-4 lg:grid-cols-[minmax(7rem,1fr)_5.5rem_5rem_9.5rem_9rem_4.5rem_4.5rem_4.5rem_5rem_2rem]">
                       <Cell label="Roof section" className="col-span-2 sm:col-span-4 lg:col-span-1"><Input value={s.label} onChange={(e) => setSection(i, { label: e.target.value })} aria-label="Section name" /></Cell>
                       <Cell label="Plan area m²"><Input type="number" min="0" step="0.1" inputMode="decimal" value={s.area || ""} onChange={(e) => setSection(i, { area: n(e.target.value) })} aria-label="Plan area m²" placeholder="m²" /></Cell>
@@ -465,7 +465,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
             <p className="mb-1 text-sm font-semibold text-slate-800">Sheet cut list</p>
             <table className="w-full min-w-[30rem] text-sm">
               <thead><tr className="text-left text-xs text-slate-500"><th className="py-1 font-medium">Section</th><th className="py-1 font-medium">Profile</th><th className="py-1 font-medium">Cut</th><th className="py-1 text-right font-medium">Lineal m</th><th className="py-1 text-right font-medium">Screws</th></tr></thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y-2 divide-dashed divide-slate-200">
                 {cuts.map((c, i) => (
                   <tr key={i}>
                     <td className="py-1.5">{c.section}</td>
@@ -594,7 +594,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[560px] text-sm">
               <thead><tr className="text-left text-xs text-slate-500"><th className="py-1 font-medium">{word}</th><th className="py-1 text-right font-medium">Total{taxRate > 0 ? " inc GST" : ""}</th>{taxRate > 0 && <th className="py-1 text-right font-medium">GST</th>}{financing.enabled && <th className="py-1 text-right font-medium">Monthly</th>}<th className="py-1 text-right font-medium">Cost ex GST</th><th className="py-1 text-right font-medium">Gross profit</th><th className="py-1 text-right font-medium">Margin</th></tr></thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y-2 divide-dashed divide-slate-200">
                 {perOption.map(({ o, t, mg, monthly }) => (
                   <tr key={o.key} data-testid="option-total">
                     <td className="py-2 font-medium">{o.name} {o.recommended && <Badge tone="teal">Recommended</Badge>}</td>

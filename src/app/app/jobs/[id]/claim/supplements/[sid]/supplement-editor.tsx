@@ -130,7 +130,7 @@ export function SupplementEditor({ id, locked, initial, notes: initialNotes, pho
         <Textarea value={notes} disabled={locked} onChange={(e) => { setNotes(e.target.value); touch(); }} />
       </Field>
       {!locked && (
-        <div className="sticky bottom-0 -mx-4 mt-4 flex items-center gap-3 border-t border-slate-100 bg-white/95 px-4 py-3">
+        <div className="sticky bottom-0 -mx-4 mt-4 flex items-center gap-3 border-t-2 border-dashed border-slate-200 bg-white/95 px-4 py-3">
           <Button type="button" onClick={save} disabled={pending} className="min-h-11">{pending ? "Saving…" : "Save variation request"}</Button>
           {dirty && <span className="text-xs text-amber-700">Unsaved changes</span>}
           {msg?.error && <span role="alert" className="text-sm text-red-700">{msg.error}</span>}

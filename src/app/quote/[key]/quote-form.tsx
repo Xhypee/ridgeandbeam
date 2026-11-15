@@ -27,7 +27,7 @@ function PitchIcon({ deg }: { deg: number }) {
 function Submit() {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" disabled={pending} className="min-h-12 w-full rounded-xl bg-brand-500 px-6 text-base font-semibold text-white hover:bg-brand-600 disabled:opacity-60">
+    <button type="submit" disabled={pending} className="min-h-12 w-full rounded-xl bg-ink px-6 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90 disabled:opacity-60">
       {pending ? "Sending…" : "Get my price"}
     </button>
   );
@@ -61,7 +61,7 @@ export function QuoteForm({ intakeKey, orgName, rates, phone, defaultState }: { 
 
   if (state?.ok) {
     return (
-      <div className="rounded-2xl bg-white p-6 text-center ring-1 ring-slate-200" data-testid="quote-done">
+      <div className="rounded-[22px] bg-white p-6 text-center ring-1 ring-slate-200" data-testid="quote-done">
         {state.high ? (
           <>
             <p className="text-sm font-medium uppercase tracking-wide text-brand-600">Your estimated range</p>

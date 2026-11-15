@@ -75,7 +75,7 @@ const triText = (t: Tri, yes = "Required", no = "Not required") => (t === true ?
 
 function Row({ label, badge, children }: { label: string; badge?: ReactNode; children: ReactNode }) {
   return (
-    <div className="grid gap-1 border-t border-slate-100 py-3 first:border-t-0 @2xl:grid-cols-[11rem_1fr] @2xl:gap-4">
+    <div className="grid gap-1 border-t-2 border-dashed border-slate-200 py-3 first:border-t-0 @2xl:grid-cols-[11rem_1fr] @2xl:gap-4">
       <div className="text-[13px] font-semibold text-slate-500">{label}</div>
       <div className="min-w-0 text-sm text-slate-700">
         {badge && <div className="mb-1">{badge}</div>}
@@ -109,8 +109,8 @@ function SourceNote({ source }: { source?: StateComplianceProps["source"] }) {
 function ReferenceView({ props }: { props: StateComplianceProps }) {
   const ref = stateReference(props.state!, props.contractDate ?? new Date());
   return (
-    <section data-testid="state-compliance-panel" data-state-compliance={ref.state} data-mode="reference" aria-label={`${ref.stateName} rules`} className={cx("@container rounded-2xl bg-white ring-1 ring-slate-200", props.className)}>
-      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
+    <section data-testid="state-compliance-panel" data-state-compliance={ref.state} data-mode="reference" aria-label={`${ref.stateName} rules`} className={cx("@container rounded-[22px] bg-white ring-1 ring-slate-200", props.className)}>
+      <header className="flex flex-wrap items-start justify-between gap-3 border-b-2 border-dashed border-slate-200 px-5 py-3.5">
         <div className="min-w-0">
           <h2 className="text-[15px] font-bold text-ink"><span data-testid="compliance-state">{ref.stateName}</span> rules</h2>
           <p className="mt-0.5 text-xs text-slate-500">Add a price to see exactly what applies to this job.</p>
@@ -122,8 +122,8 @@ function ReferenceView({ props }: { props: StateComplianceProps }) {
         {ref.rows.slice(0, props.compact ? 6 : undefined).map((row) => (
           <Row key={row.topic} label={row.topic}><p>{row.text}</p><Sources src={row.src} /></Row>
         ))}
-        {ref.changes.map((c) => <p key={c} className="border-t border-slate-100 py-3 text-sm font-semibold text-amber-800">Coming change: {c}</p>)}
-        <p className="border-t border-slate-100 py-3 text-xs text-slate-500">Rules last verified {formatAuDate(ref.verifiedOn)}. {ref.disclaimer}</p>
+        {ref.changes.map((c) => <p key={c} className="border-t-2 border-dashed border-slate-200 py-3 text-sm font-semibold text-amber-800">Coming change: {c}</p>)}
+        <p className="border-t-2 border-dashed border-slate-200 py-3 text-xs text-slate-500">Rules last verified {formatAuDate(ref.verifiedOn)}. {ref.disclaimer}</p>
       </div>
     </section>
   );
@@ -134,7 +134,7 @@ export function StateCompliancePanel(props: StateComplianceProps) {
   if (!rules && asAuState(props.state)) return <ReferenceView props={props} />;
   if (!rules) {
     return (
-      <section data-testid="state-compliance-panel" data-state-compliance className={cx("rounded-2xl bg-white p-5 ring-1 ring-slate-200", props.className)}>
+      <section data-testid="state-compliance-panel" data-state-compliance className={cx("rounded-[22px] bg-white p-5 ring-1 ring-slate-200", props.className)}>
         <h2 className="text-[15px] font-bold text-ink">State rules</h2>
         <p className="mt-1 text-sm text-slate-600">Set the job&apos;s state (NSW, VIC, QLD, WA, SA, TAS, ACT or NT) to see the licence, contract, deposit, cooling-off and insurance rules that apply.</p>
       </section>
@@ -148,8 +148,8 @@ export function StateCompliancePanel(props: StateComplianceProps) {
   const whereLicence = [...r.licence.showOn.map((s) => SHOW_ON_LABEL[s]), ...r.licence.showOnRecommended.map((s) => `${SHOW_ON_LABEL[s]} (recommended)`)];
 
   return (
-    <section data-testid="state-compliance-panel" data-state-compliance={r.state} aria-label={`${r.stateName} rules`} className={cx("@container rounded-2xl bg-white ring-1 ring-slate-200", props.className)}>
-      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
+    <section data-testid="state-compliance-panel" data-state-compliance={r.state} aria-label={`${r.stateName} rules`} className={cx("@container rounded-[22px] bg-white ring-1 ring-slate-200", props.className)}>
+      <header className="flex flex-wrap items-start justify-between gap-3 border-b-2 border-dashed border-slate-200 px-5 py-3.5">
         <div className="min-w-0">
           <h2 className="text-[15px] font-bold text-ink">What applies in <span data-testid="compliance-state">{r.stateName}</span></h2>
           <p className="mt-0.5 text-xs text-slate-500">{r.regime} · contract date {formatAuDate(r.contractDate)} · {$(Number(props.contractValueIncGst))} incl. GST</p>
@@ -279,14 +279,14 @@ export function StateCompliancePanel(props: StateComplianceProps) {
         )}
 
         {!props.compact && (
-          <details className="border-t border-slate-100 py-3">
+          <details className="border-t-2 border-dashed border-slate-200 py-3">
             <summary className="inline-flex min-h-9 cursor-pointer items-center text-sm font-semibold text-brand-700">All sources ({r.sources.length})</summary>
             <ul className="mt-1 space-y-0.5 text-xs">
               {r.sources.map((s) => <li key={s.url}><a href={s.url} target="_blank" rel="noreferrer" className="break-words text-brand-700 underline underline-offset-2">{s.label}</a></li>)}
             </ul>
           </details>
         )}
-        <p className="border-t border-slate-100 py-3 text-xs text-slate-500">
+        <p className="border-t-2 border-dashed border-slate-200 py-3 text-xs text-slate-500">
           Rules last verified {formatAuDate(r.verifiedOn)}. {r.disclaimer} If something looks wrong, check with {r.regulator.name}.
         </p>
       </div>
@@ -394,14 +394,14 @@ export function StateCompliancePanel(props: StateComplianceProps) {
         )}
 
         {!props.compact && (
-          <details className="border-t border-slate-100 py-3">
+          <details className="border-t-2 border-dashed border-slate-200 py-3">
             <summary className="inline-flex min-h-9 cursor-pointer items-center text-sm font-semibold text-brand-700">All sources ({r.sources.length})</summary>
             <ul className="mt-1 space-y-0.5 text-xs">
               {r.sources.map((s) => <li key={s.url}><a href={s.url} target="_blank" rel="noreferrer" className="break-words text-brand-700 underline underline-offset-2">{s.label}</a></li>)}
             </ul>
           </details>
         )}
-        <p className="border-t border-slate-100 py-3 text-xs text-slate-500">
+        <p className="border-t-2 border-dashed border-slate-200 py-3 text-xs text-slate-500">
           Rules last verified {formatAuDate(r.verifiedOn)}. {r.disclaimer} If something looks wrong, check with {r.regulator.name}.
         </p>
       </div>

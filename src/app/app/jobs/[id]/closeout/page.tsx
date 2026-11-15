@@ -113,7 +113,7 @@ export default async function CloseoutPage({ params }: PageProps<"/app/jobs/[id]
 
         <Card title="Final invoice">
           {!hasInvoices ? <p className="text-sm text-slate-500">No invoices on this job yet.</p> : (
-            <ul className="divide-y divide-slate-100 text-sm">
+            <ul className="divide-y-2 divide-dashed divide-slate-200 text-sm">
               {blockers.invoices.map((v) => (
                 <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                   {canSeeMoney ? <Link href={`/app/invoices/${v.id}`} className="font-medium hover:text-brand-600">{v.milestone_label || label(v.kind)} #{v.number}</Link> : <span>{v.milestone_label || label(v.kind)} #{v.number}</span>}

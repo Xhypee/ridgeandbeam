@@ -87,7 +87,7 @@ export default async function SupplierPage({ params, searchParams }: PageProps<"
 
         <Card title="Price list versions" className="min-w-0 lg:col-span-2">
           {versions.length === 0 ? <p className="text-sm text-slate-500">No price sheet imported yet.</p> : (
-            <ul className="divide-y divide-slate-100" data-testid="versions">
+            <ul className="divide-y-2 divide-dashed divide-slate-200" data-testid="versions">
               {versions.map((l) => (
                 <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
                   <span className="min-w-0">
@@ -136,7 +136,7 @@ export default async function SupplierPage({ params, searchParams }: PageProps<"
               <thead className="bg-slate-50 text-left text-xs text-slate-500">
                 <tr><th className="px-3 py-2">Code</th><th className="px-3 py-2">Description</th><th className="px-3 py-2">Unit</th><th className="px-3 py-2 text-right">Cost ex GST</th><th className="px-3 py-2">Estimating item</th></tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y-2 divide-dashed divide-slate-200">
                 {rows.map((i) => (
                   <tr key={i.id} className={cx(!i.calc_key && "bg-amber-50/60")}>
                     <td className="px-3 py-2 text-xs text-slate-500">{i.product_code}</td>

@@ -112,7 +112,7 @@ export default async function ScopePage({ params }: PageProps<"/app/jobs/[id]/cl
                   <th className={`${th} text-right`}>Gap</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100" data-testid="diff">
+              <tbody className="divide-y-2 divide-dashed divide-slate-200" data-testid="diff">
                 {rows.map((r, i) => (
                   <tr key={i} data-status={r.status} className={r.flag ? "bg-red-50/40" : undefined}>
                     <td className={td}><Badge tone={STATUS[r.status].tone}>{STATUS[r.status].label}</Badge></td>

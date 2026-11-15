@@ -61,7 +61,7 @@ export default async function ClaimMoneyPage({ params }: PageProps<"/app/jobs/[i
         <p className="text-sm text-slate-600">Every dollar you expect, who pays it, and what is still missing. {SETTLEMENT_SHORT[claim.settlement_path]}.</p>
       </div>
 
-      <section className="rounded-2xl bg-white p-5 ring-1 ring-slate-200" data-testid="claim-money-summary">
+      <section className="rounded-[22px] bg-white p-5 ring-1 ring-slate-200" data-testid="claim-money-summary">
         <dl className="flex flex-wrap gap-x-10 gap-y-3">
           <div><dt className="text-sm text-slate-500">Expected</dt><dd className="font-display text-3xl font-semibold tabular-nums text-ink">{money(totals.expected)}</dd></div>
           <div><dt className="text-sm text-slate-500">Received</dt><dd className="font-display text-3xl font-semibold tabular-nums text-green-700">{money(totals.received)}</dd></div>
@@ -95,7 +95,7 @@ export default async function ClaimMoneyPage({ params }: PageProps<"/app/jobs/[i
             No expected payments yet. Set the settlement path, approved amount and excess on the Overview, then press &ldquo;Work out expected payments&rdquo;.
           </p>
         ) : (
-          <ul className="divide-y divide-slate-100 rounded-2xl bg-white ring-1 ring-slate-200" data-testid="ledger">
+          <ul className="divide-y-2 divide-dashed divide-slate-200 rounded-[22px] bg-white ring-1 ring-slate-200" data-testid="ledger">
             {checks.map((c) => {
               const g = payerGroup(c);
               const owed = Math.max(0, Number(c.expected_amount) - Number(c.received_amount));
@@ -191,7 +191,7 @@ export default async function ClaimMoneyPage({ params }: PageProps<"/app/jobs/[i
         {docs.length > 0 && (
           <details className="mt-3">
             <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-medium text-brand-700">Link files to paperwork</summary>
-            <ul className="mt-2 divide-y divide-slate-100 rounded-2xl bg-white ring-1 ring-slate-200">
+            <ul className="mt-2 divide-y-2 divide-dashed divide-slate-200 rounded-[22px] bg-white ring-1 ring-slate-200">
               {docs.map((d) => (
                 <li key={d.id} className="p-3">
                   <KeepForm action={updateDocument} className="grid items-end gap-2 sm:grid-cols-[minmax(0,1.3fr)_8rem_minmax(0,1.3fr)_auto]">

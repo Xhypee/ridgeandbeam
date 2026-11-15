@@ -78,7 +78,7 @@ export function FullCalendar({ people, staff: staff0, day: day0, time, today, tz
         {/* Header: who, week/month, navigation */}
         <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 px-5 py-3.5">
           <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Book {leadName}&rsquo;s inspection</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">Book {leadName}&rsquo;s inspection</p>
             <p className="font-display text-xl font-bold text-ink">{first}&rsquo;s calendar</p>
           </div>
           <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Staff">
@@ -117,9 +117,9 @@ export function FullCalendar({ people, staff: staff0, day: day0, time, today, tz
                     );
                   })}
                   {/* All-day: builds */}
-                  <span className="border-t border-slate-100 py-1 pr-1 text-right text-[10px] text-slate-400">All day</span>
+                  <span className="border-t-2 border-dashed border-slate-200 py-1 pr-1 text-right text-[10px] text-slate-400">All day</span>
                   {week.map((d) => (
-                    <div key={d} className="min-h-8 space-y-0.5 border-l border-t border-slate-100 p-0.5">
+                    <div key={d} className="min-h-8 space-y-0.5 border-l border-t-2 border-dashed border-slate-200 p-0.5">
                       {(byDay.get(d) ?? []).filter((i) => i.kind === "build").map((b, k) => (
                         <Link key={k} href={b.jobId ? `/app/jobs?job=${b.jobId}` : "#"} title={b.label} className="block truncate rounded-md bg-violet-100 px-1.5 py-1 text-[11px] font-semibold text-violet-800 hover:bg-violet-200">{b.label.replace(/^Build · /, "")}</Link>
                       ))}
@@ -176,7 +176,7 @@ export function FullCalendar({ people, staff: staff0, day: day0, time, today, tz
 
           {/* Projects this staff member is on */}
           <aside className="no-scrollbar hidden w-[300px] shrink-0 overflow-y-auto border-l border-slate-200 bg-slate-50/60 p-4 md:block" data-staff-projects>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{first}&rsquo;s projects</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">{first}&rsquo;s projects</p>
             <p className="mb-3 font-display text-lg font-bold text-ink">{list ? `On ${list.length} ${list.length === 1 ? "job" : "jobs"}` : "Loading…"}</p>
             <ul className="space-y-2">
               {(list ?? []).map((pj) => (

@@ -48,7 +48,7 @@ export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: st
       <JobNotes d={d} leadNote={lead.message ? { by: sourceLabel, at: lead.receivedAt, body: lead.message } : null} />
       <JobDocuments jobId={d.job.id} docs={lead.docs} />
 
-      <div className="border-t border-slate-100 px-5 py-4" data-send-quote>
+      <div className="border-t-2 border-dashed border-slate-200 px-5 py-4" data-send-quote>
         {q ? (
           <>
             <ActionForm action={sendQuoteEmail}>
@@ -66,7 +66,7 @@ export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: st
         ) : (
           <form action={createEstimate}>
             <input type="hidden" name="job_id" value={d.job.id} />
-            <button className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-500 font-semibold text-white hover:bg-brand-600"><Icon d="M12 5v14M5 12h14" />Start a quote</button>
+            <button className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-ink font-semibold text-white hover:bg-ink/90"><Icon d="M12 5v14M5 12h14" />Start a quote</button>
             <p className="mt-2 text-xs text-slate-500">No inspection needed? Measure from plans or satellite, then send it from here.</p>
           </form>
         )}

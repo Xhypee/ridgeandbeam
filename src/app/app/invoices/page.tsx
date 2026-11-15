@@ -49,7 +49,7 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/app/inv
       ) : (
         <Table>
           <thead className="bg-slate-50"><tr><th className={th}>#</th><th className={th}>Customer / job</th><th className={th}>Issued</th><th className={th}>Due</th><th className={th}>Status</th><th className={`${th} text-right`}>Total</th><th className={`${th} text-right`}>Balance</th></tr></thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y-2 divide-dashed divide-slate-200">
             {rows.map((r) => {
               const overdue = r.due_date && r.due_date < today && ["sent", "partial"].includes(r.status);
               return (

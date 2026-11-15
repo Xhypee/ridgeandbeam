@@ -86,7 +86,7 @@ function Shell({ id, tag, sinceIso, name, sub, stats, closeHref, phone, email, c
             </dl>}
           </div>
           <div className="flex gap-2 px-5 py-4">
-            {phone ? <a href={tel(phone)} className={cx(btn, "bg-brand-500 text-white hover:bg-brand-600")}><Icon d={PHONE} />Call</a> : <span className={cx(btn, "bg-slate-100 text-slate-400")}><Icon d={PHONE} />No number</span>}
+            {phone ? <a href={tel(phone)} className={cx(btn, "bg-ink text-white hover:bg-ink/90")}><Icon d={PHONE} />Call</a> : <span className={cx(btn, "bg-slate-100 text-slate-400")}><Icon d={PHONE} />No number</span>}
             {phone && <a href={`sms:${phone.replace(/\s+/g, "")}`} className={cx(btn, "bg-white text-ink ring-1 ring-slate-300 hover:bg-slate-50")}><Icon d={SMS} />Text</a>}
             {email && <a href={`mailto:${email}`} className={cx(btn, "bg-white text-ink ring-1 ring-slate-300 hover:bg-slate-50")}><Icon d={MAIL} />Email</a>}
           </div>
@@ -100,7 +100,7 @@ function Shell({ id, tag, sinceIso, name, sub, stats, closeHref, phone, email, c
 
 function EditDetails({ children }: { children: React.ReactNode }) {
   return (
-    <details className="group border-t border-slate-100" data-contact-edit>
+    <details className="group border-t-2 border-dashed border-slate-200" data-contact-edit>
       <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-5 [&::-webkit-details-marker]:hidden">
         <span className="font-semibold text-ink">Edit details</span>
         <Icon d="M6 9l6 6 6-6" className="ml-auto h-4 w-4 text-slate-400 transition-transform group-open:rotate-180" />
@@ -118,7 +118,7 @@ function JobList({ d, canSeeMoney, newHref, newLabel }: { d: ContactDocketData; 
   return (
     <Section title="Jobs" count={d.jobs.length}>
       {d.jobs.length === 0 ? <p className="text-sm text-slate-500">No jobs yet.</p> : (
-        <ul className="-mx-2 divide-y divide-slate-100" data-contact-jobs>
+        <ul className="-mx-2 divide-y-2 divide-dashed divide-slate-200" data-contact-jobs>
           {d.jobs.map((j) => (
             <li key={j.id}>
               <Link href={`/app/jobs?job=${j.id}`} className="flex items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-slate-50">
@@ -133,7 +133,7 @@ function JobList({ d, canSeeMoney, newHref, newLabel }: { d: ContactDocketData; 
           ))}
         </ul>
       )}
-      <Link href={newHref} className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700">{newLabel}</Link>
+      <Link href={newHref} className="mt-2 inline-flex min-h-11 items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 hover:text-brand-700">{newLabel}</Link>
     </Section>
   );
 }
@@ -147,7 +147,7 @@ function BuilderDocket({ d, closeHref, canSeeMoney }: { d: ContactDocketData; cl
       closeHref={closeHref} phone={c.phone ?? d.people.find((p) => p.phone)?.phone ?? null} email={c.email ?? d.people.find((p) => p.email)?.email ?? null}>
       <Section title="People" count={d.people.length}>
         {d.people.length > 0 && (
-          <ul className="-mx-2 divide-y divide-slate-100" data-contact-people>
+          <ul className="-mx-2 divide-y-2 divide-dashed divide-slate-200" data-contact-people>
             {d.people.map((p) => (
               <li key={p.id} className="flex items-center gap-3 px-2 py-2.5">
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber-100 text-xs font-bold text-amber-800">{initials(p.name)}</span>
@@ -160,7 +160,7 @@ function BuilderDocket({ d, closeHref, canSeeMoney }: { d: ContactDocketData; cl
           </ul>
         )}
         <details className="mt-1" data-add-person>
-          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center text-sm font-semibold text-brand-600 hover:text-brand-700 [&::-webkit-details-marker]:hidden">+ Add a person</summary>
+          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 hover:text-brand-700 [&::-webkit-details-marker]:hidden">+ Add a person</summary>
           <ActionForm action={addPerson} className="mt-1 grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-3">
             <input type="hidden" name="contact_id" value={c.id} />
             <Input name="name" placeholder="Name" required aria-label="Name" />
@@ -223,7 +223,7 @@ function ContractorDocket({ d, closeHref, today, canSeeMoney }: { d: ContactDock
       </Section>
       <Section title="Jobs" count={d.onJobs.length}>
         {d.onJobs.length > 0 && (
-          <ul className="-mx-2 divide-y divide-slate-100" data-contact-onjobs>
+          <ul className="-mx-2 divide-y-2 divide-dashed divide-slate-200" data-contact-onjobs>
             {d.onJobs.map((j) => (
               <li key={j.job_id} className="flex items-center gap-2">
                 <Link href={`/app/jobs?job=${j.job_id}`} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-slate-50">
@@ -337,7 +337,7 @@ export function SupplierDocket({ d, closeHref, canSeeMoney, canEdit }: { d: Supp
       </Section>
       <Section title="Orders" count={d.orderCount}>
         {d.orders.length === 0 ? <p className="text-sm text-slate-500">No orders yet. Order from a job&apos;s materials list.</p> : (
-          <ul className="-mx-2 divide-y divide-slate-100" data-supplier-orders>
+          <ul className="-mx-2 divide-y-2 divide-dashed divide-slate-200" data-supplier-orders>
             {d.orders.map((o) => {
               const owe = o.invoiced && !o.paid_at;
               return (
@@ -359,13 +359,13 @@ export function SupplierDocket({ d, closeHref, canSeeMoney, canEdit }: { d: Supp
       {canSeeMoney && (
         <Section title="Price list">
           <p className="text-sm text-slate-600" data-price-list>{d.priceList ? <>Using <b className="text-ink">{d.priceList.name ?? "their price list"}</b>{d.priceList.effective_date ? ` · from ${dmy(d.priceList.effective_date)}` : ""}</> : "No price list yet. Quotes use the standard price guide."}</p>
-          <Link href={`/app/settings/suppliers/${s.id}/import`} className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-brand-600 hover:text-brand-700">{d.priceList ? "Upload a new price list" : "Upload their price list"}</Link>
+          <Link href={`/app/settings/suppliers/${s.id}/import`} className="mt-2 inline-flex min-h-11 items-center font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 hover:text-brand-700">{d.priceList ? "Upload a new price list" : "Upload their price list"}</Link>
         </Section>
       )}
       <ReferralsSection who={{ id: s.id, type: "supplier", name: s.name }} r={d} canSeeMoney={canSeeMoney} />
       <Notes notes={s.notes} />
       {canEdit && <EditDetails><EditSupplier s={s} /></EditDetails>}
-      <p className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">Suppliers you order from in Materials show up here automatically.</p>
+      <p className="border-t-2 border-dashed border-slate-200 px-5 py-3 text-xs text-slate-500">Suppliers you order from in Materials show up here automatically.</p>
     </Shell>
   );
 }

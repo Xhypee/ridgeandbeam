@@ -66,7 +66,7 @@ export function RainDay({ crews, defaultDate, riskyDates }: { crews: { id: strin
         )}
       </div>
       {rows && (rows.length === 0 ? <p className="mt-3 text-sm text-slate-500">Nothing scheduled on that day for this crew.</p> : (
-        <ul className="mt-3 divide-y divide-slate-100 text-sm" aria-label="Preview">
+        <ul className="mt-3 divide-y-2 divide-dashed divide-slate-200 text-sm" aria-label="Preview">
           {rows.map((r) => (
             <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
               <span className="min-w-0"><b>{r.customer}</b> · {r.title} <span className="text-slate-500">({r.crew ?? "No crew"}{r.reason === "cascade" ? ", knock-on" : ""}{r.locked ? ", will unlock" : ""})</span></span>

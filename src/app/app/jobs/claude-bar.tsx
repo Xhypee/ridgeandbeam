@@ -115,7 +115,7 @@ export function ClaudeBar({ jobId, contactId, supplierId, firstName, ready }: { 
       {open && (
         <div ref={log} className="max-h-[360px] space-y-3 overflow-y-auto px-4 pb-2 pt-4 text-sm" aria-live="polite">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Claude · knows your jobs</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">Claude · knows your jobs</p>
             <button type="button" onClick={() => { hangUp(); history.current = []; setTurns([]); }} className="text-xs font-semibold text-slate-500 hover:text-ink">Clear</button>
           </div>
           {turns.map((t, i) => t.role === "user" ? (

@@ -204,7 +204,7 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
       <div className="no-print mb-4 flex flex-wrap items-center gap-2 text-sm">
         {!locked && (
           <Link href={`/app/measure/${id}/plans`} onClick={guardLeave} data-testid={hasPlans ? "view-roof" : "measure-from-plans"}
-            className={cx("inline-flex min-h-11 items-center rounded-xl px-4 font-semibold", measured ? "text-ink ring-1 ring-slate-300 hover:bg-white" : "bg-brand-500 text-white hover:bg-brand-600")}>
+            className={cx("inline-flex min-h-11 items-center rounded-xl px-4 font-semibold", measured ? "text-ink ring-1 ring-slate-300 hover:bg-white" : "bg-ink text-white hover:bg-ink/90")}>
             {hasPlans ? "View the roof" : "Measure from plans"}
           </Link>
         )}
@@ -268,7 +268,7 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
             {measured ? (
               <>
                 <p className="text-slate-600">The roof is measured. Fill the docket with its lines from your price book.</p>
-                <button type="button" onClick={fill} className="mt-4 inline-flex min-h-12 items-center rounded-2xl bg-brand-500 px-6 font-semibold text-white hover:bg-brand-600" data-testid="docket-fill">
+                <button type="button" onClick={fill} className="mt-4 inline-flex min-h-12 items-center rounded-2xl bg-ink px-6 font-semibold text-white hover:bg-ink/90" data-testid="docket-fill">
                   Fill the docket from the measurements
                 </button>
               </>
@@ -303,7 +303,7 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
             note={status === "draft" ? <p className="mb-1 text-xs text-slate-400">Not in the total. The customer can add these on their quote link too.</p> : null} />
           {status === "draft" ? (
             <button type="button" onClick={send} disabled={sending || items.length === 0 || Boolean(problem)} data-testid="send-quote" title={problem ?? undefined}
-              className="no-print mt-6 flex min-h-14 w-full items-center justify-center rounded-2xl bg-brand-500 text-lg font-semibold text-white hover:bg-brand-600 disabled:opacity-50">
+              className="no-print mt-6 flex min-h-14 w-full items-center justify-center rounded-2xl bg-ink text-lg font-semibold text-white hover:bg-ink/90 disabled:opacity-50">
               {sending ? "Sending…" : problem ? "Set the sheet price to send" : "Send the quote →"}
             </button>
           ) : status === "sent" ? (

@@ -47,7 +47,7 @@ export default async function CustomerPage({ params }: PageProps<"/app/customers
             {(jobs ?? []).length === 0 ? (
               <p className="text-sm text-slate-500">No jobs yet.</p>
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y-2 divide-dashed divide-slate-200">
                 {(jobs as Job[]).map((j) => (
                   <li key={j.id} className="py-2">
                     <Link href={`/app/jobs/${j.id}`} className="flex items-center justify-between gap-2 hover:text-brand-600">
@@ -64,7 +64,7 @@ export default async function CustomerPage({ params }: PageProps<"/app/customers
             {claims.length === 0 ? (
               <p className="text-sm text-slate-500">No insurance claims. Start one from a job&apos;s Claim tab.</p>
             ) : (
-              <ul className="divide-y divide-slate-100" data-testid="customer-claims">
+              <ul className="divide-y-2 divide-dashed divide-slate-200" data-testid="customer-claims">
                 {claims.map(({ job, claim }) => {
                   const days = daysSince(claim.stage_changed_at);
                   const owed = balances.get(claim.id)?.outstanding ?? 0;

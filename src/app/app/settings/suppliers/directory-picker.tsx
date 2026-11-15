@@ -45,7 +45,7 @@ export function DirectoryPicker({ directory, serviceStates, addedIds }: { direct
         )}
       </div>
 
-      <ul className="max-h-[26rem] divide-y divide-slate-100 overflow-y-auto rounded-lg ring-1 ring-slate-200" data-testid="directory">
+      <ul className="max-h-[26rem] divide-y-2 divide-dashed divide-slate-200 overflow-y-auto rounded-lg ring-1 ring-slate-200" data-testid="directory">
         {list.map((s) => {
           const isAdded = added.has(s.id);
           return (

@@ -80,7 +80,7 @@ export function PlanEditor(p: EditorProps) {
       </div>
 
       {/* Parts */}
-      <div className="min-w-0 rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+      <div className="min-w-0 rounded-[22px] bg-white p-5 ring-1 ring-slate-200">
         <div className="flex h-3.5 overflow-hidden rounded-full bg-slate-100" aria-hidden>
           {parts.map((x, i) => <span key={i} className="border-r-2 border-white last:border-0" style={{ width: `${Math.max(0, (Number(x.amount) || 0) / (p.remaining || 1)) * 100}%`, background: COLOURS[i % COLOURS.length] }} />)}
         </div>
@@ -156,7 +156,7 @@ export function PlanEditor(p: EditorProps) {
         </label>
         <div className="rounded-xl bg-brand-50 p-3 text-xs text-brand-800"><p className="font-semibold">Each payment is its own tax invoice</p><p>Sent when it&apos;s due and marked paid when the money lands. Parts already paid stay as they are.</p></div>
         <button type="button" onClick={save} disabled={pending || diff !== 0 || overCap || parts.length === 0 || methods.length === 0} data-save-plan
-          className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-brand-500 px-4 text-base font-semibold text-white hover:bg-brand-600 disabled:opacity-50">
+          className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-ink px-4 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90 disabled:opacity-50">
           {pending ? "Saving…" : "Save plan and send what's due"}
         </button>
         {msg?.error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{msg.error}</p>}

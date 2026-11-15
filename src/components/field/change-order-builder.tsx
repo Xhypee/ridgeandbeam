@@ -79,14 +79,14 @@ export function ChangeOrderBuilder({ jobId, orgId, battens, photos }: {
   );
 
   return (
-    <div className="space-y-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+    <div className="space-y-4 rounded-[22px] bg-white p-4 ring-1 ring-slate-200">
       <div className="flex gap-2">{tab("battens", "Found rotten battens")}{tab("custom", "Custom lines")}</div>
 
       {mode === "battens" ? (
         <div className="rounded-xl bg-slate-50 p-3">
           <p className="text-sm font-semibold">How many lineal metres of batten?</p>
           <div className="mt-2 flex items-center gap-3">
-            <button type="button" aria-label="One metre less" onClick={() => setMetres((s) => Math.max(1, s - 1))} className="h-16 w-16 rounded-2xl bg-white text-4xl font-bold ring-2 ring-slate-900">−</button>
+            <button type="button" aria-label="One metre less" onClick={() => setMetres((s) => Math.max(1, s - 1))} className="h-16 w-16 rounded-[22px] bg-white text-4xl font-bold ring-2 ring-slate-900">−</button>
             <input aria-label="Lineal metres" type="number" min={1} value={metres} onChange={(e) => setMetres(Math.max(1, Math.round(Number(e.target.value) || 1)))}
               className="h-16 w-24 rounded-2xl text-center text-4xl font-black tabular-nums ring-1 ring-slate-300" />
             <button type="button" aria-label="One metre more" onClick={() => setMetres((s) => s + 1)} className="h-16 flex-1 rounded-2xl bg-brand-500 text-4xl font-bold text-white">+</button>

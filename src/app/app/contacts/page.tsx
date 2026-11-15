@@ -120,12 +120,12 @@ export default async function ContactsPage({ searchParams }: PageProps<"/app/con
       {list.length === 0 ? (
         <Empty title={query ? "No matches" : type ? `No ${TYPE_PLURAL[type].toLowerCase()} yet` : "No contacts yet"}>{query ? "Try a different search." : "Add one with + New contact."}</Empty>
       ) : (
-        <div className="overflow-x-auto rounded-2xl bg-white ring-1 ring-slate-200">
+        <div className="overflow-x-auto rounded-[22px] bg-white ring-1 ring-slate-200">
           <table className="w-full min-w-[720px] text-sm" data-contacts>
-            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <thead className="bg-slate-50 text-left font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">
               <tr><th className="px-4 py-3">Name</th><th className="px-4 py-3">Type</th><th className="px-4 py-3">Contact</th><th className="px-4 py-3">Where</th><th className="px-4 py-3">Right now</th></tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y-2 divide-dashed divide-slate-200">
               {list.map((r) => (
                 <tr key={r.key} data-contact-row={r.type} aria-current={r.current ? "true" : undefined} className="relative cursor-pointer hover:bg-slate-50 aria-[current]:bg-brand-50">
                   <td className="px-4 py-3">

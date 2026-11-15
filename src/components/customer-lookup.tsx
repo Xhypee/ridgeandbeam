@@ -26,7 +26,7 @@ const PLUS = "M12 5v14M5 12h14";
 function Icon({ d, className = "h-4 w-4" }: { d: string; className?: string }) {
   return <svg viewBox="0 0 24 24" className={cx("shrink-0", className)} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={d} /></svg>;
 }
-const linkCls = "text-sm font-semibold text-brand-600 underline-offset-4 hover:text-brand-700 hover:underline";
+const linkCls = "font-mono text-xs font-semibold uppercase tracking-wider text-brand-700 underline-offset-4 hover:text-brand-700 hover:underline";
 
 /** `search` defaults to the real customer search; a preview or test can pass its own server action. */
 export function CustomerLookup({ search = searchCustomers }: { search?: (q: string) => Promise<CustomerMatch[]> }) {
@@ -144,7 +144,7 @@ export function CustomerLookup({ search = searchCustomers }: { search?: (q: stri
                 </li>
               ))}
               <li id={`${listId}-${items.length}`} role="option" aria-selected={active === items.length} onMouseDown={(e) => { e.preventDefault(); addNew(); }} onMouseEnter={() => setActive(items.length)}
-                className={cx("flex cursor-pointer items-center gap-2.5 px-3 py-2.5 text-sm", items.length > 0 && "border-t border-slate-100", active === items.length && "bg-brand-50")}>
+                className={cx("flex cursor-pointer items-center gap-2.5 px-3 py-2.5 text-sm", items.length > 0 && "border-t-2 border-dashed border-slate-200", active === items.length && "bg-brand-50")}>
                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-500 text-white"><Icon d={PLUS} className="h-3.5 w-3.5" /></span>
                 <span className="min-w-0 flex-1 truncate">{items.length ? <>Add <b className="text-ink">&ldquo;{term}&rdquo;</b> as a new customer</> : <>No customer matches <b className="text-ink">&ldquo;{term}&rdquo;</b>. Add them as new</>}</span>
               </li>

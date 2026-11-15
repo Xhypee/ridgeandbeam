@@ -106,7 +106,7 @@ export function ContactPicker({ name, initial = null, placeholder = "Search cont
           ))}
           {canAdd && (
             <li role="option" aria-selected={active === items.length} onMouseDown={(e) => { e.preventDefault(); addNew(); }} onMouseEnter={() => setActive(items.length)} data-contact-picker-add
-              className={cx("flex cursor-pointer items-center gap-2 px-3 py-2.5 text-sm font-semibold text-brand-700", items.length > 0 && "border-t border-slate-100", active === items.length && "bg-brand-50")}>
+              className={cx("flex cursor-pointer items-center gap-2 px-3 py-2.5 text-sm font-semibold text-brand-700", items.length > 0 && "border-t-2 border-dashed border-slate-200", active === items.length && "bg-brand-50")}>
               <Svg d={PLUS} />Add &ldquo;{term}&rdquo; as a new contact
             </li>
           )}

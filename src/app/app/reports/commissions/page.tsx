@@ -35,7 +35,7 @@ function StatementView({ s, isAdmin }: { s: Statement; isAdmin: boolean }) {
         <Card key={j.id} title={<span><Link href={`/app/jobs/${j.id}`} className="hover:text-brand-600">{j.customer} · {j.title}</Link> <Badge tone="slate">{STAGE_LABEL[j.stage]}</Badge></span>} actions={<span className={cx("text-sm font-semibold", j.payable < 0 ? "text-red-700" : "text-slate-900")} data-testid="job-payable">{money(j.payable)} payable</span>}>
           <div className="grid gap-4 lg:grid-cols-2">
             <table className="w-full text-sm">
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y-2 divide-dashed divide-slate-200">
                 <tr><td className="py-1">Contract value{j.fin.estimate ? ` (estimate #${j.fin.estimate.number}${j.fin.changeOrders ? " + change orders" : ""}${j.fin.approvedSupplements ? " + variations" : ""})` : ""}</td><td className="py-1 text-right font-medium" data-testid="job-contract">{money(j.fin.contractValue)}</td></tr>
                 {j.fin.costs.map((c) => (
                   <tr key={c.id} className="text-slate-600"><td className="py-1 pl-3">− {label(c.category)}{c.vendor ? ` · ${c.vendor}` : ""}{c.description ? ` · ${c.description}` : ""} <span className="text-xs text-slate-400">{date(c.incurred_on, { month: "short", day: "numeric" })}</span></td><td className={cx("py-1 text-right", c.amount < 0 && "text-green-700")}>{money(-c.amount)}</td></tr>
@@ -46,7 +46,7 @@ function StatementView({ s, isAdmin }: { s: Statement; isAdmin: boolean }) {
               </tbody>
             </table>
             <table className="w-full text-sm">
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y-2 divide-dashed divide-slate-200">
                 {j.commission ? (
                   <>
                     <tr><td className="py-1">Commission ({s.plan!.rate}% of {s.plan!.kind === "pct_contract" ? "contract" : "gross profit"} {money(j.commission.base)})</td><td className="py-1 text-right font-medium">{money(j.commission.total)}</td></tr>
@@ -68,7 +68,7 @@ function StatementView({ s, isAdmin }: { s: Statement; isAdmin: boolean }) {
       ))}
       {s.unassignedPayouts.length > 0 && (
         <Card title="Draws & other payouts">
-          <ul className="divide-y divide-slate-100 text-sm">
+          <ul className="divide-y-2 divide-dashed divide-slate-200 text-sm">
             {s.unassignedPayouts.map((p) => (
               <li key={p.id} className="flex items-center justify-between gap-2 py-1.5">
                 <span>{label(p.kind)} · {date(p.paid_on)}{p.notes ? ` · ${p.notes}` : ""}</span>
@@ -97,7 +97,7 @@ export default async function CommissionsPage({ searchParams }: PageProps<"/app/
         <>
           <Table>
             <thead><tr><th className={th}>Rep</th><th className={th}>Plan</th><th className={cx(th, "text-right")}>Jobs</th><th className={cx(th, "text-right")}>Earned</th><th className={cx(th, "text-right")}>Paid</th><th className={cx(th, "text-right")}>Payable</th></tr></thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y-2 divide-dashed divide-slate-200">
               {statements.map((s) => (
                 <tr key={s.rep.user_id} className={cx(selected?.rep.user_id === s.rep.user_id && "bg-brand-50")}>
                   <td className={td}><Link className="font-medium text-brand-700 hover:underline" href={`/app/reports/commissions?rep=${s.rep.user_id}`}>{s.rep.name}</Link><span className="block text-xs text-slate-500">{ROLE_LABEL[s.rep.role]}</span></td>

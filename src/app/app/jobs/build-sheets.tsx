@@ -17,7 +17,7 @@ export function Sheet({ title, kicker, closeHref, children, footer, data }: { ti
       <div className="relative flex h-full w-full flex-col lg:w-[440px] xl:w-[460px] lg:p-4">
         <div className="mt-auto flex max-h-[94%] flex-col overflow-hidden rounded-t-[22px] bg-cream lg:rounded-[22px]">
           <div className="flex items-center gap-3 border-b border-slate-200 bg-white px-5 py-4">
-            <div className="min-w-0 flex-1"><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{kicker}</p><p className="font-display text-xl font-bold leading-tight text-ink">{title}</p></div>
+            <div className="min-w-0 flex-1"><p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">{kicker}</p><p className="font-display text-xl font-bold leading-tight text-ink">{title}</p></div>
             <Link href={closeHref} scroll={false} aria-label="Close" className="grid h-10 w-10 place-items-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-ink"><Icon d="M6 6l12 12M18 6L6 18" className="h-5 w-5" /></Link>
           </div>
           {children}

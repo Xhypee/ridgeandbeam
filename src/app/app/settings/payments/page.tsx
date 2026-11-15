@@ -77,7 +77,7 @@ export default async function PaymentsSettings({ searchParams }: PageProps<"/app
               {org.stripe_account_id && <ActionForm action={disconnectStripe}><SubmitButton variant="ghost" confirm="Stop taking online payments?">Disconnect</SubmitButton></ActionForm>}
             </div>
           ) : null}
-          <ActionForm action={savePaymentOptions} className="mt-5 space-y-3 border-t border-slate-100 pt-4">
+          <ActionForm action={savePaymentOptions} className="mt-5 space-y-3 border-t-2 border-dashed border-slate-200 pt-4">
             <Field label="Your card processing cost (%)" hint="For your margins only — never added to the homeowner's bill.">
               <Input name="card_fee_pct" type="number" min={0} max={10} step="0.01" defaultValue={org.card_fee_pct} disabled={!isAdmin} className="max-w-32" />
             </Field>

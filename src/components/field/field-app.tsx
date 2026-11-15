@@ -174,7 +174,7 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
             </button>
           ))}
           <button type="button" onClick={() => setStatusKind("note")}
-            className="col-span-2 min-h-14 rounded-2xl bg-white px-3 text-base font-bold ring-2 ring-slate-900">
+            className="col-span-2 min-h-14 rounded-[22px] bg-white px-3 text-base font-bold ring-2 ring-slate-900">
             + Custom note
           </button>
         </div>
@@ -182,21 +182,21 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
       </section>
 
       {/* Capture (X1) */}
-      <section aria-labelledby="cap-h" className="rounded-2xl bg-white p-3 ring-1 ring-slate-200">
+      <section aria-labelledby="cap-h" className="rounded-[22px] bg-white p-3 ring-1 ring-slate-200">
         <h2 id="cap-h" className="mb-2 text-lg font-bold">Capture</h2>
-        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Slope</p>
+        <p className="mb-1 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Slope</p>
         <div className="mb-3 grid grid-cols-3 gap-2">
           {SLOPES.map((s) => (
             <button key={s} type="button" aria-pressed={slope === s} onClick={() => setSlope(s)} className={cx(chip, slope === s ? chipOn : chipOff)}>{SLOPE_LABEL[s]}</button>
           ))}
         </div>
-        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Storm damage — for the insurer&apos;s assessor</p>
+        <p className="mb-1 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Storm damage — for the insurer&apos;s assessor</p>
         <div className="mb-3 flex flex-wrap gap-2" data-testid="damage-categories">
           {DAMAGE_CATEGORIES.map((c) => (
             <button key={c} type="button" aria-pressed={category === c} onClick={() => setCategory(c)} className={cx(chip, category === c ? chipOn : chipOff)}>{CATEGORY_LABEL[c]}</button>
           ))}
         </div>
-        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Job photos</p>
+        <p className="mb-1 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Job photos</p>
         <div className="mb-3 flex flex-wrap gap-2">
           {JOB_CATEGORIES.map((c) => (
             <button key={c} type="button" aria-pressed={category === c} onClick={() => setCategory(c)} className={cx(chip, category === c ? chipOn : chipOff)}>{CATEGORY_LABEL[c]}</button>
@@ -209,7 +209,7 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
             <p className="text-sm font-semibold text-amber-900">Broken / cracked tiles — {SLOPE_LABEL[slope]} slope</p>
             <div className="mt-2 flex items-center gap-3">
               <button type="button" aria-label="One less broken tile" onClick={() => setCounts(slope, (counts[slope] ?? 0) - 1)}
-                className="h-16 w-16 rounded-2xl bg-white text-4xl font-bold ring-2 ring-slate-900">−</button>
+                className="h-16 w-16 rounded-[22px] bg-white text-4xl font-bold ring-2 ring-slate-900">−</button>
               <output aria-label="Broken tile count" className="min-w-16 text-center text-5xl font-black tabular-nums">{counts[slope] ?? 0}</output>
               <button type="button" aria-label="One more broken tile" onClick={() => setCounts(slope, (counts[slope] ?? 0) + 1)}
                 className="h-16 flex-1 rounded-2xl bg-brand-500 text-4xl font-bold text-white">+</button>
@@ -328,7 +328,7 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
       </section>
 
       {/* Homeowner portal */}
-      <section className="rounded-2xl bg-white p-3 ring-1 ring-slate-200">
+      <section className="rounded-[22px] bg-white p-3 ring-1 ring-slate-200">
         <h2 className="text-lg font-bold">Homeowner portal</h2>
         <p className="mb-2 text-sm text-slate-600">One link for progress, shared photos, documents and the claim explainer.</p>
         <div className="grid grid-cols-2 gap-2">

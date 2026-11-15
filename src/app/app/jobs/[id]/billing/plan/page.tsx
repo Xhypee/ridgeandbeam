@@ -30,7 +30,7 @@ export default async function PaymentPlanPage({ params }: PageProps<"/app/jobs/[
 
   if (!ctx.contract) {
     return (
-      <div className="rounded-2xl bg-white p-6 ring-1 ring-slate-200">
+      <div className="rounded-[22px] bg-white p-6 ring-1 ring-slate-200">
         <h2 className="font-display text-xl font-bold text-ink">Payment plan</h2>
         <p className="mt-1 text-slate-600">Once {first} signs a quote you can split the price into payments here: a small deposit, milestones, monthly or fortnightly.</p>
       </div>
@@ -53,15 +53,15 @@ export default async function PaymentPlanPage({ params }: PageProps<"/app/jobs/[
           <p className="text-slate-600">Quote #{ctx.contract.number} · {aud(ctx.contract.total)} inc GST · <span className="font-semibold text-teal-700">{aud(paid)} paid</span></p>
         </div>
         <div className="flex gap-2">
-          <a href={`/p/${ctx.job.public_token}`} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-xl bg-white px-4 text-sm font-semibold text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50">See it as {first} ↗</a>
-          <Link href={`/app/jobs/${id}/billing`} className="inline-flex min-h-11 items-center rounded-xl bg-white px-4 text-sm font-semibold text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50">All invoices</Link>
+          <a href={`/p/${ctx.job.public_token}`} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-xl bg-white px-4 font-mono text-xs font-semibold uppercase tracking-wider text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50">See it as {first} ↗</a>
+          <Link href={`/app/jobs/${id}/billing`} className="inline-flex min-h-11 items-center rounded-xl bg-white px-4 font-mono text-xs font-semibold uppercase tracking-wider text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50">All invoices</Link>
         </div>
       </div>
 
       {ctx.invoices.length > 0 && (
-        <section aria-label="Payments" className="rounded-2xl bg-white ring-1 ring-slate-200">
-          <h3 className="border-b border-slate-100 px-5 py-3 text-[15px] font-bold text-ink">Payments</h3>
-          <ul className="divide-y divide-slate-100">
+        <section aria-label="Payments" className="rounded-[22px] bg-white ring-1 ring-slate-200">
+          <h3 className="border-b-2 border-dashed border-slate-200 px-5 py-3 text-[15px] font-bold text-ink">Payments</h3>
+          <ul className="divide-y-2 divide-dashed divide-slate-200">
             {ctx.invoices.map((i) => {
               const [label, cls] = STATUS[i.status] ?? [i.status, "bg-slate-100 text-slate-600"];
               const when = i.milestone_trigger === "date" || i.status !== "draft" ? (i.due_date ? `Due ${date(i.due_date)}` : "") : PART_TRIGGER_LABEL[(i.milestone_trigger ?? "completed") as PartTrigger];
