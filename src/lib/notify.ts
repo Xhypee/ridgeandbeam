@@ -131,6 +131,7 @@ export async function sendEmail(db: SupabaseClient, m: Base & { to: string | nul
     direction: "outbound", channel: "email", to_address: owner ?? m.to ?? null, from_address: fromAddress,
     subject: owner ? `[Test · for ${m.to}] ${m.subject}` : m.subject, body: m.text ?? m.html.replace(/<[^>]+>/g, " "), status, provider_ref: providerRef, error,
     thread_ref: threadRef, rfc_message_id: rfcMessageId,
+    attachments: m.attachments?.length ? m.attachments.map((x) => ({ name: x.filename })) : null,
   });
   return { status, error };
 }

@@ -83,20 +83,39 @@ export function attachmentNames(payload: Part): string[] {
   return out;
 }
 
-/** Just what they wrote: drops the quoted history ("On … wrote:", "> …", Outlook's "From: … Sent: …") and signatures after "-- ". */
-export function newPart(text: string): string {
+/** Files attached to a Gmail message, with the ids needed to download them. */
+export type MailAttachment = { name: string; size?: number | null; mime?: string | null; id?: string | null };
+export function attachmentsOf(payload: Part & { body?: { attachmentId?: string; size?: number } }): MailAttachment[] {
+  const out: MailAttachment[] = [];
+  const walk = (p: Part & { body?: { attachmentId?: string; size?: number } }) => {
+    if (p.filename) out.push({ name: p.filename, size: p.body?.size ?? null, mime: p.mimeType ?? null, id: p.body?.attachmentId ?? null });
+    p.parts?.forEach((c) => walk(c as never));
+  };
+  walk(payload);
+  return out;
+}
+
+/**
+ * Splits an email into what they wrote and the quoted history under it ("On … wrote:", "> …", Outlook's
+ * "From: … Sent: …", a "-- " signature break).
+ */
+export function splitQuoted(text: string): { main: string; quoted: string } {
   const lines = text.replace(/\r\n/g, "\n").split("\n");
   const out: string[] = [];
+  let cut = lines.length;
   for (let i = 0; i < lines.length; i++) {
     const l = lines[i];
-    const joined = `${l} ${lines[i + 1] ?? ""}`;
-    if (/^On .{4,200}wrote:\s*$/.test(l.trim()) || /^On .{4,200}wrote:\s*$/.test(joined.trim()) && /wrote:\s*$/.test(lines[i + 1] ?? "")) break;
-    if (/^-{2,}\s*Original Message\s*-{2,}/i.test(l.trim()) || /^_{5,}$/.test(l.trim())) break;
-    if (/^From: .+/.test(l) && /^(Sent|Date): .+/.test(lines[i + 1] ?? "")) break;
-    if (l === "-- ") break;
-    if (/^>/.test(l)) continue;
+    const t = l.trim();
+    const next = lines[i + 1] ?? "";
+    const onWrote = /^On .{4,200}wrote:\s*$/.test(t) || (/^On .{4,200}$/.test(t) && /wrote:\s*$/.test(next));
+    if (onWrote || l === "-- " || /^-{2,}\s*Original Message\s*-{2,}/i.test(t) || /^_{5,}$/.test(t) || (/^From: .+/.test(l) && /^(Sent|Date): .+/.test(next))) { cut = i; break; }
+    if (/^>/.test(l)) { if (!out.join("").trim()) continue; cut = i; break; }
     out.push(l);
   }
-  const s = out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
-  return s || text.trim();
+  const main = out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  const quoted = lines.slice(cut).join("\n").trim();
+  return main ? { main, quoted } : { main: text.trim(), quoted: "" };
 }
+
+/** Just what they wrote: the email without the quoted history under it. */
+export const newPart = (text: string) => splitQuoted(text).main;

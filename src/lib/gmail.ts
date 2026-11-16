@@ -2,7 +2,7 @@ import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { adminClient } from "@/lib/admin";
 import { siteUrl } from "@/lib/format";
-import { attachmentNames, bodyText, buildMime, emailOf, emailsOf, nameOf, newPart, toBase64Url, type MimeAttachment } from "@/lib/gmail-mime";
+import { attachmentsOf, bodyText, buildMime, emailOf, emailsOf, nameOf, newPart, toBase64Url, type MimeAttachment } from "@/lib/gmail-mime";
 
 /**
  * Gmail: a company connects one Gmail (or Google Workspace) mailbox. Customer emails the app sends then go out
@@ -219,13 +219,13 @@ export async function syncMailbox(orgId: string, opts: { days?: number; max?: nu
       const cust = others.map((a) => byEmail.get(a)).find(Boolean) ?? null;
       const prior = threadJob.get(m.threadId);
       const text = bodyText((m.payload ?? {}) as never);
-      const files = attachmentNames((m.payload ?? {}) as never);
-      const body = (newPart(text) || "(no text)") + (files.length ? `\n\n📎 ${files.join(", ")}` : "");
+      const files = attachmentsOf((m.payload ?? {}) as never);
+      const body = newPart(text) || (files.length ? "" : "(no text)");
       return [{
         org_id: orgId, job_id: prior?.job ?? (cust ? jobFor.get(cust.id) ?? null : null), customer_id: prior?.customer ?? cust?.id ?? null,
         direction: outbound ? "outbound" : "inbound", channel: "email",
         to_address: outbound ? others.join(", ") : c.email, from_address: outbound ? c.email : (nameOf(head(m, "from")) ? `${nameOf(head(m, "from"))} <${from}>` : from),
-        subject: head(m, "subject"), body: body.slice(0, 20000), status: outbound ? "sent" : "received",
+        subject: head(m, "subject"), body: body.slice(0, 20000), full_body: text.slice(0, 100000), attachments: files.length ? files.slice(0, 30) : null, status: outbound ? "sent" : "received",
         provider_ref: `gmail:${m.id}`, thread_ref: m.threadId, rfc_message_id: head(m, "message-id"),
         created_at: m.internalDate ? new Date(Number(m.internalDate)).toISOString() : new Date().toISOString(),
       }];
@@ -259,4 +259,12 @@ export async function syncIfStale(orgId: string, minutes = 2) {
   if (!data || data.status !== "connected") return null;
   if (data.last_synced_at && Date.now() - new Date(data.last_synced_at).getTime() < minutes * 60_000) return null;
   return syncMailbox(orgId, { max: 150 });
+}
+
+/** Download one attachment of a synced email from Gmail (they aren't copied into the app). */
+export async function gmailAttachment(orgId: string, gmailMessageId: string, attachmentId: string): Promise<Buffer | null> {
+  const c = await gmailConnection(orgId);
+  if (!c) return null;
+  const r = await api<{ data?: string }>(c, `/messages/${encodeURIComponent(gmailMessageId)}/attachments/${encodeURIComponent(attachmentId)}`).catch(() => null);
+  return r?.data ? Buffer.from(r.data.replace(/-/g, "+").replace(/_/g, "/"), "base64") : null;
 }

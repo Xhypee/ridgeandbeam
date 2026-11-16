@@ -16,7 +16,7 @@ export default async function InboxPage({ searchParams }: PageProps<"/app/inbox"
   // New mail from Gmail, at most every couple of minutes; never holds the page up for long.
   await Promise.race([syncIfStale(org.id).catch(() => null), new Promise((r) => setTimeout(r, 8000))]);
   const [{ data: rows }, { data: gm }] = await Promise.all([
-    supabase.from("messages").select("id, direction, from_address, to_address, subject, body, status, created_at, read_at, thread_ref, job_id, customer_id, customer:customers(name, email), job:jobs(title)").eq("org_id", org.id).eq("channel", "email").order("created_at", { ascending: false }).limit(1500),
+    supabase.from("messages").select("id, direction, from_address, to_address, subject, body, full_body, attachments, status, created_at, read_at, thread_ref, job_id, customer_id, customer:customers(name, email), job:jobs(title)").eq("org_id", org.id).eq("channel", "email").order("created_at", { ascending: false }).limit(1500),
     supabase.from("integrations").select("status, external_name, last_synced_at").eq("org_id", org.id).eq("provider", "gmail").maybeSingle(),
   ]);
   const threads = threadsOf((rows ?? []) as unknown as MailRow[]);

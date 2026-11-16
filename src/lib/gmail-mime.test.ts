@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bodyText, buildMime, emailOf, emailsOf, encodeHeader, fromBase64Url, nameOf, newPart, toBase64Url } from "./gmail-mime";
+import { attachmentsOf, bodyText, splitQuoted, buildMime, emailOf, emailsOf, encodeHeader, fromBase64Url, nameOf, newPart, toBase64Url } from "./gmail-mime";
 
 const enc = (s: string) => Buffer.from(s).toString("base64").replace(/\+/g, "-").replace(/\//g, "_");
 
@@ -38,5 +38,13 @@ describe("gmail mime", () => {
     expect(newPart("Yes Tuesday works.\n\nOn Mon, 10 Nov 2026 at 9:02 am, Bbang Roofing <jobs@bbang.com.au> wrote:\n> Does Tuesday suit?\n")).toBe("Yes Tuesday works.");
     expect(newPart("Sounds good\n\nFrom: Bbang Roofing\nSent: Monday\nSubject: Quote")).toBe("Sounds good");
     expect(newPart("> only quoted")).toBe("> only quoted");
+  });
+
+  it("splits what they wrote from the quoted email, and lists attachments with their ids", () => {
+    const q = splitQuoted("Yes Tuesday works.\n\nCheers\n\nOn Mon, 10 Nov 2026 at 9:02 am, Bbang <jobs@b.com> wrote:\n> Does Tuesday suit?");
+    expect(q.main).toBe("Yes Tuesday works.\n\nCheers");
+    expect(q.quoted).toBe("On Mon, 10 Nov 2026 at 9:02 am, Bbang <jobs@b.com> wrote:\n> Does Tuesday suit?");
+    expect(splitQuoted("Plain note").quoted).toBe("");
+    expect(attachmentsOf({ mimeType: "multipart/mixed", parts: [{ mimeType: "text/plain", body: { data: "" } }, { mimeType: "image/jpeg", filename: "IMG_1.jpg", body: { attachmentId: "A1", size: 2100 } } as never] })).toEqual([{ name: "IMG_1.jpg", size: 2100, mime: "image/jpeg", id: "A1" }]);
   });
 });

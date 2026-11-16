@@ -4,6 +4,7 @@ export type MailRow = {
   id: string; direction: string; from_address: string | null; to_address: string | null; subject: string | null; body: string;
   status: string; created_at: string; read_at: string | null; thread_ref: string | null; job_id: string | null; customer_id: string | null;
   customer: { name: string; email: string | null } | null; job: { title: string } | null;
+  full_body?: string | null; attachments?: { name: string; size?: number | null; mime?: string | null; id?: string | null }[] | null;
 };
 export type Thread = {
   key: string; subject: string; who: string; email: string | null; last: MailRow; count: number; unread: number;
@@ -46,3 +47,18 @@ export const replySubject = (s: string | null) => (/^re:/i.test(s ?? "") ? s! : 
 /** Plain text typed in the reply box → simple, safe HTML. */
 export const textToHtml = (t: string) =>
   `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#13221a">${t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!).replace(/\r?\n/g, "<br>")}</div>`;
+
+/** What the little stub under a bubble says about it: Sent / Replied / Failed / Test … */
+export function stubStatus(m: MailRow, thread: MailRow[]): string {
+  if (m.direction === "inbound") return m.attachments?.length ? `Email · ${m.attachments.length} file${m.attachments.length === 1 ? "" : "s"}` : "Email";
+  if (m.status === "failed") return "Not sent";
+  if (m.status === "redirected") return "Test · sent to you";
+  if (m.status === "paused") return "Test · not sent";
+  if (m.status === "not_configured") return "Not sent · email not set up";
+  return thread.some((x) => x.direction === "inbound" && x.created_at > m.created_at) ? "Replied" : "Sent";
+}
+export const initials = (name: string) => {
+  const words = name.replace(/[^A-Za-z&\s]/g, " ").split(/\s+/).filter(Boolean);
+  return (words.length === 1 ? words[0].slice(0, 2) : words.map((w) => w[0]).join("").slice(0, 2)).toUpperCase() || "?";
+};
+export const fileSize = (n?: number | null) => (!n ? "" : n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`);
