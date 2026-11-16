@@ -10,7 +10,7 @@ function Btn({ method, children, primary }: { method: "card" | "becs"; children:
       name="method"
       value={method}
       disabled={pending}
-      className={`min-h-12 w-full rounded-lg px-4 py-3 text-left text-base font-semibold disabled:opacity-60 ${primary ? "bg-brand-500 text-white hover:bg-brand-600" : "bg-white text-slate-900 ring-1 ring-slate-300 hover:bg-slate-50"}`}
+      className={`min-h-12 w-full rounded-lg px-4 py-3 text-left text-base font-semibold disabled:opacity-60 ${primary ? "bg-ink text-white hover:bg-ink/90" : "bg-white text-slate-900 ring-1 ring-slate-300 hover:bg-slate-50"}`}
     >
       {pending ? "Opening secure checkout…" : children}
     </button>
@@ -51,7 +51,7 @@ export function CopyValue({ label, value, testId }: { label: string; value: stri
       </div>
       <button
         type="button"
-        className="min-h-11 shrink-0 rounded-lg px-3 text-sm font-medium text-brand-700 ring-1 ring-slate-300 hover:bg-white"
+        className="min-h-11 shrink-0 rounded-lg px-3 text-sm font-medium text-ink ring-1 ring-slate-300 hover:bg-white"
         onClick={async () => {
           try { await navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { window.prompt("Copy:", value); }
         }}

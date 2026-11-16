@@ -9,8 +9,8 @@ import { submitInstantQuote, type QuoteState } from "./actions";
 import type { QuoteRates } from "./rates";
 
 const aud = (n: number) => `$${Math.round(n).toLocaleString("en-AU")}`;
-const input = "block w-full rounded-lg border-0 bg-white px-3 py-3 text-base text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 focus:outline-none";
-const chip = "flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium ring-1 ring-slate-300 has-[:checked]:bg-brand-50 has-[:checked]:text-brand-700 has-[:checked]:ring-2 has-[:checked]:ring-brand-500";
+const input = "block w-full rounded-lg border-0 bg-white px-3 py-3 text-base text-slate-900 ring-1 ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-ink focus:outline-none";
+const chip = "flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium ring-1 ring-slate-300 has-[:checked]:bg-slate-100 has-[:checked]:text-ink has-[:checked]:ring-2 has-[:checked]:ring-ink";
 
 /** House outline whose roof gets steeper with the pitch (degrees). */
 function PitchIcon({ deg }: { deg: number }) {
@@ -27,7 +27,7 @@ function PitchIcon({ deg }: { deg: number }) {
 function Submit() {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" disabled={pending} className="min-h-12 w-full rounded-xl bg-brand-500 px-6 text-base font-semibold text-white hover:bg-brand-600 disabled:opacity-60">
+    <button type="submit" disabled={pending} className="min-h-12 w-full rounded-xl bg-ink px-6 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90 disabled:opacity-60">
       {pending ? "Sending…" : "Get my price"}
     </button>
   );
@@ -61,10 +61,10 @@ export function QuoteForm({ intakeKey, orgName, rates, phone, defaultState }: { 
 
   if (state?.ok) {
     return (
-      <div className="rounded-2xl bg-white p-6 text-center ring-1 ring-slate-200" data-testid="quote-done">
+      <div className="rounded-[22px] bg-white p-6 text-center ring-1 ring-slate-200" data-testid="quote-done">
         {state.high ? (
           <>
-            <p className="text-sm font-medium uppercase tracking-wide text-brand-600">Your estimated range</p>
+            <p className="text-sm font-medium uppercase tracking-wide text-ink">Your estimated range</p>
             <p className="mt-2 text-3xl font-bold tabular-nums text-slate-900">{aud(state.low ?? 0)} – {aud(state.high ?? 0)}</p>
             <p className="mt-1 text-sm text-slate-500">Including GST · about {state.m2} m² of roof</p>
           </>
@@ -72,7 +72,7 @@ export function QuoteForm({ intakeKey, orgName, rates, phone, defaultState }: { 
           <p className="text-lg font-semibold text-slate-900">Request received</p>
         )}
         <p className="mt-4 text-base text-slate-700">Thanks! {state.orgName ?? orgName} will contact you shortly to book a free roof inspection and an exact price.</p>
-        {phone && <p className="mt-2 text-sm text-slate-500">Questions? Call <a className="font-medium text-brand-700" href={`tel:${phone}`}>{phone}</a></p>}
+        {phone && <p className="mt-2 text-sm text-slate-500">Questions? Call <a className="font-medium text-ink" href={`tel:${phone}`}>{phone}</a></p>}
       </div>
     );
   }
@@ -152,7 +152,7 @@ export function QuoteForm({ intakeKey, orgName, rates, phone, defaultState }: { 
           <p className="text-sm text-white/80">{orgName} will send you a price after a quick look at your roof.</p>
         ) : range ? (
           <>
-            <p className="text-xs uppercase tracking-wide text-white/70">Estimated price range, including GST</p>
+            <p className="text-xs uppercase text-white/70 font-mono tracking-[0.12em]">Estimated price range, including GST</p>
             <p className="mt-1 text-3xl font-bold tabular-nums">{aud(range.low)} – {aud(range.high)}</p>
             <p className="mt-1 text-xs text-white/70">About {range.m2} m² of roof. Final price after a free inspection.</p>
           </>

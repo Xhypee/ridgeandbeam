@@ -52,10 +52,10 @@ export default async function EstimatesPage({ searchParams }: PageProps<"/app/es
       ) : (
         <Table>
           <thead className="bg-slate-50"><tr><th className={th}>#</th><th className={th}>Customer / job</th><th className={th}>Created</th><th className={th}>Status</th><th className={`${th} text-right`}>Total</th></tr></thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y-2 divide-dashed divide-slate-200">
             {rows.map((r) => (
               <tr key={r.id} className="hover:bg-slate-50">
-                <td className={td}><Link href={`/app/estimates/${r.id}`} className="font-medium text-slate-900 hover:text-brand-600">#{r.number}</Link></td>
+                <td className={td}><Link href={`/app/estimates/${r.id}`} className="font-medium text-slate-900 hover:text-ink">#{r.number}</Link></td>
                 <td className={td}><div className="font-medium text-slate-800">{r.jobs.customers.name}</div><div className="text-xs text-slate-500">{r.jobs.title}{optionNote(r) ? ` · ${optionNote(r)}` : ""}</div></td>
                 <td className={td}>{date(r.created_at)}</td>
                 <td className={td}><Badge tone={STATUS_TONE[r.status]}>{label(r.status)}</Badge></td>

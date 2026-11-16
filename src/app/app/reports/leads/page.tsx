@@ -52,7 +52,7 @@ export default async function LeadSourcesReport({ searchParams }: PageProps<"/ap
       />
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
         {[3, 6, 12].map((m) => (
-          <Link key={m} href={q({ months: String(m) })} className={cx("rounded-full px-3 py-1.5 ring-1", m === months ? "bg-brand-500 text-white ring-brand-500" : "bg-white ring-slate-200")}>Last {m} months</Link>
+          <Link key={m} href={q({ months: String(m) })} className={cx("rounded-full px-3 py-1.5 ring-1", m === months ? "bg-ink text-white ring-ink" : "bg-white ring-slate-200")}>Last {m} months</Link>
         ))}
         <span className="mx-1 self-center text-slate-300">|</span>
         <Link href={q({ group: "month" })} className={cx("rounded-full px-3 py-1.5 ring-1", byMonth ? "bg-slate-800 text-white ring-slate-800" : "bg-white ring-slate-200")}>By month</Link>
@@ -81,7 +81,7 @@ export default async function LeadSourcesReport({ searchParams }: PageProps<"/ap
             <th className={`${th} text-right`}>Spend</th><th className={`${th} text-right`}>Cost / lead</th><th className={`${th} text-right`}>Cost / signed job</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100" data-lead-report>
+        <tbody className="divide-y-2 divide-dashed divide-slate-200" data-lead-report>
           {rows.length === 0 && <tr><td className={td} colSpan={11}>No leads in this period yet.</td></tr>}
           {rows.map((r) => (
             <tr key={`${r.source}-${r.month}`} data-source={r.source}>
@@ -121,7 +121,7 @@ export default async function LeadSourcesReport({ searchParams }: PageProps<"/ap
         )}
         <Card title="Spend entered">
           {(spend ?? []).length === 0 ? <p className="text-sm text-slate-500">No spend entered for this period.</p> : (
-            <ul className="divide-y divide-slate-100 text-sm">
+            <ul className="divide-y-2 divide-dashed divide-slate-200 text-sm">
               {(spend ?? []).map((s) => (
                 <li key={s.id} className="flex items-center justify-between gap-2 py-2">
                   <span>{label(s.source)} · {monthLabel(s.month.slice(0, 7))}</span>

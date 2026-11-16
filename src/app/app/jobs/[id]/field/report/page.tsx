@@ -53,9 +53,9 @@ export default async function PhotoReport({ params, searchParams }: PageProps<"/
         <PrintButton />
       </div>
       {aiOn && <div className="no-print mb-4"><AiPhotoSummary jobId={job.id} /></div>}
-      <article className="rounded-2xl bg-white p-5 ring-1 ring-slate-200 print:p-0 print:ring-0">
-        <header className="border-b border-slate-200 pb-4">
-          <p className="text-sm font-semibold text-brand-700">{org.name}{org.abn ? ` · ABN ${formatAbn(org.abn)}` : ""}{licence ? ` · ${st} licence ${licence}` : ""}</p>
+      <article className="rounded-[22px] bg-white p-5 ring-1 ring-slate-200 print:p-0 print:ring-0">
+        <header className="border-b-2 border-dashed border-slate-200 pb-4">
+          <p className="font-semibold text-ink font-mono text-xs uppercase tracking-wider">{org.name}{org.abn ? ` · ABN ${formatAbn(org.abn)}` : ""}{licence ? ` · ${st} licence ${licence}` : ""}</p>
           <h1 className="text-2xl font-bold">Storm damage photo report</h1>
           <p className="text-sm text-slate-600">Prepared for the insurer&apos;s assessor. Dated photos, grouped by roof slope.</p>
           <p className="text-sm text-slate-600">{c.name} · {job.site_address || [c.address, c.city, c.state, c.zip].filter(Boolean).join(", ")}</p>
@@ -68,7 +68,7 @@ export default async function PhotoReport({ params, searchParams }: PageProps<"/
         </header>
 
         {(damage.length > 0 || tileCounts.length > 0) && (
-          <section className="grid gap-6 border-b border-slate-200 py-4 sm:grid-cols-2" data-testid="damage-summary">
+          <section className="grid gap-6 border-b-2 border-dashed border-slate-200 py-4 sm:grid-cols-2" data-testid="damage-summary">
             {damage.length > 0 && (
               <div>
                 <h2 className="mb-2 font-semibold">Damage photographed</h2>
@@ -85,7 +85,7 @@ export default async function PhotoReport({ params, searchParams }: PageProps<"/
                     {tileCounts.map((t) => (
                       <tr key={t.slope}><td className="py-0.5 text-slate-600">{SLOPE_LABEL[t.slope]} slope</td><td className="py-0.5 text-right font-semibold tabular-nums">{t.count}</td></tr>
                     ))}
-                    <tr className="border-t border-slate-200"><td className="py-1 font-semibold">Total</td><td className="py-1 text-right font-semibold tabular-nums" data-testid="tile-total">{totalTiles}</td></tr>
+                    <tr className="border-t-2 border-dashed border-slate-200"><td className="py-1 font-semibold">Total</td><td className="py-1 text-right font-semibold tabular-nums" data-testid="tile-total">{totalTiles}</td></tr>
                   </tbody>
                 </table>
               </div>

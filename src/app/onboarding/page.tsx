@@ -14,7 +14,7 @@ export default async function OnboardingPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <Logo className="mb-8" />
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 ring-1 ring-slate-200">
+      <div className="w-full max-w-md rounded-[22px] bg-white p-6 ring-1 ring-slate-200">
         <h1 className="text-xl font-semibold">Set up your roofing company</h1>
         <p className="mb-6 mt-1 text-sm text-slate-500">
           We&apos;ll load a starter price book (sheeting, tiles, flashings, labour and more) that you can edit later, and tailor quotes and contracts to your state.
@@ -29,7 +29,7 @@ export default async function OnboardingPage() {
           </div>
           <Field label="ABN" hint="Shown on every quote and tax invoice. You can add it later in Settings."><AbnInput defaultValue="" /></Field>
           <label className="flex items-center gap-2 text-sm text-slate-700">
-            <input type="checkbox" name="gst_registered" defaultChecked className="h-5 w-5 accent-brand-500" />
+            <input type="checkbox" name="gst_registered" defaultChecked className="h-5 w-5 accent-ink" />
             Registered for GST (quotes and tax invoices include 10% GST)
           </label>
           <SubmitButton className="w-full">Create company</SubmitButton>

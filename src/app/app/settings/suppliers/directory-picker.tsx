@@ -39,13 +39,13 @@ export function DirectoryPicker({ directory, serviceStates, addedIds }: { direct
         </Field>
         {serviceStates.length > 0 && (
           <label className="flex min-h-11 items-center gap-2 text-sm text-slate-600">
-            <input type="checkbox" checked={allStates} onChange={(e) => setAllStates(e.target.checked)} className="h-5 w-5 accent-brand-500" />
+            <input type="checkbox" checked={allStates} onChange={(e) => setAllStates(e.target.checked)} className="h-5 w-5 accent-ink" />
             Show suppliers outside {serviceStates.join(", ")}
           </label>
         )}
       </div>
 
-      <ul className="max-h-[26rem] divide-y divide-slate-100 overflow-y-auto rounded-lg ring-1 ring-slate-200" data-testid="directory">
+      <ul className="max-h-[26rem] divide-y-2 divide-dashed divide-slate-200 overflow-y-auto rounded-lg ring-1 ring-slate-200" data-testid="directory">
         {list.map((s) => {
           const isAdded = added.has(s.id);
           return (
@@ -54,11 +54,11 @@ export function DirectoryPicker({ directory, serviceStates, addedIds }: { direct
                 type="button"
                 disabled={isAdded}
                 onClick={() => { setPicked(s.id); setCustom(false); }}
-                className={cx("flex min-h-14 w-full items-start justify-between gap-3 px-3 py-2.5 text-left", picked === s.id ? "bg-brand-50" : "hover:bg-slate-50", isAdded && "opacity-60")}
+                className={cx("flex min-h-14 w-full items-start justify-between gap-3 px-3 py-2.5 text-left", picked === s.id ? "bg-slate-100" : "hover:bg-slate-50", isAdded && "opacity-60")}
               >
                 <span className="min-w-0">
                   <span className="block font-medium text-slate-900">{s.name}</span>
-                  <span className="block text-xs text-slate-500">
+                  <span className="block font-mono text-xs text-slate-500">
                     {CATEGORY[s.category] ?? s.category}
                     {" · "}
                     {s.states.length ? s.states.join(", ") : "Coverage not confirmed"}
@@ -73,7 +73,7 @@ export function DirectoryPicker({ directory, serviceStates, addedIds }: { direct
         {list.length === 0 && <li className="px-3 py-4 text-sm text-slate-500">No suppliers match. Add yours as a custom supplier below.</li>}
       </ul>
 
-      <button type="button" className="min-h-11 text-sm font-medium text-brand-600 hover:underline" onClick={() => { setCustom(true); setPicked(null); }}>
+      <button type="button" className="min-h-11 text-sm font-medium text-ink hover:underline" onClick={() => { setCustom(true); setPicked(null); }}>
         My supplier isn&apos;t listed — add a custom supplier
       </button>
 
@@ -82,7 +82,7 @@ export function DirectoryPicker({ directory, serviceStates, addedIds }: { direct
           {choice ? (
             <>
               <input type="hidden" name="supplier_id" value={choice.id} />
-              <p className="text-sm"><b>{choice.name}</b>{choice.website && <> · <a href={choice.website} target="_blank" rel="noreferrer" className="text-brand-600 hover:underline">website</a></>}</p>
+              <p className="text-sm"><b>{choice.name}</b>{choice.website && <> · <a href={choice.website} target="_blank" rel="noreferrer" className="text-ink hover:underline">website</a></>}</p>
               {choice.notes && <p className="text-xs text-slate-500">{choice.notes}</p>}
             </>
           ) : (

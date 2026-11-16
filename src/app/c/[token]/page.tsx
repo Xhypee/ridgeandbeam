@@ -35,11 +35,11 @@ export default async function PublicChangeOrder({ params }: PageProps<"/c/[token
   return (
     <main className="mx-auto min-h-screen max-w-xl px-4 pb-16 pt-6 text-slate-900">
       <header className="mb-4">
-        <p className="text-lg font-bold text-brand-700">{co.org.name}</p>
+        <p className="text-lg font-bold text-ink">{co.org.name}</p>
         <p className="text-sm text-slate-600">{[co.org.license_number && `License #${co.org.license_number}`, co.org.phone].filter(Boolean).join(" · ")}</p>
       </header>
-      <article className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Change order · {date(co.created_at)}</p>
+      <article className="rounded-[22px] bg-white p-4 ring-1 ring-slate-200">
+        <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Change order · {date(co.created_at)}</p>
         <h1 className="mt-1 text-2xl font-bold">{co.title}</h1>
         <p className="text-sm text-slate-600">{co.customer.name} · {co.job.title}{co.job.site_address ? ` · ${co.job.site_address}` : ""}</p>
         {co.description && <p className="mt-3 whitespace-pre-wrap text-base text-slate-800">{co.description}</p>}
@@ -51,7 +51,7 @@ export default async function PublicChangeOrder({ params }: PageProps<"/c/[token
             ))}
           </div>
         )}
-        <ul className="mt-4 divide-y divide-slate-100 text-sm">
+        <ul className="mt-4 divide-y-2 divide-dashed divide-slate-200 text-sm">
           {co.items.map((i, n) => (
             <li key={n} className="flex justify-between gap-3 py-2">
               <span>{i.description}<span className="block text-slate-500">{Number(i.quantity)} {i.unit} × {money(i.unit_price)}</span></span>
@@ -60,19 +60,19 @@ export default async function PublicChangeOrder({ params }: PageProps<"/c/[token
           ))}
         </ul>
         {tax > 0 && <div className="flex justify-between text-sm text-slate-600"><span>Tax</span><span>{money(tax)}</span></div>}
-        <div className="mt-1 flex justify-between border-t border-slate-200 pt-2 text-lg font-bold"><span>Added to your project</span><span className="tabular-nums">{money(subtotal + tax)}</span></div>
+        <div className="mt-1 flex justify-between border-t-2 border-dashed border-slate-200 pt-2 text-lg font-bold"><span>Added to your project</span><span className="tabular-nums">{money(subtotal + tax)}</span></div>
         <p className="mt-1 text-xs text-slate-500">This amount is added to your final invoice.</p>
       </article>
 
       {co.status === "sent" && (
-        <section className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+        <section className="mt-4 rounded-[22px] bg-white p-4 ring-1 ring-slate-200">
           <h2 className="text-lg font-bold">Approve this change</h2>
           <ActionForm action={approveChangeOrder} className="mt-3 space-y-3">
             <input type="hidden" name="token" value={token} />
             <Input name="name" placeholder="Your full name" autoComplete="name" required className="min-h-12 text-base" />
             <SignaturePad name="signature" required height={170} />
             <label className="flex items-start gap-2 text-sm">
-              <input type="checkbox" name="agree" required className="mt-0.5 h-5 w-5 accent-brand-500" />
+              <input type="checkbox" name="agree" required className="mt-0.5 h-5 w-5 accent-ink" />
               I approve this change to my roofing contract with {co.org.name} for the amount shown.
             </label>
             <SubmitButton className="min-h-14 w-full text-base">Approve & sign</SubmitButton>
@@ -89,7 +89,7 @@ export default async function PublicChangeOrder({ params }: PageProps<"/c/[token
         </p>
       )}
       {co.status === "declined" && <p className="mt-4 rounded-2xl bg-slate-100 p-4 text-slate-700">You declined this change. {co.org.name} will contact you{co.org.phone ? ` (${co.org.phone})` : ""}.</p>}
-      <p className="mt-4 text-center text-sm"><a className="text-brand-700 underline" href={`/p/${co.job.public_token}`}>Back to your project</a></p>
+      <p className="mt-4 text-center text-sm"><a className="text-ink underline" href={`/p/${co.job.public_token}`}>Back to your project</a></p>
     </main>
   );
 }

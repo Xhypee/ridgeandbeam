@@ -56,12 +56,12 @@ export default async function FilesPage({ params, searchParams }: PageProps<"/ap
             <FileUpload orgId={org.id} jobId={id} category="document" label="Upload a document" />
           </div>
         )}
-        {tab === "photos" && <Link href={`/app/jobs/${id}/field`} className="inline-flex min-h-11 items-center rounded-xl bg-white px-4 text-sm font-semibold text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50">Take photos on site</Link>}
+        {tab === "photos" && <Link href={`/app/jobs/${id}/field`} className="inline-flex min-h-11 items-center rounded-xl bg-white px-4 font-mono text-xs font-semibold uppercase tracking-wider text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50">Take photos on site</Link>}
       </div>
 
       {tab === "photos" ? (
         photos.length === 0 ? (
-          <p className="rounded-2xl bg-white p-6 text-slate-600 ring-1 ring-slate-200">No photos yet. The crew adds them from the job&apos;s Field page on their phone.</p>
+          <p className="rounded-[22px] bg-white p-6 text-slate-600 ring-1 ring-slate-200">No photos yet. The crew adds them from the job&apos;s Field page on their phone.</p>
         ) : (
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_16rem]">
             <div className="overflow-hidden rounded-2xl bg-slate-900 ring-1 ring-slate-200">
@@ -90,7 +90,7 @@ export default async function FilesPage({ params, searchParams }: PageProps<"/ap
             {sheets.map((f) => (
               <li key={f.id}>
                 <Link href={`${base}?file=${f.id}`} scroll={false} className={cx("flex items-center gap-2.5 rounded-xl bg-white px-3 py-2.5", f.id === selected?.id ? "ring-2 ring-ink" : "ring-1 ring-slate-200 hover:ring-slate-400")}>
-                  <span className={cx("grid h-9 w-8 shrink-0 place-items-center rounded text-[10px] font-bold", f.category === "plans" ? "bg-brand-50 text-brand-700" : "bg-red-50 text-red-700")}>{f.category === "plans" ? "PLAN" : isPdf(f) ? "PDF" : "DOC"}</span>
+                  <span className={cx("grid h-9 w-8 shrink-0 place-items-center rounded text-[10px] font-bold", f.category === "plans" ? "bg-slate-100 text-ink" : "bg-red-50 text-red-700")}>{f.category === "plans" ? "PLAN" : isPdf(f) ? "PDF" : "DOC"}</span>
                   <span className="min-w-0"><span className="block truncate text-sm font-semibold text-ink">{nameOf(f)}</span><span className="block truncate text-xs text-slate-500">{when(f.created_at)}{f.size_bytes ? ` · ${Math.max(1, Math.round(f.size_bytes / 1024))} KB` : ""}</span></span>
                 </Link>
               </li>
@@ -105,13 +105,13 @@ export default async function FilesPage({ params, searchParams }: PageProps<"/ap
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={urls.get(selected.storage_path)} alt={nameOf(selected)} className="mx-auto max-h-[75vh] w-auto object-contain" />
               ) : (
-                <div className="grid h-[60vh] place-items-center p-6 text-center"><p className="text-slate-600">No preview for this file type. <a className="font-semibold text-brand-700 underline" href={urls.get(selected.storage_path)} target="_blank" rel="noreferrer">Download it</a>.</p></div>
+                <div className="grid h-[60vh] place-items-center p-6 text-center"><p className="text-slate-600">No preview for this file type. <a className="font-semibold text-ink underline" href={urls.get(selected.storage_path)} target="_blank" rel="noreferrer">Download it</a>.</p></div>
               )
             ) : (
               <div className="grid h-[60vh] place-items-center p-6 text-center text-slate-500">Upload plans to see them here, full size.</div>
             )}
             {selected && urls.get(selected.storage_path) && (
-              <div className="flex items-center justify-between gap-2 border-t border-slate-200 bg-white px-4 py-2 text-sm">
+              <div className="flex items-center justify-between gap-2 border-t-2 border-dashed border-slate-200 bg-white px-4 py-2 text-sm">
                 <span className="truncate text-slate-600">{nameOf(selected)}</span>
                 <span className="flex shrink-0 items-center gap-3">
                   {!isCrewLead && (
@@ -120,17 +120,17 @@ export default async function FilesPage({ params, searchParams }: PageProps<"/ap
                       <button className="font-semibold text-slate-500 hover:text-red-700">Delete</button>
                     </form>
                   )}
-                  <a href={urls.get(selected.storage_path)} target="_blank" rel="noreferrer" className="font-semibold text-brand-700">Open / download ↗</a>
+                  <a href={urls.get(selected.storage_path)} target="_blank" rel="noreferrer" className="font-semibold text-ink">Open / download ↗</a>
                 </span>
               </div>
             )}
           </div>
 
           <aside className="space-y-3 lg:col-span-2 xl:col-span-1" data-roof-panel>
-            <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Roof</p>
+            <div className="rounded-[22px] bg-white p-4 ring-1 ring-slate-200">
+              <p className="text-xs uppercase text-slate-400 font-mono tracking-[0.12em]">Roof</p>
               {s && m && s.trueArea > 0 ? (
-                <dl className="mt-2 divide-y divide-slate-100 text-sm">
+                <dl className="mt-2 divide-y-2 divide-dashed divide-slate-200 text-sm">
                   {m.sections.filter((x) => x.area > 0).map((x, i) => <div key={i} className="flex justify-between gap-3 py-1.5"><dt className="text-slate-500">{x.label || `Section ${i + 1}`}</dt><dd className="font-medium text-ink">{x.area} m² · {x.pitch}°</dd></div>)}
                   <div className="flex justify-between gap-3 py-1.5"><dt className="text-slate-500">True area</dt><dd className="font-semibold text-ink">{s.trueArea} m²</dd></div>
                   <div className="flex justify-between gap-3 py-1.5"><dt className="text-slate-500">Ridge · hip · valley</dt><dd className="font-medium text-ink">{m.ridge} · {m.hip} · {m.valley} m</dd></div>
@@ -140,10 +140,10 @@ export default async function FilesPage({ params, searchParams }: PageProps<"/ap
               ) : <p className="mt-1 text-sm text-slate-600">Not measured yet.</p>}
             </div>
             {e && !isCrewLead && (
-              <div className="rounded-2xl bg-brand-50 p-4 text-sm text-brand-900">
+              <div className="rounded-2xl bg-slate-100 p-4 text-sm text-ink">
                 <p className="font-semibold">{plans.length ? "Measure from these plans" : "Got the architect's plans?"}</p>
-                <p className="mt-0.5 text-brand-800">{plans.length ? "Read the roof plan, check the scale and pitch, and fill the quote." : "Upload the PDF, then measure from it: ridges, hips, valleys and gutters."}</p>
-                <Link href={`/app/measure/${e.id}/plans`} className="mt-2 inline-flex min-h-10 items-center rounded-xl bg-brand-500 px-4 font-semibold text-white hover:bg-brand-600">Measure from plans</Link>
+                <p className="mt-0.5 text-ink">{plans.length ? "Read the roof plan, check the scale and pitch, and fill the quote." : "Upload the PDF, then measure from it: ridges, hips, valleys and gutters."}</p>
+                <Link href={`/app/measure/${e.id}/plans`} className="mt-2 inline-flex min-h-10 items-center rounded-xl bg-ink px-4 font-semibold text-white hover:bg-ink/90">Measure from plans</Link>
               </div>
             )}
           </aside>

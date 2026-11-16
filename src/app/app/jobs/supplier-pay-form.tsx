@@ -53,7 +53,7 @@ export function SupplierPayForm({ orgId, jobId, orderId, supplier, orderCode, or
     }
   }
   const copy = (k: string, v: string | null) => { if (v) { void navigator.clipboard?.writeText(v); setCopied(k); setTimeout(() => setCopied(null), 1200); } };
-  const box = "min-h-10 w-full rounded-lg bg-white px-3 text-sm text-ink ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500";
+  const box = "min-h-10 w-full rounded-lg bg-white px-3 text-sm text-ink ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-ink";
   const field = (labelText: string, name: string, def: string | null, extra?: { type?: string; value?: string; onChange?: (v: string) => void; inputMode?: "decimal" }) => (
     <label className="block"><span className="mb-1 block text-[11px] font-semibold text-slate-500">{labelText}</span>
       {extra?.onChange
@@ -70,7 +70,7 @@ export function SupplierPayForm({ orgId, jobId, orderId, supplier, orderCode, or
           <div className="flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 ring-1 ring-slate-200" data-invoice-file>
             <span className="grid h-11 w-9 shrink-0 place-items-center rounded-md bg-red-50 text-[9px] font-bold text-red-600 ring-1 ring-red-100">PDF</span>
             <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-ink">{inv.fileName}</span><span className="block truncate text-xs text-slate-500">{inv.source === "gmail" ? `From Gmail${inv.from ? ` · ${inv.from}` : ""}` : "Added to the job's documents"}</span></span>
-            <a href={inv.fileUrl} target="_blank" rel="noreferrer" className="text-xs font-semibold text-brand-700">Open</a>
+            <a href={inv.fileUrl} target="_blank" rel="noreferrer" className="text-xs font-semibold text-ink">Open</a>
           </div>
         ) : (
           <label className="flex cursor-pointer flex-col items-center gap-1 rounded-xl border-2 border-dashed border-slate-300 bg-white px-4 py-5 text-center" data-invoice-upload>
@@ -80,7 +80,7 @@ export function SupplierPayForm({ orgId, jobId, orderId, supplier, orderCode, or
           </label>
         )}
         {msg && <p className="rounded-lg bg-white px-3 py-2 text-xs text-slate-600 ring-1 ring-slate-200">{msg}</p>}
-        <p className={cx("flex items-center gap-1.5 text-xs font-medium", read ? "text-brand-700" : "text-slate-500")}><Ico d={read ? "M5 12l5 5 9-10" : "M12 8v5M12 16h.01M12 21a9 9 0 100-18 9 9 0 000 18"} className="h-3.5 w-3.5" />{read ? "Filled in from the invoice. Check it and pay." : "Check these against the invoice before you pay."}</p>
+        <p className={cx("flex items-center gap-1.5 text-xs font-medium", read ? "text-ink" : "text-slate-500")}><Ico d={read ? "M5 12l5 5 9-10" : "M12 8v5M12 16h.01M12 21a9 9 0 100-18 9 9 0 000 18"} className="h-3.5 w-3.5" />{read ? "Filled in from the invoice. Check it and pay." : "Check these against the invoice before you pay."}</p>
         <div className="grid grid-cols-2 gap-3">
           {field("Invoice number", "invoice_no", inv.no)}
           {field("Invoice date", "invoice_date", inv.date, { type: "date" })}
@@ -89,23 +89,23 @@ export function SupplierPayForm({ orgId, jobId, orderId, supplier, orderCode, or
           {field("Due", "invoice_due", inv.due, { type: "date" })}
           {field("Their ABN", "invoice_abn", inv.abn)}
         </div>
-        <div className={cx("rounded-xl px-3.5 py-3 ring-1", Math.abs(diff) < 0.05 ? "bg-brand-50 ring-brand-100" : "bg-amber-50/70 ring-amber-200")} data-match={Math.abs(diff) < 0.05 ? "yes" : "no"}>
-          <p className={cx("flex items-center gap-2 text-sm font-semibold", Math.abs(diff) < 0.05 ? "text-brand-800" : "text-amber-900")}><Ico d={Math.abs(diff) < 0.05 ? "M5 12l5 5 9-10" : "M12 8v5M12 16h.01"} />{Math.abs(diff) < 0.05 ? "Matches the order" : `${aud(Math.abs(diff))} ${diff > 0 ? "more" : "less"} than the order`}</p>
+        <div className={cx("rounded-xl px-3.5 py-3 ring-1", Math.abs(diff) < 0.05 ? "bg-slate-100 ring-slate-300" : "bg-amber-50/70 ring-amber-200")} data-match={Math.abs(diff) < 0.05 ? "yes" : "no"}>
+          <p className={cx("flex items-center gap-2 text-sm font-semibold", Math.abs(diff) < 0.05 ? "text-ink" : "text-amber-900")}><Ico d={Math.abs(diff) < 0.05 ? "M5 12l5 5 9-10" : "M12 8v5M12 16h.01"} />{Math.abs(diff) < 0.05 ? "Matches the order" : `${aud(Math.abs(diff))} ${diff > 0 ? "more" : "less"} than the order`}</p>
           <p className="mt-0.5 text-xs text-slate-600">Order {orderCode ?? ""} · {orderItems} item{orderItems === 1 ? "" : "s"} · {aud(orderCost)} ex GST.{Math.abs(diff) >= 0.05 ? " Check for extra items or price changes before you pay." : ""}</p>
         </div>
         <div className="rounded-xl bg-white ring-1 ring-slate-200">
-          <p className="border-b border-slate-100 px-3.5 py-2.5 text-xs font-semibold text-slate-500">Pay by bank transfer</p>
+          <p className="border-b-2 border-dashed border-slate-200 px-3.5 py-2.5 text-xs font-semibold text-slate-500">Pay by bank transfer</p>
           {([["Account name", "bank_name", inv.bankName], ["BSB", "bank_bsb", inv.bsb], ["Account", "bank_account", inv.account]] as const).map(([k, name, v]) => (
-            <div key={k} className="flex items-center gap-3 border-b border-slate-100 px-3.5 py-1.5">
+            <div key={k} className="flex items-center gap-3 border-b-2 border-dashed border-slate-200 px-3.5 py-1.5">
               <span className="w-24 shrink-0 text-xs text-slate-500">{k}</span>
               <input name={name} defaultValue={v ?? ""} placeholder="From the invoice" className="min-h-9 min-w-0 flex-1 bg-transparent text-sm font-medium tabular-nums text-ink placeholder:font-normal placeholder:text-slate-300 focus:outline-none" />
-              <button type="button" onClick={(e) => copy(k, (e.currentTarget.previousElementSibling as HTMLInputElement).value)} className="text-xs font-semibold text-brand-700">{copied === k ? "Copied" : "Copy"}</button>
+              <button type="button" onClick={(e) => copy(k, (e.currentTarget.previousElementSibling as HTMLInputElement).value)} className="text-xs font-semibold text-ink">{copied === k ? "Copied" : "Copy"}</button>
             </div>
           ))}
           <div className="flex items-center gap-3 px-3.5 py-2.5"><span className="w-24 shrink-0 text-xs text-slate-500">Reference</span><span className="flex-1 text-sm font-medium text-ink">{inv.no ?? orderCode ?? "Invoice number"}</span></div>
         </div>
       </div>
-      <div className="flex items-center gap-3 border-t border-slate-200 bg-white px-5 py-3">
+      <div className="flex items-center gap-3 border-t-2 border-dashed border-slate-200 bg-white px-5 py-3">
         <div className="min-w-0 flex-1"><p className="text-xs text-slate-500">Total inc GST</p><p className="font-display text-2xl font-bold leading-none text-ink" data-pay-total>{aud(total)}</p></div>
         <SubmitButton className="min-h-12 gap-2 px-5"><Ico d="M5 12l5 5 9-10" />I&apos;ve paid it</SubmitButton>
       </div>

@@ -64,6 +64,8 @@ export type Docket = {
     inspection: { photos: number; at: string | null };
   } | null;
   /** Wrapping up only: what's left to close the job out. */
+  /** Extra lines for the job record (variations, sign-off, site safety, defects …). */
+  extra: RecordExtra;
   wrap: { handoverSentAt: string | null; reviewRequestedAt: string | null; reviewUrl: string | null; warrantyRegisteredAt: string | null; warrantyProduct: string | null; finishedOn: string | null; quotedMargin: number | null; workmanshipYears: number } | null;
 };
 export type SoldReady = {
@@ -74,7 +76,17 @@ export type SoldReady = {
   crew: { name: string | null; start: string | null; end: string | null; locked: boolean };
   rule: string | null;
 };
-export type LeadDoc = { id: string; name: string; mime: string | null; size: number | null; at: string; viewUrl: string | null; downloadUrl: string | null };
+export type LeadDoc = { id: string; name: string; mime: string | null; size: number | null; at: string; viewUrl: string | null; downloadUrl: string | null; category?: string; revision?: string | null; superseded?: boolean; report?: { source: string | null; area: number | null; pitch: number | null } | null };
+/** The job record's extra lines: variations, sign-off, site safety, defects, photo stages, message count. */
+export type RecordExtra = {
+  variations: { id: string; title: string; status: string; amount: number; approvedAt: string | null; approvedName: string | null }[];
+  signoff: { at: string; name: string | null } | null;
+  swms: { status: string; fileId: string | null; by: string | null; at: string | null } | null;
+  siteDays: { days: number; first: string | null; last: string | null };
+  defects: { open: number; total: number };
+  photoStages: { before: number; during: number; after: number };
+  messageCount: number;
+};
 
 const docName = (f: { caption: string | null; storage_path: string }) => (f.caption?.trim() || f.storage_path.split("/").pop() || "Document").slice(0, 120);
 const one = <T,>(x: T | T[] | null | undefined): T | null => (Array.isArray(x) ? (x[0] ?? null) : (x ?? null));
@@ -90,7 +102,7 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
     canSeeMoney ? supabase.from("invoices").select("id, number, status, kind, milestone_label, due_date, bill_to, invoice_totals(total, paid, balance), payments(id, amount, method, paid_on, reference)").eq("job_id", jobId).neq("status", "void").order("number") : empty,
     canSeeMoney ? supabase.from("job_costs").select("category, amount").eq("job_id", jobId) : empty,
     supabase.from("claims").select("carrier, claim_number, stage, excess, approved_amount, adjuster_name").eq("job_id", jobId).maybeSingle(),
-    supabase.from("job_files").select("id, kind, category, caption, storage_path, mime_type, size_bytes, created_at").eq("job_id", jobId).order("created_at", { ascending: false }).limit(300),
+    supabase.from("job_files").select("id, kind, category, caption, storage_path, mime_type, size_bytes, created_at, revision, superseded_at, meta").eq("job_id", jobId).order("created_at", { ascending: false }).limit(300),
     supabase.from("job_notes").select("id, body, created_at, author_name").eq("job_id", jobId).order("created_at", { ascending: false }).limit(20),
     supabase.from("messages").select("id, channel, direction, body, created_at, status").eq("job_id", jobId).order("created_at", { ascending: false }).limit(5),
   ]);
@@ -135,7 +147,7 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
   const profit = exGst !== null ? Math.round((exGst - costs.total) * 100) / 100 : null;
 
   // Files: counts + two thumbnails.
-  type F = { id: string; kind: string; category: string; caption: string | null; storage_path: string; mime_type: string | null; size_bytes: number | null; created_at: string };
+  type F = { id: string; kind: string; category: string; caption: string | null; storage_path: string; mime_type: string | null; size_bytes: number | null; created_at: string; revision?: string | null; superseded_at?: string | null; meta?: { kind?: string; source?: string | null; roof?: { area_m2?: number | null; pitch_deg?: number | null } | null } | null };
   const fileRows = (files ?? []) as F[];
   const photos = fileRows.filter((f) => f.kind === "photo");
   const plans = fileRows.filter((f) => f.category === "plans");
@@ -194,7 +206,8 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
     const { data } = await supabase.storage.from("job-files").createSignedUrl(f.storage_path, 3600, { download: docName(f) });
     return data?.signedUrl ?? null;
   }));
-  const docs: LeadDoc[] = docRows.map((f, i) => ({ id: f.id, name: docName(f), mime: f.mime_type, size: f.size_bytes === null ? null : Number(f.size_bytes), at: f.created_at, viewUrl: views.get(f.storage_path) ?? null, downloadUrl: downloads[i] }));
+  const docs: LeadDoc[] = docRows.map((f, i) => ({ id: f.id, name: docName(f), mime: f.mime_type, size: f.size_bytes === null ? null : Number(f.size_bytes), at: f.created_at, viewUrl: views.get(f.storage_path) ?? null, downloadUrl: downloads[i], category: f.category, revision: f.revision ?? null, superseded: Boolean(f.superseded_at),
+    report: f.meta?.kind === "roof_report" ? { source: f.meta.source ?? null, area: f.meta.roof?.area_m2 ?? null, pitch: f.meta.roof?.pitch_deg ?? null } : null }));
   let lead: Docket["lead"] = null;
   if (row.stage === "lead") {
     // "No answer" tries (job_events) and who made the first contact (its job note), for the First call step.
@@ -255,6 +268,34 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
     };
   }
 
+  // The job record's extra lines.
+  const SITE_KINDS = ["on_my_way", "materials_delivered", "tear_off_started", "dry_in", "completed", "cleanup_verified", "note", "photo"];
+  const [{ data: cos }, { data: wk }, { data: punch }, { data: siteEv }, { count: msgCount }] = await Promise.all([
+    supabase.from("change_orders").select("id, title, status, approved_at, approved_name, created_at, change_order_items(quantity, unit_price)").eq("job_id", jobId).order("created_at"),
+    supabase.from("jobs").select("walkthrough_signed_at, walkthrough_name").eq("id", jobId).maybeSingle(),
+    supabase.from("job_checklist_items").select("done_at").eq("job_id", jobId).eq("kind", "punch"),
+    ["in_progress", "completed", "paid"].includes(row.stage) ? supabase.from("job_events").select("created_at").eq("job_id", jobId).in("kind", SITE_KINDS).order("created_at").limit(500) : Promise.resolve({ data: [] as { created_at: string }[] }),
+    supabase.from("messages").select("id", { count: "exact", head: true }).eq("job_id", jobId),
+  ]);
+  type CO = { id: string; title: string; status: string; approved_at: string | null; approved_name: string | null; change_order_items: { quantity: number; unit_price: number }[] };
+  const tzRec = AU_STATE_TZ[asAuState(row.state) ?? asAuState(org.state) ?? "NSW"];
+  const dayKeys = [...new Set(((siteEv ?? []) as { created_at: string }[]).map((x) => new Date(x.created_at).toLocaleDateString("en-CA", { timeZone: tzRec })))];
+  const swmsItem = compFull?.items.find((i) => i.key === "swms");
+  const wkRow = wk as { walkthrough_signed_at: string | null; walkthrough_name: string | null } | null;
+  const extra: RecordExtra = {
+    variations: ((cos ?? []) as unknown as CO[]).filter((x) => x.status !== "declined").map((x) => ({ id: x.id, title: x.title, status: x.status, approvedAt: x.approved_at, approvedName: x.approved_name, amount: Math.round((x.change_order_items ?? []).reduce((t, i) => t + Number(i.quantity) * Number(i.unit_price), 0) * 100) / 100 })),
+    signoff: wkRow?.walkthrough_signed_at ? { at: wkRow.walkthrough_signed_at, name: wkRow.walkthrough_name } : null,
+    swms: swmsItem ? { status: swmsItem.status, fileId: swmsItem.tick?.file_id ?? null, by: swmsItem.tick?.updated_by_name ?? null, at: swmsItem.tick?.updated_at ?? null } : null,
+    siteDays: { days: dayKeys.length, first: dayKeys[0] ?? null, last: dayKeys.at(-1) ?? null },
+    defects: { open: ((punch ?? []) as { done_at: string | null }[]).filter((x) => !x.done_at).length, total: (punch ?? []).length },
+    photoStages: {
+      before: photos.filter((f) => ["overview", "damage", "broken_tiles", "ridge_capping", "sheet_damage", "hail_dents", "gutter_damage", "internal_water", "test_square"].includes(f.category)).length,
+      during: photos.filter((f) => ["decking", "progress", "delivery"].includes(f.category)).length,
+      after: photos.filter((f) => f.category === "completion").length,
+    },
+    messageCount: msgCount ?? 0,
+  };
+
   const refRow = row as { referred_by?: string | null; referred_by_type?: string | null };
   const referredBy = refRow.referred_by && isReferrerType(refRow.referred_by_type) ? await loadReferrer(supabase, refRow.referred_by_type, refRow.referred_by) : null;
   // Just a state on its own (the form's default) isn't an address.
@@ -289,6 +330,7 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
     docs,
     build,
     wrap,
+    extra,
     quoting,
     money: { contract, invoiced, paid, owing: contract !== null ? Math.max(0, Math.round((contract - paid) * 100) / 100) : invoices.reduce((a, i) => a + i.balance, 0), costs: costs.total, profit, margin: profit !== null && exGst ? Math.round((profit / exGst) * 100) : null },
   };

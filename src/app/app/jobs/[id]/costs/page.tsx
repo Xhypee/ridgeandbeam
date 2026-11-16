@@ -68,8 +68,8 @@ export default async function CostsPage({ params }: PageProps<"/app/jobs/[id]/co
       <Card title="Budget vs actual">
         <div className="-m-4 overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead><tr className="border-b border-slate-100"><th className={th}>Category</th><th className={cx(th, "text-right")}>Budget</th><th className={cx(th, "text-right")}>Actual</th><th className={cx(th, "text-right")}>Variance</th></tr></thead>
-            <tbody className="divide-y divide-slate-100">
+            <thead><tr className="border-b-2 border-dashed border-slate-200"><th className={th}>Category</th><th className={cx(th, "text-right")}>Budget</th><th className={cx(th, "text-right")}>Actual</th><th className={cx(th, "text-right")}>Variance</th></tr></thead>
+            <tbody className="divide-y-2 divide-dashed divide-slate-200">
               {COST_CATEGORIES.filter((c) => budget[c] || actual[c]).map((c) => {
                 const v = Math.round((actual[c] - budget[c]) * 100) / 100;
                 return (
@@ -100,14 +100,14 @@ export default async function CostsPage({ params }: PageProps<"/app/jobs/[id]/co
         {f.costs.length === 0 ? <p className="text-sm text-slate-500">No costs yet. Delivered material orders, crew pay and credited returns post here automatically.</p> : (
           <Table>
             <thead><tr><th className={th}>Date</th><th className={th}>Category</th><th className={th}>Vendor / description</th><th className={cx(th, "text-right")}>Amount</th><th className={th}></th></tr></thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y-2 divide-dashed divide-slate-200">
               {f.costs.map((c) => (
                 <tr key={c.id} className="align-top">
                   <td className={cx(td, "whitespace-nowrap")}>{date(c.incurred_on, { month: "short", day: "numeric" })}</td>
                   <td className={td}>{COST_CATEGORY_LABEL[c.category as CostCategory] ?? label(c.category)}{c.source !== "manual" && <span className="ml-1"><Badge tone="blue">{label(c.source)}</Badge></span>}</td>
                   <td className={td}><span className="font-medium">{c.vendor}</span> <span className="text-slate-500">{c.description}</span>
                     <details className="mt-1">
-                      <summary className="cursor-pointer text-xs text-brand-600">Edit</summary>
+                      <summary className="cursor-pointer text-xs text-ink">Edit</summary>
                       <ActionForm action={saveCost} className="mt-2 space-y-2">
                         <CostFields c={c} jobId={id} />
                         <SubmitButton variant="secondary">Save</SubmitButton>

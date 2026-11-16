@@ -145,8 +145,8 @@ export function CanvassApp({ knocks, territories, people, center, hasData }: { k
 
       <div className={cx(view !== "map" && view !== "territories" && "hidden")}>
         {drawing && (
-          <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg bg-brand-50 p-2 text-sm">
-            <span className="font-medium text-brand-700">Tap the map to outline the territory · {drawing.length} points</span>
+          <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg bg-slate-100 p-2 text-sm">
+            <span className="font-medium text-ink">Tap the map to outline the territory · {drawing.length} points</span>
             <Button type="button" disabled={drawing.length < 3} onClick={() => { setNewTerritory([drawing]); setDrawing(null); }}>Finish</Button>
             <Button type="button" variant="secondary" onClick={() => setDrawing(drawing.slice(0, -1))} disabled={!drawing.length}>Undo</Button>
             <Button type="button" variant="ghost" onClick={() => setDrawing(null)}>Cancel</Button>
@@ -159,7 +159,7 @@ export function CanvassApp({ knocks, territories, people, center, hasData }: { k
       </div>
 
       {view === "map" && !sheet && !drawing && (
-        <button type="button" onClick={knockHere} disabled={gpsBusy} className="sticky bottom-3 z-[1100] w-full rounded-xl bg-brand-500 px-4 py-4 text-lg font-semibold text-white hover:bg-brand-600 disabled:opacity-70" data-knock-here>
+        <button type="button" onClick={knockHere} disabled={gpsBusy} className="sticky bottom-3 z-[1100] w-full rounded-xl bg-ink px-4 py-4 text-lg font-semibold text-white hover:bg-ink/90 disabled:opacity-70" data-knock-here>
           {gpsBusy ? "Finding you…" : "Knock here"}
         </button>
       )}
@@ -177,7 +177,7 @@ export function CanvassApp({ knocks, territories, people, center, hasData }: { k
       )}
 
       {view === "list" && (
-        <ul className="divide-y divide-slate-100 rounded-xl bg-white ring-1 ring-slate-200" data-knock-list>
+        <ul className="divide-y-2 divide-dashed divide-slate-200 rounded-xl bg-white ring-1 ring-slate-200" data-knock-list>
           {knocks.length === 0 && <li className="p-4 text-sm text-slate-500">No knocks in this date range.</li>}
           {knocks.map((k) => (
             <li key={k.id}>
@@ -278,7 +278,7 @@ function KnockSheet({ sheet, knock, setterName, onClose, onQueued, onDone }: {
         jobId ? (
           <p className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-800" role="status">Lead created and credited to you. <Link className="font-medium underline" href={`/app/jobs/${jobId}`}>Open the job</Link></p>
         ) : (
-          <form action={doConvert} className="mt-4 space-y-3 border-t border-slate-100 pt-4">
+          <form action={doConvert} className="mt-4 space-y-3 border-t-2 border-dashed border-slate-200 pt-4">
             <p className="text-sm font-medium">Homeowner details</p>
             <div className="grid gap-3 sm:grid-cols-3">
               <Field label="Name"><Input name="name" required autoComplete="off" /></Field>
@@ -364,7 +364,7 @@ function Territories({ territories, people, names, onDraw, pendingRings, onClear
           </div>
         </form>
       )}
-      <ul className="divide-y divide-slate-100 rounded-xl bg-white ring-1 ring-slate-200">
+      <ul className="divide-y-2 divide-dashed divide-slate-200 rounded-xl bg-white ring-1 ring-slate-200">
         {territories.length === 0 && <li className="p-4 text-sm text-slate-500">No territories yet.</li>}
         {territories.map((t) => (
           <li key={t.id} className="flex items-center justify-between gap-2 px-4 py-3">
@@ -372,7 +372,7 @@ function Territories({ territories, people, names, onDraw, pendingRings, onClear
               <span className="h-3 w-3 shrink-0 rounded" style={{ background: t.color }} />
               <span className="min-w-0">
                 <span className="block truncate text-sm font-medium">{t.name}</span>
-                <span className="block text-xs text-slate-500">{t.kind === "hail_swath" ? `Hail swath${t.storm_date ? ` · ${t.storm_date}` : ""}` : "Territory"}{t.assigned_to ? ` · ${names.get(t.assigned_to) ?? ""}` : ""}</span>
+                <span className="block font-mono text-xs text-slate-500">{t.kind === "hail_swath" ? `Hail swath${t.storm_date ? ` · ${t.storm_date}` : ""}` : "Territory"}{t.assigned_to ? ` · ${names.get(t.assigned_to) ?? ""}` : ""}</span>
               </span>
             </span>
             <Button type="button" variant="ghost" onClick={() => start(async () => { const r = await deleteTerritory(t.id); onFlash(r.error ?? "Deleted."); })}>Delete</Button>

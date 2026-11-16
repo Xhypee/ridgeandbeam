@@ -59,7 +59,7 @@ export default async function InvoicePage({ params }: PageProps<"/app/invoices/[
         }
         subtitle={
           <span className="flex flex-wrap items-center gap-2">
-            <Link href={`/app/jobs/${job.id}`} className="font-medium text-slate-700 hover:text-brand-600">{job.title}</Link> · {c.name}
+            <Link href={`/app/jobs/${job.id}`} className="font-medium text-slate-700 hover:text-ink">{job.title}</Link> · {c.name}
             <Badge tone={INVOICE_KIND_TONE[kind]}>{v.milestone_label || INVOICE_KIND_LABEL[kind]}</Badge>
             <span>Bill to {BILL_TO_LABEL[billTo]}</span>
           </span>
@@ -118,7 +118,7 @@ export default async function InvoicePage({ params }: PageProps<"/app/invoices/[
               <div className="rounded-lg bg-slate-50 p-2"><dt className="text-xs text-slate-500">Balance</dt><dd className="font-semibold tabular-nums">{money(balance)}</dd></div>
             </dl>
             {payments.length > 0 && (
-              <ul className="mb-4 divide-y divide-slate-100 text-sm">
+              <ul className="mb-4 divide-y-2 divide-dashed divide-slate-200 text-sm">
                 {payments.map((p) => (
                   <li key={p.id} className="flex items-center justify-between gap-2 py-2">
                     <div>

@@ -15,7 +15,7 @@ export default function NewCustomerPage() {
           <CustomerFields />
           <div className="rounded-lg bg-slate-50 p-4">
             <label className="flex items-center gap-2 text-sm font-medium text-slate-800">
-              <input type="checkbox" name="create_job" defaultChecked className="h-4 w-4 accent-brand-500" />
+              <input type="checkbox" name="create_job" defaultChecked className="h-4 w-4 accent-ink" />
               Also open a job for this customer
             </label>
             <Field label="Job title" className="mt-3 max-w-sm"><Input name="job_title" placeholder="Roof inspection" /></Field>

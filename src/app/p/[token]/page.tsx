@@ -1,4 +1,8 @@
 import type { Metadata } from "next";
+import { ActionForm, SubmitButton } from "@/components/action-form";
+import { SignaturePad } from "@/components/signature-pad";
+import { Input } from "@/components/ui";
+import { signOffRoof } from "./actions";
 import { notFound } from "next/navigation";
 import { ClaimExplainer } from "@/components/claim-explainer";
 import { ServiceWorkerRegister } from "@/components/field/sw-register";
@@ -43,7 +47,7 @@ export default async function Portal({ params }: PageProps<"/p/[token]">) {
   return (
     <main className="mx-auto min-h-screen max-w-xl px-4 pb-16 pt-5 text-slate-900">
       <ServiceWorkerRegister />
-      <header className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+      <header className="rounded-[22px] bg-white p-4 ring-1 ring-slate-200">
         <p className="text-xl font-bold text-brand-700">{o.name}</p>
         <div className="mt-1 space-y-0.5 text-sm text-slate-600">
           {(o.abn || licence || o.license_number) && (
@@ -74,6 +78,23 @@ export default async function Portal({ params }: PageProps<"/p/[token]">) {
         )}
       </section>
 
+      {["completed", "paid"].includes(job.stage) && !job.walkthrough_signed_at && (
+        <section className="mt-4 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-300" data-testid="portal-signoff">
+          <h2 className="font-bold text-amber-900">Sign off your new roof</h2>
+          <p className="mt-1 text-sm text-amber-900">Happy with the work? Sign below to confirm it&apos;s finished. Anything not right, call us first and we&apos;ll fix it.</p>
+          <ActionForm action={signOffRoof} className="mt-3 space-y-3">
+            <input type="hidden" name="token" value={token} />
+            <Input name="name" placeholder="Your full name" autoComplete="name" required aria-label="Your full name" />
+            <SignaturePad name="signature" />
+            <label className="flex items-start gap-2 text-sm text-slate-700"><input type="checkbox" name="agree" className="mt-0.5 h-5 w-5 accent-[#13221a]" />The work is finished to my satisfaction.</label>
+            <SubmitButton className="w-full">Sign off</SubmitButton>
+          </ActionForm>
+        </section>
+      )}
+      {job.walkthrough_signed_at && ["completed", "paid"].includes(job.stage) && (
+        <p className="mt-4 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700" data-testid="portal-signed">Signed off on {date(job.walkthrough_signed_at)}. Thank you!</p>
+      )}
+
       {pendingCo.length > 0 && (
         <section className="mt-4 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-300">
           <h2 className="font-bold text-amber-900">Needs your approval</h2>
@@ -85,7 +106,7 @@ export default async function Portal({ params }: PageProps<"/p/[token]">) {
         </section>
       )}
 
-      <section className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200" aria-labelledby="ms-h">
+      <section className="mt-4 rounded-[22px] bg-white p-4 ring-1 ring-slate-200" aria-labelledby="ms-h">
         <h2 id="ms-h" className="mb-3 font-bold">Your project, step by step <span className="text-sm font-normal text-slate-500">({doneCount} of {milestones.length} done)</span></h2>
         <ol className="relative space-y-0" data-testid="milestones">
           {milestones.map((m, i) => (
@@ -109,7 +130,7 @@ export default async function Portal({ params }: PageProps<"/p/[token]">) {
       </section>
 
       {job.claim && cp && (
-        <section className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200" aria-labelledby="claim-h" data-testid="portal-claim">
+        <section className="mt-4 rounded-[22px] bg-white p-4 ring-1 ring-slate-200" aria-labelledby="claim-h" data-testid="portal-claim">
           <h2 id="claim-h" className="font-bold">Your insurance claim</h2>
           <p className="text-sm text-slate-600">{[job.claim.insurer, job.claim.claim_number && `Claim ${job.claim.claim_number}`].filter(Boolean).join(" · ") || "Your insurer"}</p>
           <p className="mt-2 rounded-xl bg-brand-50 px-3 py-2 text-base font-semibold text-brand-700" data-testid="claim-stage">{cp.stageText}</p>
@@ -140,7 +161,7 @@ export default async function Portal({ params }: PageProps<"/p/[token]">) {
         {job.events.length === 0 ? <p className="text-sm text-slate-500">Updates from the crew will show up here.</p> : (
           <ul className="space-y-2">
             {job.events.slice(0, 20).map((e, i) => (
-              <li key={i} className="rounded-2xl bg-white p-3 ring-1 ring-slate-200">
+              <li key={i} className="rounded-[22px] bg-white p-3 ring-1 ring-slate-200">
                 <p className="font-semibold">{EVENT_LABEL[e.kind] ?? "Update"}</p>
                 {e.note && <p className="text-sm text-slate-700">{e.note}</p>}
                 <p className="text-xs text-slate-500">{new Date(e.created_at).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" })}</p>
@@ -173,9 +194,9 @@ export default async function Portal({ params }: PageProps<"/p/[token]">) {
 
       {plan && plan.parts.length > 1 && <div className="mt-4"><PublicPayPlan plan={plan} cardOnline={stripeConfigured()} /></div>}
 
-      <section className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-slate-200" aria-labelledby="docs-h">
+      <section className="mt-4 rounded-[22px] bg-white p-4 ring-1 ring-slate-200" aria-labelledby="docs-h">
         <h2 id="docs-h" className="mb-2 font-bold">Documents</h2>
-        <ul className="divide-y divide-slate-100 text-sm">
+        <ul className="divide-y-2 divide-dashed divide-slate-200 text-sm">
           {job.estimates.map((e) => (
             <li key={e.public_token}><a href={`/q/${e.public_token}`} className="flex min-h-12 items-center justify-between gap-2">
               <span>Quote #{e.number}{e.status === "accepted" ? " (signed)" : ""}</span><span className="font-semibold">{money(e.total)} →</span></a></li>
@@ -194,7 +215,7 @@ export default async function Portal({ params }: PageProps<"/p/[token]">) {
       </section>
 
       {job.warranty_product && (
-        <p className="mt-4 rounded-2xl bg-white p-4 text-sm ring-1 ring-slate-200">
+        <p className="mt-4 rounded-[22px] bg-white p-4 text-sm ring-1 ring-slate-200">
           Warranty: <b>{job.warranty_product}</b> — {job.warranty_registered_at ? `registered ${date(job.warranty_registered_at)}` : "we'll lodge it with the manufacturer after install."}
         </p>
       )}

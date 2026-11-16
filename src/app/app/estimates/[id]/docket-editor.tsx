@@ -204,7 +204,7 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
       <div className="no-print mb-4 flex flex-wrap items-center gap-2 text-sm">
         {!locked && (
           <Link href={`/app/measure/${id}/plans`} onClick={guardLeave} data-testid={hasPlans ? "view-roof" : "measure-from-plans"}
-            className={cx("inline-flex min-h-11 items-center rounded-xl px-4 font-semibold", measured ? "text-ink ring-1 ring-slate-300 hover:bg-white" : "bg-brand-500 text-white hover:bg-brand-600")}>
+            className={cx("inline-flex min-h-11 items-center rounded-xl px-4 font-semibold", measured ? "text-ink ring-1 ring-slate-300 hover:bg-white" : "bg-ink text-white hover:bg-ink/90")}>
             {hasPlans ? "View the roof" : "Measure from plans"}
           </Link>
         )}
@@ -216,7 +216,7 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
             Update from measurements
           </button>
         )}
-        <Link href={`/app/estimates/${id}?view=editor`} onClick={guardLeave} className="ml-auto inline-flex min-h-11 items-center rounded-xl px-4 font-medium text-brand-700 ring-1 ring-brand-500/40 hover:bg-brand-50" data-testid="detailed-editor">
+        <Link href={`/app/estimates/${id}?view=editor`} onClick={guardLeave} className="ml-auto inline-flex min-h-11 items-center rounded-xl px-4 font-medium text-ink ring-1 ring-ink/40 hover:bg-slate-100" data-testid="detailed-editor">
           Detailed editor →
         </Link>
         <span className="min-w-16 text-right text-xs text-slate-500" aria-live="polite" data-testid="save-state">{locked ? "Locked" : saving ? "Saving…" : dirty ? "Unsaved" : "Saved"}</span>
@@ -239,7 +239,7 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
               <div className="flex flex-wrap gap-2" role="group" aria-label="Sheet profile">
                 {DOCKET_PROFILES.map((p) => (
                   <button key={p} type="button" onClick={() => pickProfile(p)} aria-pressed={p === profile} data-testid={`docket-profile-${p}`}
-                    className={cx("min-h-11 rounded-xl px-3.5 text-sm font-bold ring-1", p === profile ? "bg-brand-50 text-ink ring-2 ring-brand-500" : "bg-white text-ink ring-slate-200 hover:bg-slate-50")}>
+                    className={cx("min-h-11 rounded-xl px-3.5 text-sm font-bold ring-1", p === profile ? "bg-slate-100 text-ink ring-2 ring-ink" : "bg-white text-ink ring-slate-200 hover:bg-slate-50")}>
                     {PROFILE_SHORT[p]}
                   </button>
                 ))}
@@ -247,11 +247,11 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
               <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Colour">
                 {COLOURS.map((c) => (
                   <button key={c.name} type="button" onClick={() => pickColour(c.name)} aria-label={c.name} title={c.name} aria-pressed={c.name === colour} data-testid="docket-colour"
-                    className={cx("h-9 w-9 rounded-full ring-offset-2 sm:h-8 sm:w-8", c.name === colour ? "ring-2 ring-brand-500" : "ring-1 ring-slate-300")} style={{ background: c.hex }} />
+                    className={cx("h-9 w-9 rounded-full ring-offset-2 sm:h-8 sm:w-8", c.name === colour ? "ring-2 ring-ink" : "ring-1 ring-slate-300")} style={{ background: c.hex }} />
                 ))}
               </div>
               <label className="mt-2 inline-flex min-h-11 items-center gap-2 text-sm text-slate-600">
-                <input type="checkbox" className="h-4 w-4 accent-brand-500" checked={customerColour} onChange={(e) => change({ customerColour: e.target.checked })} data-testid="customer-colour-toggle" />
+                <input type="checkbox" className="h-4 w-4 accent-ink" checked={customerColour} onChange={(e) => change({ customerColour: e.target.checked })} data-testid="customer-colour-toggle" />
                 Let the customer choose the colour
               </label>
               {problem && (
@@ -268,12 +268,12 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
             {measured ? (
               <>
                 <p className="text-slate-600">The roof is measured. Fill the docket with its lines from your price book.</p>
-                <button type="button" onClick={fill} className="mt-4 inline-flex min-h-12 items-center rounded-2xl bg-brand-500 px-6 font-semibold text-white hover:bg-brand-600" data-testid="docket-fill">
+                <button type="button" onClick={fill} className="mt-4 inline-flex min-h-12 items-center rounded-2xl bg-ink px-6 font-semibold text-white hover:bg-ink/90" data-testid="docket-fill">
                   Fill the docket from the measurements
                 </button>
               </>
             ) : (
-              <p className="text-slate-600">Measure the roof first: from the plans, on the satellite map, or by hand in the <Link href={`/app/estimates/${id}?view=editor`} className="font-semibold text-brand-700 underline">detailed editor</Link>.</p>
+              <p className="text-slate-600">Measure the roof first: from the plans, on the satellite map, or by hand in the <Link href={`/app/estimates/${id}?view=editor`} className="font-semibold text-ink underline">detailed editor</Link>.</p>
             )}
           </div>
         ) : (
@@ -303,7 +303,7 @@ export function DocketEditor({ id, status, publicUrl, header, address, customer,
             note={status === "draft" ? <p className="mb-1 text-xs text-slate-400">Not in the total. The customer can add these on their quote link too.</p> : null} />
           {status === "draft" ? (
             <button type="button" onClick={send} disabled={sending || items.length === 0 || Boolean(problem)} data-testid="send-quote" title={problem ?? undefined}
-              className="no-print mt-6 flex min-h-14 w-full items-center justify-center rounded-2xl bg-brand-500 text-lg font-semibold text-white hover:bg-brand-600 disabled:opacity-50">
+              className="no-print mt-6 flex min-h-14 w-full items-center justify-center rounded-2xl bg-ink text-lg font-semibold text-white hover:bg-ink/90 disabled:opacity-50">
               {sending ? "Sending…" : problem ? "Set the sheet price to send" : "Send the quote →"}
             </button>
           ) : status === "sent" ? (

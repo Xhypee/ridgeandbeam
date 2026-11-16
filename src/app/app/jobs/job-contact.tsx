@@ -42,7 +42,7 @@ export function ContactSection({ jobId, customer: c, site, state, referredBy }: 
   const initial = site ? { ...parseAuAddress(site), lat: null, lng: null } : null;
 
   const edit = !editing && (
-    <button type="button" onClick={startEdit} data-contact-edit className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-50">
+    <button type="button" onClick={startEdit} data-contact-edit className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 font-semibold text-ink hover:bg-slate-100 font-mono text-xs uppercase tracking-wider">
       <Icon d={PENCIL} className="h-3.5 w-3.5" />Edit
     </button>
   );
@@ -71,7 +71,7 @@ export function ContactSection({ jobId, customer: c, site, state, referredBy }: 
         <ContactRow icon={PHONE} label="Mobile" value={c.phone ?? <span className="text-slate-400">No number</span>}>
           {phone && <span className="flex gap-1.5">
             <a href={`sms:${phone}`} aria-label={`Text ${c.name}`} title="Text" className={iconBtn}><Icon d="M4 5h16v11H9l-5 4z" /></a>
-            <a href={`tel:${phone}`} aria-label={`Call ${c.name}`} title="Call" className="grid h-9 w-9 place-items-center rounded-lg bg-brand-500 text-white hover:bg-brand-600"><Icon d={PHONE} /></a>
+            <a href={`tel:${phone}`} aria-label={`Call ${c.name}`} title="Call" className="grid h-9 w-9 place-items-center rounded-lg bg-ink text-white hover:bg-ink/90"><Icon d={PHONE} /></a>
           </span>}
         </ContactRow>
         <ContactRow icon={MAIL} label="Email" value={c.email ?? <span className="text-slate-400">No email</span>}>
@@ -83,7 +83,7 @@ export function ContactSection({ jobId, customer: c, site, state, referredBy }: 
           </a>}
         </ContactRow>
         {referredBy && (
-          <ContactRow icon={GIFT} label="Referred by" value={<Link href={referredBy.href} className="hover:text-brand-700 hover:underline" data-contact-referred>{referredBy.name}</Link>}>
+          <ContactRow icon={GIFT} label="Referred by" value={<Link href={referredBy.href} className="hover:text-ink hover:underline" data-contact-referred>{referredBy.name}</Link>}>
             <Link href={referredBy.href} aria-label={`Open ${referredBy.name}`} title={`Open ${referredBy.name}`} className={iconBtn}><Icon d="M9 6l6 6-6 6" /></Link>
           </ContactRow>
         )}

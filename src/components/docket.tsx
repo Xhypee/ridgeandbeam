@@ -115,7 +115,7 @@ export function RoofBand({ shape, hex, title, facts, address, price, badge, chil
           <p className="font-display text-xl font-bold text-ink sm:text-2xl" data-testid="roof-title">{title}</p>
           <p className="font-display hidden shrink-0 text-2xl font-bold tabular-nums text-ink sm:block" data-testid="roof-price">{money(price)}</p>
         </div>
-        <p className="text-sm text-slate-500" data-testid="roof-facts">{facts}{badge && <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700" data-testid="roof-badge">{badge}</span>}</p>
+        <p className="text-sm text-slate-500" data-testid="roof-facts">{facts}{badge && <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-ink" data-testid="roof-badge">{badge}</span>}</p>
         {address && <p className="font-mono text-xs uppercase tracking-wider text-slate-400">{address}</p>}
         <p className="font-display mt-1 text-lg font-bold tabular-nums text-ink sm:hidden">{money(price)}</p>
         {children && <div className="mt-3">{children}</div>}
@@ -185,7 +185,7 @@ export function AddedExtras({ rows, onRemove, canRemove, onRequired, busy }: {
           <ItemIcon calcKey={e.calcKey} size={22} />
           <span className="min-w-0 flex-1 text-ink">
             {e.name} <span className="text-sm text-slate-400">· {e.qty}</span>
-            {e.customerAdded && <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">Added by customer</span>}
+            {e.customerAdded && <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-ink">Added by customer</span>}
             {!onRequired && e.required && <span className="ml-2 inline-flex items-center gap-1 text-xs text-slate-400" data-testid="required-badge" title="Included for safety: can't be removed"><Lock />Required</span>}
           </span>
           {onRequired && (
@@ -238,7 +238,7 @@ export function OftenAdded({ rows, onAdd, busy, title = "Often added", className
           </span>
           <span className="shrink-0 tabular-nums">+{money(e.amount)}</span>
           {onAdd && (
-            <button type="button" disabled={busy} onClick={() => onAdd(e)} className="no-print ml-1 min-h-11 shrink-0 rounded-full px-4 text-sm font-semibold text-brand-700 ring-1 ring-brand-500 hover:bg-brand-50 disabled:opacity-50" aria-label={`Add ${e.name}`}>
+            <button type="button" disabled={busy} onClick={() => onAdd(e)} className="no-print ml-1 min-h-11 shrink-0 rounded-full px-4 font-semibold text-ink ring-1 ring-ink hover:bg-slate-100 disabled:opacity-50 font-mono text-xs uppercase tracking-wider" aria-label={`Add ${e.name}`}>
               Add
             </button>
           )}

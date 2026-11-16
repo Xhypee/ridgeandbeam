@@ -46,8 +46,8 @@ export function RainDay({ crews, defaultDate, riskyDates }: { crews: { id: strin
           <Input type="number" name="rain_days" min={1} max={10} value={Number(input.days)} onChange={(e) => set({ days: Number(e.target.value) || 1 })} />
         </Field>
         <div className="space-y-1 text-sm">
-          <label className="flex min-h-9 items-center gap-2"><input type="checkbox" checked={input.notifyHomeowners} onChange={(e) => set({ notifyHomeowners: e.target.checked })} className="h-4 w-4 accent-brand-500" />Text homeowners</label>
-          <label className="flex min-h-9 items-center gap-2"><input type="checkbox" checked={input.notifyCrews} onChange={(e) => set({ notifyCrews: e.target.checked })} className="h-4 w-4 accent-brand-500" />Text crews</label>
+          <label className="flex min-h-9 items-center gap-2"><input type="checkbox" checked={input.notifyHomeowners} onChange={(e) => set({ notifyHomeowners: e.target.checked })} className="h-4 w-4 accent-ink" />Text homeowners</label>
+          <label className="flex min-h-9 items-center gap-2"><input type="checkbox" checked={input.notifyCrews} onChange={(e) => set({ notifyCrews: e.target.checked })} className="h-4 w-4 accent-ink" />Text crews</label>
         </div>
       </div>
       <p className="mt-2 text-xs text-slate-500">Moves every job on that day plus the same crew&apos;s later jobs in the next two weeks, skipping weekends. Moved jobs become tentative. Assigned reps and crew leads get an in-app notice.</p>
@@ -66,7 +66,7 @@ export function RainDay({ crews, defaultDate, riskyDates }: { crews: { id: strin
         )}
       </div>
       {rows && (rows.length === 0 ? <p className="mt-3 text-sm text-slate-500">Nothing scheduled on that day for this crew.</p> : (
-        <ul className="mt-3 divide-y divide-slate-100 text-sm" aria-label="Preview">
+        <ul className="mt-3 divide-y-2 divide-dashed divide-slate-200 text-sm" aria-label="Preview">
           {rows.map((r) => (
             <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
               <span className="min-w-0"><b>{r.customer}</b> · {r.title} <span className="text-slate-500">({r.crew ?? "No crew"}{r.reason === "cascade" ? ", knock-on" : ""}{r.locked ? ", will unlock" : ""})</span></span>

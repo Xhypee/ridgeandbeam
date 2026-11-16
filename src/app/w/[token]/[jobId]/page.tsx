@@ -63,7 +63,7 @@ export default async function CrewJobPage({ params }: PageProps<"/w/[token]/[job
   return (
     <main className="mx-auto min-h-screen max-w-xl space-y-4 px-4 py-5" lang="en-AU">
       <header className="flex items-center justify-between gap-3">
-        <Link href={`/w/${token}`} className="flex min-h-11 items-center text-sm font-medium text-brand-600">{t.back}</Link>
+        <Link href={`/w/${token}`} className="flex min-h-11 items-center text-sm font-medium text-ink">{t.back}</Link>
       </header>
 
       <div>
@@ -104,7 +104,7 @@ export default async function CrewJobPage({ params }: PageProps<"/w/[token]/[job
         {mats.items.length === 0 ? <p className="text-slate-500">{t.noMaterials}</p> : (
           <table className="w-full text-base">
             <thead><tr className="text-left text-xs text-slate-500"><th className="pb-1">{t.qty}</th><th className="pb-1">{t.item}</th></tr></thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y-2 divide-dashed divide-slate-200">
               {mats.items.map((i, n) => (
                 <tr key={n}><td className="w-28 py-2 align-top font-semibold">{i.quantity} <span className="text-sm font-normal text-slate-500">{unitLabel(i.unit)}</span></td><td className="py-2">{i.description}</td></tr>
               ))}
@@ -142,7 +142,7 @@ export default async function CrewJobPage({ params }: PageProps<"/w/[token]/[job
         <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-300">{t.safetyTitle}</h2>
         <p>{t.safetyReminder}</p>
       </section>
-      {w.org.phone && <p className="text-center text-sm text-slate-500">{t.officePhone}: <a className="font-medium text-brand-600" href={`tel:${w.org.phone}`}>{w.org.phone}</a></p>}
+      {w.org.phone && <p className="text-center text-sm text-slate-500">{t.officePhone}: <a className="font-medium text-ink" href={`tel:${w.org.phone}`}>{w.org.phone}</a></p>}
     </main>
   );
 }

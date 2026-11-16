@@ -72,7 +72,7 @@ export function WrapPanel({ d, askHref, payHref }: { d: Docket; askHref: string;
     : !allPaid ? { key: "review", icon: STAR, label: "Ask for a Google review", detail: "Sent once they've paid", state: "wait" }
     : !w.reviewUrl ? { key: "review", icon: STAR, label: "Ask for a Google review", detail: "Paste your Google review link once and it's used on every job", state: "todo", wide: (
       <ActionForm action={saveReviewLink} className="mt-2">
-        <div className="flex gap-2"><input name="google_review_url" inputMode="url" placeholder="https://g.page/r/…/review" aria-label="Google review link" className="min-h-9 min-w-0 flex-1 rounded-lg bg-white px-2.5 text-xs ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+        <div className="flex gap-2"><input name="google_review_url" inputMode="url" placeholder="https://g.page/r/…/review" aria-label="Google review link" className="min-h-9 min-w-0 flex-1 rounded-lg bg-white px-2.5 text-xs ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-ink" />
           <SubmitButton variant="secondary" className="min-h-9 px-3 text-xs">Save</SubmitButton></div>
         <p className="mt-1 text-[11px] text-slate-500">Google Business Profile → Ask for reviews → copy the link.</p>
       </ActionForm>) }
@@ -92,23 +92,23 @@ export function WrapPanel({ d, askHref, payHref }: { d: Docket; askHref: string;
       <div className="px-5 pb-4" data-close-out>
         <div className="flex items-end justify-between gap-3">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{canClose ? "Ready to close" : "Closing it out"}</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">{canClose ? "Ready to close" : "Closing it out"}</p>
             <p className="font-display text-[26px] font-bold leading-tight text-ink">{canClose ? "Paid in full" : `${done} of ${steps.length} done`}</p>
           </div>
           <span className="mb-1.5 flex gap-1" aria-hidden>{steps.map((s) => <span key={s.key} className="h-2 w-5 rounded-full" style={{ background: s.state === "done" ? "#1f5f3f" : s.state === "now" ? "#13221a" : s.state === "wait" ? "#f4c66b" : "#e2e8f0" }} />)}</span>
         </div>
         <ol className="mt-3 overflow-hidden rounded-xl ring-1 ring-slate-200">
           {steps.map((s, k) => (
-            <li key={s.key} className={cx("flex items-center gap-3 px-3.5 py-3", k > 0 && "border-t border-slate-100", s.state === "now" && "bg-brand-50")} data-wrap-step={s.key} data-state={s.state}>
-              <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-full", s.state === "done" ? "bg-brand-500 text-white" : s.state === "now" ? "bg-ink text-white" : s.state === "wait" ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200" : "bg-white text-slate-500 ring-1 ring-slate-200")}>
+            <li key={s.key} className={cx("flex items-center gap-3 px-3.5 py-3", k > 0 && "border-t-2 border-dashed border-slate-200", s.state === "now" && "bg-slate-100")} data-wrap-step={s.key} data-state={s.state}>
+              <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-full", s.state === "done" ? "bg-ink text-white" : s.state === "now" ? "bg-ink text-white" : s.state === "wait" ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200" : "bg-white text-slate-500 ring-1 ring-slate-200")}>
                 <Icon d={s.state === "done" ? CHECK : s.icon} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className={cx("block text-sm font-semibold", s.state === "todo" ? "text-slate-600" : "text-ink")}>{s.label}</span>
+                <span className={cx("block font-display text-[15px] font-bold", s.state === "todo" ? "text-slate-600" : "text-ink")}>{s.label}</span>
                 <span className="block text-xs leading-snug text-slate-500">{s.detail}</span>
                 {s.wide}
               </span>
-              {s.action ?? (s.href && s.actionLabel && <Link href={s.href} scroll={false} className={cx("shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold", s.state === "now" ? "bg-brand-500 text-white hover:bg-brand-600" : "bg-white text-ink ring-1 ring-slate-300 hover:bg-slate-50")}>{s.actionLabel}</Link>)}
+              {s.action ?? (s.href && s.actionLabel && <Link href={s.href} scroll={false} className={cx("shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold", s.state === "now" ? "bg-ink text-white hover:bg-ink/90" : "bg-white text-ink ring-1 ring-slate-300 hover:bg-slate-50")}>{s.actionLabel}</Link>)}
             </li>
           ))}
         </ol>
@@ -119,8 +119,8 @@ export function WrapPanel({ d, askHref, payHref }: { d: Docket; askHref: string;
       </div>
 
       {exGst !== null && (
-        <div className="border-t border-slate-100 px-5 py-4" data-profit>
-          <div className="flex items-center gap-2"><p className="flex-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">What you made · only you</p><span className="text-xs text-slate-500">{aud(d.money.paid)} of {aud(b.contract || d.money.contract || 0)} paid</span></div>
+        <div className="border-t-2 border-dashed border-slate-200 px-5 py-4" data-profit>
+          <div className="flex items-center gap-2"><p className="flex-1 font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">What you made · only you</p><span className="text-xs text-slate-500">{aud(d.money.paid)} of {aud(b.contract || d.money.contract || 0)} paid</span></div>
           <div className="mt-2 rounded-2xl bg-ink p-4 text-white">
             <div className="flex flex-wrap items-end gap-x-3">
               <p className="font-display text-[34px] font-bold leading-none" style={{ color: (d.money.profit ?? 0) >= 0 ? "#8fd0a8" : "#f4c66b" }}>{aud(Math.round(d.money.profit ?? 0))}</p>

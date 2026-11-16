@@ -76,9 +76,9 @@ export function FullCalendar({ people, staff: staff0, day: day0, time, today, tz
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4" role="dialog" aria-modal aria-label={`${name}'s calendar`} data-full-calendar onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="flex h-[min(860px,92vh)] w-[min(1280px,96vw)] flex-col overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200">
         {/* Header: who, week/month, navigation */}
-        <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 px-5 py-3.5">
+        <div className="flex flex-wrap items-center gap-3 border-b-2 border-dashed border-slate-200 px-5 py-3.5">
           <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Book {leadName}&rsquo;s inspection</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">Book {leadName}&rsquo;s inspection</p>
             <p className="font-display text-xl font-bold text-ink">{first}&rsquo;s calendar</p>
           </div>
           <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Staff">
@@ -109,7 +109,7 @@ export function FullCalendar({ people, staff: staff0, day: day0, time, today, tz
                   {week.map((d) => {
                     const n = byDay.get(d)?.length ?? 0;
                     return (
-                      <div key={d} className={cx("border-l border-slate-100 px-2 py-2 text-center", d === today && "bg-brand-50")}>
+                      <div key={d} className={cx("border-l border-slate-100 px-2 py-2 text-center", d === today && "bg-slate-100")}>
                         <p className="text-[11px] font-semibold uppercase text-slate-400">{shortDay(d, { weekday: "short" })}</p>
                         <p className={cx("text-lg font-bold leading-tight", d < today ? "text-slate-300" : "text-ink")}>{Number(d.slice(8))}</p>
                         <p className="text-[10px] text-slate-400">{n ? `${n} on` : "Free"}</p>
@@ -117,9 +117,9 @@ export function FullCalendar({ people, staff: staff0, day: day0, time, today, tz
                     );
                   })}
                   {/* All-day: builds */}
-                  <span className="border-t border-slate-100 py-1 pr-1 text-right text-[10px] text-slate-400">All day</span>
+                  <span className="border-t-2 border-dashed border-slate-200 py-1 pr-1 text-right text-[10px] text-slate-400">All day</span>
                   {week.map((d) => (
-                    <div key={d} className="min-h-8 space-y-0.5 border-l border-t border-slate-100 p-0.5">
+                    <div key={d} className="min-h-8 space-y-0.5 border-l border-t-2 border-dashed border-slate-200 p-0.5">
                       {(byDay.get(d) ?? []).filter((i) => i.kind === "build").map((b, k) => (
                         <Link key={k} href={b.jobId ? `/app/jobs?job=${b.jobId}` : "#"} title={b.label} className="block truncate rounded-md bg-violet-100 px-1.5 py-1 text-[11px] font-semibold text-violet-800 hover:bg-violet-200">{b.label.replace(/^Build · /, "")}</Link>
                       ))}
@@ -139,7 +139,7 @@ export function FullCalendar({ people, staff: staff0, day: day0, time, today, tz
                           const busy = insp.some((i) => Math.abs((i.minutes as number) - min) < 60);
                           const off = d < today || busy;
                           return <button key={min} type="button" disabled={off} onClick={() => pick(d, min)} aria-label={`${d} ${hhmm(min)}`}
-                            className={cx("block w-full border-t", m === 0 ? "border-slate-100" : "border-dashed border-slate-100/70", !off && "hover:bg-brand-50")} style={{ height: ROW / 2 }} />;
+                            className={cx("block w-full border-t", m === 0 ? "border-slate-100" : "border-dashed border-slate-100/70", !off && "hover:bg-slate-100")} style={{ height: ROW / 2 }} />;
                         }))}
                         {insp.map((i, k) => (
                           <Link key={k} href={i.jobId ? `/app/jobs?job=${i.jobId}` : "#"} title={`${i.time} ${i.label}`}
@@ -150,7 +150,7 @@ export function FullCalendar({ people, staff: staff0, day: day0, time, today, tz
                           </Link>
                         ))}
                         {d === day0 && (
-                          <span className="pointer-events-none absolute inset-x-1 rounded-md border-2 border-dashed border-brand-500 bg-brand-50/80 px-1.5 py-1 text-[11px] font-bold leading-tight text-brand-700"
+                          <span className="pointer-events-none absolute inset-x-1 rounded-md border-2 border-dashed border-ink bg-slate-100/80 px-1.5 py-1 text-[11px] font-bold leading-tight text-ink"
                             style={{ top: ((pickH * 60 + pickM - START * 60) / 60) * ROW, height: ROW - 2 }}>{leadName}<span className="block font-semibold">New inspection</span></span>
                         )}
                       </div>
@@ -163,7 +163,7 @@ export function FullCalendar({ people, staff: staff0, day: day0, time, today, tz
                 <div className="grid grid-cols-7 text-center text-[11px] font-semibold uppercase text-slate-400">{["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((w) => <span key={w} className="py-1">{w}</span>)}</div>
                 <div className="grid grid-cols-7 gap-1">
                   {grid.flat().map((d, i) => d ? (
-                    <button key={d} type="button" onClick={() => { setAnchor(d); setView("week"); }} className={cx("flex min-h-[104px] flex-col rounded-lg p-1.5 text-left ring-1", d === today ? "bg-brand-50 ring-brand-300" : "bg-white ring-slate-200 hover:ring-slate-300")}>
+                    <button key={d} type="button" onClick={() => { setAnchor(d); setView("week"); }} className={cx("flex min-h-[104px] flex-col rounded-lg p-1.5 text-left ring-1", d === today ? "bg-slate-100 ring-slate-300" : "bg-white ring-slate-200 hover:ring-slate-300")}>
                       <span className={cx("text-sm font-bold", d < today ? "text-slate-300" : "text-ink")}>{Number(d.slice(8))}</span>
                       {(byDay.get(d) ?? []).slice(0, 3).map((it, k) => <span key={k} className={cx("mt-0.5 truncate rounded px-1 py-0.5 text-[10px] font-semibold", it.kind === "build" ? "bg-violet-100 text-violet-800" : "bg-slate-200 text-slate-700")}>{it.time ? `${it.time.replace(":00", "")} ` : ""}{it.label.replace(/^(Inspection|Build) · /, "")}</span>)}
                       {(byDay.get(d)?.length ?? 0) > 3 && <span className="mt-0.5 text-[10px] text-slate-500">+{(byDay.get(d)?.length ?? 0) - 3} more</span>}
@@ -176,15 +176,15 @@ export function FullCalendar({ people, staff: staff0, day: day0, time, today, tz
 
           {/* Projects this staff member is on */}
           <aside className="no-scrollbar hidden w-[300px] shrink-0 overflow-y-auto border-l border-slate-200 bg-slate-50/60 p-4 md:block" data-staff-projects>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{first}&rsquo;s projects</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">{first}&rsquo;s projects</p>
             <p className="mb-3 font-display text-lg font-bold text-ink">{list ? `On ${list.length} ${list.length === 1 ? "job" : "jobs"}` : "Loading…"}</p>
             <ul className="space-y-2">
               {(list ?? []).map((pj) => (
                 <li key={pj.id}>
-                  <Link href={`/app/jobs?job=${pj.id}`} className="block rounded-xl bg-white px-3 py-2.5 ring-1 ring-slate-200 hover:ring-brand-400">
+                  <Link href={`/app/jobs?job=${pj.id}`} className="block rounded-xl bg-white px-3 py-2.5 ring-1 ring-slate-200 hover:ring-slate-400">
                     <span className="flex items-center gap-2"><b className="min-w-0 flex-1 truncate text-sm text-ink">{pj.customer}</b><span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">{pj.role}</span></span>
                     <span className="block truncate text-xs text-slate-500">{[pj.title, pj.suburb].filter(Boolean).join(" · ")}</span>
-                    <span className="mt-1 flex items-center gap-2 text-xs"><span className="font-semibold text-brand-700">{STAGE_LABEL[pj.stage] ?? pj.stage}</span>
+                    <span className="mt-1 flex items-center gap-2 text-xs"><span className="font-semibold text-ink">{STAGE_LABEL[pj.stage] ?? pj.stage}</span>
                       <span className="text-slate-500">{fmtRange(pj.start, pj.end) ?? (pj.inspection ? `Inspection ${new Date(pj.inspection).toLocaleDateString("en-AU", { day: "numeric", month: "short", timeZone: tz })}` : "")}</span></span>
                   </Link>
                 </li>
@@ -193,10 +193,10 @@ export function FullCalendar({ people, staff: staff0, day: day0, time, today, tz
             </ul>
           </aside>
         </div>
-        <div className="flex items-center gap-4 border-t border-slate-200 px-5 py-2.5 text-xs text-slate-500">
+        <div className="flex items-center gap-4 border-t-2 border-dashed border-slate-200 px-5 py-2.5 text-xs text-slate-500">
           <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-slate-200" />Inspection</span>
           <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-violet-100" />Build</span>
-          <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded border-2 border-dashed border-brand-500" />This booking</span>
+          <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded border-2 border-dashed border-ink" />This booking</span>
           <span className="ml-auto">Click a free half hour to book it</span>
         </div>
       </div>

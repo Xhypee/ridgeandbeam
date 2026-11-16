@@ -124,13 +124,13 @@ export default async function ClaimsPage({ searchParams }: PageProps<"/app/claim
             if (onlyFollowUp && cards.length === 0) return null;
             return (
               <section key={stage} className="w-72 shrink-0 snap-start rounded-xl bg-slate-100/70 p-2" aria-label={CLAIM_STAGE_LABEL[stage]}>
-                <h2 className="mb-2 flex items-center justify-between px-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                <h2 className="mb-2 flex items-center justify-between px-1 text-xs uppercase text-slate-400 font-mono tracking-[0.12em]">
                   {CLAIM_STAGE_LABEL[stage]} <span className="font-normal">{cards.length}</span>
                 </h2>
                 <ul className="space-y-2">
                   {cards.map(({ c, days, outstanding, nextFollowUp, followUpDue, codeDue, stale }) => (
                     <li key={c.id}>
-                      <Link href={`/app/jobs/${c.jobs.id}/claim`} className="block rounded-lg bg-white p-3 ring-1 ring-slate-200 hover:ring-brand-500" data-testid="claim-card">
+                      <Link href={`/app/jobs/${c.jobs.id}/claim`} className="block rounded-lg bg-white p-3 ring-1 ring-slate-200 hover:ring-ink" data-testid="claim-card">
                         <div className="flex items-start justify-between gap-2">
                           <p className="truncate font-medium text-slate-900">{c.jobs.customers?.name ?? c.jobs.title}</p>
                           <Badge tone={agingTone(days)}>{days}d</Badge>

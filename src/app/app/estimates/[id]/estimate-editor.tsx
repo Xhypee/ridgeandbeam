@@ -296,7 +296,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
           <div className="mb-4 flex flex-wrap gap-2">
             <Link
               href={`/app/measure/${id}/plans`}
-              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-ink px-4 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90"
               onClick={(e) => { if (dirty && !window.confirm("You have unsaved changes. Leave without saving?")) e.preventDefault(); }}
               data-testid="measure-from-plans"
             >
@@ -313,7 +313,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
           </div>
         )}
         {hasPlans && (
-          <Link href={`/app/measure/${id}/plans`} className="mb-4 flex items-center justify-between gap-3 rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-700 ring-1 ring-brand-500/30 hover:bg-brand-100" data-testid="view-roof">
+          <Link href={`/app/measure/${id}/plans`} className="mb-4 flex items-center justify-between gap-3 rounded-xl bg-slate-100 px-4 py-3 text-sm text-ink ring-1 ring-ink/30 hover:bg-slate-200" data-testid="view-roof">
             <span><b>View the roof</b> · plan, 3D model and sheet cut list from the plans</span>
             <span aria-hidden>→</span>
           </Link>
@@ -354,7 +354,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
                 const sys = sectionSystem(s);
                 const isMetal = sys === "metal";
                 return (
-                  <div key={i} className="mb-3 border-b border-slate-100 pb-3 lg:mb-2 lg:border-0 lg:pb-0" data-testid="section-row">
+                  <div key={i} className="mb-3 border-b-2 border-dashed border-slate-200 pb-3 lg:mb-2 lg:border-0 lg:pb-0" data-testid="section-row">
                     <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-4 lg:grid-cols-[minmax(7rem,1fr)_5.5rem_5rem_9.5rem_9rem_4.5rem_4.5rem_4.5rem_5rem_2rem]">
                       <Cell label="Roof section" className="col-span-2 sm:col-span-4 lg:col-span-1"><Input value={s.label} onChange={(e) => setSection(i, { label: e.target.value })} aria-label="Section name" /></Cell>
                       <Cell label="Plan area m²"><Input type="number" min="0" step="0.1" inputMode="decimal" value={s.area || ""} onChange={(e) => setSection(i, { area: n(e.target.value) })} aria-label="Plan area m²" placeholder="m²" /></Cell>
@@ -392,13 +392,13 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
                           <button type="button" className="text-xs text-slate-500 underline" onClick={() => setRiseRun(null)}>Cancel</button>
                         </div>
                       ) : (
-                        <button type="button" className="mt-1 text-xs text-brand-700 hover:underline" onClick={() => setRiseRun({ idx: i, rise: "", run: "" })}>Enter pitch as rise / run</button>
+                        <button type="button" className="mt-1 text-xs text-ink hover:underline" onClick={() => setRiseRun({ idx: i, rise: "", run: "" })}>Enter pitch as rise / run</button>
                       )
                     )}
                   </div>
                 );
               })}
-              <button type="button" className="text-sm font-medium text-brand-600 hover:underline" onClick={() => {
+              <button type="button" className="text-sm font-medium text-ink hover:underline" onClick={() => {
                 const last = m.sections.at(-1);
                 setMeas({ sections: [...m.sections, { label: `Section ${m.sections.length + 1}`, area: 0, pitch: last?.pitch ?? 22.5, system: last?.system ?? "metal", profile: last?.profile, waste: null }] });
               }}>
@@ -429,8 +429,8 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
               ["includeEdgeProtection", "Edge protection"],
               ["includeSkip", "Skip bins"],
             ] as const).map(([k, l]) => (
-              <label key={k} className="flex min-h-10 items-center gap-2 rounded-lg px-3 ring-1 ring-slate-200 has-[:checked]:bg-brand-50 has-[:checked]:ring-brand-500">
-                <input type="checkbox" className="h-4 w-4 accent-brand-500" checked={m[k]} onChange={(e) => setMeas({ [k]: e.target.checked } as Partial<Measurements>)} />{l}
+              <label key={k} className="flex min-h-10 items-center gap-2 rounded-lg px-3 ring-1 ring-slate-200 has-[:checked]:bg-slate-100 has-[:checked]:ring-ink">
+                <input type="checkbox" className="h-4 w-4 accent-ink" checked={m[k]} onChange={(e) => setMeas({ [k]: e.target.checked } as Partial<Measurements>)} />{l}
               </label>
             ))}
           </div>
@@ -465,7 +465,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
             <p className="mb-1 text-sm font-semibold text-slate-800">Sheet cut list</p>
             <table className="w-full min-w-[30rem] text-sm">
               <thead><tr className="text-left text-xs text-slate-500"><th className="py-1 font-medium">Section</th><th className="py-1 font-medium">Profile</th><th className="py-1 font-medium">Cut</th><th className="py-1 text-right font-medium">Lineal m</th><th className="py-1 text-right font-medium">Screws</th></tr></thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y-2 divide-dashed divide-slate-200">
                 {cuts.map((c, i) => (
                   <tr key={i}>
                     <td className="py-1.5">{c.section}</td>
@@ -503,7 +503,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
         title={hasOptions ? (optionLabel === "alternates" ? "Alternates" : "Good / better / best options") : "Options"}
         actions={!ro && (
           <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-            <input type="checkbox" className="h-5 w-5 accent-brand-500" checked={hasOptions} onChange={(e) => toggleOptions(e.target.checked)} aria-label="Offer options" />
+            <input type="checkbox" className="h-5 w-5 accent-ink" checked={hasOptions} onChange={(e) => toggleOptions(e.target.checked)} aria-label="Offer options" />
             Offer options
           </label>
         )}
@@ -525,7 +525,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
             </div>
             <div className="grid gap-3 lg:grid-cols-3">
               {options.map((o, i) => (
-                <fieldset key={o.key} disabled={ro} className={cx("space-y-2 rounded-lg p-3 ring-1", o.recommended ? "bg-brand-50 ring-brand-500" : "ring-slate-200")} data-testid="option-card">
+                <fieldset key={o.key} disabled={ro} className={cx("space-y-2 rounded-lg p-3 ring-1", o.recommended ? "bg-slate-100 ring-ink" : "ring-slate-200")} data-testid="option-card">
                   <div className="flex items-center gap-2">
                     <Input value={o.name} onChange={(e) => setOpt(o.key, { name: e.target.value })} aria-label={`${word} name`} className="font-medium" />
                     <button type="button" className="h-9 w-9 shrink-0 rounded text-slate-500 hover:bg-white disabled:opacity-30" disabled={i === 0} onClick={() => move(o.key, -1)} aria-label="Move left">←</button>
@@ -533,7 +533,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
                   </div>
                   <div className="flex flex-wrap items-center gap-3 text-sm">
                     <label className="flex items-center gap-1.5">
-                      <input type="radio" name={`rec-${id}`} className="h-4 w-4 accent-brand-500" checked={o.recommended} onChange={() => { setOptions((p) => p.map((x) => ({ ...x, recommended: x.key === o.key }))); touch(); }} />
+                      <input type="radio" name={`rec-${id}`} className="h-4 w-4 accent-ink" checked={o.recommended} onChange={() => { setOptions((p) => p.map((x) => ({ ...x, recommended: x.key === o.key }))); touch(); }} />
                       Recommended
                     </label>
                     <Select className="w-auto" value={o.tier ?? ""} onChange={(e) => setOpt(o.key, { tier: (e.target.value || null) as Tier | null })} aria-label="Price-book tier">
@@ -547,7 +547,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
                 </fieldset>
               ))}
             </div>
-            {!ro && options.length < 4 && <button type="button" className="text-sm font-medium text-brand-600 hover:underline" onClick={addOption}>+ Add {word.toLowerCase()}</button>}
+            {!ro && options.length < 4 && <button type="button" className="text-sm font-medium text-ink hover:underline" onClick={addOption}>+ Add {word.toLowerCase()}</button>}
           </div>
         )}
       </Card>
@@ -568,7 +568,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
           </div>
           {!hasOptions && (
             <>
-              <div className="flex w-80 max-w-full justify-between border-t border-slate-200 pt-2 text-base font-semibold">
+              <div className="flex w-80 max-w-full justify-between border-t-2 border-dashed border-slate-200 pt-2 text-base font-semibold">
                 <span>Total{taxRate > 0 ? " (inc GST)" : ""}</span><span className="tabular-nums" data-testid="estimate-total">{money(single.t.total)}</span>
               </div>
               {taxRate > 0 && (inclusive
@@ -581,8 +581,8 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
           <div className="mt-2 flex w-80 max-w-full flex-col gap-1.5 rounded-lg bg-slate-50 p-2 text-xs text-slate-700">
             {gstRegistered ? (
               <>
-                <label className="flex items-center gap-2"><input type="checkbox" disabled={ro} className="h-4 w-4 accent-brand-500" checked={taxRate > 0} onChange={(e) => { setTaxRate(e.target.checked ? 10 : 0); touch(); }} aria-label="Charge GST" />Charge GST (10%)</label>
-                <label className="flex items-center gap-2"><input type="checkbox" disabled={ro || taxRate === 0} className="h-4 w-4 accent-brand-500" checked={inclusive} onChange={(e) => toggleInclusive(e.target.checked)} aria-label="Prices include GST" />Prices include GST (homeowner quotes)</label>
+                <label className="flex items-center gap-2"><input type="checkbox" disabled={ro} className="h-4 w-4 accent-ink" checked={taxRate > 0} onChange={(e) => { setTaxRate(e.target.checked ? 10 : 0); touch(); }} aria-label="Charge GST" />Charge GST (10%)</label>
+                <label className="flex items-center gap-2"><input type="checkbox" disabled={ro || taxRate === 0} className="h-4 w-4 accent-ink" checked={inclusive} onChange={(e) => toggleInclusive(e.target.checked)} aria-label="Prices include GST" />Prices include GST (homeowner quotes)</label>
               </>
             ) : (
               <span>Your company is set as not registered for GST, so no GST is charged.</span>
@@ -594,7 +594,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[560px] text-sm">
               <thead><tr className="text-left text-xs text-slate-500"><th className="py-1 font-medium">{word}</th><th className="py-1 text-right font-medium">Total{taxRate > 0 ? " inc GST" : ""}</th>{taxRate > 0 && <th className="py-1 text-right font-medium">GST</th>}{financing.enabled && <th className="py-1 text-right font-medium">Monthly</th>}<th className="py-1 text-right font-medium">Cost ex GST</th><th className="py-1 text-right font-medium">Gross profit</th><th className="py-1 text-right font-medium">Margin</th></tr></thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y-2 divide-dashed divide-slate-200">
                 {perOption.map(({ o, t, mg, monthly }) => (
                   <tr key={o.key} data-testid="option-total">
                     <td className="py-2 font-medium">{o.name} {o.recommended && <Badge tone="teal">Recommended</Badge>}</td>
@@ -630,7 +630,7 @@ export function EstimateEditor({ id, locked, catalog, suppliers, initial, defaul
             <div className="mb-1 flex items-center justify-between">
               <span className="text-xs font-medium text-slate-600">Notes to customer</span>
               {aiEnabled && !ro && (
-                <button type="button" onClick={aiDraft} disabled={aiBusy} className="rounded-md px-2 py-1 text-xs font-medium text-brand-700 ring-1 ring-brand-100 hover:bg-brand-50 disabled:opacity-50">
+                <button type="button" onClick={aiDraft} disabled={aiBusy} className="rounded-md px-2 py-1 text-xs font-medium text-ink ring-1 ring-slate-300 hover:bg-slate-100 disabled:opacity-50">
                   {aiBusy ? "Drafting…" : "✨ AI draft"}
                 </button>
               )}

@@ -74,7 +74,7 @@ export function OrderEditor({ initial, items: initialItems, locked, suppliers, l
           <thead className="bg-slate-50 text-left text-xs text-slate-500">
             <tr><th className="min-w-64 px-2 py-2">Description</th><th className="px-2 py-2">Product code</th><th className="w-24 px-2 py-2">Qty</th><th className="w-20 px-2 py-2">Unit</th><th className="w-28 px-2 py-2">Cost ex GST</th><th className="w-24 px-2 py-2 text-right">Total</th><th className="w-8" /></tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y-2 divide-dashed divide-slate-200">
             {items.map((it, i) => (
               <tr key={i}>
                 <td className="px-2 py-1"><Input aria-label="Description" value={it.description} disabled={locked} onChange={(e) => setLine(i, { description: e.target.value })} /></td>

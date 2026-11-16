@@ -33,7 +33,7 @@ export function Nav({ mobile = false, canSeeMoney = true, crewLead = false }: { 
       <nav className="flex gap-1 overflow-x-auto px-3 pb-2" aria-label="Main">
         {items.map((i) => (
           <Link key={i.href} href={i.href} aria-current={current === i ? "page" : undefined}
-            className={cx("shrink-0 rounded-full px-3 py-1.5 text-sm font-medium", current === i ? "bg-brand-500 text-white" : "bg-slate-100 text-slate-700")}>
+            className={cx("shrink-0 rounded-full px-3 py-1.5 font-mono text-xs uppercase tracking-wider", current === i ? "bg-ink text-white" : "bg-white text-slate-600 ring-1 ring-slate-200")}>
             {i.label}
           </Link>
         ))}
@@ -41,15 +41,16 @@ export function Nav({ mobile = false, canSeeMoney = true, crewLead = false }: { 
     );
   }
   return (
-    <nav className="space-y-1" aria-label="Main">
+    <nav className="space-y-0.5" aria-label="Main">
       {items.map((i) => (
         <Link key={i.href} href={i.href} aria-current={current === i ? "page" : undefined}
-          className={cx("flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium",
-            current === i ? "bg-brand-50 font-semibold text-brand-700" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900")}>
-          <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          className={cx("flex items-center gap-3 rounded-xl px-3 py-2.5 font-mono text-[13px] uppercase tracking-wider",
+            current === i ? "bg-white text-ink ring-1 ring-slate-200" : "text-slate-500 hover:bg-white/60 hover:text-ink")}>
+          <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d={i.icon} />
           </svg>
-          {i.label}
+          <span className="flex-1">{i.label}</span>
+          {current === i && <span aria-hidden>→</span>}
         </Link>
       ))}
     </nav>
@@ -79,7 +80,7 @@ export function SectionTabs({ canSeeMoney = true }: { canSeeMoney?: boolean }) {
     <nav aria-label="Section" className="no-print mb-6 flex flex-wrap gap-2">
       {tabs.filter((t) => canSeeMoney || !t.money).map((t) => (
         <Link key={t.href} href={t.href} aria-current={path === t.href ? "page" : undefined}
-          className={cx("rounded-full px-4 py-2 text-sm font-semibold ring-1",
+          className={cx("rounded-full px-4 py-2 font-mono text-xs font-semibold uppercase tracking-wider ring-1",
             path === t.href ? "bg-ink text-white ring-ink" : "bg-white text-slate-700 ring-slate-300 hover:ring-slate-400")}>
           {t.label}
         </Link>
@@ -94,7 +95,7 @@ export function NavRail({ canSeeMoney = true, crewLead = false, unread = 0 }: { 
   const current = groupFor(path);
   const items = GROUPS.filter((g) => (crewLead ? g.crew : canSeeMoney || !g.money));
   return (
-    <aside data-nav-rail className="no-print sticky top-0 hidden h-screen w-[72px] shrink-0 flex-col items-center gap-1 border-r border-slate-200 bg-white py-4 lg:flex">
+    <aside data-nav-rail className="no-print sticky top-0 hidden h-screen w-[72px] shrink-0 flex-col items-center gap-1 border-r-2 border-dashed border-slate-200 bg-cream py-4 lg:flex">
       <Link href="/app" aria-label="Ridge & Beam home" className="mb-4">
         <svg viewBox="0 0 32 32" className="h-10 w-10" aria-hidden>
           <rect width="32" height="32" rx="8" fill="#1f5f3f" />
@@ -105,14 +106,14 @@ export function NavRail({ canSeeMoney = true, crewLead = false, unread = 0 }: { 
       <nav aria-label="Main" className="flex flex-col items-center gap-1">
         {items.map((i) => (
           <Link key={i.href} href={i.href} title={i.label} aria-label={i.label} aria-current={current === i ? "page" : undefined}
-            className={cx("grid h-11 w-11 place-items-center rounded-xl", current === i ? "bg-brand-50 text-brand-700" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900")}>
+            className={cx("grid h-11 w-11 place-items-center rounded-xl", current === i ? "bg-white text-ink ring-1 ring-slate-200" : "text-slate-500 hover:bg-white/60 hover:text-ink")}>
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={i.icon} /></svg>
           </Link>
         ))}
       </nav>
       <Link href="/app/notifications" title="Notifications" aria-label={`Notifications${unread ? ` (${unread} unread)` : ""}`} className="relative mt-auto grid h-11 w-11 place-items-center rounded-xl text-slate-500 hover:bg-slate-100">
         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 004 0" /></svg>
-        {unread ? <span className="absolute right-1 top-1 min-w-4 rounded-full bg-brand-500 px-1 text-center text-[10px] font-semibold leading-4 text-white">{unread > 99 ? "99+" : unread}</span> : null}
+        {unread ? <span className="absolute right-1 top-1 min-w-4 rounded-full bg-ink px-1 text-center text-[10px] font-semibold leading-4 text-white">{unread > 99 ? "99+" : unread}</span> : null}
       </Link>
     </aside>
   );

@@ -46,7 +46,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ap
     <>
       <PageHeader
         title={<span className="flex items-center gap-2">{o.supplier} order {o.po_number && <span className="text-slate-500">PO {o.po_number}</span>} <Badge tone={ORDER_TONE[o.status as keyof typeof ORDER_TONE]}>{label(o.status)}</Badge></span>}
-        subtitle={<Link href={`/app/jobs/${job.id}/production`} className="hover:text-brand-600">{job.customers?.name} · {job.title}{job.site_address ? ` · ${job.site_address}` : ""}</Link>}
+        subtitle={<Link href={`/app/jobs/${job.id}/production`} className="hover:text-ink">{job.customers?.name} · {job.title}{job.site_address ? ` · ${job.site_address}` : ""}</Link>}
         actions={
           <>
             <LinkButton variant="secondary" href={`/app/orders/${id}/print`}>Order sheet</LinkButton>
@@ -57,7 +57,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ap
       {empty && <p className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">The job has no accepted estimate with material lines, so this order started blank.</p>}
       <p className="mb-4 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
         “Send to branch” emails this order — product codes and quantities, no prices{account ? `, with your account number ${account}` : ""} — to the branch. You can also print it or download a CSV.
-        {suppliers.length === 0 && <> <Link href="/app/settings/suppliers" className="font-medium text-brand-600 hover:underline">Add your suppliers</Link> to use their product codes.</>}
+        {suppliers.length === 0 && <> <Link href="/app/settings/suppliers" className="font-medium text-ink hover:underline">Add your suppliers</Link> to use their product codes.</>}
       </p>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -74,14 +74,14 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ap
 
           <Card title={`Returns & credits (${returns.length})`}>
             {returns.length > 0 && (
-              <ul className="mb-4 divide-y divide-slate-100">
+              <ul className="mb-4 divide-y-2 divide-dashed divide-slate-200">
                 {returns.map((r) => {
                   const left = daysUntil(r.credit_window_ends_on, today);
                   return (
                     <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
                       <span className="min-w-0">
                         <span className="font-medium">{r.quantity} × {r.description}</span>
-                        <span className="block text-xs text-slate-500">
+                        <span className="block font-mono text-xs text-slate-500">
                           Credit {money(r.credit_amount)}{Number(r.restocking_fee) > 0 && ` − ${money(r.restocking_fee)} restocking`} = <b>{money(netCredit(r))}</b>
                           {r.credit_window_ends_on && r.status !== "credited" && (
                             <span className={cx("ml-2 font-medium", left !== null && left < 0 ? "text-red-700" : left !== null && left <= 7 ? "text-amber-700" : "text-slate-600")}>
@@ -118,7 +118,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ap
           <Card title="Status">
             <ol className="mb-4 flex flex-wrap gap-1 text-xs">
               {["draft", "sent", "confirmed", "delivered"].map((s, i, arr) => (
-                <li key={s} className={cx("rounded-full px-2.5 py-1", arr.indexOf(o.status) >= i ? "bg-brand-500 text-white" : "bg-slate-100 text-slate-500")}>{label(s)}</li>
+                <li key={s} className={cx("rounded-full px-2.5 py-1", arr.indexOf(o.status) >= i ? "bg-ink text-white" : "bg-slate-100 text-slate-500")}>{label(s)}</li>
               ))}
             </ol>
             {!locked && (
@@ -147,8 +147,8 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ap
                 {thumbs.length === 0 ? <p className="text-sm text-slate-500">No job photos yet. Take a delivery photo from the Field tab, or mark delivered without one.</p> : (
                   <div className="grid grid-cols-3 gap-2">
                     {thumbs.map((f) => (
-                      <label key={f.id} className="relative block cursor-pointer overflow-hidden rounded-lg ring-1 ring-slate-200 has-checked:ring-2 has-checked:ring-brand-500">
-                        <input type="checkbox" name="file_ids" value={f.id} defaultChecked={f.category === "delivery"} className="absolute left-1 top-1 h-5 w-5 accent-brand-500" />
+                      <label key={f.id} className="relative block cursor-pointer overflow-hidden rounded-lg ring-1 ring-slate-200 has-checked:ring-2 has-checked:ring-ink">
+                        <input type="checkbox" name="file_ids" value={f.id} defaultChecked={f.category === "delivery"} className="absolute left-1 top-1 h-5 w-5 accent-ink" />
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         {f.url ? <img src={f.url} alt={f.caption ?? ""} className="aspect-square w-full object-cover" /> : <span className="block aspect-square bg-slate-100" />}
                       </label>

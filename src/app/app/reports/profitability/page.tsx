@@ -74,11 +74,11 @@ export default async function ProfitabilityPage({ searchParams }: PageProps<"/ap
       {rows.length === 0 ? <p className="text-sm text-slate-500">No signed jobs match.</p> : (
         <Table>
           <thead><tr>{sortTh("date", "Signed")}<th className={th}>Job</th>{isAdmin && <th className={th}>Rep</th>}{sortTh("contract", "Contract", true)}{sortTh("cost", "Costs", true)}{sortTh("gp", "GP", true)}{sortTh("margin", "Margin", true)}</tr></thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y-2 divide-dashed divide-slate-200">
             {rows.map((r) => (
               <tr key={r.id}>
                 <td className={cx(td, "whitespace-nowrap")}>{date(r.date, { month: "short", day: "numeric", year: "2-digit" })}</td>
-                <td className={td}><Link className="font-medium hover:text-brand-600" href={`/app/jobs/${r.id}/costs`}>{r.customers?.name}</Link><span className="block text-xs text-slate-500">{r.title} · {STAGE_LABEL[r.stage]}</span></td>
+                <td className={td}><Link className="font-medium hover:text-ink" href={`/app/jobs/${r.id}/costs`}>{r.customers?.name}</Link><span className="block font-mono text-xs text-slate-500">{r.title} · {STAGE_LABEL[r.stage]}</span></td>
                 {isAdmin && <td className={td}>{r.sales_rep_id ? name.get(r.sales_rep_id) : <span className="text-slate-400">—</span>}</td>}
                 <td className={cx(td, "text-right")}>{money(r.f.contractValue)}</td>
                 <td className={cx(td, "text-right")}>{money(r.f.actualCost)}{r.f.actualCost === 0 && <span className="block text-xs text-slate-400">budget {money(r.f.budgetCost)}</span>}</td>

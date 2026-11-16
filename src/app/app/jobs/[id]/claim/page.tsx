@@ -46,7 +46,7 @@ export default async function ClaimPage({ params }: PageProps<"/app/jobs/[id]/cl
             const current = s === stage || (outcome && s === "approved");
             return (
               <li key={s} className="flex shrink-0 flex-col items-center gap-1 px-1" aria-current={current ? "step" : undefined}>
-                <span className={cx("flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold", current ? "bg-brand-500 text-white" : done ? "bg-green-100 text-green-800" : "bg-slate-100 text-slate-500")}>
+                <span className={cx("flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold", current ? "bg-ink text-white" : done ? "bg-green-100 text-green-800" : "bg-slate-100 text-slate-500")}>
                   {done ? "✓" : i + 1}
                 </span>
                 <span className={cx("w-20 text-center text-[11px] leading-tight", current ? "font-semibold text-slate-900" : "text-slate-500")}>
@@ -56,7 +56,7 @@ export default async function ClaimPage({ params }: PageProps<"/app/jobs/[id]/cl
             );
           })}
         </ol>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t-2 border-dashed border-slate-200 pt-4">
           <div className="min-w-0">
             <p className="flex flex-wrap items-center gap-2 text-lg font-semibold text-slate-900" data-testid="claim-stage">
               {CLAIM_STAGE_LABEL[stage]}
@@ -117,7 +117,7 @@ export default async function ClaimPage({ params }: PageProps<"/app/jobs/[id]/cl
             <Card title="Claim details">
               <KeepForm action={updateClaim} className="space-y-6">
                 <input type="hidden" name="id" value={claim.id} />
-                <fieldset className="mt-6 grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2">
+                <fieldset className="mt-6 grid gap-4 border-t-2 border-dashed border-slate-200 pt-5 sm:grid-cols-2">
                   <legend className="mb-2 text-sm font-semibold text-slate-800">Insurer &amp; policy</legend>
                   <Field label="Insurer"><Input name="carrier" defaultValue={claim.carrier ?? ""} /></Field>
                   <Field label="Claim number"><Input name="claim_number" defaultValue={claim.claim_number ?? ""} /></Field>
@@ -128,7 +128,7 @@ export default async function ClaimPage({ params }: PageProps<"/app/jobs/[id]/cl
                     <Input name="excess" type="number" step="0.01" min="0" inputMode="decimal" defaultValue={num(claim.excess)} />
                   </Field>
                 </fieldset>
-                <fieldset className="mt-6 grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2">
+                <fieldset className="mt-6 grid gap-4 border-t-2 border-dashed border-slate-200 pt-5 sm:grid-cols-2">
                   <legend className="mb-2 text-sm font-semibold text-slate-800">The event</legend>
                   <Field label="What happened">
                     <Select name="event_type" defaultValue={claim.event_type ?? ""}>
@@ -144,14 +144,14 @@ export default async function ClaimPage({ params }: PageProps<"/app/jobs/[id]/cl
                   <Field label="Catastrophe name / code"><Input name="catastrophe_name" defaultValue={claim.catastrophe_name ?? ""} placeholder="e.g. CAT 251" /></Field>
                   <Field label="Damage notes"><Input name="cause_of_loss" defaultValue={claim.cause_of_loss ?? ""} placeholder="Hail damage to north-facing sheets…" /></Field>
                 </fieldset>
-                <fieldset className="mt-6 grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2">
+                <fieldset className="mt-6 grid gap-4 border-t-2 border-dashed border-slate-200 pt-5 sm:grid-cols-2">
                   <legend className="mb-2 text-sm font-semibold text-slate-800">Assessor / loss adjuster</legend>
                   <Field label="Name"><Input name="adjuster_name" defaultValue={claim.adjuster_name ?? ""} /></Field>
                   <Field label="Phone"><Input name="adjuster_phone" type="tel" defaultValue={claim.adjuster_phone ?? ""} /></Field>
                   <Field label="Email"><Input name="adjuster_email" type="email" defaultValue={claim.adjuster_email ?? ""} /></Field>
                   <Field label="Inspection"><DateTimeInput name="adjuster_meeting_at" defaultValue={claim.adjuster_meeting_at} aria-label="Inspection date and time" /></Field>
                 </fieldset>
-                <fieldset className="mt-6 grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2">
+                <fieldset className="mt-6 grid gap-4 border-t-2 border-dashed border-slate-200 pt-5 sm:grid-cols-2">
                   <legend className="mb-2 text-sm font-semibold text-slate-800">How the insurer settles</legend>
                   <Field label="Settlement path" className="sm:col-span-2"><SettlementSelect defaultValue={claim.settlement_path} /></Field>
                   <Field label="Insurer's builder / repair network" hint="If you are their subcontractor"><Input name="panel_builder_name" defaultValue={claim.panel_builder_name ?? ""} /></Field>
@@ -165,7 +165,7 @@ export default async function ClaimPage({ params }: PageProps<"/app/jobs/[id]/cl
                   <Field label="Insurer has all information on" hint="Starts the 10-business-day decision guide"><Input name="info_complete_on" type="date" defaultValue={claim.info_complete_on ?? ""} /></Field>
                   <Field label="Last update from insurer"><Input name="last_insurer_update_on" type="date" defaultValue={claim.last_insurer_update_on ?? ""} /></Field>
                 </fieldset>
-                <fieldset className="mt-6 grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2">
+                <fieldset className="mt-6 grid gap-4 border-t-2 border-dashed border-slate-200 pt-5 sm:grid-cols-2">
                   <legend className="mb-2 text-sm font-semibold text-slate-800">Make-safe / temporary repairs (tarp)</legend>
                   <Field label="Done on"><Input name="make_safe_done_on" type="date" defaultValue={claim.make_safe_done_on ?? ""} /></Field>
                   <Field label="Authorised by">
@@ -204,8 +204,8 @@ export default async function ClaimPage({ params }: PageProps<"/app/jobs/[id]/cl
           {(claim.adjuster_name || claim.adjuster_meeting_at) && (
             <Card title="Assessor">
               <p className="font-medium text-slate-900">{claim.adjuster_name ?? "Assessor"}</p>
-              {claim.adjuster_phone && <a className="block min-h-11 py-2 text-sm text-brand-700" href={`tel:${claim.adjuster_phone}`}>{claim.adjuster_phone}</a>}
-              {claim.adjuster_email && <a className="block truncate text-sm text-brand-700" href={`mailto:${claim.adjuster_email}`}>{claim.adjuster_email}</a>}
+              {claim.adjuster_phone && <a className="block min-h-11 py-2 text-sm text-ink" href={`tel:${claim.adjuster_phone}`}>{claim.adjuster_phone}</a>}
+              {claim.adjuster_email && <a className="block truncate text-sm text-ink" href={`mailto:${claim.adjuster_email}`}>{claim.adjuster_email}</a>}
               {claim.adjuster_meeting_at && <p className="mt-2 text-sm text-slate-700">Inspection: <b><LocalDateTime iso={claim.adjuster_meeting_at} /></b></p>}
             </Card>
           )}
@@ -215,7 +215,7 @@ export default async function ClaimPage({ params }: PageProps<"/app/jobs/[id]/cl
           {Number(claim.make_safe_amount) > 0 && (
             <p className="text-sm text-slate-600">Make-safe {money(claim.make_safe_amount)} · paid by {PARTY_LABEL[claim.make_safe_payer ?? ""] ?? "not set"}</p>
           )}
-          <details className="group rounded-2xl bg-white ring-1 ring-slate-200">
+          <details className="group rounded-[22px] bg-white ring-1 ring-slate-200">
             <summary className="flex min-h-11 cursor-pointer items-center px-4 text-sm font-semibold text-slate-800">What the homeowner sees ▸</summary>
             <div className="px-2 pb-2">
               <ClaimExplainer excess={claim.excess} settlementPath={claim.settlement_path} insurer={claim.carrier} orgName={org.name} />

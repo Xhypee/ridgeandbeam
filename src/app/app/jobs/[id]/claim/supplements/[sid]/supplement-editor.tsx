@@ -105,14 +105,14 @@ export function SupplementEditor({ id, locked, initial, notes: initialNotes, pho
                     const on = it.file_ids.includes(p.id);
                     return (
                       <button key={p.id} type="button" onClick={() => togglePhoto(i, p.id)} aria-pressed={on}
-                        className={cx("relative overflow-hidden rounded-lg ring-2", on ? "ring-brand-500" : "ring-transparent")}>
+                        className={cx("relative overflow-hidden rounded-lg ring-2", on ? "ring-ink" : "ring-transparent")}>
                         {p.url ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={p.url} alt={p.caption ?? p.category} className="aspect-square w-full object-cover" />
                         ) : (
                           <span className="flex aspect-square items-center justify-center bg-slate-100 text-xs">{p.caption ?? p.category}</span>
                         )}
-                        {on && <span className="absolute right-1 top-1 rounded-full bg-brand-500 px-1.5 text-xs text-white">✓</span>}
+                        {on && <span className="absolute right-1 top-1 rounded-full bg-ink px-1.5 text-xs text-white">✓</span>}
                       </button>
                     );
                   })}
@@ -130,7 +130,7 @@ export function SupplementEditor({ id, locked, initial, notes: initialNotes, pho
         <Textarea value={notes} disabled={locked} onChange={(e) => { setNotes(e.target.value); touch(); }} />
       </Field>
       {!locked && (
-        <div className="sticky bottom-0 -mx-4 mt-4 flex items-center gap-3 border-t border-slate-100 bg-white/95 px-4 py-3">
+        <div className="sticky bottom-0 -mx-4 mt-4 flex items-center gap-3 border-t-2 border-dashed border-slate-200 bg-white/95 px-4 py-3">
           <Button type="button" onClick={save} disabled={pending} className="min-h-11">{pending ? "Saving…" : "Save variation request"}</Button>
           {dirty && <span className="text-xs text-amber-700">Unsaved changes</span>}
           {msg?.error && <span role="alert" className="text-sm text-red-700">{msg.error}</span>}

@@ -16,7 +16,7 @@ const SEND = "M4 12l16-8-6 16-2.5-6.5z";
 const PEN = "M4 20l4-1 11-11-3-3L5 16zM14 6l3 3";
 const SOURCE: Record<string, string> = { website: "From your website", instant_quote: "From your instant quote", gmail: "From Gmail", email: "From email", manual: "Added by hand" };
 
-export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: string; meId: string }) {
+export function LeadPanel({ d, previewHref, meId, bookOpen = false }: { d: Docket; previewHref: string; meId: string; bookOpen?: boolean }) {
   const lead = d.lead!;
   const first = d.customer.name.split(" ")[0] || "them";
   const q = d.quote;
@@ -51,13 +51,14 @@ export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: st
         plans={lead.docs.length}
         quote={q ? { id: q.id, number: q.number, status: q.status, total: q.total, lines: topLines, more: Math.max(0, included.length - topLines.length) } : null}
         roof={d.roof ? roofSheet(d.roof.summary, d.roof.m) : null} caption={d.job.site_address} previewHref={previewHref}
+        startOpen={bookOpen ? "book" : null}
       />
       <JobContact d={d} />
       <JobNotes d={d} leadNote={lead.message ? { by: sourceLabel, at: lead.receivedAt, body: lead.message } : null} />
       <JobDocuments jobId={d.job.id} docs={lead.docs} />
 
       {/* Once the plans are in, Next up carries the quote and its Send button; this is for the rest. */}
-      {(q ? !(lead.docs.length || d.roof) : !lead.docs.length) && <div className="border-t border-slate-100 px-5 py-4" data-send-quote>
+      {(q ? !(lead.docs.length || d.roof) : !lead.docs.length) && <div className="border-t-2 border-dashed border-slate-200 px-5 py-4" data-send-quote>
         {q ? (
           <>
             <ActionForm action={sendQuoteEmail}>
@@ -75,7 +76,7 @@ export function LeadPanel({ d, previewHref, meId }: { d: Docket; previewHref: st
         ) : (
           <form action={createEstimate}>
             <input type="hidden" name="job_id" value={d.job.id} />
-            <button className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-500 font-semibold text-white hover:bg-brand-600"><Icon d="M12 5v14M5 12h14" />Start a quote</button>
+            <button className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-ink font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90"><Icon d="M12 5v14M5 12h14" />Start a quote</button>
             <p className="mt-2 text-xs text-slate-500">No plans? Measure on the satellite map, then send it from here.</p>
           </form>
         )}

@@ -164,7 +164,7 @@ export function SatelliteMeasure({ estimateId, address, initialCenter, initialZo
 
   return (
     <div className="space-y-4">
-      <p className="rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-700 ring-1 ring-brand-100">
+      <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm text-ink ring-1 ring-slate-300">
         <b>Trace roof edges including overhangs; verify pitch on site.</b> Satellite photos can be off by half a metre or more and trees hide edges — treat this as a starting measurement.
       </p>
       {geoMsg && <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-700" data-geo-message>{geoMsg}</p>}
@@ -196,7 +196,7 @@ export function SatelliteMeasure({ estimateId, address, initialCenter, initialZo
       <MapCanvas center={initialCenter ?? AU_CENTER} zoom={initialCenter ? (initialZoom ?? 20) : 4} onReady={onReady} className="h-[55vh] min-h-80 cursor-crosshair" />
 
       <div className="rounded-xl bg-white ring-1 ring-slate-200">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-dashed border-slate-200 px-4 py-3">
           <h2 className="text-sm font-semibold">Facets</h2>
           <p className="text-sm text-slate-600" data-measure-total>
             Plan {fmt(totPlan, 1)} m² · <b className="text-slate-900">{fmt(totArea, 1)} m² true roof area</b> (before waste)
@@ -205,9 +205,9 @@ export function SatelliteMeasure({ estimateId, address, initialCenter, initialZo
         {rows.length === 0 ? (
           <p className="px-4 py-6 text-sm text-slate-500">Tap <b>+ Trace a facet</b>, then tap each corner of one roof plane. Trace each plane that has a different pitch separately.</p>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y-2 divide-dashed divide-slate-200">
             {rows.map(({ f, plan, pf, area }) => (
-              <li key={f.id} className={cx("space-y-2 px-4 py-3", f.id === selected && "bg-brand-50/50")} data-facet>
+              <li key={f.id} className={cx("space-y-2 px-4 py-3", f.id === selected && "bg-slate-100/50")} data-facet>
                 <div className="flex flex-wrap items-center gap-2">
                   <Input aria-label="Facet name" value={f.label} disabled={locked} onChange={(e) => update((fs) => fs.map((x) => (x.id === f.id ? { ...x, label: e.target.value } : x)))} onFocus={() => setSelected(f.id)} className="max-w-44" />
                   <span className="text-sm tabular-nums text-slate-600">{fmt(plan, 1)} m² plan × {pf.toFixed(3)} = <b className="text-slate-900">{fmt(area, 1)} m²</b></span>

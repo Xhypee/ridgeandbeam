@@ -49,13 +49,13 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/app/inv
       ) : (
         <Table>
           <thead className="bg-slate-50"><tr><th className={th}>#</th><th className={th}>Customer / job</th><th className={th}>Issued</th><th className={th}>Due</th><th className={th}>Status</th><th className={`${th} text-right`}>Total</th><th className={`${th} text-right`}>Balance</th></tr></thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y-2 divide-dashed divide-slate-200">
             {rows.map((r) => {
               const overdue = r.due_date && r.due_date < today && ["sent", "partial"].includes(r.status);
               return (
                 <tr key={r.id} className="hover:bg-slate-50">
                   <td className={td}>
-                    <Link href={`/app/invoices/${r.id}`} className="font-medium text-slate-900 hover:text-brand-600">#{r.number}</Link>
+                    <Link href={`/app/invoices/${r.id}`} className="font-medium text-slate-900 hover:text-ink">#{r.number}</Link>
                     {r.kind !== "standard" && <div className="mt-0.5"><Badge tone={INVOICE_KIND_TONE[r.kind]}>{r.milestone_label || INVOICE_KIND_LABEL[r.kind]}</Badge></div>}
                     {r.bill_to !== "homeowner" && <div className="text-xs text-slate-500">Bill to {BILL_TO_LABEL[r.bill_to]}</div>}
                   </td>

@@ -2,10 +2,10 @@
 // insurance claim that fills. Pure (no DB, no AI) so the rules are unit-tested. Never overwrites: when a
 // document disagrees with what's already on file, that goes in the job note as a difference instead.
 
-export const DOC_TYPES = ["plans", "insurance", "supplier_invoice", "supplier_quote", "council", "contract", "photo", "report", "correspondence", "other"] as const;
+export const DOC_TYPES = ["plans", "roof_report", "insurance", "supplier_invoice", "supplier_quote", "council", "contract", "photo", "report", "correspondence", "other"] as const;
 export type DocType = (typeof DOC_TYPES)[number];
 export const DOC_TYPE_LABEL: Record<DocType, string> = {
-  plans: "plans", insurance: "insurance document", supplier_invoice: "supplier invoice", supplier_quote: "supplier quote", council: "council / approval",
+  plans: "plans", roof_report: "roof report", insurance: "insurance document", supplier_invoice: "supplier invoice", supplier_quote: "supplier quote", council: "council / approval",
   contract: "contract", photo: "photo", report: "report", correspondence: "letter / email", other: "document",
 };
 
@@ -24,6 +24,10 @@ export type DocRead = {
   details?: string[];
   /** Things still to confirm or watch out for, a few words each ("Wind class N3 to be confirmed"). */
   checks?: string[];
+  /** Plans: the drawing revision printed on them ("Rev C"). */
+  revision?: string | null;
+  /** Roof report: who produced it ("Applicad", "Metroll"). */
+  reportSource?: string | null;
 };
 
 export type DocRoof = {
@@ -64,7 +68,7 @@ export function sameValue(kind: "phone" | "email" | "text", a: string, b: string
 }
 
 export function planDocUpdates(r: DocRead, cur: Current): DocPlan {
-  const plan: DocPlan = { customer: {}, job: {}, claim: null, createClaim: false, category: r.doc_type === "plans" ? "plans" : r.doc_type === "supplier_invoice" ? "supplier_invoice" : "document", filled: [], differs: [], hints: [] };
+  const plan: DocPlan = { customer: {}, job: {}, claim: null, createClaim: false, category: r.doc_type === "plans" || r.doc_type === "roof_report" ? "plans" : r.doc_type === "supplier_invoice" ? "supplier_invoice" : "document", filled: [], differs: [], hints: [] };
   const fill = <T extends Record<string, unknown>>(target: Record<string, unknown>, have: T, key: keyof T & string, value: string | number | null, label: string, kind: "phone" | "email" | "text" = "text", show = String(value)) => {
     if (value === null || value === undefined || value === "") return;
     const existing = have[key];
@@ -74,7 +78,7 @@ export function planDocUpdates(r: DocRead, cur: Current): DocPlan {
   };
 
   // Customer contact details: not from plans or supplier paperwork (those carry the architect's / supplier's details).
-  if (!["plans", "supplier_invoice", "supplier_quote"].includes(r.doc_type)) {
+  if (!["plans", "roof_report", "supplier_invoice", "supplier_quote"].includes(r.doc_type)) {
     fill(plan.customer, cur.customer, "phone", clean(r.customer.phone), "mobile", "phone");
     fill(plan.customer, cur.customer, "email", clean(r.customer.email)?.toLowerCase() ?? null, "email", "email");
   }
@@ -115,7 +119,7 @@ export function planDocUpdates(r: DocRead, cur: Current): DocPlan {
     }
   }
 
-  if (r.doc_type === "plans" && typeof r.job.roof_area_m2 === "number" && r.job.roof_area_m2 > 5 && r.job.roof_area_m2 < 20000) {
+  if ((r.doc_type === "plans" || r.doc_type === "roof_report") && typeof r.job.roof_area_m2 === "number" && r.job.roof_area_m2 > 5 && r.job.roof_area_m2 < 20000) {
     plan.hints.push(`Roof area on the plans: about ${Math.round(r.job.roof_area_m2)} m². Use Measure from plans on the quote to price it.`);
   }
   return plan;

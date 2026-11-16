@@ -28,7 +28,7 @@ function Bank({ c }: { c?: { bank_name?: string | null; bank_bsb?: string | null
     </div>
   );
 }
-const H = ({ children }: { children: React.ReactNode }) => <p className="pt-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{children}</p>;
+const H = ({ children }: { children: React.ReactNode }) => <p className="pt-1 text-xs uppercase text-slate-400 font-mono tracking-[0.12em]">{children}</p>;
 
 function ContactFields({ type, c }: { type: Exclude<ContactType, "supplier">; c?: Partial<Customer> }) {
   const phoneEmail = (
@@ -137,7 +137,7 @@ export function NewContactPanel({ closeHref, initial, defaultState, claude }: { 
           <Link href={closeHref} scroll={false} aria-label="Close" className="-mr-2 grid h-9 w-9 place-items-center rounded-lg text-slate-400 hover:bg-slate-50 hover:text-ink"><svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg></Link>
         </div>
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-3">
-          <p className="text-sm font-semibold text-ink">What are they?</p>
+          <p className="font-display text-[15px] font-bold text-ink">What are they?</p>
           <div className="mt-2 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Contact type">
             {CONTACT_TYPES.map((t) => (
               <button key={t} type="button" role="radio" aria-checked={type === t} data-type={t} onClick={() => setType(t)}

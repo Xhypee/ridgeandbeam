@@ -347,7 +347,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
 
       <div className="mb-5 flex items-center gap-2" aria-label="Progress">
         {STEPS.map((s, i) => (
-          <span key={s} className={cx("h-2 rounded-full transition-all duration-500", STEPS.indexOf(step) >= i ? "w-10 bg-brand-500" : "w-2 bg-slate-300")} />
+          <span key={s} className={cx("h-2 rounded-full transition-all duration-500", STEPS.indexOf(step) >= i ? "w-10 bg-ink" : "w-2 bg-slate-300")} />
         ))}
       </div>
 
@@ -355,7 +355,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
 
       {step === "drop" && (
         <label
-          className={cx("group flex w-full cursor-pointer flex-col items-center justify-center rounded-[28px] border-2 border-dashed bg-white px-6 py-16 text-center transition sm:px-8 sm:py-20", dragOver ? "border-brand-500 bg-brand-50" : "border-brand-500/40 hover:border-brand-500 hover:bg-brand-50")}
+          className={cx("group flex w-full cursor-pointer flex-col items-center justify-center rounded-[28px] border-2 border-dashed bg-white px-6 py-16 text-center transition sm:px-8 sm:py-20", dragOver ? "border-ink bg-slate-100" : "border-ink/40 hover:border-ink hover:bg-slate-100")}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={(e) => { e.preventDefault(); setDragOver(false); void onFile(e.dataTransfer.files?.[0]); }}
@@ -365,9 +365,9 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
           <span className="text-7xl" style={{ animation: "rb-float 2.4s ease-in-out infinite" }} aria-hidden>🏠</span>
           <span className="font-display mt-6 text-3xl font-bold text-ink sm:text-4xl">Drop the plans here</span>
           <span className="mt-3 max-w-lg text-lg text-slate-600">The architect&apos;s PDF is all we need. We&apos;ll find the roof, measure every line and fill in the job details.</span>
-          <span className="mt-8 inline-flex min-h-14 items-center rounded-2xl bg-brand-500 px-8 text-lg font-semibold text-white transition group-hover:scale-105">Choose the PDF</span>
+          <span className="mt-8 inline-flex min-h-14 items-center rounded-2xl bg-ink px-8 text-lg text-white transition group-hover:scale-105 font-mono text-xs font-semibold uppercase tracking-wider">Choose the PDF</span>
           <span className="mt-4 text-sm text-slate-400">or drag it onto this box · PDF up to 50 MB</span>
-          {saved && <button type="button" onClick={(e) => { e.preventDefault(); setStep("roof"); }} className="mt-6 text-sm font-semibold text-brand-600 underline">Back to the saved roof</button>}
+          {saved && <button type="button" onClick={(e) => { e.preventDefault(); setStep("roof"); }} className="mt-6 font-mono text-xs font-semibold uppercase tracking-wider text-ink underline">Back to the saved roof</button>}
         </label>
       )}
 
@@ -377,7 +377,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
             {Array.from({ length: Math.max(pageCount, readCount, 1) }).map((_, i) => {
               const roofHit = ticks.length >= 1 && detected[0]?.page === i;
               return (
-                <figure key={i} className={cx("rounded-xl p-1.5 ring-1 transition-all duration-500", roofHit ? "scale-110 bg-brand-50 ring-2 ring-brand-500" : ticks.length >= 1 ? "opacity-40 ring-slate-200" : "ring-slate-200")} style={{ animation: `rb-pop .4s ${i * 0.05}s both` }}>
+                <figure key={i} className={cx("rounded-xl p-1.5 ring-1 transition-all duration-500", roofHit ? "scale-110 bg-slate-100 ring-2 ring-ink" : ticks.length >= 1 ? "opacity-40 ring-slate-200" : "ring-slate-200")} style={{ animation: `rb-pop .4s ${i * 0.05}s both` }}>
                   {thumbs[i] ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={thumbs[i]} alt="" className="aspect-[1.41] w-full rounded-md bg-white object-cover" />
@@ -386,7 +386,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                 </figure>
               );
             })}
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-transparent via-brand-500/25 to-transparent" style={{ animation: "rb-scan 1.6s linear infinite" }} />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-transparent via-ink/15 to-transparent" style={{ animation: "rb-scan 1.6s linear infinite" }} />
           </div>
           <div>
             <p className="font-display text-3xl font-bold text-ink">Reading your plans…</p>
@@ -396,7 +396,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                 const done = ticks[i];
                 return (
                   <li key={k} className={cx("flex items-center gap-3 transition-all duration-500", done ? "opacity-100" : "translate-x-3 opacity-25")} data-testid="scan-tick">
-                    <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold", done ? "bg-brand-500 text-white" : "bg-slate-200 text-slate-400")}>{done ? "✓" : i + 1}</span>
+                    <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold", done ? "bg-ink text-white" : "bg-slate-200 text-slate-400")}>{done ? "✓" : i + 1}</span>
                     <span className="text-slate-700">{k}</span>
                     <span className="ml-auto text-right font-semibold text-ink">{done?.v ?? ""}</span>
                   </li>
@@ -429,7 +429,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                   </button>
                 ))}
                 <button type="button" onClick={undo} disabled={!history.length} className="min-h-11 rounded-full bg-white px-4 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 disabled:opacity-40" data-testid="tool-undo">↶ Undo</button>
-                {canHip && <button type="button" onClick={addHipRoof} className="min-h-11 rounded-full bg-brand-50 px-4 text-sm font-semibold text-brand-700 ring-1 ring-brand-500" data-testid="hip-roof">Hip roof: work out hips and ridges</button>}
+                {canHip && <button type="button" onClick={addHipRoof} className="min-h-11 rounded-full bg-slate-100 px-4 font-semibold text-ink ring-1 ring-ink font-mono text-xs uppercase tracking-wider" data-testid="hip-roof">Hip roof: work out hips and ridges</button>}
                 <span className="ml-auto flex flex-wrap gap-3 text-xs text-slate-500">
                   {(["eave", "ridge", "hip", "valley", "barge", "apron"] as const).map((k) => <span key={k} className="inline-flex items-center gap-1"><span className="h-1.5 w-4 rounded-full" style={{ background: KIND_COLOR[k] }} />{k === "eave" ? "Gutter" : k === "apron" ? "Apron" : k[0].toUpperCase() + k.slice(1)}</span>)}
                 </span>
@@ -448,7 +448,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {(["ridge", "hip", "valley", "eave", ...(t.barge > 0 ? ["barge" as const] : []), ...(t.apron > 0 ? ["apron" as const] : [])] as const).map((k, i) => (
-                    <div key={k} className="rounded-2xl bg-white p-4 ring-1 ring-slate-200" style={{ animation: `rb-pop .4s ${0.6 + i * 0.1}s both` }} data-testid={`total-${k}`} data-value={t[k]}>
+                    <div key={k} className="rounded-[22px] bg-white p-4 ring-1 ring-slate-200" style={{ animation: `rb-pop .4s ${0.6 + i * 0.1}s both` }} data-testid={`total-${k}`} data-value={t[k]}>
                       <span className="block h-1.5 w-8 rounded-full" style={{ background: KIND_COLOR[k] }} />
                       <p className="mt-3 text-sm text-slate-500">{k === "eave" ? "Gutters" : k === "apron" ? "Aprons" : `${k[0].toUpperCase()}${k.slice(1)}s`}</p>
                       <p className="font-display text-2xl font-bold tabular-nums text-ink">{fmt(t[k])} m</p>
@@ -461,7 +461,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                     <span className="flex items-center gap-1">
                       <input id="pitch" type="number" min={1} max={60} step={0.5} value={model.pitch} disabled={readOnly} data-testid="pitch-input"
                         onChange={(e) => { const v = Number(e.target.value); if (v > 0 && v <= 60) setModel({ ...model, pitch: v }, false); }}
-                        className="min-h-11 w-20 rounded-xl px-2 text-right text-base font-semibold tabular-nums ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                        className="min-h-11 w-20 rounded-xl px-2 text-right text-base font-semibold tabular-nums ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-ink" />
                       <span className="text-slate-500">°</span>
                     </span>
                   </div>
@@ -469,9 +469,9 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                     <label htmlFor="dps" className="text-sm font-semibold text-slate-600">Downpipes</label>
                     <input id="dps" type="number" min={0} max={200} value={downpipes} disabled={readOnly} data-testid="downpipes-input"
                       onChange={(e) => setDownpipes(Math.max(0, Math.round(Number(e.target.value) || 0)))}
-                      className="min-h-11 w-20 rounded-xl px-2 text-right text-base font-semibold tabular-nums ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                      className="min-h-11 w-20 rounded-xl px-2 text-right text-base font-semibold tabular-nums ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-ink" />
                   </div>
-                  <div className="border-t border-slate-100 pt-3" data-testid="scale-card">
+                  <div className="border-t-2 border-dashed border-slate-200 pt-3" data-testid="scale-card">
                     <p className="text-sm font-semibold text-slate-600">Scale <span className="font-bold text-ink" data-testid="scale-text">{scaleText}</span>
                       <span className="ml-1 text-xs font-normal text-slate-400">{scaleSource === "label" ? "(written on the sheet)" : scaleSource === "dimensions" ? "(from the dimensions)" : scaleSource === "other_sheet" ? "(from the floor plan)" : scaleSource === "checked" ? "(you checked it)" : "(usual for plans)"}</span>
                     </p>
@@ -481,19 +481,19 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                         <div className="flex gap-2">
                           <input inputMode="decimal" autoFocus value={realLen} onChange={(e) => setRealLen(e.target.value)} placeholder="e.g. 10.19" data-testid="real-length"
                             onKeyDown={(e) => { if (e.key === "Enter") applyScale(); }}
-                            className="min-h-11 w-full rounded-xl px-3 text-base ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                            className="min-h-11 w-full rounded-xl px-3 text-base ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-ink" />
                           <span className="self-center text-slate-500">m</span>
                           <button type="button" onClick={applyScale} className="min-h-11 rounded-xl bg-ink px-4 text-sm font-semibold text-white" data-testid="apply-scale">Set</button>
                         </div>
                       </div>
                     ) : (
-                      <button type="button" onClick={() => { setTab("all"); setTool("measure"); }} className="mt-2 text-sm font-semibold text-brand-600 hover:underline" data-testid="check-dimension">
+                      <button type="button" onClick={() => { setTab("all"); setTool("measure"); }} className="mt-2 font-mono text-xs font-semibold uppercase tracking-wider text-ink hover:underline" data-testid="check-dimension">
                         Check one dimension: tap a line and type its real length
                       </button>
                     ))}
                   </div>
                   {(detected.length > 1 || pageCount > 1) && pages.length > 0 && (
-                    <div className="border-t border-slate-100 pt-3">
+                    <div className="border-t-2 border-dashed border-slate-200 pt-3">
                       <label htmlFor="sheet" className="text-sm font-semibold text-slate-600">Wrong sheet?</label>
                       <select id="sheet" value={pageIdx} onChange={(e) => void choosePage(Number(e.target.value))} className="mt-1 block min-h-11 w-full rounded-xl px-3 text-sm ring-1 ring-slate-300" data-testid="sheet-select">
                         {pages.map((p) => <option key={p.index} value={p.index}>{sheetNo(p.index)}{sheetTitle(p) ? ` · ${sheetTitle(p).toLowerCase()}` : ""}{detected.find((d) => d.page === p.index)?.candidate ? ` · ${detected.find((d) => d.page === p.index)!.candidate!.faces} panels` : ""}</option>)}
@@ -501,11 +501,11 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                     </div>
                   )}
                   {saved && !readOnly && pages.length === 0 && (
-                    <button type="button" onClick={() => setStep("drop")} className="border-t border-slate-100 pt-3 text-sm font-semibold text-brand-600 hover:underline">Upload new plans</button>
+                    <button type="button" onClick={() => setStep("drop")} className="border-t-2 border-dashed border-slate-200 pt-3 font-mono text-xs font-semibold uppercase tracking-wider text-ink hover:underline">Upload new plans</button>
                   )}
                 </div>
                 <button type="button" onClick={() => { setStep("sheets"); setBump((b) => b + 1); setTool("type"); setDraft(null); setSelected(null); }} disabled={!analysis.faces.length}
-                  className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-brand-500 text-lg font-semibold text-white transition hover:scale-[1.02] disabled:opacity-50" data-testid="pick-sheets">
+                  className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-ink text-lg font-semibold text-white transition hover:scale-[1.02] disabled:opacity-50" data-testid="pick-sheets">
                   {readOnly ? "See the sheets →" : "Looks good. Pick the sheets →"}
                 </button>
               </>
@@ -518,9 +518,9 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                   <div className="mt-3 grid grid-cols-3 gap-2">
                     {PROFILE_IDS.map((id) => (
                       <button key={id} type="button" disabled={step === "done" || readOnly} onClick={() => { setProfile(id); setBump((b) => b + 1); }} data-testid={`profile-${id}`} aria-pressed={profile === id}
-                        className={cx("rounded-2xl p-3 text-left ring-1 transition", profile === id ? "bg-brand-50 ring-2 ring-brand-500" : "ring-slate-200 hover:bg-slate-50")}>
+                        className={cx("rounded-2xl p-3 text-left ring-1 transition", profile === id ? "bg-slate-100 ring-2 ring-ink" : "ring-slate-200 hover:bg-slate-50")}>
                         <span className="block text-sm font-bold text-ink">{SHEET_PROFILES[id].label}</span>
-                        <span className="block text-xs text-slate-500">{SHEET_PROFILES[id].blurb}</span>
+                        <span className="block font-mono text-xs text-slate-500">{SHEET_PROFILES[id].blurb}</span>
                       </button>
                     ))}
                   </div>
@@ -528,7 +528,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                   <div className="mt-3 flex flex-wrap gap-2.5">
                     {COLOURS.map((c) => (
                       <button key={c.name} type="button" title={c.name} aria-label={c.name} disabled={step === "done" || readOnly} onClick={() => { setColour(c); setBump((b) => b + 1); }} data-testid="colour"
-                        className={cx("h-11 w-11 rounded-full ring-offset-2 transition hover:scale-110", colour.name === c.name ? "ring-2 ring-brand-500" : "ring-1 ring-slate-300")} style={{ background: c.hex }} />
+                        className={cx("h-11 w-11 rounded-full ring-offset-2 transition hover:scale-110", colour.name === c.name ? "ring-2 ring-ink" : "ring-1 ring-slate-300")} style={{ background: c.hex }} />
                     ))}
                   </div>
                 </div>
@@ -553,7 +553,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                         {sheetPlan.cutList.map((r) => <li key={r.lengthMm}><b>{r.qty}</b> × {(r.lengthMm / 1000).toFixed(2)} m</li>)}
                       </ul>
                     </div>
-                    <div className="border-t border-slate-100 pt-3">
+                    <div className="border-t-2 border-dashed border-slate-200 pt-3">
                       <p className="mb-1 font-semibold text-slate-600">Flashings (300 mm per run, 100 mm laps, 8 m lengths)</p>
                       <ul className="space-y-1 text-slate-700">
                         {flashings.lines.map((l) => (
@@ -564,7 +564,7 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                       </ul>
                     </div>
                     {!readOnly && step === "sheets" && (
-                      <label className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3 text-slate-600">
+                      <label className="flex items-center justify-between gap-3 border-t-2 border-dashed border-slate-200 pt-3 text-slate-600">
                         Sheet overhang into the gutter
                         <span className="flex items-center gap-1"><input type="number" min={0} max={300} value={overhang} onChange={(e) => setOverhang(Math.max(0, Math.min(300, Number(e.target.value) || 0)))} className="min-h-11 w-20 rounded-xl px-2 text-right ring-1 ring-slate-300" /> mm</span>
                       </label>
@@ -572,17 +572,17 @@ export function PlansFlow({ estimateId, orgId, jobId, locked, aiEnabled, current
                   </div>
                 </details>
                 {step === "sheets" && (readOnly ? (
-                  <button type="button" onClick={() => setStep("roof")} className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-white text-lg font-semibold text-ink ring-1 ring-slate-300">← Back to the roof</button>
+                  <button type="button" onClick={() => setStep("roof")} className="flex min-h-14 w-full items-center justify-center rounded-[22px] bg-white text-lg font-semibold text-ink ring-1 ring-slate-300">← Back to the roof</button>
                 ) : (
                   <>
-                    <button type="button" onClick={() => void addToQuote()} disabled={saving} className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-brand-500 text-lg font-semibold text-white transition hover:scale-[1.02] disabled:opacity-60" data-testid="add-to-quote">
+                    <button type="button" onClick={() => void addToQuote()} disabled={saving} className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-ink text-lg font-semibold text-white transition hover:scale-[1.02] disabled:opacity-60" data-testid="add-to-quote">
                       {saving ? "Adding…" : "Add to quote 🎉"}
                     </button>
                     <button type="button" onClick={() => setStep("roof")} className="w-full text-center text-sm font-semibold text-slate-500 hover:text-ink">← Back to the roof</button>
                   </>
                 ))}
                 {step === "done" && result && (
-                  <div ref={(el) => { el?.scrollIntoView({ behavior: "smooth", block: "center" }); }} className="rounded-[28px] bg-brand-50 p-6 ring-2 ring-brand-500" style={{ animation: "rb-pop .5s both" }} data-testid="done-card">
+                  <div ref={(el) => { el?.scrollIntoView({ behavior: "smooth", block: "center" }); }} className="rounded-[28px] bg-slate-100 p-6 ring-2 ring-ink" style={{ animation: "rb-pop .5s both" }} data-testid="done-card">
                     <p className="font-display text-2xl font-bold text-ink">On the quote!</p>
                     <p className="mt-2 text-slate-700">{result.lines} lines added from the measurements, and the job details filled in.</p>
                     {result.seconds > 0 && <p className="mt-3 text-sm text-slate-600">Measured in <b>{Math.floor(result.seconds / 60)} min {result.seconds % 60} s</b>, straight from the plans.</p>}
@@ -675,7 +675,7 @@ function DetailsStep({ details, setDetails, apply, setApply, current, aiNote, on
         {found === 0 ? (
           <p className="mt-6 rounded-2xl bg-slate-50 px-4 py-6 text-center text-slate-600">No title block details found on these plans. You can still measure the roof.</p>
         ) : (
-          <ul className="mt-6 divide-y divide-slate-100">
+          <ul className="mt-6 divide-y-2 divide-dashed divide-slate-200">
             {rows.map((r) => {
               const vk = valueKey(r);
               const d = details.find((x) => x.key === vk)!;
@@ -683,12 +683,12 @@ function DetailsStep({ details, setDetails, apply, setApply, current, aiNote, on
               return (
                 <li key={r.key} className="flex flex-wrap items-center gap-3 py-3" data-testid="detail-row" data-detail={r.key}>
                   {canTick ? (
-                    <input type="checkbox" checked={apply.has(r.key)} onChange={() => toggle(r.key)} aria-label={`Use ${r.label}`} className="h-6 w-6 shrink-0 rounded accent-brand-500" />
-                  ) : <span className="grid h-6 w-6 shrink-0 place-items-center text-brand-600">✓</span>}
+                    <input type="checkbox" checked={apply.has(r.key)} onChange={() => toggle(r.key)} aria-label={`Use ${r.label}`} className="h-6 w-6 shrink-0 rounded accent-ink" />
+                  ) : <span className="grid h-6 w-6 shrink-0 place-items-center text-ink">✓</span>}
                   <span className="w-36 shrink-0 text-sm font-semibold text-slate-600">{r.label}</span>
                   <span className="min-w-[12rem] flex-1">
                     <input value={d.value} onChange={(e) => setDetails((ds) => ds.map((x) => (x.key === vk ? { ...x, value: e.target.value } : x)))} aria-label={r.label}
-                      className="block min-h-11 w-full rounded-xl px-3 text-base text-ink ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500" data-testid={`detail-${r.key}`} />
+                      className="block min-h-11 w-full rounded-xl px-3 text-base text-ink ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-ink" data-testid={`detail-${r.key}`} />
                     {(r.now || r.note) && <span className="mt-1 block text-xs text-slate-500">{r.now ? <>Now: <b className="text-slate-700">{r.now}</b>{r.note ? ` · ${r.note}` : " · tick to replace it"}</> : r.note}</span>}
                   </span>
                   <span className={cx("shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold", d.via === "ai" ? "bg-violet-50 text-violet-700" : "bg-slate-100 text-slate-600")}>
@@ -699,7 +699,7 @@ function DetailsStep({ details, setDetails, apply, setApply, current, aiNote, on
             })}
             {hasAddress && (
               <li className="flex flex-wrap items-center gap-3 py-3" data-testid="detail-row" data-detail="customerAddress">
-                <input type="checkbox" checked={apply.has("customerAddress")} onChange={() => toggle("customerAddress")} aria-label="Use the site address for the customer" className="h-6 w-6 shrink-0 rounded accent-brand-500" />
+                <input type="checkbox" checked={apply.has("customerAddress")} onChange={() => toggle("customerAddress")} aria-label="Use the site address for the customer" className="h-6 w-6 shrink-0 rounded accent-ink" />
                 <span className="text-sm text-slate-600">Also save the site address as the customer&apos;s address{current.customerAddress.address ? <> (now <b className="text-slate-700">{[current.customerAddress.address, current.customerAddress.city].filter(Boolean).join(", ")}</b>)</> : ""}</span>
               </li>
             )}
@@ -712,7 +712,7 @@ function DetailsStep({ details, setDetails, apply, setApply, current, aiNote, on
           <p className="font-display mt-1 text-5xl font-bold tabular-nums">{found}<span className="ml-2 text-2xl">details</span></p>
           <p className="mt-2 text-sm text-white/70">{fromAi ? `${fromAi} double-checked by AI · ` : ""}{apply.size} ticked to fill in</p>
         </div>
-        <button type="button" onClick={onNext} className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-brand-500 text-lg font-semibold text-white transition hover:scale-[1.02]" data-testid="details-next">
+        <button type="button" onClick={onNext} className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-ink text-lg font-semibold text-white transition hover:scale-[1.02]" data-testid="details-next">
           Looks right. Show me the roof →
         </button>
       </aside>

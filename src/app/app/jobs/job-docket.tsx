@@ -1,5 +1,6 @@
-// The job summary in the Jobs board's right sidebar ("ticket"): who · NOW → NEXT stage (the board's five
-// columns) · the one next step · contract / paid / owing · a few links · team. Everything else is one click away.
+// The job in the Jobs board's right sidebar: who and where, the stage bar, ONE task at the top (job-task), then
+// the job record that fills in as the job goes (lib/job-record). Each stage's full panel (calls, booking, payments,
+// close-out…) sits underneath in "Everything for this stage", so nothing it did is lost.
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ActionForm, SubmitButton } from "@/components/action-form";
@@ -17,14 +18,18 @@ import { WrapPanel } from "./wrap-panel";
 import { QuotingPanel } from "./quoting-panel";
 import { JobContact, JobDocuments, JobNotes } from "./job-sections";
 import { ClaudeBar } from "./claude-bar";
-import { reopenLead } from "./lead-actions";
-import { inspectionLabel, LOST_REASON_LABEL } from "@/lib/lead-steps";
+import { inspectionLabel } from "@/lib/lead-steps";
+import { jobRecord } from "@/lib/job-record";
+import { recordItems } from "@/lib/job-record-items";
+import { JobTask } from "./job-task";
+import { JobRecordList } from "./job-record-list";
 
 const STAGES = ["New lead", "Quoted", "Signed & Prepping", "Building", "Wrapping up"];
 // Matches the board's columns (lib/next-step pipelineColumn), so the ticket says the same as the column.
 const COLUMN_INDEX: Record<string, number> = { new: 0, quoted: 1, sold: 2, building: 3, wrapping: 4 };
 const STAGE_INDEX: Record<string, number> = { lead: 0, inspection: 0, estimate_sent: 1, sold: 2, scheduled: 2, in_progress: 3, completed: 4, paid: 4 };
 const shortDate = (iso: string) => new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T12:00:00` : iso).toLocaleDateString("en-AU", { day: "numeric", month: "short" });
+const COST_LABEL: Record<string, string> = { materials: "Materials", labor: "Crew", dumpster: "Skip", equipment: "Scaffold & equipment", permit: "Permits", other: "Other" };
 const whole = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 });
 
 function Icon({ d, className = "h-4 w-4" }: { d: string; className?: string }) {
@@ -34,8 +39,8 @@ function Icon({ d, className = "h-4 w-4" }: { d: string; className?: string }) {
 function Row({ href, title, value, external }: { href: string; title: string; value?: ReactNode; external?: boolean }) {
   const body = (
     <>
-      <span className="font-medium text-ink">{title}</span>
-      <span className="ml-auto truncate pl-3 text-right text-sm text-slate-500">{value}</span>
+      <span className="font-display font-bold text-ink">{title}</span>
+      <span className="ml-auto truncate pl-3 text-right font-mono text-xs text-slate-500">{value}</span>
       <Icon d="M9 6l6 6-6 6" className="h-4 w-4 text-slate-300 group-hover:text-ink" />
     </>
   );
@@ -64,7 +69,7 @@ function stageClock(d: Docket, now = new Date()) {
   return `Since ${shortDate(j.created_at)}`;
 }
 
-export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, askHref, payHref, remindHref, aiReady, meId }: { d: Docket; org: Organization; canSeeMoney: boolean; isCrewLead: boolean; closeHref: string; previewHref: string; askHref: string; payHref: (orderId: string) => string; remindHref: string; aiReady: boolean; meId: string }) {
+export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, askHref, payHref, remindHref, aiReady, meId, bookHref = "", book = false }: { d: Docket; org: Organization; canSeeMoney: boolean; isCrewLead: boolean; closeHref: string; previewHref: string; askHref: string; payHref: (orderId: string) => string; remindHref: string; aiReady: boolean; meId: string; bookHref?: string; book?: boolean }) {
   const j = d.job;
   const base = `/app/jobs/${j.id}`;
   const lost = j.stage === "lost";
@@ -79,78 +84,87 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
   const tag = [quote ? `Job ${quote.number}` : "New job", j.is_insurance ? "Insurance" : null].filter(Boolean).join(" · ");
   const firstNames = d.team.map((t) => t.name.split(" ")[0]);
   const teamTime = (STAGE_INDEX[j.stage] ?? 0) >= 2 && j.stage !== "lost";
-  const actionIsLink = !d.next.href.startsWith("tel:");
+  const record = jobRecord(d);
+  const measured = Boolean(d.roof) || d.files.plans > 0;
+  const fileCount = d.files.plans + d.files.photos + d.files.documents;
+  const exGst = signed && quote ? quote.total - quote.gst : null;
 
   return (
     <div className="flex h-full flex-col bg-white" data-job-docket={j.id}>
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden" data-docket-scroll>
-          {/* Ticket top */}
-          <div className={cx("px-5 pb-5 pt-4 text-white", lost ? "bg-slate-600" : "bg-brand-500")} data-docket-stages>
-            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-200">
+          {/* Ticket top: a receipt header (mono top line, the name, the street, NOW → NEXT, the stage bar). */}
+          <div className="px-5 pb-5 pt-4" data-docket-stages>
+            <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">
               <span className="min-w-0 flex-1 truncate">{tag}</span>
-              {(lost || stageClock(d)) && <span className="shrink-0">{lost ? "Lost" : stageClock(d)}</span>}
-              <Link href={closeHref} scroll={false} aria-label="Close" className="-my-1 -mr-2 grid h-8 w-8 place-items-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"><Icon d="M6 6l12 12M18 6L6 18" /></Link>
+              {(lost || stageClock(d)) && <span className={cx("shrink-0", lost && "text-red-700")}>{lost ? "Lost" : stageClock(d)}</span>}
+              <Link href={closeHref} scroll={false} aria-label="Close" className="-my-1 -mr-2 grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-ink"><Icon d="M6 6l12 12M18 6L6 18" /></Link>
             </div>
-            <h2 className="mt-2 font-display text-2xl font-bold leading-tight">{d.customer.name}</h2>
-            <p className="truncate text-sm text-white/70">{j.site_address ?? d.customer.address ?? j.title}</p>
-            <div className="mt-5 flex items-end justify-between gap-2">
-              <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-200">Now</p><p className={cx("truncate font-display font-bold leading-none", !lost && !done && STAGES[at].length > 12 ? "text-[22px]" : "text-[28px]")}>{lost ? "Lost" : done ? "Paid ✓" : STAGES[at]}</p></div>
-              {!lost && !done && at <= 4 && (
-                <>
-                  <svg viewBox="0 0 80 20" className="mb-1 h-5 w-16 shrink-0 text-brand-300" aria-hidden><path d="M2 10h70M64 3l8 7-8 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="4 4" /></svg>
-                  <div className="min-w-0 text-right"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-200">Next</p><p className="truncate font-display text-lg font-bold leading-none text-white/70">{STAGES[at + 1] ?? "Paid ✓"}</p></div>
-                </>
-              )}
+            <div className="mt-3 border-t-2 border-dashed border-slate-200" />
+            <div className="mt-3 flex items-center gap-4">
+              {measured
+                ? <svg viewBox="0 0 80 80" className="h-14 w-14 shrink-0" aria-hidden><g fill="#dcdcd2" stroke="#fff" strokeWidth="2"><path d="M2 2h76L60 20H20z" /><path d="M2 2l18 18v58H2z" /><path d="M78 2v18H60z" /><path d="M20 20h40l18-18v18L60 38H38v40H20z" /><path d="M38 38h22L38 60z" /><path d="M20 78l18-18v18z" /></g></svg>
+                : <span className="grid h-14 w-14 shrink-0 place-items-center rounded-lg border-2 border-dashed border-slate-200 font-mono text-[9px] uppercase tracking-wider text-slate-300" aria-hidden>No plan</span>}
+              <div className="min-w-0 flex-1">
+                <h2 className="font-display text-[24px] font-bold leading-tight text-ink">{d.customer.name}</h2>
+                <p className="truncate font-mono text-xs text-slate-500">{j.site_address ?? d.customer.address ?? j.title}</p>
+              </div>
             </div>
-            {!lost && <div className="mt-4 flex gap-1" aria-label={`Stage ${at + 1} of 5`}>{STAGES.map((s, i) => <span key={s} title={s} className={cx("h-1 flex-1 rounded-full", i < at || done ? "bg-brand-300" : i === at ? "bg-white" : "bg-white/20")} />)}</div>}
+            <div className="mt-4 flex items-center gap-3">
+              <div className="flex flex-1 gap-1" aria-label={lost ? "Lost" : `Stage ${at + 1} of 5`}>{STAGES.map((st, i) => <span key={st} title={st} className={cx("h-1.5 flex-1 rounded-full", lost ? "bg-slate-200" : i < at || done ? "bg-ink" : i === at ? "bg-ink/40" : "bg-slate-200")} />)}</div>
+              <span className={cx("shrink-0 font-mono text-[10.5px] font-semibold uppercase tracking-wider", lost ? "text-red-700" : "text-ink")} data-docket-stage>{lost ? "Lost" : done ? "Closed" : STAGES[at]}</span>
+            </div>
           </div>
 
           {/* Tear line */}
           <div className="relative h-5" aria-hidden><span className="absolute -left-2.5 top-0 h-5 w-5 rounded-full bg-cream" /><span className="absolute -right-2.5 top-0 h-5 w-5 rounded-full bg-cream" /><span className="absolute inset-x-4 top-2.5 border-t-2 border-dashed border-slate-200" /></div>
 
-          {d.lead && canSeeMoney ? <LeadPanel d={d} previewHref={previewHref} meId={meId} /> : d.quoting && canSeeMoney && !isCrewLead ? <QuotingPanel d={d} previewHref={previewHref} remindHref={remindHref} /> : d.build && !isCrewLead ? (<>
+          {!isCrewLead && <JobTask d={d} bookHref={bookHref} canSeeMoney={canSeeMoney} />}
+          <JobRecordList rows={record} items={recordItems(d)} lost={lost} />
+
+          {done && canSeeMoney && exGst !== null && (
+            <section className="mt-6 px-5" data-docket-made>
+              <div className="flex items-baseline justify-between border-b-2 border-ink pb-2"><h3 className="font-display text-[17px] font-bold text-ink">What you made</h3><span className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-slate-400">Only you{d.money.margin !== null ? ` · ${d.money.margin}%` : ""}</span></div>
+              <p className="mt-1 flex justify-between py-0.5 font-mono text-[12.5px] text-slate-600"><span>Job price ex GST</span><span className="tabular-nums text-ink">{money(exGst)}</span></p>
+              {d.costs.byCategory.filter((c) => c.amount > 0).map((c) => <p key={c.category} className="flex justify-between py-0.5 font-mono text-[12.5px] text-slate-600"><span>− {COST_LABEL[c.category] ?? human(c.category)}</span><span className="tabular-nums">{money(c.amount)}</span></p>)}
+              <div className="mt-1 flex items-baseline justify-between border-t-2 border-dashed border-slate-200 pt-2"><span className="font-display font-bold text-ink">You made</span><span className="font-display text-[28px] font-bold tabular-nums text-ink">{money(Math.round(d.money.profit ?? 0))}</span></div>
+            </section>
+          )}
+
+          <div className="mx-5 mt-5">
+            <Link href={`${base}/file`} className="flex items-center gap-3 rounded-xl p-3 ring-1 ring-slate-300 hover:bg-slate-50" data-job-file>
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-ink text-white"><Icon d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6" /></span>
+              <span className="min-w-0 flex-1"><span className="block font-display text-[14px] font-bold text-ink">Open job file</span><span className="block font-mono text-[11px] text-slate-500">{fileCount ? `Plans, photos & documents · ${fileCount} file${fileCount === 1 ? "" : "s"}` : "Plans, photos & documents"}</span></span>
+              <Icon d="M9 6l6 6-6 6" className="h-4 w-4 text-slate-400" />
+            </Link>
+          </div>
+
+          <details className="group/stage mt-5 border-t-2 border-dashed border-slate-200" open={book || isCrewLead} data-stage-details>
+            <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-5 [&::-webkit-details-marker]:hidden">
+              <span className="font-display font-bold text-ink">Everything for this stage</span>
+              <span className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-slate-400">Contact, notes, steps</span>
+              <Icon d="M6 9l6 6 6-6" className="ml-auto h-4 w-4 text-slate-400 transition-transform group-open/stage:rotate-180" />
+            </summary>
+          {d.lead && canSeeMoney ? <LeadPanel d={d} previewHref={previewHref} meId={meId} bookOpen={book} /> : d.quoting && canSeeMoney && !isCrewLead ? <QuotingPanel d={d} previewHref={previewHref} remindHref={remindHref} /> : d.build && !isCrewLead ? (<>
             {d.wrap ? <WrapPanel d={d} askHref={askHref} payHref={payHref} /> : <BuildPanel d={d} askHref={askHref} payHref={payHref} />}
             <JobContact d={d} />
             <JobNotes d={d} />
             <JobDocuments jobId={j.id} docs={d.docs} meta={d.build.invoiceDocs} />
           </>) : (<>
           <div className="px-5">
-            {lost && !isCrewLead ? (
-              <div className="rounded-xl bg-slate-50 px-4 py-3.5 ring-1 ring-slate-200" data-docket-lost>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Not going ahead</p>
-                <p className="font-display text-lg font-bold leading-snug text-ink">{j.lost_reason ? LOST_REASON_LABEL[j.lost_reason] ?? human(j.lost_reason) : "Marked as lost"}</p>
-                <ActionForm action={reopenLead} className="mt-2">
-                  <input type="hidden" name="job_id" value={j.id} />
-                  <SubmitButton variant="secondary" className="min-h-11 w-full">Reopen</SubmitButton>
-                </ActionForm>
-              </div>
-            ) : d.sold && !isCrewLead ? <div className="-mx-5"><SoldPanel d={d} /></div> : !isCrewLead && (
-              <div data-docket-now>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Next step</p>
-                <div className="mt-1 flex items-center gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-display text-lg font-bold leading-snug text-ink">{d.next.title}</p>
-                    {d.next.detail && <p className="text-sm leading-snug text-slate-500">{d.next.detail}</p>}
-                  </div>
-                  {actionIsLink
-                    ? <Link href={d.next.href} className="shrink-0 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600">{d.next.actionLabel}</Link>
-                    : <a href={d.next.href} className="shrink-0 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600">Call</a>}
-                </div>
-              </div>
-            )}
+            {d.sold && !isCrewLead ? <div className="-mx-5"><SoldPanel d={d} /></div> : null}
 
             {canSeeMoney && (d.money.contract !== null || quote) && (
               <div className="mt-4 grid grid-cols-3 gap-2 text-center" data-docket-money>
                 {(d.money.contract !== null
-                  ? [["Contract", whole(d.money.contract), "text-ink"], ["Paid", whole(d.money.paid), "text-teal-700"], ["Owing", whole(d.money.owing), d.money.owing > 0 ? "text-ink" : "text-teal-700"]]
-                  : [["Quote", whole(quote!.total), "text-ink"], ["Status", quote!.status === "sent" ? "Sent" : human(quote!.status), "text-ink"], ["Paid", whole(d.money.paid), "text-teal-700"]]
-                ).map(([k, v, c]) => <div key={k} className="rounded-xl bg-cream py-2"><p className="text-[10px] uppercase tracking-wider text-slate-500">{k}</p><p className={cx("font-display font-bold", c)} title={k === "Contract" || k === "Paid" || k === "Owing" ? money(k === "Contract" ? d.money.contract : k === "Paid" ? d.money.paid : d.money.owing) : undefined}>{v}</p></div>)}
+                  ? [["Contract", whole(d.money.contract), "text-ink"], ["Paid", whole(d.money.paid), "text-ink"], ["Owing", whole(d.money.owing), d.money.owing > 0 ? "text-ink" : "text-ink"]]
+                  : [["Quote", whole(quote!.total), "text-ink"], ["Status", quote!.status === "sent" ? "Sent" : human(quote!.status), "text-ink"], ["Paid", whole(d.money.paid), "text-ink"]]
+                ).map(([k, v, c]) => <div key={k} className="rounded-xl bg-white py-2 ring-1 ring-slate-200"><p className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400">{k}</p><p className={cx("font-display font-bold", c)} title={k === "Contract" || k === "Paid" || k === "Owing" ? money(k === "Contract" ? d.money.contract : k === "Paid" ? d.money.paid : d.money.owing) : undefined}>{v}</p></div>)}
               </div>
             )}
           </div>
 
-          <ul className="mt-3 divide-y divide-slate-100" data-docket-links>
+          <ul className="mx-5 mt-3 divide-y-2 divide-dashed divide-slate-200 border-t-2 border-dashed border-slate-200 [&_a]:-mx-5" data-docket-links>
             {quote && canSeeMoney && <Row href={`/app/estimates/${quote.id}`} title="Quote" value={`#${quote.number} · ${signed ? "signed" : quote.status === "sent" ? "sent" : "draft"}`} />}
             {canSeeMoney && d.invoices.length > 0 && <Row href={`${base}/billing`} title="Invoices" value={`${invPaid} of ${d.invoices.length} paid`} />}
             {canSeeMoney && signed && <Row href={`${base}/billing/plan`} title="Payment plan" value={d.invoices.length > 1 ? `${d.invoices.length} payments` : "Split the price"} />}
@@ -160,10 +174,11 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
           </ul>
           {d.sold && !isCrewLead && <><JobContact d={d} /><JobNotes d={d} /><JobDocuments jobId={j.id} docs={d.docs} /></>}
           </>)}
+          </details>
         </div>
 
         {/* Team + call: only once it's sold (before that there's no crew to add, and Contact has text/call). */}
-        {teamTime && <div className="flex items-center gap-2 border-t border-slate-100 px-5 py-3" data-docket-team>
+        {teamTime && <div className="flex items-center gap-2 border-t-2 border-dashed border-slate-200 px-5 py-3" data-docket-team>
           {d.team.length > 0 ? (
             <span className="flex -space-x-1.5">{d.team.map((t) => <span key={t.user_id} title={`${t.name} · ${JOB_ROLE_LABEL[t.role]}`} data-team-member={t.role} className="grid h-8 w-8 place-items-center rounded-full text-[11px] font-bold text-white ring-2 ring-white" style={{ background: avatarColour(t.user_id) }}>{initials({ full_name: t.name })}</span>)}</span>
           ) : null}
@@ -172,9 +187,9 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
           ) : (
             <details className="relative min-w-0" data-add-staff>
               <summary className="cursor-pointer list-none truncate rounded-lg px-1.5 py-1 text-sm text-slate-500 hover:bg-slate-50 hover:text-ink [&::-webkit-details-marker]:hidden">
-                {firstNames.length ? firstNames.join(", ") : <span className="font-semibold text-brand-700">+ Add team</span>}
+                {firstNames.length ? firstNames.join(", ") : <span className="font-semibold text-ink">+ Add team</span>}
               </summary>
-              <div className="absolute bottom-10 left-0 z-20 w-[300px] rounded-2xl bg-white p-3.5 ring-2 ring-ink">
+              <div className="absolute bottom-10 left-0 z-20 w-[300px] rounded-[22px] bg-white p-3.5 ring-2 ring-ink">
                 <p className="font-display text-sm font-bold text-ink">Team on this job</p>
                 {d.team.length > 0 && (
                   <ul className="mt-2 space-y-1">
@@ -190,11 +205,11 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
                 {notOnTeam.length > 0 ? (
                   <ActionForm action={addJobMembers}>
                     <input type="hidden" name="job_id" value={j.id} />
-                    <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Add</p>
-                    <ul className="mt-1 max-h-56 divide-y divide-slate-100 overflow-y-auto">
+                    <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Add</p>
+                    <ul className="mt-1 max-h-56 divide-y-2 divide-dashed divide-slate-200 overflow-y-auto">
                       {notOnTeam.map((p) => (
                         <li key={p.user_id} className="flex items-center gap-2 py-1.5">
-                          <input type="checkbox" name="user_id" value={p.user_id} aria-label={`Add ${p.full_name ?? p.email}`} className="h-4 w-4 shrink-0 accent-[#1f5f3f]" />
+                          <input type="checkbox" name="user_id" value={p.user_id} aria-label={`Add ${p.full_name ?? p.email}`} className="h-4 w-4 shrink-0 accent-[#13221a]" />
                           <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-ink">{p.full_name || p.email}</span>
                           <select name={`role_${p.user_id}`} defaultValue={p.suggested} aria-label="Role on this job" className="h-8 rounded-md bg-cream px-1 text-[11px] font-semibold text-ink ring-1 ring-slate-300">
                             {JOB_ROLES.map((r) => <option key={r} value={r}>{JOB_ROLE_LABEL[r]}</option>)}
@@ -202,7 +217,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
                         </li>
                       ))}
                     </ul>
-                    <label className="mt-2 flex items-center gap-2 text-[12px] text-slate-600"><input type="checkbox" name="notify" defaultChecked className="h-4 w-4 accent-[#1f5f3f]" />Let them know</label>
+                    <label className="mt-2 flex items-center gap-2 text-[12px] text-slate-600"><input type="checkbox" name="notify" defaultChecked className="h-4 w-4 accent-[#13221a]" />Let them know</label>
                     <SubmitButton className="mt-2 min-h-10 w-full">Add to job</SubmitButton>
                   </ActionForm>
                 ) : <p className="mt-2 text-xs text-slate-500">Everyone on your team is on this job. Invite more people in Settings → Team.</p>}

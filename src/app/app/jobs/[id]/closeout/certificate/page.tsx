@@ -23,7 +23,7 @@ export default async function Certificate({ params }: PageProps<"/app/jobs/[id]/
   const st = (job.state ?? c.state ?? "").toUpperCase();
   const licence = (st && o.licences?.[st]?.number) || o.license_number;
   const address = job.site_address || [c.address, [c.city, c.state, c.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
-  const row = (k: string, v: string | null | undefined) => v ? <div className="flex gap-3 border-b border-slate-100 py-1.5"><dt className="w-40 shrink-0 text-slate-500">{k}</dt><dd className="font-medium">{v}</dd></div> : null;
+  const row = (k: string, v: string | null | undefined) => v ? <div className="flex gap-3 border-b-2 border-dashed border-slate-200 py-1.5"><dt className="w-40 shrink-0 text-slate-500">{k}</dt><dd className="font-medium">{v}</dd></div> : null;
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -31,7 +31,7 @@ export default async function Certificate({ params }: PageProps<"/app/jobs/[id]/
         <Link href={`/app/jobs/${id}/closeout`} className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 ring-1 ring-slate-300">← Close-out</Link>
         <PrintButton />
       </div>
-      <article className="rounded-2xl bg-white p-6 ring-1 ring-slate-200 sm:p-10 print:p-0 print:ring-0">
+      <article className="rounded-[22px] bg-white p-6 ring-1 ring-slate-200 sm:p-10 print:p-0 print:ring-0">
         <header className="border-b-2 border-slate-900 pb-4 text-center">
           <p className="text-lg font-bold">{o.name}</p>
           <p className="text-sm text-slate-600">{[o.address, o.phone, o.email].filter(Boolean).join(" · ")}</p>

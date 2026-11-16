@@ -117,7 +117,7 @@ export function ImportPanel({ onApply, onCancel }: { onApply: (r: ImportResult) 
                 <button type="button" className="text-slate-400 hover:text-red-600 disabled:invisible" disabled={rows.length === 1} onClick={() => setRows((p) => p.filter((_, j) => j !== i))} aria-label="Remove facet">✕</button>
               </div>
             ))}
-            <button type="button" className="text-sm font-medium text-brand-600 hover:underline" onClick={() => setRows((p) => [...p, { label: `Facet ${p.length + 1}`, area: "", pitch: p.at(-1)?.pitch ?? "22.5" }])}>+ Add facet</button>
+            <button type="button" className="text-sm font-medium text-ink hover:underline" onClick={() => setRows((p) => [...p, { label: `Facet ${p.length + 1}`, area: "", pitch: p.at(-1)?.pitch ?? "22.5" }])}>+ Add facet</button>
           </div>
         ) : (
           <Field label="One facet per line: name, area m², pitch °" hint="Copy the facet table from the report. A header row is fine. Pitch can be degrees (22.5), a ratio (1:4) or x/12.">

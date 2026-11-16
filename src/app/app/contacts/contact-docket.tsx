@@ -60,33 +60,34 @@ export async function loadContactDocket(supabase: DB, id: string, opts: { canSee
 function Row({ icon, k, v, href }: { icon: string; k: string; v: React.ReactNode; href?: string }) {
   const inner = (
     <>
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-cream text-slate-600 ring-1 ring-slate-200"><Icon d={icon} /></span>
-      <span className="min-w-0 flex-1"><span className="block text-[11px] text-slate-500">{k}</span><span className="block text-sm font-medium text-ink [overflow-wrap:anywhere]">{v}</span></span>
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-white text-ink ring-1 ring-slate-300"><Icon d={icon} /></span>
+      <span className="min-w-0 flex-1"><span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400">{k}</span><span className="block font-mono text-[13px] text-ink [overflow-wrap:anywhere]">{v}</span></span>
     </>
   );
   return href ? <a href={href} className="flex items-center gap-3 rounded-lg py-1.5 hover:bg-slate-50">{inner}</a> : <div className="flex items-center gap-3 py-1.5">{inner}</div>;
 }
 
 function Shell({ id, tag, sinceIso, name, sub, stats, closeHref, phone, email, children, claude }: { id: string; tag: string; sinceIso: string; name: string; sub: string; stats: { k: string; v: string; warn?: boolean }[]; closeHref: string; phone: string | null; email: string | null; children: React.ReactNode; claude?: React.ReactNode }) {
-  const btn = "inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl text-[15px] font-semibold";
+  const btn = "inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl font-mono text-xs font-semibold uppercase tracking-wider";
   return (
     <div className="flex h-full flex-col bg-cream p-4" data-contact-docket={id}>
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] bg-white ring-1 ring-slate-200">
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-          <div className="bg-brand-500 px-5 pb-5 pt-4 text-white">
-            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-200">
+          <div className="px-5 pb-5 pt-4">
+            <div className="flex items-center gap-2 text-[11px] uppercase text-slate-400 font-mono tracking-[0.12em]">
               <span className="min-w-0 flex-1 truncate" data-contact-tag>{tag}</span>
               <span className="shrink-0">Since {since(sinceIso)}</span>
-              <Link href={closeHref} scroll={false} aria-label="Close" className="-my-1 -mr-2 grid h-8 w-8 place-items-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"><Icon d="M6 6l12 12M18 6L6 18" /></Link>
+              <Link href={closeHref} scroll={false} aria-label="Close" className="-my-1 -mr-2 grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-ink"><Icon d="M6 6l12 12M18 6L6 18" /></Link>
             </div>
-            <h2 className="mt-2 font-display text-2xl font-bold leading-tight">{name}</h2>
-            <p className="truncate text-sm text-white/70">{sub}</p>
-            {stats.length > 0 && <dl className={cx("mt-5 grid gap-2", stats.length === 3 ? "grid-cols-3" : stats.length === 2 ? "grid-cols-2" : "grid-cols-1")} data-contact-stats>
-              {stats.map((s) => <div key={s.k}><dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-200">{s.k}</dt><dd className={cx("font-display text-[22px] font-bold leading-tight", s.warn && "text-amber-200")}>{s.v}</dd></div>)}
+            <div className="mt-3 border-t-2 border-dashed border-slate-200" />
+            <h2 className="mt-3 font-display text-[26px] font-bold leading-tight text-ink">{name}</h2>
+            <p className="truncate font-mono text-xs text-slate-500">{sub}</p>
+            {stats.length > 0 && <dl className={cx("mt-4 grid gap-2 border-t-2 border-dashed border-slate-200 pt-3", stats.length === 3 ? "grid-cols-3" : stats.length === 2 ? "grid-cols-2" : "grid-cols-1")} data-contact-stats>
+              {stats.map((s) => <div key={s.k}><dt className="text-[10px] uppercase text-slate-400 font-mono tracking-[0.12em]">{s.k}</dt><dd className={cx("font-display text-[22px] font-bold leading-tight text-ink", s.warn && "text-amber-700")}>{s.v}</dd></div>)}
             </dl>}
           </div>
           <div className="flex gap-2 px-5 py-4">
-            {phone ? <a href={tel(phone)} className={cx(btn, "bg-brand-500 text-white hover:bg-brand-600")}><Icon d={PHONE} />Call</a> : <span className={cx(btn, "bg-slate-100 text-slate-400")}><Icon d={PHONE} />No number</span>}
+            {phone ? <a href={tel(phone)} className={cx(btn, "bg-ink text-white hover:bg-ink/90")}><Icon d={PHONE} />Call</a> : <span className={cx(btn, "bg-slate-100 text-slate-400")}><Icon d={PHONE} />No number</span>}
             {phone && <a href={`sms:${phone.replace(/\s+/g, "")}`} className={cx(btn, "bg-white text-ink ring-1 ring-slate-300 hover:bg-slate-50")}><Icon d={SMS} />Text</a>}
             {email && <a href={`mailto:${email}`} className={cx(btn, "bg-white text-ink ring-1 ring-slate-300 hover:bg-slate-50")}><Icon d={MAIL} />Email</a>}
           </div>
@@ -100,7 +101,7 @@ function Shell({ id, tag, sinceIso, name, sub, stats, closeHref, phone, email, c
 
 function EditDetails({ children }: { children: React.ReactNode }) {
   return (
-    <details className="group border-t border-slate-100" data-contact-edit>
+    <details className="group border-t-2 border-dashed border-slate-200" data-contact-edit>
       <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-5 [&::-webkit-details-marker]:hidden">
         <span className="font-semibold text-ink">Edit details</span>
         <Icon d="M6 9l6 6 6-6" className="ml-auto h-4 w-4 text-slate-400 transition-transform group-open:rotate-180" />
@@ -118,13 +119,13 @@ function JobList({ d, canSeeMoney, newHref, newLabel }: { d: ContactDocketData; 
   return (
     <Section title="Jobs" count={d.jobs.length}>
       {d.jobs.length === 0 ? <p className="text-sm text-slate-500">No jobs yet.</p> : (
-        <ul className="-mx-2 divide-y divide-slate-100" data-contact-jobs>
+        <ul className="-mx-2 divide-y-2 divide-dashed divide-slate-200" data-contact-jobs>
           {d.jobs.map((j) => (
             <li key={j.id}>
               <Link href={`/app/jobs?job=${j.id}`} className="flex items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-slate-50">
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-ink">{j.title}</span>
-                  <span className="block text-xs text-slate-500">{STAGE_LABEL[j.stage] ?? label(j.stage)}{canSeeMoney && j.owing > 0 ? <span className="font-semibold text-amber-700"> · {aud(j.owing)} owing</span> : null}</span>
+                  <span className="block font-mono text-xs text-slate-500">{STAGE_LABEL[j.stage] ?? label(j.stage)}{canSeeMoney && j.owing > 0 ? <span className="font-semibold text-amber-700"> · {aud(j.owing)} owing</span> : null}</span>
                 </span>
                 {canSeeMoney && <span className="shrink-0 text-sm font-semibold tabular-nums text-ink">{j.value === null ? <span className="font-normal text-slate-400">Not quoted</span> : aud(j.value)}</span>}
                 <Icon d={CHEV} className="h-4 w-4 text-slate-400" />
@@ -133,7 +134,7 @@ function JobList({ d, canSeeMoney, newHref, newLabel }: { d: ContactDocketData; 
           ))}
         </ul>
       )}
-      <Link href={newHref} className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700">{newLabel}</Link>
+      <Link href={newHref} className="mt-2 inline-flex min-h-11 items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-ink hover:text-ink">{newLabel}</Link>
     </Section>
   );
 }
@@ -147,20 +148,20 @@ function BuilderDocket({ d, closeHref, canSeeMoney }: { d: ContactDocketData; cl
       closeHref={closeHref} phone={c.phone ?? d.people.find((p) => p.phone)?.phone ?? null} email={c.email ?? d.people.find((p) => p.email)?.email ?? null}>
       <Section title="People" count={d.people.length}>
         {d.people.length > 0 && (
-          <ul className="-mx-2 divide-y divide-slate-100" data-contact-people>
+          <ul className="-mx-2 divide-y-2 divide-dashed divide-slate-200" data-contact-people>
             {d.people.map((p) => (
               <li key={p.id} className="flex items-center gap-3 px-2 py-2.5">
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber-100 text-xs font-bold text-amber-800">{initials(p.name)}</span>
                 <span className="min-w-0 flex-1"><b className="block truncate text-sm text-ink">{p.name}</b><span className="block truncate text-xs text-slate-500">{[p.role, p.phone, !p.phone ? p.email : null].filter(Boolean).join(" · ")}</span></span>
-                {p.phone && <a href={tel(p.phone)} aria-label={`Call ${p.name}`} className="grid h-9 w-9 place-items-center rounded-lg text-brand-600 hover:bg-brand-50"><Icon d={PHONE} /></a>}
-                {p.email && <a href={`mailto:${p.email}`} aria-label={`Email ${p.name}`} className="grid h-9 w-9 place-items-center rounded-lg text-brand-600 hover:bg-brand-50"><Icon d={MAIL} /></a>}
+                {p.phone && <a href={tel(p.phone)} aria-label={`Call ${p.name}`} className="grid h-9 w-9 place-items-center rounded-lg text-ink hover:bg-slate-100"><Icon d={PHONE} /></a>}
+                {p.email && <a href={`mailto:${p.email}`} aria-label={`Email ${p.name}`} className="grid h-9 w-9 place-items-center rounded-lg text-ink hover:bg-slate-100"><Icon d={MAIL} /></a>}
                 <form action={removePerson}><input type="hidden" name="id" value={p.id} /><button aria-label={`Remove ${p.name}`} className="grid h-9 w-9 place-items-center rounded-lg text-slate-300 hover:bg-slate-100 hover:text-red-700">✕</button></form>
               </li>
             ))}
           </ul>
         )}
         <details className="mt-1" data-add-person>
-          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center text-sm font-semibold text-brand-600 hover:text-brand-700 [&::-webkit-details-marker]:hidden">+ Add a person</summary>
+          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center font-mono text-xs font-semibold uppercase tracking-wider text-ink hover:text-ink [&::-webkit-details-marker]:hidden">+ Add a person</summary>
           <ActionForm action={addPerson} className="mt-1 grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-3">
             <input type="hidden" name="contact_id" value={c.id} />
             <Input name="name" placeholder="Name" required aria-label="Name" />
@@ -189,7 +190,7 @@ function BuilderDocket({ d, closeHref, canSeeMoney }: { d: ContactDocketData; cl
 }
 
 const TONE: Record<ExpiryState, { box: string; icon: string; text: string }> = {
-  ok: { box: "bg-brand-50", icon: "text-brand-600", text: "text-slate-600" },
+  ok: { box: "bg-slate-100", icon: "text-ink", text: "text-slate-600" },
   soon: { box: "bg-amber-50", icon: "text-amber-700", text: "font-semibold text-amber-800" },
   expired: { box: "bg-red-50", icon: "text-red-700", text: "font-semibold text-red-800" },
   missing: { box: "bg-slate-50", icon: "text-slate-400", text: "text-slate-500" },
@@ -223,11 +224,11 @@ function ContractorDocket({ d, closeHref, today, canSeeMoney }: { d: ContactDock
       </Section>
       <Section title="Jobs" count={d.onJobs.length}>
         {d.onJobs.length > 0 && (
-          <ul className="-mx-2 divide-y divide-slate-100" data-contact-onjobs>
+          <ul className="-mx-2 divide-y-2 divide-dashed divide-slate-200" data-contact-onjobs>
             {d.onJobs.map((j) => (
               <li key={j.job_id} className="flex items-center gap-2">
                 <Link href={`/app/jobs?job=${j.job_id}`} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-slate-50">
-                  <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-ink">{[j.who, j.where].filter(Boolean).join(" · ") || j.title}</span><span className="block text-xs text-slate-500">{[STAGE_LABEL[j.stage] ?? label(j.stage), j.role].filter(Boolean).join(" · ")}</span></span>
+                  <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-ink">{[j.who, j.where].filter(Boolean).join(" · ") || j.title}</span><span className="block font-mono text-xs text-slate-500">{[STAGE_LABEL[j.stage] ?? label(j.stage), j.role].filter(Boolean).join(" · ")}</span></span>
                   <Icon d={CHEV} className="h-4 w-4 text-slate-400" />
                 </Link>
                 <form action={removeFromJob}><input type="hidden" name="job_id" value={j.job_id} /><input type="hidden" name="contact_id" value={c.id} /><button aria-label="Take off this job" className="grid h-9 w-9 place-items-center rounded-lg text-slate-300 hover:bg-slate-100 hover:text-red-700">✕</button></form>
@@ -337,7 +338,7 @@ export function SupplierDocket({ d, closeHref, canSeeMoney, canEdit }: { d: Supp
       </Section>
       <Section title="Orders" count={d.orderCount}>
         {d.orders.length === 0 ? <p className="text-sm text-slate-500">No orders yet. Order from a job&apos;s materials list.</p> : (
-          <ul className="-mx-2 divide-y divide-slate-100" data-supplier-orders>
+          <ul className="-mx-2 divide-y-2 divide-dashed divide-slate-200" data-supplier-orders>
             {d.orders.map((o) => {
               const owe = o.invoiced && !o.paid_at;
               return (
@@ -359,13 +360,13 @@ export function SupplierDocket({ d, closeHref, canSeeMoney, canEdit }: { d: Supp
       {canSeeMoney && (
         <Section title="Price list">
           <p className="text-sm text-slate-600" data-price-list>{d.priceList ? <>Using <b className="text-ink">{d.priceList.name ?? "their price list"}</b>{d.priceList.effective_date ? ` · from ${dmy(d.priceList.effective_date)}` : ""}</> : "No price list yet. Quotes use the standard price guide."}</p>
-          <Link href={`/app/settings/suppliers/${s.id}/import`} className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-brand-600 hover:text-brand-700">{d.priceList ? "Upload a new price list" : "Upload their price list"}</Link>
+          <Link href={`/app/settings/suppliers/${s.id}/import`} className="mt-2 inline-flex min-h-11 items-center font-mono text-xs font-semibold uppercase tracking-wider text-ink hover:text-ink">{d.priceList ? "Upload a new price list" : "Upload their price list"}</Link>
         </Section>
       )}
       <ReferralsSection who={{ id: s.id, type: "supplier", name: s.name }} r={d} canSeeMoney={canSeeMoney} />
       <Notes notes={s.notes} />
       {canEdit && <EditDetails><EditSupplier s={s} /></EditDetails>}
-      <p className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">Suppliers you order from in Materials show up here automatically.</p>
+      <p className="border-t-2 border-dashed border-slate-200 px-5 py-3 text-xs text-slate-500">Suppliers you order from in Materials show up here automatically.</p>
     </Shell>
   );
 }

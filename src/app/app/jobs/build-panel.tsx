@@ -16,7 +16,7 @@ const aud = (n: number, cents = false) => n.toLocaleString("en-AU", { style: "cu
 const day = (iso: string) => new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T12:00:00` : iso).toLocaleDateString("en-AU", { day: "numeric", month: "short", timeZone: "Australia/Brisbane" });
 const wkday = (iso: string) => new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T12:00:00` : iso).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short", timeZone: "Australia/Brisbane" });
 const dayTime = (iso: string) => new Date(iso).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Australia/Brisbane" });
-const label = "text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400";
+const label = "font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400";
 
 function GmailMark() {
   return <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" aria-hidden><path d="M3 6.5V18h3.5V9.8L12 13.8l5.5-4V18H21V6.5l-2-1.3-7 5.1-7-5.1z" fill="#ea4335" /><path d="M3 6.5V18h3.5V9.8z" fill="#4285f4" /><path d="M17.5 9.8V18H21V6.5z" fill="#34a853" /><path d="M21 6.5l-2-1.3-1.5 1.1v3.5z" fill="#fbbc04" /></svg>;
@@ -33,15 +33,15 @@ export function BuildPanel({ d, askHref, payHref }: { d: Docket; askHref: string
     <div data-build-panel>
       {b.lastDay && (
         <div className="flex gap-2 px-5 pb-4" data-last-day>
-          {tel && <a href={`sms:${tel}?&body=${encodeURIComponent(`Hi ${first}, the new roof's done. Thanks for having us!`)}`} className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-brand-500 px-3 text-sm font-semibold text-white hover:bg-brand-600"><Icon d="M4 5h16v11H9l-5 4z" />Text {first}: the roof&apos;s done</a>}
+          {tel && <a href={`sms:${tel}?&body=${encodeURIComponent(`Hi ${first}, the new roof's done. Thanks for having us!`)}`} className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-ink px-3 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90"><Icon d="M4 5h16v11H9l-5 4z" />Text {first}: the roof&apos;s done</a>}
           <form action={setStage}><input type="hidden" name="id" value={j.id} /><input type="hidden" name="stage" value="completed" />
-            <button className="flex min-h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold text-ink ring-1 ring-slate-300 hover:bg-slate-50">Finish build</button></form>
+            <button className="flex min-h-11 items-center justify-center rounded-xl px-4 font-mono text-xs font-semibold uppercase tracking-wider text-ink ring-1 ring-slate-300 hover:bg-slate-50">Finish build</button></form>
         </div>
       )}
 
       {/* Payments: exactly as on the quote. */}
       {b.rows.length > 0 && (
-        <div className="border-t border-slate-100 px-5 py-4" data-payments>
+        <div className="border-t-2 border-dashed border-slate-200 px-5 py-4" data-payments>
           <div className="flex items-center gap-2"><p className={cx(label, "flex-1")}>Payments · as on quote{b.quoteNo ? ` #${b.quoteNo}` : ""}</p><span className="text-xs text-slate-500">{aud(b.paid)} of {aud(b.contract)} paid</span></div>
           <ol className="mt-2 overflow-hidden rounded-xl ring-1 ring-slate-200">
             {b.rows.map((r, k) => {
@@ -51,10 +51,10 @@ export function BuildPanel({ d, askHref, payHref }: { d: Docket; askHref: string
                 : live && r.due ? `Due now${r.trigger === "delivered" && deliveredOn ? ` · delivered ${wkday(deliveredOn)}` : r.trigger === "completed" ? " · job done" : ""}`
                 : r.when;
               return (
-                <li key={r.label + k} className={cx("flex items-center gap-3 px-3.5 py-2.5", k > 0 && "border-t border-slate-100", live && "bg-brand-50")} data-pay-row={r.state}>
-                  <span className={cx("grid h-7 w-7 shrink-0 place-items-center rounded-full", r.state === "paid" ? "bg-brand-500 text-white" : live ? "bg-ink text-white" : "bg-white text-slate-400 ring-1 ring-slate-200")}><Icon d={r.state === "paid" ? CHECK : DOLLAR} className="h-3.5 w-3.5" /></span>
+                <li key={r.label + k} className={cx("flex items-center gap-3 px-3.5 py-2.5", k > 0 && "border-t-2 border-dashed border-slate-200", live && "bg-slate-100")} data-pay-row={r.state}>
+                  <span className={cx("grid h-7 w-7 shrink-0 place-items-center rounded-full", r.state === "paid" ? "bg-ink text-white" : live ? "bg-ink text-white" : "bg-white text-slate-400 ring-1 ring-slate-200")}><Icon d={r.state === "paid" ? CHECK : DOLLAR} className="h-3.5 w-3.5" /></span>
                   <span className="min-w-0 flex-1">
-                    <span className={cx("block text-sm font-semibold", r.state === "later" ? "text-slate-500" : "text-ink")}>{r.label}{r.pct < 100 ? ` · ${r.pct}%` : ""}</span>
+                    <span className={cx("block font-display text-[15px] font-bold", r.state === "later" ? "text-slate-500" : "text-ink")}>{r.label}{r.pct < 100 ? ` · ${r.pct}%` : ""}</span>
                     <span className="block truncate text-xs text-slate-500">{sub}{r.extra > 0 ? ` · incl. ${aud(r.extra)} extra work` : ""}</span>
                   </span>
                   <span className={cx("font-display text-[15px] font-bold tabular-nums", r.state === "paid" ? "text-teal-700" : r.state === "later" ? "text-slate-400" : "text-ink")}>{aud(r.amount)}</span>
@@ -68,11 +68,11 @@ export function BuildPanel({ d, askHref, payHref }: { d: Docket; askHref: string
             </p>
           )}
           {next?.state === "next" && b.otherPlan.count === 0 && (
-            <Link href={askHref} scroll={false} className="mt-3 flex min-h-11 items-center justify-center gap-2 rounded-xl bg-brand-500 text-sm font-semibold text-white hover:bg-brand-600" data-request-payment><Icon d={SEND} />Request {aud(next.amount)} from {first}</Link>
+            <Link href={askHref} scroll={false} className="mt-3 flex min-h-11 items-center justify-center gap-2 rounded-xl bg-ink font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90" data-request-payment><Icon d={SEND} />Request {aud(next.amount)} from {first}</Link>
           )}
           {next?.state === "asked" && (
             <div className="mt-3 flex items-center gap-3 rounded-xl bg-amber-50/60 px-3.5 py-2.5 ring-1 ring-amber-200" data-requested>
-              <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-ink">Requested {next.invoice?.issue_date ? wkday(next.invoice.issue_date) : ""} · not paid yet</span><span className="block text-xs text-slate-500">{next.invoice?.last_reminder_on && next.invoice.last_reminder_on !== next.invoice.issue_date ? `Last reminder ${wkday(next.invoice.last_reminder_on)}` : `Emailed${d.customer.phone ? " and texted" : ""} to ${first} with a pay link`}</span></span>
+              <span className="min-w-0 flex-1"><span className="block font-display text-[15px] font-bold text-ink">Requested {next.invoice?.issue_date ? wkday(next.invoice.issue_date) : ""} · not paid yet</span><span className="block font-mono text-xs text-slate-500">{next.invoice?.last_reminder_on && next.invoice.last_reminder_on !== next.invoice.issue_date ? `Last reminder ${wkday(next.invoice.last_reminder_on)}` : `Emailed${d.customer.phone ? " and texted" : ""} to ${first} with a pay link`}</span></span>
               <Link href={askHref} scroll={false} className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-ink ring-1 ring-slate-300 hover:bg-slate-50">Remind</Link>
             </div>
           )}
@@ -81,17 +81,17 @@ export function BuildPanel({ d, askHref, payHref }: { d: Docket; askHref: string
 
       {/* Deliveries: tick each supplier when it turns up, then pay their invoice. */}
       {b.deliveries.length > 0 && (
-        <div className="border-t border-slate-100 pb-2" data-deliveries>
+        <div className="border-t-2 border-dashed border-slate-200 pb-2" data-deliveries>
           <p className={cx(label, "px-5 pb-1 pt-4")}>Deliveries</p>
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y-2 divide-dashed divide-slate-200">
             {b.deliveries.map((o) => {
               const delivered = o.status === "delivered";
               const when = delivered && o.deliveredAt ? `Delivered ${wkday(o.deliveredAt)}` : o.supplierDate ? `Confirmed for ${wkday(o.supplierDate)}` : o.deliveryDate ? `Due ${wkday(o.deliveryDate)}` : o.status === "sent" ? "Ordered" : o.status === "confirmed" ? "Confirmed" : "Not ordered yet";
               return (
                 <li key={o.id} className="flex items-center gap-3 px-5 py-3" data-delivery={o.supplier} data-state={o.paidAt ? "paid" : delivered ? "delivered" : "coming"}>
-                  <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-full", delivered ? "bg-brand-500 text-white" : "bg-white text-slate-500 ring-1 ring-slate-200")}><Icon d={delivered ? CHECK : TRUCK} /></span>
+                  <span className={cx("grid h-8 w-8 shrink-0 place-items-center rounded-full", delivered ? "bg-ink text-white" : "bg-white text-slate-500 ring-1 ring-slate-200")}><Icon d={delivered ? CHECK : TRUCK} /></span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold text-ink">{o.supplier}{o.branch ? ` ${o.branch}` : ""}</span>
+                    <span className="block font-display text-[15px] font-bold text-ink">{o.supplier}{o.branch ? ` ${o.branch}` : ""}</span>
                     <span className="block truncate text-xs text-slate-500">{o.what} · {when}</span>
                     {delivered && (o.paidAt
                       ? <span className="mt-0.5 flex items-center gap-1 text-xs font-medium text-slate-600">{o.invoice?.source === "gmail" && <GmailMark />}{o.invoice?.total ? `${aud(o.invoice.total, true)} · ` : ""}paid {dayTime(o.paidAt)}</span>
@@ -105,9 +105,9 @@ export function BuildPanel({ d, askHref, payHref }: { d: Docket; askHref: string
                       <SubmitButton variant="secondary" className="min-h-9 gap-1.5 px-3 text-xs"><span className="h-3.5 w-3.5 rounded border-[1.5px] border-slate-400" />Delivered</SubmitButton>
                     </ActionForm></span>
                   ) : o.paidAt ? (
-                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700"><Icon d={CHECK} className="h-3.5 w-3.5" />Paid</span>
+                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-ink"><Icon d={CHECK} className="h-3.5 w-3.5" />Paid</span>
                   ) : (
-                    <Link href={payHref(o.id)} scroll={false} className={cx("shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold", o.invoice ? "bg-brand-500 text-white hover:bg-brand-600" : "text-ink ring-1 ring-slate-300 hover:bg-slate-50")} data-pay-invoice>{o.invoice ? "Pay invoice" : "Add invoice"}</Link>
+                    <Link href={payHref(o.id)} scroll={false} className={cx("shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold", o.invoice ? "bg-ink text-white hover:bg-ink/90" : "text-ink ring-1 ring-slate-300 hover:bg-slate-50")} data-pay-invoice>{o.invoice ? "Pay invoice" : "Add invoice"}</Link>
                   )}
                 </li>
               );

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { LinkButton, cx } from "@/components/ui";
-import { WaitTimer } from "@/components/wait-timer";
 import { requireMoneyAccess, requireOrg } from "@/lib/dal";
 import { ageTone, dollars, nextStep, pipelineColumn, type NextStepJob, type PipelineColumn } from "@/lib/next-step";
 import { asNextStepJob, loadNextStepCtx, NEXT_STEP_JOB_COLS } from "@/lib/next-step-server";
@@ -19,6 +18,7 @@ import { loadQuoteEmail } from "@/lib/quote-email-server";
 import { aiEnabled } from "@/lib/ai";
 import { ClaudeSidebar } from "./claude-sidebar";
 import { StageMotion } from "./stage-motion";
+import { JobCard } from "./job-card";
 
 export const metadata: Metadata = { title: "Jobs" };
 
@@ -43,7 +43,6 @@ const FILTERS = [
 ] as const;
 type Filter = (typeof FILTERS)[number]["key"];
 
-const AGE_CLS = { ok: "bg-slate-100 text-slate-600", amber: "bg-amber-50 text-amber-800", red: "bg-red-50 text-red-700" };
 const DAY = 86400000;
 // "77 Banksia St, Paddington QLD 4064" → "77 Banksia St, Paddington" (the state is the same on almost every card).
 const STATE_TAIL = /,?\s+(NSW|VIC|QLD|WA|SA|TAS|ACT|NT)(\s+\d{4})?\s*$/;
@@ -110,13 +109,13 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
     <>
       <header className="mb-6 flex flex-wrap items-center gap-4">
         <div className="min-w-0 flex-1 basis-56">
-          <h1 className="text-[32px] font-bold leading-tight tracking-tight text-ink">Jobs</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            {cards.length} job{cards.length === 1 ? "" : "s"} · {dollars(shownValue)} in play
+          <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">
+            Pipeline · {cards.length} job{cards.length === 1 ? "" : "s"} · {dollars(shownValue)} in play
             {waiting > 0 && <span className="font-semibold text-red-700"> · {waiting} new lead{waiting === 1 ? "" : "s"} waiting for a first call</span>}
           </p>
+          <h1 className="font-display text-[32px] font-bold leading-tight tracking-tight text-ink">Jobs</h1>
         </div>
-        {!isCrewLead && <LinkButton href={`/app/jobs?${filterQs ? `${filterQs}&` : ""}new=1`} scroll={false} aria-current={adding ? "true" : undefined} className="h-11 px-5 text-[15px]">+ New lead</LinkButton>}
+        {!isCrewLead && <LinkButton href={`/app/jobs?${filterQs ? `${filterQs}&` : ""}new=1`} scroll={false} aria-current={adding ? "true" : undefined} className="h-11 px-5">+ New lead</LinkButton>}
       </header>
 
       {/* All five columns fit from 1280px; below that the board scrolls inside itself, never the page. */}
@@ -135,12 +134,12 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
             const total = list.reduce((s, c) => s + (c.value ?? 0), 0);
             return (
               <section key={col.key} aria-label={col.name} data-pipeline-col={col.key} className="flex min-h-0 min-w-0 flex-col gap-2.5">
-                <header className={cx("px-1", side && "min-h-[3.4rem]")}>
+                <header className={cx("border-b-2 border-ink px-1 pb-2", side && "min-h-[3.9rem]")}>
                   <div className="flex items-baseline justify-between gap-2">
-                    <h2 className={cx("text-[15px] font-bold leading-tight text-ink", side ? "min-w-0 [overflow-wrap:anywhere]" : "truncate")}>{col.name} <span data-col-count className="font-medium text-slate-500">{list.length}</span></h2>
-                    {total > 0 && !side && <span className="shrink-0 text-[13px] text-slate-500">{dollars(total)}</span>}
+                    <h2 className={cx("font-display text-[16px] font-bold leading-tight text-ink", side ? "min-w-0 [overflow-wrap:anywhere]" : "truncate")}>{col.name}</h2>
+                    <span data-col-count className="shrink-0 font-mono text-sm text-slate-400">{list.length}</span>
                   </div>
-                  <p className="mt-0.5 truncate text-xs text-slate-500">{col.hint}</p>
+                  <p className="mt-0.5 flex justify-between gap-2 font-mono text-[10.5px] uppercase tracking-[0.12em] text-slate-400"><span className="truncate">{col.hint}</span>{total > 0 && !side && <span className="shrink-0">{dollars(total)}</span>}</p>
                 </header>
                 {/* On a computer each column scrolls on its own; the page and the other columns stay put. */}
                 <div data-col-scroll className={cx("no-scrollbar -mx-1 flex min-h-0 flex-col gap-2.5 px-1 py-0.5 lg:overflow-y-auto lg:overscroll-contain", side ? "lg:flex-1 lg:pb-6" : "lg:max-h-[calc(100dvh-14rem)]")}>
@@ -150,35 +149,12 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
                   const days = Math.max(0, Math.floor((now.getTime() - new Date(j.stage_changed_at ?? now).getTime()) / DAY));
                   const tone = ageTone(col.key, { days });
                   return (
-                    <Link key={j.id} href={hrefFor(j.id)} scroll={false} data-job-card={j.id} data-signed={signed ? "1" : "0"} aria-current={docket?.job.id === j.id ? "true" : undefined}
-                      className={cx("flex min-w-0 flex-col gap-1.5 rounded-2xl bg-white p-3.5 transition", docket?.job.id === j.id ? "ring-2 ring-ink" : "ring-1 ring-slate-200 hover:ring-brand-400")}>
-                      <span className="flex items-start gap-2">
-                        <span className="font-display min-w-0 flex-1 truncate text-[15px] font-bold leading-snug text-ink">{j.customer_name ?? j.title}</span>
-                        {uncontacted && j.lead_received_at ? (
-                          <WaitTimer since={j.lead_received_at} className="px-2 py-0.5 text-xs" />
-                        ) : (
-                          <span data-age data-tone={tone} title="Days in this stage"
-                            className={cx("shrink-0 rounded-full px-2 py-0.5 text-xs font-bold tabular-nums", AGE_CLS[tone])}>
-                            {`${days} d`}
-                          </span>
-                        )}
-                      </span>
-                      <span className="truncate text-[13px] text-slate-500">{(j.site_address ?? j.title).replace(STATE_TAIL, "")}</span>
-                      <span className="flex flex-wrap items-center gap-1.5">
-                        <span className="font-display text-[15px] font-bold text-ink">{value !== null ? dollars(value) : "Not quoted"}</span>
-                        {j.is_insurance && <span className="rounded-full bg-violet-50 px-2 py-0.5 text-xs font-semibold text-violet-700">Insurance</span>}
-                        {owner && (
-                          <span title={`Assigned to ${displayName(owner)}`} className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-50 text-[10px] font-bold text-brand-700 ring-1 ring-brand-100">{initials(owner)}</span>
-                        )}
-                      </span>
-                      <span data-next-step className={cx("mt-1 flex items-start gap-1.5 border-t border-slate-100 pt-2 text-[13px] leading-snug", next.waiting ? "text-slate-700" : "text-slate-500")}>
-                        <svg viewBox="0 0 24 24" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-500" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-                        <span className="min-w-0">{next.title}</span>
-                      </span>
-                    </Link>
+                    <JobCard key={j.id} href={hrefFor(j.id)} current={docket?.job.id === j.id} signed={signed} days={days} tone={tone} value={value} next={next}
+                      owner={owner ? { name: displayName(owner), initials: initials(owner) } : null}
+                      job={{ id: j.id, name: j.customer_name ?? j.title, title: j.title, address: (j.site_address ?? j.title).replace(STATE_TAIL, ""), insurance: j.is_insurance, waitingSince: uncontacted ? j.lead_received_at ?? null : null }} />
                   );
                 })}
-                {list.length === 0 && <div className="rounded-2xl border border-dashed border-slate-200 px-3 py-6 text-center text-xs text-slate-400">Nothing here</div>}
+                {list.length === 0 && <div className="rounded-[18px] border-2 border-dashed border-slate-200 px-3 py-6 text-center font-mono text-[10.5px] uppercase tracking-[0.12em] text-slate-400">Nothing here</div>}
                 </div>
               </section>
             );
@@ -188,7 +164,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
       </div>
       {cards.length === 0 && (
         <p className="mt-2 text-sm text-slate-500">
-          {filter === "mine" ? <>No open jobs assigned to you. <Link className="font-semibold text-brand-600" href="/app/jobs?filter=all">See everyone&apos;s jobs</Link></> : "No open jobs yet. Add a new lead to get started."}
+          {filter === "mine" ? <>No open jobs assigned to you. <Link className="font-semibold text-ink" href="/app/jobs?filter=all">See everyone&apos;s jobs</Link></> : "No open jobs yet. Add a new lead to get started."}
         </p>
       )}
     </>
@@ -211,7 +187,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
         <div className="no-scrollbar min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:flex lg:flex-col lg:overflow-hidden lg:pb-0 lg:pt-7">
           {board}
         </div>
-        <aside aria-label="New lead" className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-full lg:w-[440px] lg:shrink-0 lg:border-l lg:border-slate-200 xl:w-[460px]">
+        <aside aria-label="New lead" className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-full lg:w-[440px] lg:shrink-0 xl:w-[460px]">
           <NewLeadPanel key={referrer ? `${referrer.type}-${referrer.id}` : "new"} closeHref={hrefFor(null)} filter={filterQs ? filter : null} defaultState={org.state ?? null} referrer={referrer} />
         </aside>
       </div>
@@ -223,9 +199,9 @@ export default async function JobsPage({ searchParams }: PageProps<"/app/jobs">)
       <div className="no-scrollbar min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:flex lg:flex-col lg:overflow-hidden lg:pb-0 lg:pt-7">
         {board}
       </div>
-      <aside aria-label={`Job docket: ${docket.customer.name}`} className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-full lg:w-[440px] lg:shrink-0 lg:border-l lg:border-slate-200 xl:w-[460px]">
+      <aside aria-label={`Job docket: ${docket.customer.name}`} className="fixed inset-0 z-30 flex flex-col bg-cream lg:static lg:z-auto lg:h-full lg:w-[440px] lg:shrink-0 xl:w-[460px]">
         <JobDocket key={docket.job.id} d={docket} org={org} canSeeMoney={canSeeMoney} isCrewLead={isCrewLead} closeHref={hrefFor(null)} previewHref={previewHref}
-          askHref={withParam("ask=1")} payHref={(id) => withParam(`pay=${id}`)} remindHref={withParam("remind=1")} aiReady={aiEnabled()} meId={user.id} />
+          bookHref={withParam("book=1")} book={sp.book === "1"} askHref={withParam("ask=1")} payHref={(id) => withParam(`pay=${id}`)} remindHref={withParam("remind=1")} aiReady={aiEnabled()} meId={user.id} />
       </aside>
       {preview && (
         <QuotePreview html={preview.email.html} subject={preview.email.subject} toName={preview.to.name} toEmail={preview.to.email}

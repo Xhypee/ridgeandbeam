@@ -77,13 +77,13 @@ export default async function PaymentsSettings({ searchParams }: PageProps<"/app
               {org.stripe_account_id && <ActionForm action={disconnectStripe}><SubmitButton variant="ghost" confirm="Stop taking online payments?">Disconnect</SubmitButton></ActionForm>}
             </div>
           ) : null}
-          <ActionForm action={savePaymentOptions} className="mt-5 space-y-3 border-t border-slate-100 pt-4">
+          <ActionForm action={savePaymentOptions} className="mt-5 space-y-3 border-t-2 border-dashed border-slate-200 pt-4">
             <Field label="Your card processing cost (%)" hint="For your margins only — never added to the homeowner's bill.">
               <Input name="card_fee_pct" type="number" min={0} max={10} step="0.01" defaultValue={org.card_fee_pct} disabled={!isAdmin} className="max-w-32" />
             </Field>
             <label className="flex items-start gap-2 text-sm text-slate-700">
-              <input type="checkbox" name="becs_enabled" defaultChecked={o.becs_enabled ?? false} disabled={!isAdmin} className="mt-0.5 h-5 w-5 accent-brand-500" />
-              <span>Offer BECS Direct Debit<span className="block text-xs text-slate-500">Cheaper than cards on a roof-sized invoice; clears in a few business days.</span></span>
+              <input type="checkbox" name="becs_enabled" defaultChecked={o.becs_enabled ?? false} disabled={!isAdmin} className="mt-0.5 h-5 w-5 accent-ink" />
+              <span>Offer BECS Direct Debit<span className="block font-mono text-xs text-slate-500">Cheaper than cards on a roof-sized invoice; clears in a few business days.</span></span>
             </label>
             <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600" data-testid="surcharge-note">Card surcharging: off. {SURCHARGE_NOTE}</p>
             {isAdmin && <SubmitButton variant="secondary">Save payment options</SubmitButton>}

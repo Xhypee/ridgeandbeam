@@ -11,7 +11,7 @@ import type { ServerEvent, ServerFile } from "./types";
 import { useFieldQueue } from "./use-field-queue";
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
-const chip = "min-h-11 rounded-xl px-3 text-sm font-semibold ring-1 transition";
+const chip = "min-h-11 rounded-xl px-3 font-mono text-xs font-semibold uppercase tracking-wider ring-1 transition";
 const chipOn = "bg-slate-900 text-white ring-slate-900";
 const chipOff = "bg-white text-slate-800 ring-slate-300";
 
@@ -157,7 +157,7 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
         <div className="mb-2 flex items-center justify-between gap-2">
           <h2 id="status-h" className="text-lg font-bold">Status update</h2>
           <label className="flex min-h-11 items-center gap-2 text-sm font-medium">
-            <input type="checkbox" className="h-5 w-5 accent-brand-500" checked={!notify}
+            <input type="checkbox" className="h-5 w-5 accent-ink" checked={!notify}
               onChange={(e) => {
                 const v = !e.target.checked;
                 setNotify(v);
@@ -174,7 +174,7 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
             </button>
           ))}
           <button type="button" onClick={() => setStatusKind("note")}
-            className="col-span-2 min-h-14 rounded-2xl bg-white px-3 text-base font-bold ring-2 ring-slate-900">
+            className="col-span-2 min-h-14 rounded-[22px] bg-white px-3 text-base font-bold ring-2 ring-slate-900">
             + Custom note
           </button>
         </div>
@@ -182,21 +182,21 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
       </section>
 
       {/* Capture (X1) */}
-      <section aria-labelledby="cap-h" className="rounded-2xl bg-white p-3 ring-1 ring-slate-200">
+      <section aria-labelledby="cap-h" className="rounded-[22px] bg-white p-3 ring-1 ring-slate-200">
         <h2 id="cap-h" className="mb-2 text-lg font-bold">Capture</h2>
-        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Slope</p>
+        <p className="mb-1 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Slope</p>
         <div className="mb-3 grid grid-cols-3 gap-2">
           {SLOPES.map((s) => (
             <button key={s} type="button" aria-pressed={slope === s} onClick={() => setSlope(s)} className={cx(chip, slope === s ? chipOn : chipOff)}>{SLOPE_LABEL[s]}</button>
           ))}
         </div>
-        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Storm damage — for the insurer&apos;s assessor</p>
+        <p className="mb-1 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Storm damage — for the insurer&apos;s assessor</p>
         <div className="mb-3 flex flex-wrap gap-2" data-testid="damage-categories">
           {DAMAGE_CATEGORIES.map((c) => (
             <button key={c} type="button" aria-pressed={category === c} onClick={() => setCategory(c)} className={cx(chip, category === c ? chipOn : chipOff)}>{CATEGORY_LABEL[c]}</button>
           ))}
         </div>
-        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Job photos</p>
+        <p className="mb-1 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Job photos</p>
         <div className="mb-3 flex flex-wrap gap-2">
           {JOB_CATEGORIES.map((c) => (
             <button key={c} type="button" aria-pressed={category === c} onClick={() => setCategory(c)} className={cx(chip, category === c ? chipOn : chipOff)}>{CATEGORY_LABEL[c]}</button>
@@ -209,23 +209,23 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
             <p className="text-sm font-semibold text-amber-900">Broken / cracked tiles — {SLOPE_LABEL[slope]} slope</p>
             <div className="mt-2 flex items-center gap-3">
               <button type="button" aria-label="One less broken tile" onClick={() => setCounts(slope, (counts[slope] ?? 0) - 1)}
-                className="h-16 w-16 rounded-2xl bg-white text-4xl font-bold ring-2 ring-slate-900">−</button>
+                className="h-16 w-16 rounded-[22px] bg-white text-4xl font-bold ring-2 ring-slate-900">−</button>
               <output aria-label="Broken tile count" className="min-w-16 text-center text-5xl font-black tabular-nums">{counts[slope] ?? 0}</output>
               <button type="button" aria-label="One more broken tile" onClick={() => setCounts(slope, (counts[slope] ?? 0) + 1)}
-                className="h-16 flex-1 rounded-2xl bg-brand-500 text-4xl font-bold text-white">+</button>
+                className="h-16 flex-1 rounded-2xl bg-ink text-4xl font-bold text-white">+</button>
             </div>
             <div className="mt-2 flex flex-wrap gap-2">
               <button type="button" onClick={applyCount} className="min-h-11 rounded-xl bg-slate-900 px-3 text-sm font-semibold text-white">Save count to last tile photo on this slope</button>
-              <button type="button" onClick={() => setCounts(slope, 0)} className="min-h-11 rounded-xl px-3 text-sm font-semibold ring-1 ring-slate-300">Reset</button>
+              <button type="button" onClick={() => setCounts(slope, 0)} className="min-h-11 rounded-xl px-3 font-mono text-xs font-semibold uppercase tracking-wider ring-1 ring-slate-300">Reset</button>
             </div>
             <p className="mt-2 text-xs text-amber-900">New photos on this slope carry the count. The photo report totals it per slope for the assessor.</p>
           </div>
         )}
 
         <input value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Caption for next photos (optional)"
-          className="mb-3 block min-h-12 w-full rounded-xl px-3 text-base ring-1 ring-slate-300 focus:ring-2 focus:ring-brand-500 focus:outline-none" />
+          className="mb-3 block min-h-12 w-full rounded-xl px-3 text-base ring-1 ring-slate-300 focus:ring-2 focus:ring-ink focus:outline-none" />
 
-        <label className={cx("flex min-h-20 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-brand-500 text-xl font-black text-white active:bg-brand-600", busy && "opacity-60")}>
+        <label className={cx("flex min-h-20 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-ink text-xl font-black text-white active:bg-ink/80", busy && "opacity-60")}>
           <input type="file" accept="image/*" capture="environment" multiple className="sr-only" data-testid="photo-input"
             onChange={(e) => { const fl = e.target.files; void onPhotos(fl).then(() => { e.target.value = ""; }); }} />
           {busy ?? "Take photos"}
@@ -241,7 +241,7 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
       <section aria-labelledby="gal-h">
         <div className="mb-2 flex items-center justify-between">
           <h2 id="gal-h" className="text-lg font-bold">Photos <span className="text-sm font-medium text-slate-500">({tiles.length})</span></h2>
-          <a href={`/app/jobs/${jobId}/field/report`} className="min-h-11 rounded-xl bg-white px-3 py-2.5 text-sm font-semibold ring-1 ring-slate-300">Photo report</a>
+          <a href={`/app/jobs/${jobId}/field/report`} className="min-h-11 rounded-xl bg-white px-3 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider ring-1 ring-slate-300">Photo report</a>
         </div>
         <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
           {["all", ...SLOPES].map((s) => (
@@ -278,7 +278,7 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
                   {t.src === "server" && (
                     <button type="button"
                       onClick={() => startTransition(async () => { const r = await updateFile({ id: t.file.id, shared_with_homeowner: !t.file.shared }); if (r.error) say(r.error); })}
-                      className={cx("min-h-9 rounded-lg px-2 text-[11px] font-bold", t.file.shared ? "bg-brand-500 text-white" : "bg-white/90 text-slate-900")}
+                      className={cx("min-h-9 rounded-lg px-2 text-[11px] font-bold", t.file.shared ? "bg-ink text-white" : "bg-white/90 text-slate-900")}
                       aria-pressed={t.file.shared}>
                       {t.file.shared ? "Shared ✓" : "Share"}
                     </button>
@@ -328,7 +328,7 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
       </section>
 
       {/* Homeowner portal */}
-      <section className="rounded-2xl bg-white p-3 ring-1 ring-slate-200">
+      <section className="rounded-[22px] bg-white p-3 ring-1 ring-slate-200">
         <h2 className="text-lg font-bold">Homeowner portal</h2>
         <p className="mb-2 text-sm text-slate-600">One link for progress, shared photos, documents and the claim explainer.</p>
         <div className="grid grid-cols-2 gap-2">
@@ -341,7 +341,7 @@ export function FieldApp({ jobId, orgId, notifyHomeowner, hasPhone, portalUrl, f
             Text link to homeowner
           </button>
         </div>
-        <a href={portalUrl} target="_blank" rel="noreferrer" className="mt-2 block break-all text-sm text-brand-700 underline" data-testid="portal-link">{portalUrl}</a>
+        <a href={portalUrl} target="_blank" rel="noreferrer" className="mt-2 block break-all text-sm text-ink underline" data-testid="portal-link">{portalUrl}</a>
       </section>
 
       {toast && (
@@ -541,20 +541,20 @@ function PhotoSheet({ tile, onClose, onMarkup, onQueuePatch, onDiscard, onServer
           <div className="mb-3 flex items-center gap-3">
             <button type="button" aria-label="Fewer broken tiles" onClick={() => setV({ ...v, hits: Math.max(0, v.hits - 1) })} className="h-14 w-14 rounded-xl text-3xl font-bold ring-2 ring-slate-900">−</button>
             <span className="text-3xl font-black tabular-nums">{v.hits}</span>
-            <button type="button" aria-label="More broken tiles" onClick={() => setV({ ...v, hits: v.hits + 1 })} className="h-14 w-14 rounded-xl bg-brand-500 text-3xl font-bold text-white">+</button>
+            <button type="button" aria-label="More broken tiles" onClick={() => setV({ ...v, hits: v.hits + 1 })} className="h-14 w-14 rounded-xl bg-ink text-3xl font-bold text-white">+</button>
             <span className="text-sm text-slate-600">broken tiles</span>
           </div>
         )}
         {tile.src === "server" && (
           <label className="mb-3 flex min-h-12 items-center gap-3 rounded-xl px-3 ring-1 ring-slate-300">
-            <input type="checkbox" className="h-6 w-6 accent-brand-500" checked={v.shared} onChange={(e) => setV({ ...v, shared: e.target.checked })} />
+            <input type="checkbox" className="h-6 w-6 accent-ink" checked={v.shared} onChange={(e) => setV({ ...v, shared: e.target.checked })} />
             <span className="font-semibold">Share with homeowner</span>
           </label>
         )}
         {err && <p className="mb-2 text-sm text-red-700">{err}</p>}
         <div className="grid grid-cols-2 gap-2">
-          <button type="button" onClick={onMarkup} className="min-h-14 rounded-xl bg-white text-base font-bold ring-2 ring-brand-500 text-brand-700">Mark up</button>
-          <button type="button" onClick={save} disabled={pending} className="min-h-14 rounded-xl bg-brand-500 text-base font-bold text-white">{pending ? "Saving…" : "Save"}</button>
+          <button type="button" onClick={onMarkup} className="min-h-14 rounded-xl bg-white text-base font-bold ring-2 ring-ink text-ink">Mark up</button>
+          <button type="button" onClick={save} disabled={pending} className="min-h-14 rounded-xl bg-ink text-base font-bold text-white">{pending ? "Saving…" : "Save"}</button>
           <button type="button" onClick={onClose} className="min-h-12 rounded-xl font-semibold ring-1 ring-slate-300">Close</button>
           <button type="button" className="min-h-12 rounded-xl font-semibold text-red-700 ring-1 ring-red-200"
             onClick={() => {
@@ -602,7 +602,7 @@ function StatusSheet({ kind, notify, recent, onClose, onPost }: {
             <div className="flex gap-2 overflow-x-auto pb-1">
               {recent.map((f) => (
                 <button key={f.id} type="button" onClick={() => setFileId(fileId === f.id ? null : f.id)} aria-pressed={fileId === f.id}
-                  className={cx("h-16 w-16 shrink-0 overflow-hidden rounded-lg ring-2", fileId === f.id ? "ring-brand-500" : "ring-transparent")}>
+                  className={cx("h-16 w-16 shrink-0 overflow-hidden rounded-lg ring-2", fileId === f.id ? "ring-ink" : "ring-transparent")}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   {f.url && <img src={f.url} alt="" className="h-full w-full object-cover" />}
                 </button>
@@ -614,7 +614,7 @@ function StatusSheet({ kind, notify, recent, onClose, onPost }: {
           <button type="button" onClick={onClose} className="min-h-14 rounded-xl text-base font-semibold ring-1 ring-slate-300">Cancel</button>
           <button type="button" disabled={posting || (kind === "note" && !note.trim())}
             onClick={async () => { setPosting(true); try { await onPost({ note: note.trim(), photo, fileId }); } finally { setPosting(false); } }}
-            className="min-h-14 rounded-xl bg-brand-500 text-base font-black text-white disabled:opacity-50">
+            className="min-h-14 rounded-xl bg-ink text-base font-black text-white disabled:opacity-50">
             {posting ? "Saving…" : "Post update"}
           </button>
         </div>

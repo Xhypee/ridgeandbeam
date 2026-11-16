@@ -16,8 +16,8 @@ export function Sheet({ title, kicker, closeHref, children, footer, data }: { ti
       <Link href={closeHref} scroll={false} aria-label="Close" className="absolute inset-0 cursor-default" />
       <div className="relative flex h-full w-full flex-col lg:w-[440px] xl:w-[460px] lg:p-4">
         <div className="mt-auto flex max-h-[94%] flex-col overflow-hidden rounded-t-[22px] bg-cream lg:rounded-[22px]">
-          <div className="flex items-center gap-3 border-b border-slate-200 bg-white px-5 py-4">
-            <div className="min-w-0 flex-1"><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{kicker}</p><p className="font-display text-xl font-bold leading-tight text-ink">{title}</p></div>
+          <div className="flex items-center gap-3 border-b-2 border-dashed border-slate-200 bg-white px-5 py-4">
+            <div className="min-w-0 flex-1"><p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">{kicker}</p><p className="font-display text-xl font-bold leading-tight text-ink">{title}</p></div>
             <Link href={closeHref} scroll={false} aria-label="Close" className="grid h-10 w-10 place-items-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-ink"><Icon d="M6 6l12 12M18 6L6 18" className="h-5 w-5" /></Link>
           </div>
           {children}
@@ -34,7 +34,7 @@ export function PaymentRequestSheet({ jobId, closeHref, title, asked, toEmail, t
   return (
     <Sheet data="request" kicker={asked ? "Remind about the payment" : "Request the next payment"} title={title} closeHref={closeHref}
       footer={
-        <div className="flex items-center gap-3 border-t border-slate-200 bg-white px-5 py-3">
+        <div className="flex items-center gap-3 border-t-2 border-dashed border-slate-200 bg-white px-5 py-3">
           <span className="min-w-0 flex-1 text-xs text-slate-500">{asked ? "Sends a reminder with the same pay link" : "Sends the tax invoice by email and text"}</span>
           <ActionForm action={requestPayment}><input type="hidden" name="job_id" value={jobId} /><input type="hidden" name="back" value={closeHref} /><SubmitButton className="min-h-12 gap-2 px-5"><Icon d={SEND} />{asked ? "Send reminder" : "Send request"}</SubmitButton></ActionForm>
         </div>
@@ -66,7 +66,7 @@ export function ReminderBody({ toEmail, toPhone, subject, html, sms }: { toEmail
 }
 export function RemindFooter({ estimateId, back, hasContact }: { estimateId: string; back: string; hasContact: boolean }) {
   return (
-    <div className="flex items-center gap-3 border-t border-slate-200 bg-white px-5 py-3">
+    <div className="flex items-center gap-3 border-t-2 border-dashed border-slate-200 bg-white px-5 py-3">
       <span className="min-w-0 flex-1 text-xs text-slate-500">Sends this email and text with the quote link</span>
       <ActionForm action={sendQuoteReminder}><input type="hidden" name="estimate_id" value={estimateId} /><input type="hidden" name="back" value={back} />
         {hasContact ? <SubmitButton className="min-h-12 gap-2 px-5"><Icon d={SEND} />Send reminder</SubmitButton> : <span className="text-xs font-semibold text-red-700">Add an email or mobile first</span>}</ActionForm>

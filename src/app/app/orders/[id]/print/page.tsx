@@ -22,13 +22,13 @@ export default async function OrderSheet({ params }: PageProps<"/app/orders/[id]
     <div className="mx-auto max-w-3xl">
       <div className="no-print mb-4 flex justify-end"><PrintButton /></div>
       <article className="space-y-5 bg-white p-6 ring-1 ring-slate-200 sm:rounded-2xl print:p-0 print:ring-0">
-        <header className="flex flex-wrap justify-between gap-4 border-b border-slate-200 pb-4">
+        <header className="flex flex-wrap justify-between gap-4 border-b-2 border-dashed border-slate-200 pb-4">
           <div>
             <p className="text-xl font-semibold">{org.name}</p>
             <p className="text-sm text-slate-500">{[org.phone, org.email].filter(Boolean).join(" · ")}</p>
           </div>
           <div className="text-right">
-            <p className="text-lg font-semibold uppercase text-brand-600">Material order</p>
+            <p className="text-lg font-semibold uppercase text-ink">Material order</p>
             <p className="text-sm">PO {o.po_number ?? "—"}</p>
             <p className="text-sm text-slate-500">{o.supplier}{o.branch ? ` · ${o.branch}` : ""}</p>
             {(o.org_suppliers as { account_number: string | null } | null)?.account_number && <p className="text-sm text-slate-500">Account {(o.org_suppliers as { account_number: string }).account_number}</p>}
@@ -42,7 +42,7 @@ export default async function OrderSheet({ params }: PageProps<"/app/orders/[id]
         </section>
         <table className="w-full text-sm">
           <thead><tr className="border-b border-slate-300 text-left text-xs uppercase text-slate-500"><th className="py-1.5">#</th><th className="py-1.5">Product code</th><th className="py-1.5">Qty</th><th className="py-1.5">Unit</th><th className="py-1.5">Description</th></tr></thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y-2 divide-dashed divide-slate-200">
             {items.map((i, n) => (
               <tr key={n}><td className="py-1.5">{n + 1}</td><td className="py-1.5">{i.sku}</td><td className="py-1.5 font-semibold">{i.quantity}</td><td className="py-1.5">{i.unit}</td><td className="py-1.5">{i.description}</td></tr>
             ))}

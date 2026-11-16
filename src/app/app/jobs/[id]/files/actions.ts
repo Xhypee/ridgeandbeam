@@ -1,4 +1,5 @@
 "use server";
+import { isNewerRevision } from "@/lib/plan-revision";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -103,6 +104,21 @@ export async function readUploadedDocument(fileId: string, estimateId?: string):
   if (plan.createClaim) await supabase.from("claims").insert({ org_id: org.id, job_id: job.id, ...(plan.claim ?? {}) });
   else if (plan.claim && claim) await supabase.from("claims").update(plan.claim).eq("id", claim.id);
   if (plan.category !== "document") await supabase.from("job_files").update({ category: plan.category }).eq("id", f.id);
+  // Plans and roof reports: keep what Claude read (revision, who made a report, its measurements) on the file, and
+  // a new set of plans supersedes the older plans on the job (they stay, marked as superseded).
+  if (read.doc_type === "plans" || read.doc_type === "roof_report") {
+    const meta = { kind: read.doc_type, source: read.reportSource ?? null, roof: read.roof, read_at: new Date().toISOString() };
+    await supabase.from("job_files").update({ revision: read.revision ?? null, meta }).eq("id", f.id);
+    if (read.doc_type === "plans") {
+      const { data: others } = await supabase.from("job_files").select("id, revision, meta").eq("job_id", job.id).eq("category", "plans").neq("id", f.id).is("superseded_at", null);
+      const now = new Date().toISOString();
+      for (const o of (others ?? []) as { id: string; revision: string | null; meta: { kind?: string } | null }[]) {
+        if (o.meta?.kind === "roof_report") continue;
+        if (isNewerRevision(read.revision, o.revision)) await supabase.from("job_files").update({ superseded_at: now }).eq("id", o.id);
+        else await supabase.from("job_files").update({ superseded_at: now }).eq("id", f.id);
+      }
+    }
+  }
 
   // Dropped on a quote's empty roof plan: measurements from plans or a roof report fill it in. Only a draft that
   // isn't measured yet, and only the first file that has them (the others are noted, not applied).

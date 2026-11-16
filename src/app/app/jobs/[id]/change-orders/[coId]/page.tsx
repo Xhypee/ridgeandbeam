@@ -29,11 +29,11 @@ export default async function ChangeOrderPage({ params, searchParams }: PageProp
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <Link href={`/app/jobs/${id}/change-orders`} className="text-sm text-slate-600 hover:text-brand-600">← All change orders</Link>
+      <Link href={`/app/jobs/${id}/change-orders`} className="text-sm text-slate-600 hover:text-ink">← All change orders</Link>
       {msg && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{msg}</p>}
       <Card title={<span className="flex flex-wrap items-center gap-2">{co.title}<Badge tone={STATUS_TONE[co.status]}>{co.status === "sent" ? "Awaiting homeowner" : label(co.status)}</Badge></span>}>
         {co.description && <p className="mb-3 whitespace-pre-wrap text-sm text-slate-700">{co.description}</p>}
-        <ul className="divide-y divide-slate-100 text-sm">
+        <ul className="divide-y-2 divide-dashed divide-slate-200 text-sm">
           {items.map((i) => (
             <li key={i.id} className="flex justify-between gap-3 py-2">
               <span>{i.description} <span className="text-slate-500">· {Number(i.quantity)} {i.unit} × {money(i.unit_price)}</span></span>
@@ -41,7 +41,7 @@ export default async function ChangeOrderPage({ params, searchParams }: PageProp
             </li>
           ))}
         </ul>
-        <div className="mt-2 flex justify-between border-t border-slate-200 pt-2 font-semibold"><span>Total (before tax)</span><span className="tabular-nums">{money(total)}</span></div>
+        <div className="mt-2 flex justify-between border-t-2 border-dashed border-slate-200 pt-2 font-semibold"><span>Total (before tax)</span><span className="tabular-nums">{money(total)}</span></div>
         <p className="text-xs text-slate-500">Our cost {money(cost)} · margin {total > 0 ? Math.round(((total - cost) / total) * 100) : 0}%</p>
         {(files ?? []).length > 0 && (
           <div className="mt-3 grid grid-cols-3 gap-2">
@@ -60,7 +60,7 @@ export default async function ChangeOrderPage({ params, searchParams }: PageProp
             // eslint-disable-next-line @next/next/no-img-element
             <img src={co.signature_data} alt="Homeowner signature" className="mt-2 h-20 rounded bg-white ring-1 ring-slate-200" />
           )}
-          {inv && <p className="mt-2 text-sm">Added to <Link className="font-medium text-brand-700 underline" href={`/app/invoices/${inv.id}`}>{inv.kind === "final" ? "final invoice" : "change order invoice"} #{inv.number}</Link> and job cost.</p>}
+          {inv && <p className="mt-2 text-sm">Added to <Link className="font-medium text-ink underline" href={`/app/invoices/${inv.id}`}>{inv.kind === "final" ? "final invoice" : "change order invoice"} #{inv.number}</Link> and job cost.</p>}
         </Card>
       ) : co.status === "declined" ? (
         <Card title="Declined"><p className="text-sm">The homeowner declined this change order{co.declined_at ? ` on ${date(co.declined_at)}` : ""}.</p></Card>

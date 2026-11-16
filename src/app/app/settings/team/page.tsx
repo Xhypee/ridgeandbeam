@@ -23,7 +23,7 @@ export default async function Page() {
   return (
     <div className="space-y-6">
           <Card title="Team">
-            <ul className="mb-4 divide-y divide-slate-100">
+            <ul className="mb-4 divide-y-2 divide-dashed divide-slate-200">
               {((members ?? []) as Member[]).map((m) => (
                 <li key={m.user_id} className="py-2" data-testid="member">
                   <div className="flex items-center justify-between gap-2">
@@ -45,7 +45,7 @@ export default async function Page() {
                   </div>
                   {isAdmin && (
                     <details className="mt-1">
-                      <summary className="cursor-pointer text-xs font-medium text-brand-600">Role, crew & commission</summary>
+                      <summary className="cursor-pointer text-xs font-medium text-ink">Role, crew & commission</summary>
                       <ActionForm action={updateMember} className="mt-2 grid gap-3 rounded-lg bg-slate-50 p-3 sm:grid-cols-5">
                         <input type="hidden" name="user_id" value={m.user_id} />
                         <Field label="Role">

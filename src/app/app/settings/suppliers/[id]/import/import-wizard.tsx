@@ -146,11 +146,11 @@ export function ImportWizard({ orgSupplierId, supplierName, today, saved, previo
     <div className="space-y-4">
       <ol className="flex flex-wrap gap-1 text-xs" aria-label="Import steps">
         {STEPS.map((s, i) => (
-          <li key={s} className={cx("rounded-full px-3 py-1.5 font-medium", i === step ? "bg-ink text-white" : i < step ? "bg-brand-100 text-brand-700" : "bg-slate-100 text-slate-500")}>{i + 1}. {s}</li>
+          <li key={s} className={cx("rounded-full px-3 py-1.5 font-medium", i === step ? "bg-ink text-white" : i < step ? "bg-slate-200 text-ink" : "bg-slate-100 text-slate-500")}>{i + 1}. {s}</li>
         ))}
       </ol>
       {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-      {busy && <p className="rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-700" aria-live="polite">{busy}</p>}
+      {busy && <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm text-ink" aria-live="polite">{busy}</p>}
 
       {step === 0 && (
         <Card>
@@ -162,7 +162,7 @@ export function ImportWizard({ orgSupplierId, supplierName, today, saved, previo
             ))}
           </div>
           {source === "file" ? (
-            <label className="flex min-h-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-white p-6 text-center hover:border-brand-400">
+            <label className="flex min-h-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-white p-6 text-center hover:border-ink">
               <span className="font-medium text-slate-800">Choose your price sheet</span>
               <span className="text-xs text-slate-500">.csv, .txt (tab separated) or .xlsx</span>
               <input type="file" accept=".csv,.txt,.tsv,.xlsx,.xls,text/csv" className="sr-only" data-testid="sheet-file" onChange={(e) => onFile(e.target.files?.[0])} />
@@ -205,8 +205,8 @@ export function ImportWizard({ orgSupplierId, supplierName, today, saved, previo
               <legend className="px-1 text-sm font-medium text-slate-800">Are the prices in this sheet ex GST or inc GST?</legend>
               <div className="mt-1 flex flex-wrap gap-2">
                 {(["ex", "inc"] as const).map((g) => (
-                  <label key={g} className={cx("flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-3 ring-1", gst === g ? "bg-white ring-brand-500" : "ring-slate-300")}>
-                    <input type="radio" name="gst" value={g} checked={gst === g} onChange={() => setGst(g)} className="h-5 w-5 accent-brand-500" />
+                  <label key={g} className={cx("flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-3 ring-1", gst === g ? "bg-white ring-ink" : "ring-slate-300")}>
+                    <input type="radio" name="gst" value={g} checked={gst === g} onChange={() => setGst(g)} className="h-5 w-5 accent-ink" />
                     {g === "ex" ? "Ex GST (trade prices)" : "Inc GST"}
                   </label>
                 ))}
@@ -259,7 +259,7 @@ export function ImportWizard({ orgSupplierId, supplierName, today, saved, previo
                 <thead className="bg-slate-50 text-left text-xs text-slate-500">
                   <tr><th className="px-2 py-2">Row</th><th className="px-2 py-2">Code / description</th><th className="px-2 py-2">Unit</th><th className="px-2 py-2 text-right">Cost ex GST</th><th className="px-2 py-2">Estimating item</th><th className="px-2 py-2 text-right">Priced at</th></tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y-2 divide-dashed divide-slate-200">
                   {pageRows.map((r) => {
                     const iss = issues.get(r.line) ?? [];
                     const def = r.calc_key ? CALC_KEY_MAP[r.calc_key] : null;
@@ -268,9 +268,9 @@ export function ImportWizard({ orgSupplierId, supplierName, today, saved, previo
                       <tr key={r.line} className={cx(r.errors.length ? "bg-red-50/70" : !r.calc_key && "bg-amber-50/60")} data-testid="preview-row">
                         <td className="px-2 py-2 text-xs text-slate-500">{r.line}</td>
                         <td className="px-2 py-2">
-                          <span className="block text-xs text-slate-500">{r.product_code}</span>
+                          <span className="block font-mono text-xs text-slate-500">{r.product_code}</span>
                           {r.description || <i className="text-slate-400">no description</i>}
-                          <span className="block text-xs text-slate-500">{[r.profile, r.finish, r.length_mm && `${r.length_mm / 1000} m`, r.pack_qty && `pack ${r.pack_qty}`].filter(Boolean).join(" · ")}</span>
+                          <span className="block font-mono text-xs text-slate-500">{[r.profile, r.finish, r.length_mm && `${r.length_mm / 1000} m`, r.pack_qty && `pack ${r.pack_qty}`].filter(Boolean).join(" · ")}</span>
                           {iss.map((m) => <span key={m} className="block text-xs text-red-700">{m}</span>)}
                           {r.warnings.map((m) => <span key={m} className="block text-xs text-amber-700">{m}</span>)}
                         </td>
@@ -318,10 +318,10 @@ export function ImportWizard({ orgSupplierId, supplierName, today, saved, previo
               {unmapped > 0 && <> {unmapped} rows aren&apos;t mapped to an estimating item yet.</>} Your current price list is kept as an inactive version.
             </p>
             <label className="flex items-start gap-3 rounded-lg bg-slate-50 p-3 text-sm ring-1 ring-slate-200">
-              <input type="checkbox" checked={authorised} onChange={(e) => setAuthorised(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 accent-brand-500" data-testid="authorised" />
+              <input type="checkbox" checked={authorised} onChange={(e) => setAuthorised(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 accent-ink" data-testid="authorised" />
               <span>
                 <b>I&apos;m authorised to use this price list for my business.</b>
-                <span className="block text-xs text-slate-500">These are your account prices. They stay private to your business and are never shown to homeowners or crew leads.</span>
+                <span className="block font-mono text-xs text-slate-500">These are your account prices. They stay private to your business and are never shown to homeowners or crew leads.</span>
               </span>
             </label>
             <div className="flex flex-wrap gap-2">

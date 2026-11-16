@@ -16,7 +16,7 @@ import { updateCompanySettings } from "./company-actions";
 
 export const metadata: Metadata = { title: "Company settings" };
 
-const toggle = "flex min-h-11 items-center gap-3 rounded-lg px-3 ring-1 ring-slate-200 has-[:checked]:bg-brand-50 has-[:checked]:ring-brand-500";
+const toggle = "flex min-h-11 items-center gap-3 rounded-lg px-3 ring-1 ring-slate-200 has-[:checked]:bg-slate-100 has-[:checked]:ring-ink";
 
 export default async function Page() {
   const { org, isAdmin } = await requireOrg();
@@ -49,11 +49,11 @@ export default async function Page() {
           <Card title="GST">
             <div className="grid gap-2 sm:grid-cols-2">
               <label className={toggle}>
-                <input type="checkbox" name="gst_registered" defaultChecked={org.gst_registered !== false} className="h-5 w-5 accent-brand-500" />
+                <input type="checkbox" name="gst_registered" defaultChecked={org.gst_registered !== false} className="h-5 w-5 accent-ink" />
                 <span className="text-sm text-slate-800"><b>Registered for GST</b><br /><span className="text-slate-500">Quotes add or include 10% GST and invoices are tax invoices.</span></span>
               </label>
               <label className={toggle}>
-                <input type="checkbox" name="prices_include_gst" defaultChecked={org.prices_include_gst !== false} className="h-5 w-5 accent-brand-500" />
+                <input type="checkbox" name="prices_include_gst" defaultChecked={org.prices_include_gst !== false} className="h-5 w-5 accent-ink" />
                 <span className="text-sm text-slate-800"><b>Prices include GST</b><br /><span className="text-slate-500">Price-book sell prices and new quotes are GST-inclusive (homeowners see one price).</span></span>
               </label>
             </div>
@@ -80,7 +80,7 @@ export default async function Page() {
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {AU_STATES.map((s) => (
                 <label key={s} className={toggle}>
-                  <input type="checkbox" name="service_states" value={s} defaultChecked={service.has(s)} className="h-5 w-5 accent-brand-500" aria-label={`Service state ${s}`} />
+                  <input type="checkbox" name="service_states" value={s} defaultChecked={service.has(s)} className="h-5 w-5 accent-ink" aria-label={`Service state ${s}`} />
                   <span className="text-sm text-slate-800">{s}</span>
                 </label>
               ))}

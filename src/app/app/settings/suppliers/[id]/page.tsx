@@ -64,7 +64,7 @@ export default async function SupplierPage({ params, searchParams }: PageProps<"
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <Link href="/app/settings/suppliers" className="text-sm text-slate-500 hover:text-brand-600">← Suppliers</Link>
+          <Link href="/app/settings/suppliers" className="text-sm text-slate-500 hover:text-ink">← Suppliers</Link>
           <h2 className="flex flex-wrap items-center gap-2 text-xl font-semibold text-slate-900">{name} {os.is_default && <Badge tone="teal">Default</Badge>}</h2>
           <p className="text-xs text-slate-500">{[dir && SUPPLIER_CATEGORY_LABEL[dir.category], dir?.states?.length ? dir.states.join(", ") : null].filter(Boolean).join(" · ")}</p>
         </div>
@@ -87,12 +87,12 @@ export default async function SupplierPage({ params, searchParams }: PageProps<"
 
         <Card title="Price list versions" className="min-w-0 lg:col-span-2">
           {versions.length === 0 ? <p className="text-sm text-slate-500">No price sheet imported yet.</p> : (
-            <ul className="divide-y divide-slate-100" data-testid="versions">
+            <ul className="divide-y-2 divide-dashed divide-slate-200" data-testid="versions">
               {versions.map((l) => (
                 <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
                   <span className="min-w-0">
                     <span className="flex flex-wrap items-center gap-2 font-medium">{l.name} {l.is_active ? <Badge tone="green">Active</Badge> : <Badge>Inactive</Badge>}</span>
-                    <span className="block text-xs text-slate-500">
+                    <span className="block font-mono text-xs text-slate-500">
                       Effective {dmy(l.effective_date)} · imported {dmy(l.created_at)} · {l.supplier_price_items?.[0]?.count ?? 0} items · {l.prices_include_gst ? "prices were inc GST" : "prices ex GST"}
                       {l.source_filename && ` · ${l.source_filename}`}
                     </span>
@@ -136,13 +136,13 @@ export default async function SupplierPage({ params, searchParams }: PageProps<"
               <thead className="bg-slate-50 text-left text-xs text-slate-500">
                 <tr><th className="px-3 py-2">Code</th><th className="px-3 py-2">Description</th><th className="px-3 py-2">Unit</th><th className="px-3 py-2 text-right">Cost ex GST</th><th className="px-3 py-2">Estimating item</th></tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y-2 divide-dashed divide-slate-200">
                 {rows.map((i) => (
                   <tr key={i.id} className={cx(!i.calc_key && "bg-amber-50/60")}>
                     <td className="px-3 py-2 text-xs text-slate-500">{i.product_code}</td>
                     <td className="px-3 py-2">
                       {i.description}
-                      <span className="block text-xs text-slate-500">{[i.profile, i.finish, i.thickness_mm && `${Number(i.thickness_mm)} BMT`, i.cover_width_mm && `${Number(i.cover_width_mm)} cover`, i.length_mm && `${Number(i.length_mm) / 1000} m`, i.pack_qty && `pack ${Number(i.pack_qty)}`].filter(Boolean).join(" · ")}</span>
+                      <span className="block font-mono text-xs text-slate-500">{[i.profile, i.finish, i.thickness_mm && `${Number(i.thickness_mm)} BMT`, i.cover_width_mm && `${Number(i.cover_width_mm)} cover`, i.length_mm && `${Number(i.length_mm) / 1000} m`, i.pack_qty && `pack ${Number(i.pack_qty)}`].filter(Boolean).join(" · ")}</span>
                       {i.problem && <span className="block text-xs text-red-700">{i.problem}</span>}
                     </td>
                     <td className="px-3 py-2">{UNIT_SHORT[i.unit] ?? i.unit}</td>
@@ -156,9 +156,9 @@ export default async function SupplierPage({ params, searchParams }: PageProps<"
           </div>
           {pages > 1 && (
             <div className="mt-3 flex items-center justify-between text-sm">
-              {page > 1 ? <Link href={href({ page: page - 1 })} className="text-brand-600 hover:underline">← Previous</Link> : <span />}
+              {page > 1 ? <Link href={href({ page: page - 1 })} className="text-ink hover:underline">← Previous</Link> : <span />}
               <span className="text-slate-500">Page {page} of {pages}</span>
-              {page < pages ? <Link href={href({ page: page + 1 })} className="text-brand-600 hover:underline">Next →</Link> : <span />}
+              {page < pages ? <Link href={href({ page: page + 1 })} className="text-ink hover:underline">Next →</Link> : <span />}
             </div>
           )}
         </Card>

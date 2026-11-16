@@ -36,7 +36,7 @@ export default async function SupplementPrintPage({ params }: PageProps<"/app/cl
         <PrintButton />
       </div>
       <article className="mx-auto max-w-3xl bg-white p-6 ring-1 ring-slate-200 sm:rounded-2xl sm:p-10 print:p-0 print:ring-0">
-        <header className="flex flex-wrap items-start justify-between gap-6 border-b border-slate-200 pb-6">
+        <header className="flex flex-wrap items-start justify-between gap-6 border-b-2 border-dashed border-slate-200 pb-6">
           <div>
             <p className="text-xl font-semibold text-slate-900">{org.name}</p>
             <div className="mt-1 space-y-0.5 text-sm text-slate-500">
@@ -46,7 +46,7 @@ export default async function SupplementPrintPage({ params }: PageProps<"/app/cl
             </div>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-semibold uppercase tracking-wide text-brand-600">Variation request</p>
+            <p className="text-2xl font-semibold uppercase tracking-wide text-ink">Variation request</p>
             <p className="text-sm text-slate-600">No. {s.round}</p>
             <p className="text-sm text-slate-500">{date(s.submitted_on ?? isoDate(new Date()))}</p>
           </div>
@@ -54,12 +54,12 @@ export default async function SupplementPrintPage({ params }: PageProps<"/app/cl
 
         <section className="grid gap-6 py-6 text-sm sm:grid-cols-2">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Policyholder / property</p>
+            <p className="text-xs uppercase text-slate-400 font-mono tracking-[0.12em]">Policyholder / property</p>
             <p className="mt-1 font-medium text-slate-900">{cust.name}</p>
             {address && <p className="text-slate-600">{address}</p>}
           </div>
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Claim</p>
+            <p className="text-xs uppercase text-slate-400 font-mono tracking-[0.12em]">Claim</p>
             <p className="mt-1 font-medium text-slate-900">{claim.carrier ?? "Insurer"}</p>
             <p className="text-slate-600">Claim no. {claim.claim_number ?? "—"}{claim.policy_number ? ` · Policy no. ${claim.policy_number}` : ""}</p>
             {claim.date_of_loss && <p className="text-slate-600">Date of event {date(claim.date_of_loss)}{claim.cause_of_loss ? ` · ${claim.cause_of_loss}` : ""}</p>}
@@ -101,7 +101,7 @@ export default async function SupplementPrintPage({ params }: PageProps<"/app/cl
           ))}
         </ol>
 
-        <div className="mt-6 flex justify-end border-t border-slate-200 pt-4">
+        <div className="mt-6 flex justify-end border-t-2 border-dashed border-slate-200 pt-4">
           <p className="text-lg font-semibold text-slate-900">Total requested (inc GST): <span className="tabular-nums">{money(total)}</span></p>
         </div>
         {s.notes && <p className="mt-4 whitespace-pre-line text-sm text-slate-700">{s.notes}</p>}

@@ -166,6 +166,8 @@ export async function readJobDocument(data: Buffer, mediaType: string, fileName:
     `"job": {"roof_material": string (e.g. "Concrete tile", "Colorbond Trimdek"), "roof_area_m2": number}, ` +
     `"roof": {"area_m2": number (total sloped roof area), "plan_area_m2": number (roof area on plan / footprint), "pitch_deg": number, "ridge_m": number, "hip_m": number, "valley_m": number, "gutter_m": number (eaves / gutter length), "barge_m": number (barge / rake length), "downpipes": number} (only measurements printed on plans or a roof report, in metres), ` +
     `"insurance": {"insurer": string, "claim_number": string, "policy_number": string, "assessor_name": string, "assessor_phone": string, "assessor_email": string, "excess": number, "date_of_loss": "YYYY-MM-DD"}, ` +
+    `"revision": string (plans only: the drawing revision printed in the title block, e.g. "Rev C", "Issue B", "R2"; null if none), ` +
+    `"report_source": string (roof reports only: who produced it, e.g. "Applicad", "Metroll", "Lysaght", "Nearmap"; null otherwise), ` +
     `"checks": array of strings (up to 3 things the roofer must be aware of before quoting or on site, each under 9 words, e.g. "Wind class N3 to be confirmed", "Drawings not for construction", "Asbestos noted in the eaves"; never materials, products, colours or order details; [] if none)}`;
   try {
     const res = await anthropic().beta.messages.create({
@@ -174,7 +176,7 @@ export async function readJobDocument(data: Buffer, mediaType: string, fileName:
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
       output_config: { effort: "low" },
-      system: "You read files a residential roofing business in Australia attaches to a job: plans, insurance and assessor reports, supplier quotes and invoices, council approvals, contracts, emails and roof photos. Reply with one JSON object only, no other text. Use null for anything not clearly shown in the file. Never guess or infer details that aren't there.",
+      system: "You read files a residential roofing business in Australia attaches to a job: plans, roof reports (e.g. Applicad roof reports with areas, pitches and cut lists), insurance and assessor reports, supplier quotes and invoices, council approvals, contracts, emails and roof photos. Reply with one JSON object only, no other text. Use null for anything not clearly shown in the file. Never guess or infer details that aren't there.",
       messages: [{ role: "user", content: [doc, { type: "text", text: `File name: ${fileName}\nFields: ${schema}` }] }],
     });
     const text = res.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text").map((b) => b.text).join("");
@@ -199,6 +201,8 @@ export async function readJobDocument(data: Buffer, mediaType: string, fileName:
       insurance: { insurer: s(ins.insurer, 80), claim_number: s(ins.claim_number, 60), policy_number: s(ins.policy_number, 60), assessor_name: s(ins.assessor_name, 100), assessor_phone: s(ins.assessor_phone, 30), assessor_email: s(ins.assessor_email, 120), excess: n(ins.excess), date_of_loss: s(ins.date_of_loss, 10) },
       notes: s(j.notes, 400),
       checks: list(j.checks, 3, 80),
+      revision: s(j.revision, 40),
+      reportSource: s(j.report_source, 60),
     };
   } catch {
     return null;
