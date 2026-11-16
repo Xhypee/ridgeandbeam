@@ -308,8 +308,8 @@ export async function quoteForPlans(jobId: string): Promise<string | null> {
   return (data?.id as string | undefined) ?? null;
 }
 
-/** Delete job (any stage): gone for good with its quote, notes, files, photos and messages. Refused once money has
- *  been received (those payments are tax records; use "Not going ahead" instead). Optionally removes the contact
+/** Delete job (any stage): gone for good with its quote, notes, files, photos and messages. Refused once an invoice
+ *  has been sent or money received (those are tax records; use "Not going ahead" instead). Optionally removes the contact
  *  too when this was their only job. Files are removed from storage as well. */
 export async function deleteJobForGood(_: ActionResult, fd: FormData): Promise<ActionResult> {
   const ctx = await requireOrg();
@@ -317,9 +317,10 @@ export async function deleteJobForGood(_: ActionResult, fd: FormData): Promise<A
   const id = String(fd.get("job_id") ?? "");
   const { data: job } = await ctx.supabase.from("jobs").select("id, customer_id").eq("id", id).eq("org_id", ctx.org.id).maybeSingle();
   if (!job) return { error: "That job is already gone." };
-  const { data: invs } = await ctx.supabase.from("invoices").select("id, payments(id)").eq("job_id", id);
+  const { data: invs } = await ctx.supabase.from("invoices").select("id, status, payments(id)").eq("job_id", id);
   const paid = (invs ?? []).some((i) => ((i.payments as unknown[] | null) ?? []).length > 0);
   if (paid) return { error: "Money has been received on this job, so it can't be deleted (the payments are tax records). Use “Not going ahead” to close it instead." };
+  if ((invs ?? []).some((i) => i.status !== "draft" && i.status !== "void")) return { error: "An invoice has been sent on this job, so it can't be deleted (sent invoices are tax records). Void the invoice or use “Not going ahead” instead." };
   if (fd.get("confirm") !== "on") return { error: "Tick the box to confirm." };
   const { data: files } = await ctx.supabase.from("job_files").select("storage_path").eq("job_id", id);
   const { error } = await ctx.supabase.from("jobs").delete().eq("id", id);
