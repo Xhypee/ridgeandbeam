@@ -77,7 +77,7 @@ export async function loadJobFile(supabase: SupabaseClient, jobId: string, opts:
     entries.push({ id: `v-${c.id}`, at: c.approved_at ?? c.created_at, record: "variations", icon: "doc", name: `Variation · ${c.title}`, detail: `${aud(amount)} · ${c.status === "approved" ? `signed by ${c.approved_name ?? "the customer"}` : c.status}`, view: `/app/jobs/${jobId}/change-orders/${c.id}`, download: null });
   }
   for (const m of (msgs ?? []) as { id: string; channel: string; direction: string; body: string; created_at: string }[]) {
-    entries.push({ id: `m-${m.id}`, at: m.created_at, record: "messages", icon: "mail", name: `${m.channel === "sms" ? "Text" : "Email"} ${m.direction === "in" ? "from" : "to"} the customer`, detail: m.body.replace(/\s+/g, " ").slice(0, 120), view: null, download: null });
+    entries.push({ id: `m-${m.id}`, at: m.created_at, record: "messages", icon: "mail", name: `${m.channel === "sms" ? "Text" : "Email"} ${m.direction === "inbound" ? "from" : "to"} the customer`, detail: m.body.replace(/\s+/g, " ").slice(0, 120), view: null, download: null });
   }
   for (const ev of (events ?? []) as { id: string; kind: string; note: string | null; created_at: string; created_by_name: string | null }[]) {
     entries.push({ id: `e-${ev.id}`, at: ev.created_at, record: ev.kind === "walkthrough_signed" ? "signoff" : "warranty", icon: ev.kind === "walkthrough_signed" ? "sign" : "shield", name: ev.kind === "walkthrough_signed" ? "Completion sign-off" : ev.kind === "warranty_registered" ? "Warranty registered" : "Approval granted", detail: ev.note ?? "", view: ev.kind === "walkthrough_signed" ? `/app/jobs/${jobId}/closeout/certificate` : null, download: null });
