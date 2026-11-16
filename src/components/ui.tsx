@@ -12,6 +12,7 @@ const BTN = {
   primary: "bg-ink text-white hover:bg-ink/90",
   secondary: "bg-white text-ink ring-1 ring-inset ring-slate-300 hover:bg-slate-50",
   danger: "bg-white text-red-700 ring-1 ring-inset ring-red-200 hover:bg-red-50",
+  destroy: "bg-red-700 text-white hover:bg-red-800",
   ghost: "text-slate-600 hover:bg-slate-100",
 };
 // 44px minimum tap target everywhere (field-first rule).

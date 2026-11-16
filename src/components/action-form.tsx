@@ -44,7 +44,7 @@ export function ActionForm({ action, children, className }: { action: Action; ch
 
 export function SubmitButton({ children, variant, className, name, value, confirm }: {
   children: ReactNode;
-  variant?: "primary" | "secondary" | "danger" | "ghost";
+  variant?: "primary" | "secondary" | "danger" | "destroy" | "ghost";
   className?: string;
   name?: string;
   value?: string;
