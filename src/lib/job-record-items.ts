@@ -81,7 +81,7 @@ export function recordItems(d: Docket): Partial<Record<RecordKey, RecordItems>> 
 
   if (d.wrap?.handoverSentAt) out.warranty = { items: [{ icon: "shield", name: "Warranty & handover pack", meta: `Sent ${day(d.wrap.handoverSentAt)}${d.wrap.warrantyRegisteredAt ? ` · ${d.wrap.warrantyProduct ?? "manufacturer"} warranty registered` : ""}`, href: `${base}/closeout` }] };
 
-  if (d.messages.length) out.messages = { items: d.messages.slice(0, 3).map((m) => ({ icon: m.channel === "sms" ? "mail" as const : "mail" as const, name: `${m.channel === "sms" ? "Text" : "Email"} · ${clip(m.body.replace(/\s+/g, " "), 44)}`, meta: `${m.direction === "in" ? "From" : "To"} ${d.customer.name.split(" ")[0]} · ${day(m.at)}`, href: base })) };
+  if (d.messages.length) out.messages = { items: d.messages.slice(0, 3).map((m) => ({ icon: m.channel === "sms" ? "mail" as const : "mail" as const, name: `${m.channel === "sms" ? "Text" : "Email"} · ${clip(m.body.replace(/\s+/g, " "), 44)}`, meta: `${m.direction === "inbound" ? "From" : "To"} ${d.customer.name.split(" ")[0]} · ${day(m.at)}`, href: m.channel === "email" ? "/app/inbox" : base })), more: { label: d.customer.email ? `Email ${d.customer.name.split(" ")[0]}` : "Inbox", href: d.customer.email ? `/app/inbox?compose=1&to=${encodeURIComponent(d.customer.email)}&job=${j.id}` : "/app/inbox" } };
 
   return out;
 }

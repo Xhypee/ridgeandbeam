@@ -4,18 +4,23 @@ import { Badge, Card, Empty, Field, Input, LinkButton } from "@/components/ui";
 import { requireOrg } from "@/lib/dal";
 import { label } from "@/lib/format";
 import { accountsFrom, xeroConfigured } from "@/lib/xero";
-import { disconnectXero, resolveSyncProblem, saveXeroAccounts, syncXero } from "./actions";
+import { gmailConfigured } from "@/lib/gmail";
+import { checkGmail, disconnectGmail, disconnectXero, resolveSyncProblem, saveXeroAccounts, setGmailSending, syncXero } from "./actions";
 
 export const metadata: Metadata = { title: "Integrations" };
 
 export default async function IntegrationsPage({ searchParams }: PageProps<"/app/settings/integrations">) {
   const { supabase, org, isAdmin } = await requireOrg();
   const sp = await searchParams;
-  const [{ data: integ }, { data: problems }, { count: synced }] = await Promise.all([
+  const [{ data: integ }, { data: problems }, { count: synced }, { data: gm }, { count: mailCount }] = await Promise.all([
     supabase.from("integrations").select("status, external_id, external_name, connected_at, last_synced_at, settings").eq("org_id", org.id).eq("provider", "xero").maybeSingle(),
     supabase.from("integration_sync_log").select("id, entity, entity_id, message, created_at").eq("org_id", org.id).eq("provider", "xero").eq("status", "error").is("resolved_at", null).order("created_at", { ascending: false }).limit(50),
     supabase.from("external_refs").select("entity_id", { count: "exact", head: true }).eq("org_id", org.id).eq("provider", "xero"),
+    supabase.from("integrations").select("status, external_name, connected_at, last_synced_at, settings").eq("org_id", org.id).eq("provider", "gmail").maybeSingle(),
+    supabase.from("messages").select("id", { count: "exact", head: true }).eq("org_id", org.id).like("provider_ref", "gmail:%"),
   ]);
+  const gmailOn = Boolean(gm && gm.status !== "disconnected");
+  const gmailSends = (gm?.settings as { send_via_gmail?: boolean } | null)?.send_via_gmail !== false;
   const configured = xeroConfigured();
   const connected = Boolean(integ && integ.status !== "disconnected");
   const accounts = accountsFrom(integ?.settings);
@@ -24,7 +29,50 @@ export default async function IntegrationsPage({ searchParams }: PageProps<"/app
 
   return (
     <div className="space-y-6">
-      {sp.xero === "connected" && <p className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800">Xero connected. Check the account codes below, then press <b>Sync now</b>.</p>}
+      {sp.gmail === "connected" && <p className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-ink ring-1 ring-slate-200">Gmail connected. Customer emails now go out from {gm?.external_name}, and replies show up in <a href="/app/inbox" className="font-semibold underline">Inbox</a>.</p>}
+      {typeof sp.gmail_error === "string" && <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{sp.gmail_error}</p>}
+
+      <Card title="Gmail" actions={<Badge tone={!gmailConfigured() ? "slate" : gm?.status === "error" ? "red" : gmailOn ? "green" : "slate"}>{!gmailConfigured() ? "Not set up" : gm?.status === "error" ? "Needs reconnect" : gmailOn ? "Connected" : "Not connected"}</Badge>} >
+        <p className="text-sm text-slate-600" data-gmail-card>
+          Send quotes, invoices and updates from <b>your own Gmail address</b> (they sit in your Sent folder), and read and reply to <b>every email</b> in that mailbox from the app&apos;s Inbox. Emails with your contacts are linked to the contact and their job. Spam and trash stay in Gmail.
+        </p>
+        {!gmailConfigured() ? (
+          <p className="mt-3 rounded-lg bg-slate-50 p-3 text-xs text-slate-500" data-testid="gmail-not-configured">
+            Gmail isn&apos;t set up on this server: set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET from a Google Cloud OAuth client with the Gmail API turned on, and add {"<site>"}/api/integrations/gmail/callback as an authorised redirect URI.
+          </p>
+        ) : (
+          <>
+            {gmailOn && (
+              <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-3">
+                <div><dt className="text-xs text-slate-500">Mailbox</dt><dd className="font-medium [overflow-wrap:anywhere]">{gm?.external_name}</dd></div>
+                <div><dt className="text-xs text-slate-500">Last checked</dt><dd>{fmt(gm?.last_synced_at)}</dd></div>
+                <div><dt className="text-xs text-slate-500">Emails in the app</dt><dd>{mailCount ?? 0}</dd></div>
+              </dl>
+            )}
+            {gmailOn && gm?.status !== "error" && (
+              <form action={setGmailSending} className="mt-3 flex flex-wrap items-center gap-3 rounded-xl bg-slate-50 p-3 text-sm ring-1 ring-slate-200">
+                <input type="hidden" name="on" value={gmailSends ? "0" : "1"} />
+                <span className="flex-1">{gmailSends ? <>Customer emails go out from <b>{gm?.external_name}</b>.</> : <>Customer emails go out from the app&apos;s address. Gmail is only used for reading.</>}</span>
+                {isAdmin && <SubmitButton variant="secondary">{gmailSends ? "Send from the app instead" : "Send from Gmail"}</SubmitButton>}
+              </form>
+            )}
+            {isAdmin && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {gmailOn && gm?.status !== "error" ? (
+                  <>
+                    <ActionForm action={checkGmail}><SubmitButton className="min-h-11">Check for new email</SubmitButton></ActionForm>
+                    <ActionForm action={disconnectGmail}><SubmitButton variant="ghost" className="min-h-11" confirm="Disconnect Gmail? Emails already in the app stay here.">Disconnect</SubmitButton></ActionForm>
+                  </>
+                ) : (
+                  <LinkButton href="/api/integrations/gmail/connect" prefetch={false} className="min-h-11">{gmailOn ? "Reconnect Gmail" : "Connect Gmail"}</LinkButton>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </Card>
+
+      {sp.xero === "connected" && <p className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-ink ring-1 ring-slate-200">Xero connected. Check the account codes below, then press <b>Sync now</b>.</p>}
       {typeof sp.xero_error === "string" && <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{sp.xero_error}</p>}
 
       <Card title="Xero" actions={<Badge tone={badge === "Connected" ? "green" : badge === "Needs reconnect" ? "red" : "slate"}>{badge}</Badge>}>

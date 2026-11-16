@@ -2,11 +2,13 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { adminClient } from "@/lib/admin";
 import { auPhoneE164 } from "@/lib/au";
+import { gmailConnection, sendViaGmail } from "@/lib/gmail";
 
 /**
  * Outbound customer messaging. Providers are optional:
  *  - SMS:   TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER
- *  - Email: RESEND_API_KEY, EMAIL_FROM (e.g. "Ridge & Beam <noreply@yourdomain.com>")
+ *  - Email: the company's own Gmail when connected (lib/gmail), else RESEND_API_KEY, EMAIL_FROM
+ *    (e.g. "Ridge & Beam <noreply@yourdomain.com>")
  * Every attempt is logged to `messages`; without a provider the row is stored with
  * status "not_configured" so the office still sees what would have been sent.
  */
@@ -70,17 +72,44 @@ export async function sendSms(db: SupabaseClient, m: Base & { to: string | null 
   return { status, error };
 }
 
-export async function sendEmail(db: SupabaseClient, m: Base & { to: string | null | undefined; subject: string; html: string; text?: string; replyTo?: string | null; fromName?: string | null; attachments?: { filename: string; content?: string; path?: string }[] }) {
+export async function sendEmail(db: SupabaseClient, m: Base & { to: string | null | undefined; subject: string; html: string; text?: string; replyTo?: string | null; fromName?: string | null; attachments?: { filename: string; content?: string; path?: string; contentType?: string; size?: number; storagePath?: string }[]; threadId?: string | null; inReplyTo?: string | null }) {
   let owner: string | null = null;
   let status = "not_configured";
   let providerRef: string | null = null;
   let error: string | null = null;
+  let fromAddress = process.env.EMAIL_FROM ?? null;
+  let threadRef: string | null = m.threadId ?? null;
+  let rfcMessageId: string | null = null;
+  let sentFiles: { name: string; size?: number | null; mime?: string | null; id?: string | null }[] = [];
+  // The company's own Gmail, when connected and turned on for sending (Settings → Integrations).
+  const gmail = m.to ? await gmailConnection(m.orgId).catch(() => null) : null;
+  const viaGmail = gmail && gmail.settings.send_via_gmail !== false ? gmail : null;
   if (!m.to) {
     status = "failed";
     error = "No email address";
   } else if (outboundPaused() && !(owner = await ownerEmail(db, m.orgId))) {
     status = "paused";
-  } else if (emailConfigured()) {
+  } else if (viaGmail) {
+    const to = owner ?? m.to;
+    const subject = owner ? `[Test · for ${m.to}] ${m.subject}` : m.subject;
+    const html = owner ? testBanner(m.to) + m.html : m.html;
+    const text = owner && m.text ? `TEST MODE: this email was meant for ${m.to}. Only you got it.\n\n${m.text}` : m.text;
+    try {
+      const r = await sendViaGmail(viaGmail, { to, subject, html, text, fromName: m.fromName, replyTo: m.replyTo, attachments: m.attachments, threadId: owner ? null : m.threadId, inReplyTo: owner ? null : m.inReplyTo });
+      status = owner ? "redirected" : "sent";
+      providerRef = `gmail:${r.id}`;
+      threadRef = r.threadId;
+      rfcMessageId = r.rfcMessageId;
+      sentFiles = r.files;
+      fromAddress = viaGmail.email;
+    } catch (e) {
+      status = "failed";
+      error = (e as Error).message;
+    }
+  }
+  // Gmail not connected, or it failed (e.g. the sign-in was removed): send the usual way so the customer still gets it.
+  if (m.to && status !== "paused" && status !== "sent" && status !== "redirected" && emailConfigured()) {
+    if (viaGmail) error = null;
     // Test mode: the owner gets it instead, clearly marked with who it was meant for.
     const to = owner ?? m.to;
     const subject = owner ? `[Test · for ${m.to}] ${m.subject}` : m.subject;
@@ -90,7 +119,7 @@ export async function sendEmail(db: SupabaseClient, m: Base & { to: string | nul
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from: fromWithName(process.env.EMAIL_FROM!, m.fromName), to: [to], subject, html, text, ...(m.replyTo ? { reply_to: m.replyTo } : {}), ...(m.attachments?.length ? { attachments: m.attachments } : {}) }),
+        body: JSON.stringify({ from: fromWithName(process.env.EMAIL_FROM!, m.fromName), to: [to], subject, html, text, ...(m.replyTo ? { reply_to: m.replyTo } : {}), ...(m.attachments?.length ? { attachments: m.attachments.map(({ filename, content, path }) => ({ filename, content, path })) } : {}) }),
       });
       const json = (await res.json()) as { id?: string; message?: string };
       if (res.ok) { status = owner ? "redirected" : "sent"; providerRef = json.id ?? null; } else { status = "failed"; error = json.message ?? `HTTP ${res.status}`; }
@@ -101,8 +130,14 @@ export async function sendEmail(db: SupabaseClient, m: Base & { to: string | nul
   }
   await db.from("messages").insert({
     org_id: m.orgId, job_id: m.jobId ?? null, customer_id: m.customerId ?? null,
-    direction: "outbound", channel: "email", to_address: owner ?? m.to ?? null, from_address: process.env.EMAIL_FROM ?? null,
+    direction: "outbound", channel: "email", to_address: owner ?? m.to ?? null, from_address: fromAddress,
     subject: owner ? `[Test · for ${m.to}] ${m.subject}` : m.subject, body: m.text ?? m.html.replace(/<[^>]+>/g, " "), status, provider_ref: providerRef, error,
+    thread_ref: threadRef, rfc_message_id: rfcMessageId,
+    // What was attached: Gmail's attachment id (when sent through Gmail) and/or where the upload is kept.
+    attachments: m.attachments?.length ? m.attachments.map((x, i) => {
+      const g = sentFiles.find((f) => f.name === x.filename) ?? sentFiles[i];
+      return { name: x.filename, size: x.size ?? g?.size ?? null, mime: x.contentType ?? g?.mime ?? null, id: g?.id ?? null, path: x.storagePath ?? null };
+    }) : null,
   });
   return { status, error };
 }

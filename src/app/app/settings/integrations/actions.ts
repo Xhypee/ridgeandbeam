@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/dal";
 import { friendly } from "@/lib/form";
 import { disconnect, syncOrg, xeroConfigured } from "@/lib/xero";
+import { disconnect as disconnectGmailBox, syncMailbox } from "@/lib/gmail";
 import type { ActionResult } from "@/components/action-form";
 
 async function admin() {
@@ -60,5 +61,32 @@ export async function resolveSyncProblem(fd: FormData) {
   if (data?.entity_id && fd.get("forget") === "1") {
     await ctx.supabase.from("external_refs").delete().eq("org_id", ctx.org.id).eq("provider", "xero").eq("entity", data.entity).eq("entity_id", data.entity_id);
   }
+  revalidatePath("/app/settings/integrations");
+}
+
+export async function checkGmail(): Promise<ActionResult> {
+  const ctx = await admin();
+  if ("error" in ctx) return { error: ctx.error };
+  const r = await syncMailbox(ctx.org.id);
+  revalidatePath("/app/settings/integrations");
+  revalidatePath("/app/inbox");
+  return r.error ? { error: r.error } : { ok: r.added ? `${r.added} new email${r.added === 1 ? "" : "s"} brought in.` : "Up to date. No new emails." };
+}
+
+export async function disconnectGmail(): Promise<ActionResult> {
+  const ctx = await admin();
+  if ("error" in ctx) return { error: ctx.error };
+  await disconnectGmailBox(ctx.org.id);
+  revalidatePath("/app/settings/integrations");
+  return { ok: "Gmail disconnected. Emails already in the app stay here; nothing was deleted in Gmail." };
+}
+
+/** Send customer emails from the connected Gmail (on) or the app's usual address (off). */
+export async function setGmailSending(fd: FormData) {
+  const ctx = await requireAdmin();
+  const on = fd.get("on") === "1";
+  const { data: integ } = await ctx.supabase.from("integrations").select("id, settings").eq("org_id", ctx.org.id).eq("provider", "gmail").maybeSingle();
+  if (!integ) return;
+  await ctx.supabase.from("integrations").update({ settings: { ...((integ.settings as Record<string, unknown>) ?? {}), send_via_gmail: on } }).eq("id", integ.id);
   revalidatePath("/app/settings/integrations");
 }
