@@ -5,9 +5,9 @@ import { deleteJobForGood } from "./lead-actions";
 
 export function JobDelete({ jobId, name, hasPayments, hasQuote, hasInvoices, onlyJob }: { jobId: string; name: string; hasPayments: boolean; hasQuote: boolean; hasInvoices: boolean; onlyJob: boolean }) {
   return (
-    <details className="group/del mt-4 border-t-2 border-dashed border-slate-200 pt-3" data-delete-job>
-      <summary className="flex cursor-pointer list-none items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-400 hover:text-red-700 [&::-webkit-details-marker]:hidden">
-        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
+    <details className="group/del mt-4 border-t-2 border-dashed border-slate-200 pt-4" data-delete-job>
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-center gap-2 rounded-xl bg-white font-mono text-xs font-semibold uppercase tracking-wider text-red-700 ring-1 ring-red-300 hover:bg-red-50 group-open/del:bg-red-50 [&::-webkit-details-marker]:hidden">
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
         Delete job
       </summary>
       {hasPayments ? (
@@ -21,7 +21,7 @@ export function JobDelete({ jobId, name, hasPayments, hasQuote, hasInvoices, onl
           {onlyJob && (
             <label className="mt-1.5 flex cursor-pointer items-center gap-2 text-[13px] font-medium text-red-800"><input type="checkbox" name="remove_contact" className="h-4 w-4 accent-red-600" />Also delete {name} from Contacts</label>
           )}
-          <SubmitButton variant="danger" className="mt-3 min-h-10 w-full">Delete job</SubmitButton>
+          <SubmitButton variant="destroy" className="mt-3 min-h-11 w-full">Delete job for good</SubmitButton>
         </ActionForm>
       )}
     </details>
