@@ -120,12 +120,12 @@ export function NavRail({ canSeeMoney = true, crewLead = false, unread = 0 }: { 
   );
 }
 
-/** True while the page has a right sidebar: always on the Jobs board and Contacts (a job, a contact, New lead /
- *  New contact, or else Claude's chat), and on Customers while one is open. */
+/** True while the page has a right sidebar: always on the Jobs board, Contacts and Settings (a job, a contact, a
+ *  settings area, New lead / New contact, or else Claude's chat), and on Customers while one is open. */
 export function useDocketOpen() {
   const path = usePathname();
   const sp = useSearchParams();
-  if (path === "/app/jobs" || path === "/app/contacts") return true;
+  if (path === "/app/jobs" || path === "/app/contacts" || path?.startsWith("/app/settings")) return true;
   if (path === "/app/customers") return sp.has("customer") || sp.get("new") === "1";
   return false;
 }
