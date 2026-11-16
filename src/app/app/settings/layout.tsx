@@ -28,7 +28,7 @@ export default async function SettingsLayout({ children }: LayoutProps<"/app/set
   const { supabase, org, isAdmin } = await requireOrg();
 
   // One quick look at each area for its card.
-  const [members, invites, crews, catalog, suppliers, plans, xero] = await Promise.all([
+  const [members, invites, crews, catalog, suppliers, plans, xero, gmail] = await Promise.all([
     supabase.from("memberships").select("user_id", { count: "exact", head: true }).eq("org_id", org.id),
     isAdmin ? supabase.from("invites").select("id", { count: "exact", head: true }).is("accepted_at", null) : Promise.resolve({ count: 0 }),
     supabase.from("crews").select("id", { count: "exact", head: true }),
@@ -36,6 +36,7 @@ export default async function SettingsLayout({ children }: LayoutProps<"/app/set
     supabase.from("org_suppliers").select("id, custom_name, suppliers(name)").eq("org_id", org.id),
     isAdmin ? supabase.from("commission_plans").select("id", { count: "exact", head: true }) : Promise.resolve({ count: 0 }),
     supabase.from("integrations").select("status").eq("org_id", org.id).eq("provider", "xero").maybeSingle(),
+    supabase.from("integrations").select("status, external_name").eq("org_id", org.id).eq("provider", "gmail").maybeSingle(),
   ]);
   const people = members.count ?? 0, pending = invites.count ?? 0, crewCount = crews.count ?? 0, items = catalog.count ?? 0;
   type Sup = { id: string; custom_name: string | null; suppliers: { name: string } | { name: string }[] | null };
@@ -47,6 +48,8 @@ export default async function SettingsLayout({ children }: LayoutProps<"/app/set
   const materials = Number(org.markup_pct?.material ?? 0);
   const testMode = process.env.OUTBOUND_PAUSED === "1";
   const xeroOn = (xero.data as { status?: string } | null)?.status === "connected";
+  const gm = gmail.data as { status?: string; external_name?: string | null } | null;
+  const gmailOn = Boolean(gm && gm.status !== "disconnected"), gmailBroken = gm?.status === "error";
   const claudeOn = aiEnabled();
   const mapsOn = Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
 
@@ -78,8 +81,8 @@ export default async function SettingsLayout({ children }: LayoutProps<"/app/set
       chip: org.subscription_status === "cancelled" ? { text: "Cancelled", tone: "amber" } : null } as SettingsCard] : []),
     { group: "Connections", href: `${B}/lead-intake`, title: "Lead intake", icon: ICON.lead, status: "Website form · email forwarding" },
     { group: "Connections", href: `${B}/integrations`, title: "Integrations", icon: ICON.integrations,
-      status: [`Claude ${claudeOn ? "on" : "off"}`, `Google Maps ${mapsOn ? "on" : "off"}`, `Xero ${xeroOn ? "connected" : "not connected"}`].join(" · "),
-      chip: !claudeOn ? { text: "Connect Claude", tone: "amber" } : null },
+      status: [`Gmail ${gmailBroken ? "needs reconnecting" : gmailOn ? "connected" : "not connected"}`, `Claude ${claudeOn ? "on" : "off"}`, `Google Maps ${mapsOn ? "on" : "off"}`, `Xero ${xeroOn ? "connected" : "not connected"}`].join(" · "),
+      chip: gmailBroken ? { text: "Reconnect Gmail", tone: "amber" } : !claudeOn ? { text: "Connect Claude", tone: "amber" } : null },
   ];
 
   return (
