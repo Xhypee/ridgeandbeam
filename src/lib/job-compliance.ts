@@ -79,7 +79,7 @@ export function buildChecklist(c: ChecklistCtx): ChecklistItem[] {
     title: "Licence number on the quote",
     detail: c.licenceNumber ? `${r.state} licence ${c.licenceNumber} prints on quotes and contracts.` : `Add your ${r.state} licence number in Settings → Company. ${r.licence.thresholdText}`,
     auto: c.licenceNumber ? "done" : "todo",
-    link: { label: "Company settings", url: "/app/settings" },
+    link: { label: "Company settings", url: "/app/settings/company" },
   });
 
   // 2. Written contract
