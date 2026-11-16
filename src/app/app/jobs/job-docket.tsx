@@ -177,7 +177,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
           </>)}
           </details>
 
-          {!isCrewLead && <JobDelete jobId={j.id} name={d.customer.name} hasPayments={d.payments.length > 0} hasQuote={Boolean(quote)} hasInvoices={d.invoices.length > 0} onlyJob={d.lead?.customerOtherJobs === 0} />}
+          {!isCrewLead && <JobDelete jobId={j.id} name={d.customer.name} blocked={d.payments.length > 0 ? "paid" : d.invoices.some((i) => i.status !== "draft" && i.status !== "void") ? "invoiced" : null} hasQuote={Boolean(quote)} hasInvoices={d.invoices.length > 0} onlyJob={d.lead?.customerOtherJobs === 0} />}
         </div>
 
         {/* Team + call: only once it's sold (before that there's no crew to add, and Contact has text/call). */}
