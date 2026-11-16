@@ -34,7 +34,7 @@ export default async function IntegrationsPage({ searchParams }: PageProps<"/app
 
       <Card title="Gmail" actions={<Badge tone={!gmailConfigured() ? "slate" : gm?.status === "error" ? "red" : gmailOn ? "green" : "slate"}>{!gmailConfigured() ? "Not set up" : gm?.status === "error" ? "Needs reconnect" : gmailOn ? "Connected" : "Not connected"}</Badge>} >
         <p className="text-sm text-slate-600" data-gmail-card>
-          Send quotes, invoices and updates from <b>your own Gmail address</b> (they sit in your Sent folder), and see your customers&apos; replies in the app, on the right job. Only emails to and from your contacts come in, the rest of your inbox stays private.
+          Send quotes, invoices and updates from <b>your own Gmail address</b> (they sit in your Sent folder), and read and reply to <b>every email</b> in that mailbox from the app&apos;s Inbox. Emails with your contacts are linked to the contact and their job. Spam and trash stay in Gmail.
         </p>
         {!gmailConfigured() ? (
           <p className="mt-3 rounded-lg bg-slate-50 p-3 text-xs text-slate-500" data-testid="gmail-not-configured">

@@ -6,9 +6,9 @@ import { attachmentNames, bodyText, buildMime, emailOf, emailsOf, nameOf, newPar
 
 /**
  * Gmail: a company connects one Gmail (or Google Workspace) mailbox. Customer emails the app sends then go out
- * from that address and sit in its Sent folder, and emails to and from the company's contacts (customers,
- * builders …) come back into the app, threaded and linked to the contact and their latest job. Other mail in the
- * inbox is never stored.
+ * from that address and sit in its Sent folder, and every email in the mailbox (sent and received; not spam,
+ * trash or chats) comes into the app's Inbox, threaded. Emails with a contact (customer, builder …) are also
+ * linked to that contact and their latest job.
  * Env: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET (a Google Cloud OAuth "Web application" client with the Gmail API on);
  * register {site}/api/integrations/gmail/callback as an authorised redirect URI.
  * Tokens live ONLY in integration_secrets (service role); the mailbox address is integrations.external_name.
@@ -171,16 +171,19 @@ export async function syncMailbox(orgId: string, opts: { days?: number; max?: nu
     const ids: { id: string }[] = [];
     let page: string | undefined;
     do {
-      const q = new URLSearchParams({ q: `after:${since} -in:chats -in:spam -in:trash -category:promotions -category:social`, maxResults: "100", ...(page ? { pageToken: page } : {}) });
+      const q = new URLSearchParams({ q: `after:${since} -in:chats -in:spam -in:trash`, maxResults: "100", ...(page ? { pageToken: page } : {}) });
       const r = await api<{ messages?: { id: string }[]; nextPageToken?: string }>(c, `/messages?${q}`);
       ids.push(...(r.messages ?? []));
       page = r.nextPageToken;
-    } while (page && ids.length < (opts.max ?? 300));
+    } while (page && ids.length < 5000);
     if (!ids.length) { await db.from("integrations").update({ last_synced_at: startedAt }).eq("id", c.id); return { added: 0 }; }
 
     const { data: have } = await db.from("messages").select("provider_ref").eq("org_id", orgId).in("provider_ref", ids.map((m) => `gmail:${m.id}`));
     const known = new Set((have ?? []).map((h) => h.provider_ref));
-    const fresh = ids.filter((m) => !known.has(`gmail:${m.id}`)).slice(0, opts.max ?? 300);
+    // Oldest first, a batch per run; the rest come in on the next check (the "since" time only moves on once caught up).
+    const pending = ids.filter((m) => !known.has(`gmail:${m.id}`)).reverse();
+    const fresh = pending.slice(0, opts.max ?? 300);
+    const caughtUp = pending.length <= fresh.length && !page;
 
     const msgs: GMsg[] = [];
     for (let i = 0; i < fresh.length; i += 10) {
@@ -193,13 +196,14 @@ export async function syncMailbox(orgId: string, opts: { days?: number; max?: nu
       const others = outbound ? [...emailsOf(head(m, "to")), ...emailsOf(head(m, "cc"))] : from ? [from] : [];
       return { m, from, outbound, others: others.filter((x) => x !== c.email) };
     });
-    const addrs = [...new Set(parsed.flatMap((p) => p.others))];
-    if (!addrs.length) { await db.from("integrations").update({ last_synced_at: startedAt }).eq("id", c.id); return { added: 0 }; }
+    const addrs = [...new Set(parsed.flatMap((p) => p.others))].filter((a) => /^[^\s,()]+@[^\s,()]+$/.test(a));
 
     // Contacts by email (case-insensitive), and each contact's latest open job.
-    const { data: custs } = await db.from("customers").select("id, name, email").eq("org_id", orgId).not("email", "is", null).or(addrs.map((a) => `email.ilike.${a.replace(/[,()]/g, "")}`).join(","));
     const byEmail = new Map<string, { id: string; name: string }>();
-    for (const cu of custs ?? []) if (cu.email) byEmail.set(cu.email.trim().toLowerCase(), { id: cu.id, name: cu.name });
+    for (let i = 0; i < addrs.length; i += 40) {
+      const { data: custs } = await db.from("customers").select("id, name, email").eq("org_id", orgId).not("email", "is", null).or(addrs.slice(i, i + 40).map((a) => `email.ilike.${a}`).join(","));
+      for (const cu of custs ?? []) if (cu.email) byEmail.set(cu.email.trim().toLowerCase(), { id: cu.id, name: cu.name });
+    }
     const custIds = [...new Set([...byEmail.values()].map((x) => x.id))];
     const { data: jobs } = custIds.length ? await db.from("jobs").select("id, customer_id, stage, created_at").eq("org_id", orgId).in("customer_id", custIds).order("created_at", { ascending: false }) : { data: [] };
     const jobFor = new Map<string, string>();
@@ -214,7 +218,6 @@ export async function syncMailbox(orgId: string, opts: { days?: number; max?: nu
     const rows = parsed.flatMap(({ m, from, outbound, others }) => {
       const cust = others.map((a) => byEmail.get(a)).find(Boolean) ?? null;
       const prior = threadJob.get(m.threadId);
-      if (!cust && !prior) return [];
       const text = bodyText((m.payload ?? {}) as never);
       const files = attachmentNames((m.payload ?? {}) as never);
       const body = (newPart(text) || "(no text)") + (files.length ? `\n\n📎 ${files.join(", ")}` : "");
@@ -229,7 +232,7 @@ export async function syncMailbox(orgId: string, opts: { days?: number; max?: nu
     });
     if (rows.length) {
       // Insert together; if another check got there first (duplicate key), insert one by one and skip the duplicates.
-      const sel = "id, direction, from_address, subject";
+      const sel = "id, direction, from_address, subject, customer_id";
       let { data: ins, error } = await db.from("messages").insert(rows).select(sel);
       if (error?.code === "23505") {
         ins = [];
@@ -238,11 +241,12 @@ export async function syncMailbox(orgId: string, opts: { days?: number; max?: nu
       }
       if (error) throw new Error(error.message);
       added = ins?.length ?? 0;
-      for (const n of (ins ?? []).filter((x) => x.direction === "inbound").slice(0, 10)) {
+      // A notification for emails from contacts (not for every newsletter).
+      for (const n of (ins ?? []).filter((x) => x.direction === "inbound" && x.customer_id).slice(0, 10)) {
         await db.from("notifications").insert({ org_id: orgId, user_id: null, kind: "email_received", title: `Email from ${String(n.from_address ?? "a customer").replace(/\s*<.*>/, "")}`, body: n.subject ?? null, url: "/app/inbox" });
       }
     }
-    await db.from("integrations").update({ last_synced_at: startedAt }).eq("id", c.id);
+    if (caughtUp) await db.from("integrations").update({ last_synced_at: startedAt }).eq("id", c.id);
     return { added };
   } catch (e) {
     return { added, error: (e as Error).message };

@@ -16,8 +16,8 @@ const full = (iso: string) => new Date(iso).toLocaleString("en-AU", { timeZone: 
 
 export type MailboxState = { configured: boolean; connected: boolean; broken: boolean; email: string | null; lastChecked: string | null; canConnect: boolean };
 
-export function InboxView({ threads, open, compose, filter, box, now = new Date() }: { threads: Thread[]; open: Thread | null; compose: { to?: string; job?: string } | null; filter: "all" | "unread"; box: MailboxState; now?: Date }) {
-  const shown = filter === "unread" ? threads.filter((t) => t.unread) : threads;
+export function InboxView({ threads, open, compose, filter, box, now = new Date() }: { threads: Thread[]; open: Thread | null; compose: { to?: string; job?: string } | null; filter: "all" | "unread" | "contacts"; box: MailboxState; now?: Date }) {
+  const shown = filter === "unread" ? threads.filter((t) => t.unread) : filter === "contacts" ? threads.filter((t) => t.customerId) : threads;
   const unread = threads.filter((t) => t.unread).length;
   return (
     <div data-inbox>
@@ -37,7 +37,7 @@ export function InboxView({ threads, open, compose, filter, box, now = new Date(
           <span className="grid h-10 w-10 place-items-center rounded-full bg-white ring-1 ring-slate-300"><svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 6h16v12H4zM4 7l8 6 8-6" /></svg></span>
           <div className="min-w-0 flex-1">
             <p className="font-display text-[15px] font-bold text-ink">{box.broken ? "Gmail needs reconnecting" : "Connect your Gmail"}</p>
-            <p className="font-mono text-[11.5px] text-slate-500">{box.broken ? "Google stopped the connection (password change or access removed). Emails are going out from the app's address meanwhile." : "Send from your own address and see customers' replies here, on the right job."}</p>
+            <p className="font-mono text-[11.5px] text-slate-500">{box.broken ? "Google stopped the connection (password change or access removed). Emails are going out from the app's address meanwhile." : "Send from your own address and see every email here. Ones with your contacts land on the right job."}</p>
           </div>
           {box.canConnect && box.configured
             ? <a href="/api/integrations/gmail/connect" className="inline-flex min-h-10 items-center rounded-xl bg-ink px-4 font-mono text-xs font-semibold uppercase tracking-wider text-white">{box.broken ? "Reconnect" : "Connect Gmail"}</a>
@@ -48,17 +48,17 @@ export function InboxView({ threads, open, compose, filter, box, now = new Date(
       <div className="mt-4 grid gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
         <section className={cx("min-w-0", (open || compose) && "hidden lg:block")} aria-label="Conversations">
           <div className="mb-2 flex gap-1.5">
-            {(["all", "unread"] as const).map((f) => (
-              <Link key={f} href={f === "all" ? "/app/inbox" : "/app/inbox?f=unread"} className={cx("rounded-full px-3 py-1 font-mono text-[11px] uppercase tracking-wider", filter === f ? "bg-ink text-white" : "text-slate-600 ring-1 ring-slate-300")}>{f === "all" ? `All · ${threads.length}` : `Unread · ${unread}`}</Link>
+            {(["all", "unread", "contacts"] as const).map((f) => (
+              <Link key={f} href={f === "all" ? "/app/inbox" : `/app/inbox?f=${f}`} data-filter={f} className={cx("rounded-full px-3 py-1 font-mono text-[11px] uppercase tracking-wider", filter === f ? "bg-ink text-white" : "text-slate-600 ring-1 ring-slate-300")}>{f === "all" ? `All · ${threads.length}` : f === "unread" ? `Unread · ${unread}` : `Contacts · ${threads.filter((t) => t.customerId).length}`}</Link>
             ))}
           </div>
           {shown.length === 0 ? (
-            <p className="rounded-[22px] p-6 text-center font-mono text-[12px] text-slate-500 ring-1 ring-slate-200">{filter === "unread" ? "Nothing unread." : box.connected ? "No emails with your contacts yet." : "Emails you send to customers show up here."}</p>
+            <p className="rounded-[22px] p-6 text-center font-mono text-[12px] text-slate-500 ring-1 ring-slate-200">{filter === "unread" ? "Nothing unread." : filter === "contacts" ? "No emails with your contacts yet." : box.connected ? "No emails yet." : "Emails you send to customers show up here."}</p>
           ) : (
             <ul className="overflow-hidden rounded-[22px] ring-1 ring-slate-200">
               {shown.map((t) => (
                 <li key={t.key} className="border-b-2 border-dashed border-slate-200 last:border-0">
-                  <Link href={`/app/inbox?t=${encodeURIComponent(t.key)}${filter === "unread" ? "&f=unread" : ""}`} data-thread={t.key} aria-current={open?.key === t.key ? "true" : undefined}
+                  <Link href={`/app/inbox?t=${encodeURIComponent(t.key)}${filter !== "all" ? `&f=${filter}` : ""}`} data-thread={t.key} aria-current={open?.key === t.key ? "true" : undefined}
                     className={cx("flex gap-3 px-4 py-3", open?.key === t.key ? "bg-slate-100" : "bg-white hover:bg-slate-50")}>
                     <span className={cx("mt-1.5 h-2 w-2 shrink-0 rounded-full", t.unread ? "bg-ink" : "bg-transparent")} aria-label={t.unread ? "Unread" : undefined} />
                     <span className="min-w-0 flex-1">

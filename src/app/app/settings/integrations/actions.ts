@@ -70,7 +70,7 @@ export async function checkGmail(): Promise<ActionResult> {
   const r = await syncMailbox(ctx.org.id);
   revalidatePath("/app/settings/integrations");
   revalidatePath("/app/inbox");
-  return r.error ? { error: r.error } : { ok: r.added ? `${r.added} new email${r.added === 1 ? "" : "s"} brought in.` : "Up to date. No new emails from your contacts." };
+  return r.error ? { error: r.error } : { ok: r.added ? `${r.added} new email${r.added === 1 ? "" : "s"} brought in.` : "Up to date. No new emails." };
 }
 
 export async function disconnectGmail(): Promise<ActionResult> {
