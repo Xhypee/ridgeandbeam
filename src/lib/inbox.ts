@@ -4,7 +4,7 @@ export type MailRow = {
   id: string; direction: string; from_address: string | null; to_address: string | null; subject: string | null; body: string;
   status: string; created_at: string; read_at: string | null; thread_ref: string | null; job_id: string | null; customer_id: string | null;
   customer: { name: string; email: string | null } | null; job: { title: string } | null;
-  full_body?: string | null; attachments?: { name: string; size?: number | null; mime?: string | null; id?: string | null }[] | null;
+  full_body?: string | null; attachments?: { name: string; size?: number | null; mime?: string | null; id?: string | null; path?: string | null }[] | null;
 };
 export type Thread = {
   key: string; subject: string; who: string; email: string | null; last: MailRow; count: number; unread: number;

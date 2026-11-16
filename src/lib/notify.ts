@@ -72,7 +72,7 @@ export async function sendSms(db: SupabaseClient, m: Base & { to: string | null 
   return { status, error };
 }
 
-export async function sendEmail(db: SupabaseClient, m: Base & { to: string | null | undefined; subject: string; html: string; text?: string; replyTo?: string | null; fromName?: string | null; attachments?: { filename: string; content?: string; path?: string }[]; threadId?: string | null; inReplyTo?: string | null }) {
+export async function sendEmail(db: SupabaseClient, m: Base & { to: string | null | undefined; subject: string; html: string; text?: string; replyTo?: string | null; fromName?: string | null; attachments?: { filename: string; content?: string; path?: string; contentType?: string; size?: number; storagePath?: string }[]; threadId?: string | null; inReplyTo?: string | null }) {
   let owner: string | null = null;
   let status = "not_configured";
   let providerRef: string | null = null;
@@ -80,6 +80,7 @@ export async function sendEmail(db: SupabaseClient, m: Base & { to: string | nul
   let fromAddress = process.env.EMAIL_FROM ?? null;
   let threadRef: string | null = m.threadId ?? null;
   let rfcMessageId: string | null = null;
+  let sentFiles: { name: string; size?: number | null; mime?: string | null; id?: string | null }[] = [];
   // The company's own Gmail, when connected and turned on for sending (Settings → Integrations).
   const gmail = m.to ? await gmailConnection(m.orgId).catch(() => null) : null;
   const viaGmail = gmail && gmail.settings.send_via_gmail !== false ? gmail : null;
@@ -99,6 +100,7 @@ export async function sendEmail(db: SupabaseClient, m: Base & { to: string | nul
       providerRef = `gmail:${r.id}`;
       threadRef = r.threadId;
       rfcMessageId = r.rfcMessageId;
+      sentFiles = r.files;
       fromAddress = viaGmail.email;
     } catch (e) {
       status = "failed";
@@ -117,7 +119,7 @@ export async function sendEmail(db: SupabaseClient, m: Base & { to: string | nul
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from: fromWithName(process.env.EMAIL_FROM!, m.fromName), to: [to], subject, html, text, ...(m.replyTo ? { reply_to: m.replyTo } : {}), ...(m.attachments?.length ? { attachments: m.attachments } : {}) }),
+        body: JSON.stringify({ from: fromWithName(process.env.EMAIL_FROM!, m.fromName), to: [to], subject, html, text, ...(m.replyTo ? { reply_to: m.replyTo } : {}), ...(m.attachments?.length ? { attachments: m.attachments.map(({ filename, content, path }) => ({ filename, content, path })) } : {}) }),
       });
       const json = (await res.json()) as { id?: string; message?: string };
       if (res.ok) { status = owner ? "redirected" : "sent"; providerRef = json.id ?? null; } else { status = "failed"; error = json.message ?? `HTTP ${res.status}`; }
@@ -131,7 +133,11 @@ export async function sendEmail(db: SupabaseClient, m: Base & { to: string | nul
     direction: "outbound", channel: "email", to_address: owner ?? m.to ?? null, from_address: fromAddress,
     subject: owner ? `[Test · for ${m.to}] ${m.subject}` : m.subject, body: m.text ?? m.html.replace(/<[^>]+>/g, " "), status, provider_ref: providerRef, error,
     thread_ref: threadRef, rfc_message_id: rfcMessageId,
-    attachments: m.attachments?.length ? m.attachments.map((x) => ({ name: x.filename })) : null,
+    // What was attached: Gmail's attachment id (when sent through Gmail) and/or where the upload is kept.
+    attachments: m.attachments?.length ? m.attachments.map((x, i) => {
+      const g = sentFiles.find((f) => f.name === x.filename) ?? sentFiles[i];
+      return { name: x.filename, size: x.size ?? g?.size ?? null, mime: x.contentType ?? g?.mime ?? null, id: g?.id ?? null, path: x.storagePath ?? null };
+    }) : null,
   });
   return { status, error };
 }

@@ -135,10 +135,10 @@ async function api<T>(c: Conn, path: string, init?: RequestInit): Promise<T> {
 }
 
 /** Send through the company's Gmail. Attachments given as a URL are fetched and attached. */
-export async function sendViaGmail(c: Conn, e: { to: string; subject: string; html: string; text?: string; fromName?: string | null; replyTo?: string | null; threadId?: string | null; inReplyTo?: string | null; attachments?: { filename: string; content?: string; path?: string }[] }) {
+export async function sendViaGmail(c: Conn, e: { to: string; subject: string; html: string; text?: string; fromName?: string | null; replyTo?: string | null; threadId?: string | null; inReplyTo?: string | null; attachments?: { filename: string; content?: string; path?: string; contentType?: string }[] }) {
   const attachments: MimeAttachment[] = [];
   for (const a of e.attachments ?? []) {
-    if (a.content) attachments.push({ filename: a.filename, content: a.content });
+    if (a.content) attachments.push({ filename: a.filename, content: a.content, type: a.contentType });
     else if (a.path) {
       const r = await fetch(a.path, { signal: AbortSignal.timeout(20000) });
       if (!r.ok) throw new Error(`Couldn't attach ${a.filename}.`);
@@ -148,9 +148,12 @@ export async function sendViaGmail(c: Conn, e: { to: string; subject: string; ht
   const name = (e.fromName ?? "").replace(/[<>"\r\n]/g, "").trim();
   const raw = buildMime({ from: name ? `"${name}" <${c.email}>` : c.email, to: e.to, subject: e.subject, html: e.html, text: e.text, replyTo: null /* replies come back to this mailbox, so they show up in the app */, inReplyTo: e.inReplyTo, attachments });
   const sent = await api<{ id: string; threadId: string }>(c, "/messages/send", { method: "POST", body: JSON.stringify({ raw: toBase64Url(raw), ...(e.threadId ? { threadId: e.threadId } : {}) }) });
-  const meta = await api<{ payload?: { headers?: { name: string; value: string }[] } }>(c, `/messages/${sent.id}?format=metadata&metadataHeaders=Message-ID`).catch(() => null);
-  const rfc = meta?.payload?.headers?.find((h) => h.name.toLowerCase() === "message-id")?.value ?? null;
-  return { id: sent.id, threadId: sent.threadId, rfcMessageId: rfc };
+  // The sent copy: its Message-ID (to thread replies) and the attachment ids (to show the files in the Inbox).
+  const full = attachments.length
+    ? await api<{ payload?: { headers?: { name: string; value: string }[] } }>(c, `/messages/${sent.id}?format=full`).catch(() => null)
+    : await api<{ payload?: { headers?: { name: string; value: string }[] } }>(c, `/messages/${sent.id}?format=metadata&metadataHeaders=Message-ID`).catch(() => null);
+  const rfc = full?.payload?.headers?.find((h) => h.name.toLowerCase() === "message-id")?.value ?? null;
+  return { id: sent.id, threadId: sent.threadId, rfcMessageId: rfc, files: attachments.length && full?.payload ? attachmentsOf(full.payload as never) : [] };
 }
 
 // ---------------------------------------------------------------------------

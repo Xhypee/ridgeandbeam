@@ -3,21 +3,63 @@
 // from / to, the full text with signature, attachments, and the quoted history.
 import Link from "next/link";
 import { ActionForm, SubmitButton } from "@/components/action-form";
-import { cx, Input, Textarea } from "@/components/ui";
+import { cx } from "@/components/ui";
 import { splitQuoted } from "@/lib/gmail-mime";
 import { fileSize, initials, replySubject, stubStatus, type MailRow, type Thread } from "@/lib/inbox";
-import { checkMail, newEmail, replyEmail } from "./actions";
+import { MailComposer } from "./mail-composer";
+import { checkMail } from "./actions";
 
 const lab = "font-mono text-[10.5px] uppercase tracking-[0.12em] text-slate-400";
 const TZ = { timeZone: "Australia/Sydney" } as const;
 const MAIL = "M4 6h16v12H4zM4 7l8 6 8-6";
-const CLIP = "M15 7l-6.5 6.5a2 2 0 003 3L18 10a4 4 0 00-6-6l-6.5 6.5a6 6 0 008.5 8.5L20 13";
 const UP = "M6 15l6-6 6 6";
 const I = ({ d, className = "h-3.5 w-3.5" }: { d: string; className?: string }) => <svg viewBox="0 0 24 24" className={cx("shrink-0", className)} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={d} /></svg>;
 const dayOf = (iso: string) => new Date(iso).toLocaleDateString("en-AU", { ...TZ, weekday: "short", day: "numeric", month: "short" });
 const timeOf = (iso: string) => new Date(iso).toLocaleTimeString("en-AU", { ...TZ, hour: "numeric", minute: "2-digit" });
 const when = (iso: string, now: Date) => (new Date(iso).toLocaleDateString("en-AU", TZ) === now.toLocaleDateString("en-AU", TZ) ? timeOf(iso) : new Date(iso).toLocaleDateString("en-AU", { ...TZ, day: "numeric", month: "short" }));
 const addr = (s: string | null) => s ?? "";
+type Att = NonNullable<MailRow["attachments"]>[number];
+const isImage = (a: Att) => /^image\/(png|jpe?g|gif|webp)$/i.test(a.mime ?? "") || /\.(png|jpe?g|gif|webp)$/i.test(a.name);
+const kindOf = (a: Att) => (/pdf/i.test(a.mime ?? "") || /\.pdf$/i.test(a.name) ? "PDF" : (a.name.split(".").pop() ?? "FILE").slice(0, 4).toUpperCase());
+const canOpen = (a: Att) => Boolean(a.id || a.path);
+const attUrl = (m: MailRow, i: number, dl = false) => `/api/inbox/attachment?m=${m.id}&a=${i}${dl ? "&dl=1" : ""}`;
+const EYE = "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6";
+const DL = "M12 4v11M7 10l5 5 5-5M5 20h14";
+
+/** Pictures as thumbnails, documents as cards with View / Download. */
+function Files({ m, files, big, mine }: { m: MailRow; files: Att[]; big?: boolean; mine?: boolean }) {
+  const imgs = files.map((a, i) => ({ a, i })).filter(({ a }) => isImage(a) && canOpen(a));
+  const docs = files.map((a, i) => ({ a, i })).filter(({ a }) => !(isImage(a) && canOpen(a)));
+  return (
+    <div className={cx("space-y-2", big ? "px-4 pb-3" : "px-3 pt-2")} data-files>
+      {imgs.length > 0 && (
+        <div className={cx("grid gap-1.5", big ? "grid-cols-3" : imgs.length === 1 ? "grid-cols-1" : "grid-cols-3")}>
+          {imgs.slice(0, big ? 12 : 3).map(({ a, i }, k) => (
+            <a key={i} href={attUrl(m, i)} target="_blank" rel="noreferrer" className="relative block overflow-hidden rounded-lg ring-1 ring-black/10" title={a.name}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- served by our attachment route */}
+              <img src={attUrl(m, i)} alt={a.name} loading="lazy" className={cx("w-full object-cover", big ? "h-36" : imgs.length === 1 ? "max-h-56" : "h-24")} />
+              {!big && k === 2 && imgs.length > 3 && <span className="absolute inset-0 grid place-items-center bg-black/50 font-mono text-sm font-semibold text-white">+{imgs.length - 3}</span>}
+            </a>
+          ))}
+        </div>
+      )}
+      {docs.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {docs.map(({ a, i }) => (
+            <span key={i} className={cx("inline-flex max-w-full items-center gap-2 rounded-lg py-1.5 pl-1.5 pr-1.5 font-mono text-[11px] ring-1", mine && !big ? "bg-white/10 text-white ring-white/20" : "bg-cream text-ink ring-slate-300")}>
+              <span className={cx("grid h-8 w-9 shrink-0 place-items-center rounded text-[9px] font-semibold", mine && !big ? "bg-white/15" : "bg-white ring-1 ring-slate-200")}>{kindOf(a)}</span>
+              <span className="min-w-0"><span className="block max-w-[200px] truncate">{a.name}</span>{a.size ? <span className={cx("block text-[10px]", mine && !big ? "text-white/60" : "text-slate-400")}>{fileSize(a.size)}</span> : null}</span>
+              {canOpen(a) && big && <>
+                <a href={attUrl(m, i)} target="_blank" rel="noreferrer" title="View" aria-label={`View ${a.name}`} className="grid h-7 w-7 place-items-center rounded ring-1 ring-slate-300 hover:bg-white"><I d={EYE} /></a>
+                <a href={attUrl(m, i, true)} title="Download" aria-label={`Download ${a.name}`} className="grid h-7 w-7 place-items-center rounded ring-1 ring-slate-300 hover:bg-white"><I d={DL} /></a>
+              </>}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export type MailboxState = { configured: boolean; connected: boolean; broken: boolean; email: string | null; lastChecked: string | null; canConnect: boolean };
 
@@ -34,7 +76,7 @@ function Bubble({ m, t, box }: { m: MailRow; t: Thread; box: MailboxState }) {
       <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
         <div className={cx("rounded-2xl group-open/mail:hidden", mine ? "rounded-br-md bg-ink text-white" : "rounded-bl-md bg-slate-100 text-ink", failed && "ring-2 ring-red-400")}>
         {short && <p className="line-clamp-[9] whitespace-pre-wrap px-4 pt-3 text-[14px] leading-relaxed [overflow-wrap:anywhere]">{short}</p>}
-        {files.length > 0 && <p className={cx("flex flex-wrap gap-x-3 px-4 pt-2 font-mono text-[11.5px]", mine ? "text-white/80" : "text-slate-600")}>{files.map((f, i) => <span key={i} className="inline-flex items-center gap-1"><I d={CLIP} className="h-3 w-3" />{f.name}</span>)}</p>}
+        {files.length > 0 && <Files m={m} files={files} mine={mine} />}
         <div className={cx("mx-3 mt-2.5 border-t-2 border-dashed", mine ? "border-white/25" : "border-slate-300")} />
         <div className={cx("flex items-center gap-2 px-4 py-2 font-mono text-[10px] uppercase tracking-wider", mine ? "text-white/65" : "text-slate-500")} data-stub>
           <I d={MAIL} className="h-3 w-3" /><span className="truncate">{m.subject ?? t.subject}</span>
@@ -54,17 +96,7 @@ function Bubble({ m, t, box }: { m: MailRow; t: Thread; box: MailboxState }) {
           {mine && <p>{stubStatus(m, t.messages)}</p>}
         </div>
         <div className="whitespace-pre-wrap px-4 py-3 text-[14px] leading-relaxed text-slate-800 [overflow-wrap:anywhere]">{main || "(no text)"}</div>
-        {files.length > 0 && (
-          <div className="flex flex-wrap gap-2 px-4 pb-3">
-            {files.map((f, i) => {
-              const can = Boolean(f.id);
-              const inner = <><I d={CLIP} /><span className="max-w-[220px] truncate">{f.name}</span>{f.size ? <span className="text-slate-400">{fileSize(f.size)}</span> : null}</>;
-              return can
-                ? <a key={i} href={`/api/inbox/attachment?m=${m.id}&a=${i}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-cream px-2.5 py-2 font-mono text-[11px] text-ink ring-1 ring-slate-300 hover:bg-white">{inner}</a>
-                : <span key={i} className="inline-flex items-center gap-2 rounded-lg bg-cream px-2.5 py-2 font-mono text-[11px] text-slate-600 ring-1 ring-slate-200">{inner}</span>;
-            })}
-          </div>
-        )}
+        {files.length > 0 && <Files m={m} files={files} big />}
         {quoted && (
           <details className="border-t-2 border-dashed border-slate-200">
             <summary className="cursor-pointer list-none px-4 py-2 font-mono text-[11px] text-slate-500 [&::-webkit-details-marker]:hidden">▸ Show the quoted email</summary>
@@ -143,16 +175,7 @@ export function InboxView({ threads, open, compose, filter, box, now = new Date(
             <div className="rounded-[22px] p-5 ring-1 ring-slate-200" data-compose-form>
               <Link href="/app/inbox" className="mb-2 inline-block font-mono text-[11px] uppercase tracking-wider text-slate-500 lg:hidden">← Inbox</Link>
               <h2 className="flex items-center gap-2 border-b-2 border-ink pb-2 font-display text-[18px] font-bold text-ink"><I d={MAIL} className="h-4 w-4" />New email</h2>
-              <ActionForm action={newEmail} className="mt-3 space-y-3">
-                {compose.job && <input type="hidden" name="job" value={compose.job} />}
-                <label className="block"><span className={lab}>To</span><Input name="to" type="email" defaultValue={compose.to ?? ""} required placeholder="customer@example.com" className="mt-1" /></label>
-                <label className="block"><span className={lab}>Subject</span><Input name="subject" required className="mt-1" /></label>
-                <label className="block"><span className={lab}>Message</span><Textarea name="body" rows={10} required className="mt-1" /></label>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-mono text-[11px] text-slate-500">{box.connected ? `From ${box.email}` : "From the app's address"}</span>
-                  <SubmitButton className="min-h-11">Send email</SubmitButton>
-                </div>
-              </ActionForm>
+              <MailComposer mode="new" to={compose.to} job={compose.job} from={box.connected ? `From ${box.email}` : "From the app's address"} />
             </div>
           ) : open ? (
             <div className="flex flex-col rounded-[22px] ring-1 ring-slate-200" data-conversation>
@@ -173,16 +196,8 @@ export function InboxView({ threads, open, compose, filter, box, now = new Date(
                 ))}
                 <p className="text-center font-mono text-[10.5px] text-slate-400">Tap an email to open it in full</p>
               </div>
-              <ActionForm action={replyEmail} className="border-t-2 border-ink p-3">
-                <input type="hidden" name="thread" value={open.key} />
-                <div className="flex items-end gap-2">
-                  <div className="min-w-0 flex-1 rounded-xl ring-1 ring-slate-300 focus-within:ring-2 focus-within:ring-ink">
-                    <Textarea name="body" rows={2} required aria-label={`Email ${open.who.split(" ")[0]}`} placeholder={`Email ${open.who.split(" ")[0]}…`} className="border-0 ring-0 focus:ring-0" />
-                    <p className="flex items-center gap-1.5 border-t-2 border-dashed border-slate-200 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-slate-500 [overflow-wrap:anywhere]"><I d={MAIL} className="h-3 w-3" /><span className="min-w-0 truncate">{replySubject(open.last.subject ?? open.subject)}</span><span className="hidden shrink-0 sm:inline">· to {open.email ?? "them"}{box.connected ? ` · from ${box.email}` : ""}</span></p>
-                  </div>
-                  <SubmitButton className="min-h-11 shrink-0">Send email</SubmitButton>
-                </div>
-              </ActionForm>
+              <MailComposer mode="reply" thread={open.key} placeholder={`Email ${open.who.split(" ")[0]}…`}
+                stub={<><span className="max-w-[55%] shrink-0 truncate">{replySubject(open.last.subject ?? open.subject)}</span><span className="hidden min-w-0 truncate sm:inline">· to {open.email ?? "them"}{box.connected ? ` · from ${box.email}` : ""}</span></>} />
             </div>
           ) : (
             <p className="grid min-h-60 place-items-center rounded-[22px] font-mono text-[12px] text-slate-400 ring-1 ring-dashed ring-slate-300">Pick an email thread</p>
