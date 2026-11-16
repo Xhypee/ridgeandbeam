@@ -23,6 +23,7 @@ import { jobRecord } from "@/lib/job-record";
 import { recordItems } from "@/lib/job-record-items";
 import { JobTask } from "./job-task";
 import { JobRecordList } from "./job-record-list";
+import { JobDelete } from "./job-delete";
 
 const STAGES = ["New lead", "Quoted", "Signed & Prepping", "Building", "Wrapping up"];
 // Matches the board's columns (lib/next-step pipelineColumn), so the ticket says the same as the column.
@@ -175,6 +176,8 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
           {d.sold && !isCrewLead && <><JobContact d={d} /><JobNotes d={d} /><JobDocuments jobId={j.id} docs={d.docs} /></>}
           </>)}
           </details>
+
+          {!isCrewLead && <JobDelete jobId={j.id} name={d.customer.name} hasPayments={d.payments.length > 0} hasQuote={Boolean(quote)} hasInvoices={d.invoices.length > 0} onlyJob={d.lead?.customerOtherJobs === 0} />}
         </div>
 
         {/* Team + call: only once it's sold (before that there's no crew to add, and Contact has text/call). */}

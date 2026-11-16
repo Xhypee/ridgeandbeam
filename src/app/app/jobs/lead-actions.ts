@@ -307,3 +307,29 @@ export async function quoteForPlans(jobId: string): Promise<string | null> {
   const { data } = await insertDraftEstimate(ctx, jobId);
   return (data?.id as string | undefined) ?? null;
 }
+
+/** Delete job (any stage): gone for good with its quote, notes, files, photos and messages. Refused once money has
+ *  been received (those payments are tax records; use "Not going ahead" instead). Optionally removes the contact
+ *  too when this was their only job. Files are removed from storage as well. */
+export async function deleteJobForGood(_: ActionResult, fd: FormData): Promise<ActionResult> {
+  const ctx = await requireOrg();
+  if (ctx.isCrewLead) return { error: "Crew leads can't delete jobs." };
+  const id = String(fd.get("job_id") ?? "");
+  const { data: job } = await ctx.supabase.from("jobs").select("id, customer_id").eq("id", id).eq("org_id", ctx.org.id).maybeSingle();
+  if (!job) return { error: "That job is already gone." };
+  const { data: invs } = await ctx.supabase.from("invoices").select("id, payments(id)").eq("job_id", id);
+  const paid = (invs ?? []).some((i) => ((i.payments as unknown[] | null) ?? []).length > 0);
+  if (paid) return { error: "Money has been received on this job, so it can't be deleted (the payments are tax records). Use “Not going ahead” to close it instead." };
+  if (fd.get("confirm") !== "on") return { error: "Tick the box to confirm." };
+  const { data: files } = await ctx.supabase.from("job_files").select("storage_path").eq("job_id", id);
+  const { error } = await ctx.supabase.from("jobs").delete().eq("id", id);
+  if (error) return { error: friendly(error) };
+  const paths = (files ?? []).map((f) => f.storage_path as string).filter(Boolean);
+  for (let i = 0; i < paths.length; i += 100) await ctx.supabase.storage.from("job-files").remove(paths.slice(i, i + 100)); // best effort
+  if (fd.get("remove_contact") === "on" && job.customer_id) {
+    const { count } = await ctx.supabase.from("jobs").select("id", { count: "exact", head: true }).eq("customer_id", job.customer_id);
+    if (!count) await ctx.supabase.from("customers").delete().eq("id", job.customer_id);
+  }
+  revalidatePath("/app", "layout");
+  redirect("/app/jobs");
+}
