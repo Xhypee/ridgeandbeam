@@ -9,6 +9,7 @@
 // (quoteForPlans), so dropping the plans is the whole first step. `compact` once the plans are in.
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { cx } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { attachJobFile, prepareJobUpload, readUploadedDocument, type DocIntakeResult } from "./[id]/files/actions";
@@ -37,6 +38,31 @@ function ReadingSteps({ done, total }: { done: number; total: number }) {
   );
 }
 const SHEET = "#f5f4ee"; // plain paper, like the docket
+const GRID = { backgroundColor: SHEET, backgroundImage: "linear-gradient(rgba(19,34,26,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(19,34,26,.06) 1px, transparent 1px)", backgroundSize: "22px 22px", backgroundPosition: "-1px -1px" };
+const UP_ICON = "M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3";
+
+/** The simple line's reading state: what Claude is doing, one line at a time, with a thin bar. */
+function ReadingLine({ done, total, name }: { done: number; total: number; name: string | null }) {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setStep((s) => Math.min(s + 1, READ_STEPS.length - 1)), 2200);
+    return () => clearInterval(t);
+  }, []);
+  const pct = Math.min(92, Math.max(((step + 1) / READ_STEPS.length) * 88, total ? (done / total) * 100 : 0));
+  const ext = name?.split(".").pop()?.slice(0, 4).toUpperCase() ?? "";
+  return (
+    <div className="grid gap-2">
+      {name && (
+        <span className="flex min-w-0 items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-slate-500">
+          {ext && <span className="shrink-0 rounded bg-white px-1.5 py-0.5 font-bold text-ink ring-1 ring-slate-200">{ext}</span>}
+          <span className="truncate">{total > 1 ? `${name} + ${total - 1} more` : name}</span>
+        </span>
+      )}
+      <p className="font-display text-[16px] font-bold text-ink" data-reading aria-live="polite">{READ_STEPS[step]}…</p>
+      <div className="h-1 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-ink transition-[width] duration-700" style={{ width: `${pct}%` }} /></div>
+    </div>
+  );
+}
 
 /**
  * A roof in plan view on the blueprint sheet. Waiting for plans: faint and dashed. Measured: a dimensioned
@@ -124,12 +150,18 @@ async function walk(entry: FsEntry, prefix = ""): Promise<Item[]> {
   return nested.flat();
 }
 
-export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured = false, compact = false, sheet, caption, joined = false }: {
+export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured = false, compact = false, sheet, caption, joined = false, simple = false, anywhere = false }: {
   jobId: string; estimateId?: string; variant?: "sidebar" | "measure" | "plans"; measured?: boolean;
   /** plans: once the plans are in (the sheet shows `sheet`, the roof drawn with its numbers, when there is one). */
   compact?: boolean; sheet?: ReactNode; caption?: string;
   /** plans: the top of a box that carries on below (the quote), so no outline or rounding of its own. */
   joined?: boolean;
+  /** plans, before any are in: one quiet line ("Drop the plans anywhere · or choose files · paste · a folder")
+   *  instead of the big sheet; reading shows in the same spot. */
+  simple?: boolean;
+  /** Files can be dropped anywhere on the job sidebar (the whole sidebar lights up), or pasted with Ctrl+V. Only one
+   *  drop on a sidebar should have this. */
+  anywhere?: boolean;
 }) {
   const plans = variant === "plans";
   const measure = variant === "measure" || plans;
@@ -140,6 +172,12 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
   const [busy, setBusy] = useState<{ done: number; total: number } | null>(null);
   const [reading, setReading] = useState<{ done: number; total: number } | null>(null);
   const [msg, setMsg] = useState<{ ok?: string; error?: string } | null>(null);
+  const [readingName, setReadingName] = useState<string | null>(null);
+  const self = useRef<HTMLDivElement>(null);
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  const [overAll, setOverAll] = useState(false);
+  const uploadRef = useRef<(items: Item[]) => Promise<void>>(async () => {});
+  const idle = useRef(true);
 
   async function upload(all: Item[]) {
     const items = all.filter((i) => !skipFile(i.name));
@@ -147,6 +185,7 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
     const big = items.filter((i) => i.file.size > MAX);
     const todo = items.filter((i) => i.file.size <= MAX);
     setMsg(null);
+    setReadingName(todo[0]?.name.split("/").pop() ?? null);
     setBusy({ done: 0, total: todo.length });
     const failed: string[] = [];
     const uploaded: string[] = [];
@@ -205,6 +244,42 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
     if (folder.current) folder.current.value = "";
   }
 
+  // The drop-anywhere and paste listeners below read these (they're set up once, so they need the latest).
+  useEffect(() => { uploadRef.current = upload; idle.current = !busy && !reading; });
+
+  // Drop anywhere on the job sidebar: while files are dragged over it, a cover over the whole sidebar takes the drop
+  // (so the other drop boxes on it don't get it too). Ctrl+V with files on the clipboard uploads them as well,
+  // unless you're typing in a box.
+  useEffect(() => {
+    if (!anywhere) return;
+    const root = self.current?.closest<HTMLElement>("[data-job-docket]") ?? null;
+    if (!root) return;
+    if (getComputedStyle(root).position === "static") root.style.position = "relative";
+    setHost(root);
+    const hasFiles = (e: globalThis.DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes("Files");
+    const enter = (e: globalThis.DragEvent) => { if (hasFiles(e) && idle.current) setOverAll(true); };
+    const end = () => setOverAll(false);
+    const paste = (e: ClipboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t?.closest?.("input, textarea, select, [contenteditable='true']") || !idle.current) return;
+      const list = Array.from(e.clipboardData?.files ?? []);
+      if (!list.length) return;
+      e.preventDefault();
+      const stamp = new Date().toLocaleString("en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }).replace(/[/:]/g, ".");
+      void uploadRef.current(list.map((f, i) => ({ file: f, name: /^image\.\w+$/i.test(f.name) || !f.name ? `Pasted ${stamp}${list.length > 1 ? ` (${i + 1})` : ""}.${(f.type.split("/")[1] || "png").replace("jpeg", "jpg")}` : f.name })));
+    };
+    root.addEventListener("dragenter", enter);
+    window.addEventListener("dragend", end);
+    window.addEventListener("drop", end);
+    window.addEventListener("paste", paste);
+    return () => {
+      root.removeEventListener("dragenter", enter);
+      window.removeEventListener("dragend", end);
+      window.removeEventListener("drop", end);
+      window.removeEventListener("paste", paste);
+    };
+  }, [anywhere]);
+
   async function onDrop(e: DragEvent<HTMLDivElement>) {
     e.preventDefault();
     setOver(false);
@@ -223,8 +298,52 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
   };
 
   return (
-    <div className={measure ? "" : "mt-2"} data-document-drop={variant}>
-      {plans ? (
+    <div ref={self} className={measure ? "" : "mt-2"} data-document-drop={variant}>
+      {overAll && host && createPortal(
+        <div className="absolute inset-0 z-40 bg-white/40 p-2" data-drop-anywhere
+          onDragOver={(e) => e.preventDefault()}
+          onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverAll(false); }}
+          onDrop={(e) => { setOverAll(false); void onDrop(e); }}>
+          <div className="pointer-events-none grid h-full place-content-center justify-items-center gap-2 rounded-[18px] border-2 border-dashed border-ink bg-white text-center">
+            <span className="grid h-12 w-12 place-items-center rounded-xl ring-1 ring-slate-200"><svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={UP_ICON} /></svg></span>
+            <p className="font-display text-[22px] font-bold text-ink">Let go to add the plans</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">Claude reads them straight away</p>
+          </div>
+        </div>,
+        host,
+      )}
+      {plans && simple && !compact ? (
+        // The simple line: one quiet row; uploading and reading show in the same spot.
+        <div
+          onDragOver={(e) => { e.preventDefault(); if (!busy && !reading) setOver(true); }}
+          onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(false); }}
+          onDrop={onDrop}
+          data-plan-line={reading ? "reading" : busy ? "uploading" : "waiting"}
+          className={cx("rounded-2xl transition", over ? "ring-2 ring-ink" : "ring-1 ring-slate-200")} style={GRID}>
+          {reading ? (
+            <div className="px-4 py-5"><ReadingLine done={reading.done} total={reading.total} name={readingName} /></div>
+          ) : busy ? (
+            <div className="grid gap-2 px-4 py-5">
+              <p className="font-display text-[16px] font-bold text-ink">Uploading {Math.min(busy.done + 1, busy.total)} of {busy.total}…</p>
+              <div className="h-1 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-ink transition-all" style={{ width: `${busy.total ? (busy.done / busy.total) * 100 : 0}%` }} /></div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3.5 px-4 py-5">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white text-ink ring-1 ring-slate-200"><svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={UP_ICON} /></svg></span>
+              <span className="min-w-0">
+                <span className="block font-display text-[17px] font-bold leading-snug text-ink">{over ? "Let go to add the plans" : anywhere ? "Drop the plans anywhere" : "Drop the plans here"}</span>
+                <span className="block text-[13.5px] normal-case text-slate-500">
+                  or <button type="button" onClick={() => files.current?.click()} className="font-semibold text-ink underline decoration-slate-300 underline-offset-[3px] hover:decoration-ink" data-plans-browse>choose files</button>
+                  {anywhere && <> · <span title="Copy the plans from an email or folder, then press Ctrl+V (Cmd+V on a Mac)">paste</span></>}
+                  {" · "}<button type="button" onClick={() => folder.current?.click()} className="font-semibold text-ink underline decoration-slate-300 underline-offset-[3px] hover:decoration-ink">a folder</button>
+                </span>
+              </span>
+            </div>
+          )}
+          <input ref={files} type="file" multiple className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => fromInput(e.target.files)} />
+          <input ref={folder} type="file" multiple className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => fromInput(e.target.files)} {...{ webkitdirectory: "", directory: "" }} />
+        </div>
+      ) : plans ? (
         // The blueprint: a plan sheet to drop the plans on. Once measured, `sheet` is the roof drawn with its numbers.
         <div
           onDragOver={(e) => { e.preventDefault(); if (!busy && !reading) setOver(true); }}

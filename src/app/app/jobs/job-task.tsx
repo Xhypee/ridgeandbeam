@@ -83,7 +83,7 @@ export function JobTask({ d, bookHref, canSeeMoney }: { d: Docket; bookHref: str
       <Box>
         <p className={kicker}>First · get the roof measured</p>
         <p className="mt-1 font-display text-[19px] font-bold leading-tight text-ink">How will you measure {first}&apos;s roof?</p>
-        <div className="mt-3" data-measure-plans><DocumentDrop jobId={j.id} variant="plans" estimateId={q?.status === "draft" ? q.id : undefined} /></div>
+        <div className="mt-3" data-measure-plans><DocumentDrop jobId={j.id} variant="plans" simple anywhere estimateId={q?.status === "draft" ? q.id : undefined} /></div>
         <div className="mt-2 grid grid-cols-2 gap-2">
           {q ? (
             <Link href={`/app/measure/${q.id}`} className="rounded-xl p-3 text-left ring-1 ring-slate-300 hover:bg-slate-50" data-measure-satellite>
