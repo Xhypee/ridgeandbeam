@@ -13,6 +13,7 @@ import { createEstimate } from "../estimates/actions";
 import { DocumentDrop } from "./document-drop";
 import { markContacted, reopenLead } from "./lead-actions";
 import { Icon } from "./job-section-ui";
+import { TaskQuote } from "./task-quote";
 
 const PHONE = "M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2";
 const SMS = "M4 5h16v11H9l-5 4z";
@@ -48,7 +49,7 @@ function CallStrip({ d }: { d: Docket }) {
   );
 }
 
-export function JobTask({ d, bookHref, canSeeMoney }: { d: Docket; bookHref: string; canSeeMoney: boolean }) {
+export function JobTask({ d, bookHref, canSeeMoney, previewHref, minMarginPct }: { d: Docket; bookHref: string; canSeeMoney: boolean; previewHref?: string; minMarginPct?: number }) {
   const j = d.job;
   const first = d.customer.name.split(" ")[0] || d.customer.name;
 
@@ -133,6 +134,8 @@ export function JobTask({ d, bookHref, canSeeMoney }: { d: Docket; bookHref: str
 
   // Every other stage: the job's next step.
   const n = d.next;
+  // A drafted quote: show what it says (the measured roof and the quote) before it goes, not just a button.
+  if (n.key === "send_quote" && canSeeMoney && previewHref && d.quote?.status === "draft") return <TaskQuote d={d} previewHref={previewHref} minMarginPct={minMarginPct} />;
   const calm = !n.waiting;
   const main = n.form === "create_estimate"
     ? <form action={createEstimate} className="flex-1"><input type="hidden" name="job_id" value={j.id} /><button className={cx(solid, "w-full")}>{n.actionLabel}<Icon d={ARROW} className="h-3.5 w-3.5" /></button></form>

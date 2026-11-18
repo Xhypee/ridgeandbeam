@@ -70,7 +70,7 @@ function stageClock(d: Docket, now = new Date()) {
   return `Since ${shortDate(j.created_at)}`;
 }
 
-export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, askHref, payHref, remindHref, aiReady, meId, bookHref = "", book = false }: { d: Docket; org: Organization; canSeeMoney: boolean; isCrewLead: boolean; closeHref: string; previewHref: string; askHref: string; payHref: (orderId: string) => string; remindHref: string; aiReady: boolean; meId: string; bookHref?: string; book?: boolean }) {
+export function JobDocket({ d, org, canSeeMoney, isCrewLead, closeHref, previewHref, askHref, payHref, remindHref, aiReady, meId, bookHref = "", book = false }: { d: Docket; org: Organization; canSeeMoney: boolean; isCrewLead: boolean; closeHref: string; previewHref: string; askHref: string; payHref: (orderId: string) => string; remindHref: string; aiReady: boolean; meId: string; bookHref?: string; book?: boolean }) {
   const j = d.job;
   const base = `/app/jobs/${j.id}`;
   const lost = j.stage === "lost";
@@ -121,7 +121,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
           {/* Tear line */}
           <div className="relative h-5" aria-hidden><span className="absolute -left-2.5 top-0 h-5 w-5 rounded-full bg-cream" /><span className="absolute -right-2.5 top-0 h-5 w-5 rounded-full bg-cream" /><span className="absolute inset-x-4 top-2.5 border-t-2 border-dashed border-slate-200" /></div>
 
-          {!isCrewLead && <JobTask d={d} bookHref={bookHref} canSeeMoney={canSeeMoney} />}
+          {!isCrewLead && <JobTask d={d} bookHref={bookHref} canSeeMoney={canSeeMoney} previewHref={previewHref} minMarginPct={Number(org.min_margin_pct) || 0} />}
           <JobRecordList rows={record} items={recordItems(d)} lost={lost} />
 
           {done && canSeeMoney && exGst !== null && (
