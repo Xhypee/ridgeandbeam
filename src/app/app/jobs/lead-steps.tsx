@@ -171,7 +171,7 @@ export function LeadSteps(p: LeadStepsProps) {
           both states, so Claude's summary survives the refresh. */}
       {/* Full bleed: the sheet (and receipt) run the whole width of the sidebar, lines top and bottom only. */}
       <div className="-mx-5 mt-3 border-y-2 border-dashed border-slate-200" data-lead-drop>
-        <DocumentDrop jobId={p.jobId} variant="plans" compact={!planless} measured={Boolean(p.roof)} joined
+        <DocumentDrop jobId={p.jobId} variant="plans" simple compact={!planless} measured={Boolean(p.roof)} joined
           estimateId={p.quote?.status === "draft" ? p.quote.id : undefined}
           sheet={p.roof ? <RoofDrawing labels={p.roof} /> : undefined} caption={p.caption ?? undefined} />
         {!planless && p.quote && <QuoteSummary q={p.quote} first={p.first} previewHref={p.previewHref ?? null} />}
