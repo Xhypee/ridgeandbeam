@@ -121,7 +121,7 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
           {/* Tear line */}
           <div className="relative h-5" aria-hidden><span className="absolute -left-2.5 top-0 h-5 w-5 rounded-full bg-cream" /><span className="absolute -right-2.5 top-0 h-5 w-5 rounded-full bg-cream" /><span className="absolute inset-x-4 top-2.5 border-t-2 border-dashed border-slate-200" /></div>
 
-          {!isCrewLead && <JobTask d={d} bookHref={bookHref} canSeeMoney={canSeeMoney} />}
+          {!isCrewLead && <JobTask d={d} bookHref={bookHref} canSeeMoney={canSeeMoney} previewHref={previewHref} />}
           <JobRecordList rows={record} items={recordItems(d)} lost={lost} />
 
           {done && canSeeMoney && exGst !== null && (

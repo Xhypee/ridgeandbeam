@@ -11,6 +11,7 @@ import { ActionForm, SubmitButton } from "@/components/action-form";
 import { cx } from "@/components/ui";
 import { LOST_REASONS, type ScheduleItem } from "@/lib/lead-steps";
 import { ItemIcon } from "@/components/item-icons";
+import { TORN } from "@/lib/torn";
 import { createEstimate } from "../estimates/actions";
 import { sendQuoteEmail } from "./quote-actions";
 import { BookingCalendar } from "./booking-calendar";
@@ -27,13 +28,6 @@ const EYE = "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 
 const XCIRCLE = "M12 21a9 9 0 100-18 9 9 0 000 18M9 9l6 6M15 9l-6 6";
 const aud = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: n % 1 ? 2 : 0 });
 
-/** Torn bottom edge of the receipt (same zig-zag as the quote docket). */
-const TORN = (() => {
-  const p = ["0 0", "100% 0", "100% calc(100% - 10px)"];
-  for (let x = 96; x > 0; x -= 4) p.push(`${x}% ${(100 - x) % 8 === 4 ? "100%" : "calc(100% - 10px)"}`);
-  p.push("0 calc(100% - 10px)");
-  return `polygon(${p.join(",")})`;
-})();
 
 /** The quote as a little receipt torn off under the plan sheet: the biggest items (monospace, with their icons),
  *  how many more, a dashed rule and the total; then Send quote with Edit (opens the whole quote) and Preview (the
