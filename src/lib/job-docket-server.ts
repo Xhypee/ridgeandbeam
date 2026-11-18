@@ -12,7 +12,8 @@ import { loadJobCompliance } from "./job-compliance-server";
 import { defaultJobRole, type JobRole } from "./job-team";
 import { nextStep, pipelineColumn, type NextStep, type PipelineColumn } from "./next-step";
 import { asNextStepJob, loadNextStepCtx, NEXT_STEP_JOB_COLS } from "./next-step-server";
-import { normalizeMeasurements, summarize, type Measurements, type RoofSummary } from "./roof";
+import { normalizeMeasurements, summarize, type CostedItem, type Measurements, type RoofSummary } from "./roof";
+import { effectiveOptionId, itemsForOption, marginExGst, type EstimateOptionLite } from "./estimate-totals";
 import type { Organization } from "./types";
 
 type Person = { user_id: string; full_name: string | null; email: string | null; role: string; phone: string | null };
@@ -36,6 +37,8 @@ export type Docket = {
   quote: {
     id: string; number: number; status: string; public_token: string; sent_at: string | null; accepted_at: string | null; accepted_name: string | null;
     roof_profile: string | null; roof_colour: string | null; measurement_source: string | null; total: number; gst: number;
+    /** Ex GST: profit and margin % on the price, and the cost. Null when the lines have no costs. */
+    margin?: { profit: number; pct: number; cost: number } | null;
     lines: { description: string; quantity: number; unit: string; amount: number; extra_status: string | null; calc_key: string | null }[];
   } | null;
   roof: { summary: RoofSummary; m: Measurements } | null;
@@ -98,7 +101,7 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
     supabase.from("jobs").select(`${NEXT_STEP_JOB_COLS}, title, job_type, site_address, state, lead_source, notes, created_at, assigned_to, inspection_at, lost_reason, referred_by, referred_by_type, completed_at, dumpster_status, gate_code, site_hazards, delivery_type, public_token, pay_methods, roof_material, crews(name, phone), customers(id, name, phone, email, address, city, state, zip, notes)`).eq("id", jobId).maybeSingle(),
     supabase.from("job_members").select("user_id, role, created_at").eq("job_id", jobId).order("created_at"),
     supabase.from("memberships").select("user_id, full_name, email, role, phone").eq("org_id", org.id).order("full_name"),
-    supabase.from("estimates").select("id, number, status, public_token, sent_at, accepted_at, accepted_name, roof_profile, roof_colour, measurements, measurement_source, created_at, estimate_totals(total, tax), estimate_items(description, quantity, unit, unit_price, extra_status, position, calc_key)").eq("job_id", jobId).neq("status", "declined").order("created_at", { ascending: false }).limit(5),
+    supabase.from("estimates").select("id, number, status, public_token, sent_at, accepted_at, accepted_name, roof_profile, roof_colour, measurements, measurement_source, created_at, discount, tax_rate, gst_inclusive, selected_option_id, estimate_totals(total, tax), estimate_options!estimate_options_estimate_id_fkey(id, position, recommended), estimate_items(description, quantity, unit, unit_price, unit_cost, option_id, extra_status, position, calc_key)").eq("job_id", jobId).neq("status", "declined").order("created_at", { ascending: false }).limit(5),
     canSeeMoney ? supabase.from("invoices").select("id, number, status, kind, milestone_label, due_date, bill_to, invoice_totals(total, paid, balance), payments(id, amount, method, paid_on, reference)").eq("job_id", jobId).neq("status", "void").order("number") : empty,
     canSeeMoney ? supabase.from("job_costs").select("category, amount").eq("job_id", jobId) : empty,
     supabase.from("claims").select("carrier, claim_number, stage, excess, approved_amount, adjuster_name").eq("job_id", jobId).maybeSingle(),
@@ -114,14 +117,21 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
   const crew = one(row.crews as unknown as { name: string; phone: string | null });
 
   // Quote: the signed one, else the latest sent, else the latest draft.
-  type E = { id: string; number: number; status: string; public_token: string; sent_at: string | null; accepted_at: string | null; accepted_name: string | null; roof_profile: string | null; roof_colour: string | null; measurements: unknown; measurement_source: string | null; estimate_totals: unknown; estimate_items: { description: string; quantity: number; unit: string; unit_price: number; extra_status: string | null; position: number; calc_key: string | null }[] };
+  type E = { id: string; number: number; status: string; public_token: string; sent_at: string | null; accepted_at: string | null; accepted_name: string | null; roof_profile: string | null; roof_colour: string | null; measurements: unknown; measurement_source: string | null; discount: number | null; tax_rate: number | null; gst_inclusive: boolean | null; selected_option_id: string | null; estimate_totals: unknown; estimate_options: EstimateOptionLite[] | null; estimate_items: { description: string; quantity: number; unit: string; unit_price: number; unit_cost: number | null; option_id: string | null; extra_status: string | null; position: number; calc_key: string | null }[] };
   const list = (ests ?? []) as unknown as E[];
+  // What the business makes on the quote (ex GST, the option that counts, after any discount). Null until lines have costs.
+  const quoteMargin = (x: E) => {
+    const items = itemsForOption((x.estimate_items ?? []).map((i) => ({ ...i, quantity: Number(i.quantity), unit_price: Number(i.unit_price), unit_cost: Number(i.unit_cost) || 0 })), effectiveOptionId(x.estimate_options ?? [], x.selected_option_id));
+    const mg = marginExGst(items as unknown as CostedItem[], Number(x.discount) || 0, Number(x.tax_rate ?? 10), x.gst_inclusive !== false);
+    return mg.cost > 0 ? { profit: mg.profit, pct: mg.pct, cost: mg.cost } : null;
+  };
   const e = list.find((x) => x.status === "accepted") ?? list.find((x) => x.status === "sent") ?? list[0] ?? null;
   const et = e ? one(e.estimate_totals as { total: number; tax: number }) : null;
   const quote = e ? {
     id: e.id, number: e.number, status: e.status, public_token: e.public_token, sent_at: e.sent_at, accepted_at: e.accepted_at, accepted_name: e.accepted_name,
     roof_profile: e.roof_profile, roof_colour: e.roof_colour, measurement_source: e.measurement_source, total: Number(et?.total ?? 0), gst: Number(et?.tax ?? 0),
     lines: [...(e.estimate_items ?? [])].sort((a, b) => a.position - b.position).map((i) => ({ description: i.description, quantity: Number(i.quantity), unit: i.unit, amount: Math.round(Number(i.quantity) * Number(i.unit_price) * 100) / 100, extra_status: i.extra_status, calc_key: i.calc_key ?? null })),
+    margin: quoteMargin(e),
   } : null;
   let roof: Docket["roof"] = null;
   if (e?.measurements) {

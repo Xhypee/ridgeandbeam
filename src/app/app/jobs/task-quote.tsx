@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { ItemIcon } from "@/components/item-icons";
+import { cx } from "@/components/ui";
 import type { Docket } from "@/lib/job-docket-server";
 import { roofSheet } from "@/lib/roof-sheet";
 import { TORN } from "@/lib/torn";
@@ -19,7 +20,7 @@ const aud = (n: number) => n.toLocaleString("en-AU", { style: "currency", curren
 const kicker = "font-mono text-[10.5px] uppercase tracking-[0.12em] text-slate-400";
 const outline = "inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-white px-3 font-mono text-xs font-semibold uppercase tracking-wider text-ink ring-1 ring-slate-300 hover:bg-slate-50";
 
-export function TaskQuote({ d, previewHref }: { d: Docket; previewHref: string }) {
+export function TaskQuote({ d, previewHref, minMarginPct = 0 }: { d: Docket; previewHref: string; minMarginPct?: number }) {
   const q = d.quote!;
   const first = d.customer.name.split(" ")[0] || d.customer.name;
   const included = q.lines.filter((l) => l.extra_status !== "offered" && l.amount > 0);
@@ -27,6 +28,8 @@ export function TaskQuote({ d, previewHref }: { d: Docket; previewHref: string }
   const more = included.length - top.length;
   const sheet = d.roof ? roofSheet(d.roof.summary, d.roof.m) : null;
   const src = q.measurement_source;
+  const mg = q.margin ?? null;
+  const low = Boolean(mg && minMarginPct > 0 && mg.pct < minMarginPct);
   const byClaude = Boolean(sheet) && (src === "plans" || src === "documents");
 
   return (
@@ -60,6 +63,13 @@ export function TaskQuote({ d, previewHref }: { d: Docket; previewHref: string }
             </ul>
           ) : (
             <p className="font-mono text-[12.5px] text-slate-500">No prices yet. Tap Edit to price it.</p>
+          )}
+          {mg && (
+            // Only you see this: what you make on it (ex GST), flagged when it's under your minimum.
+            <div className="mt-2.5 flex items-baseline justify-between gap-3 border-t-2 border-dashed border-slate-200 pt-2.5 font-mono text-[12.5px]" data-task-margin={low ? "low" : "ok"}>
+              <span className="text-slate-500">Your margin <span className="text-slate-400">· ex GST</span>{low && <span className="block text-[11px] font-semibold text-amber-700">Under your {minMarginPct}% minimum</span>}</span>
+              <span className={cx("shrink-0 font-semibold tabular-nums", low ? "text-amber-700" : "text-green-700")}>{aud(mg.profit)} · {mg.pct.toFixed(1)}%</span>
+            </div>
           )}
           <div className="mt-2.5 flex items-baseline justify-between border-t-2 border-dashed border-slate-200 pt-2.5">
             <span className="font-mono text-xs font-semibold uppercase tracking-wider text-slate-500">Total inc GST</span>
