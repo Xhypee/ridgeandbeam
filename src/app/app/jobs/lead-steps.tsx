@@ -3,8 +3,8 @@
 // The New lead sidebar's "Next up". People ring a few roofers and get told "send us your plans", so the first
 // step is the plans, dropped on a blueprint sheet (Claude reads them, makes the draft quote, measures the roof and
 // prices it). Once they're in: the roof drawn on the sheet with its numbers, and a very short quote (main items,
-// total, Edit, Send quote). Under it three icon buttons (Book the inspection · Not going ahead · Delete lead,
-// labels on hover), then Who's looking after it. Server actions: lead-actions.ts.
+// total, Edit, Send quote). Under it two icon buttons (Book the inspection · Not going ahead,
+// labels on hover; delete is the bin at the top of the sidebar), then Who's looking after it. Server actions: lead-actions.ts.
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { ActionForm, SubmitButton } from "@/components/action-form";
@@ -16,7 +16,7 @@ import { sendQuoteEmail } from "./quote-actions";
 import { BookingCalendar } from "./booking-calendar";
 import { DocumentDrop, RoofDrawing } from "./document-drop";
 import type { RoofSheet } from "@/lib/roof-sheet";
-import { deleteLead, markLeadLost, setLeadOwner } from "./lead-actions";
+import { markLeadLost, setLeadOwner } from "./lead-actions";
 import { LeadTimer } from "./lead-timer";
 
 const CHECK = "M5 12l5 5L20 7";
@@ -25,7 +25,6 @@ const PEN = "M4 20l4-1 11-11-3-3L5 16zM14 6l3 3";
 const SEND = "M4 12l16-8-6 16-2.5-6.5z";
 const EYE = "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6z";
 const XCIRCLE = "M12 21a9 9 0 100-18 9 9 0 000 18M9 9l6 6M15 9l-6 6";
-const BIN = "M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3";
 const aud = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: n % 1 ? 2 : 0 });
 
 /** Torn bottom edge of the receipt (same zig-zag as the quote docket). */
@@ -180,11 +179,10 @@ export function LeadSteps(p: LeadStepsProps) {
         <form action={createEstimate} className="mt-3"><input type="hidden" name="job_id" value={p.jobId} /><button className={cx(btn, "bg-ink text-white hover:bg-ink/90")} data-lead-quote><Icon d="M12 5v14M5 12h14" className="h-5 w-5" />Start the quote</button></form>
       )}
 
-      {/* Three actions as icon buttons; the label shows on hover (and keyboard focus). */}
-      <div className="mt-3 grid grid-cols-3 gap-2" data-lead-actions>
+      {/* Two actions as icon buttons; the label shows on hover (and keyboard focus). Delete is the bin at the top. */}
+      <div className="mt-3 grid grid-cols-2 gap-2" data-lead-actions>
         <IconToggle on={open === "book"} onClick={() => setOpen(open === "book" ? null : "book")} label="No plans? Book an inspection" d={CAL} align="start" />
-        <IconToggle on={open === "lost"} onClick={() => setOpen(open === "lost" ? null : "lost")} label="Not going ahead" d={XCIRCLE} tone="red" />
-        <IconToggle on={open === "delete"} onClick={() => setOpen(open === "delete" ? null : "delete")} label="Delete lead" d={BIN} tone="red" align="end" />
+        <IconToggle on={open === "lost"} onClick={() => setOpen(open === "lost" ? null : "lost")} label="Not going ahead" d={XCIRCLE} tone="red" align="end" />
       </div>
 
       {open === "book" && (
@@ -208,26 +206,6 @@ export function LeadSteps(p: LeadStepsProps) {
           <div className="mt-2 flex gap-2">
             <SubmitButton variant="danger" className="min-h-10 flex-1">Mark as not going ahead</SubmitButton>
             <button type="button" onClick={() => setOpen(null)} className="min-h-10 rounded-xl px-4 font-mono text-xs font-semibold uppercase tracking-wider text-slate-600 ring-1 ring-slate-300 hover:bg-white">Cancel</button>
-          </div>
-        </ActionForm>
-      )}
-
-      {open === "delete" && (
-        // Delete: gone for good (spam, a test, a double-up). Red, and says exactly what goes.
-        <ActionForm action={deleteLead} className="mt-3 rounded-xl bg-red-50 p-3.5 ring-1 ring-red-200">
-          <input type="hidden" name="job_id" value={p.jobId} />
-          <div data-lead-delete-confirm>
-            <p className="text-sm font-semibold text-red-800">Delete {p.first}&rsquo;s lead?</p>
-            <p className="mt-0.5 text-[13px] text-red-700">The lead, its notes and files go for good. This can&rsquo;t be undone.</p>
-            {p.otherJobs === 0 && (
-              <label className="mt-2.5 flex cursor-pointer items-center gap-2 text-[13px] font-medium text-red-800">
-                <input type="checkbox" name="remove_contact" defaultChecked className="h-4 w-4 accent-red-600" />Also delete {p.name} from Contacts
-              </label>
-            )}
-          </div>
-          <div className="mt-3 flex gap-2">
-            <SubmitButton variant="danger" className="min-h-10 flex-1">Delete lead</SubmitButton>
-            <button type="button" onClick={() => setOpen(null)} className="min-h-10 rounded-xl bg-white px-4 font-mono text-xs font-semibold uppercase tracking-wider text-slate-600 ring-1 ring-slate-300 hover:bg-slate-50">Cancel</button>
           </div>
         </ActionForm>
       )}

@@ -95,10 +95,11 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden" data-docket-scroll>
           {/* Ticket top: a receipt header (mono top line, the name, the street, NOW → NEXT, the stage bar). */}
-          <div className="px-5 pb-5 pt-4" data-docket-stages>
+          <div className="relative px-5 pb-5 pt-4" data-docket-stages>
             <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">
               <span className="min-w-0 flex-1 truncate">{tag}</span>
               {(lost || stageClock(d)) && <span className={cx("shrink-0", lost && "text-red-700")}>{lost ? "Lost" : stageClock(d)}</span>}
+              {!isCrewLead && <JobDelete jobId={j.id} name={d.customer.name} blocked={d.payments.length > 0 ? "paid" : d.invoices.some((i) => i.status !== "draft" && i.status !== "void") ? "invoiced" : null} hasQuote={Boolean(quote)} hasInvoices={d.invoices.length > 0} onlyJob={d.lead?.customerOtherJobs === 0} />}
               <Link href={closeHref} scroll={false} aria-label="Close" className="-my-1 -mr-2 grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-ink"><Icon d="M6 6l12 12M18 6L6 18" /></Link>
             </div>
             <div className="mt-3 border-t-2 border-dashed border-slate-200" />
@@ -177,7 +178,6 @@ export function JobDocket({ d, canSeeMoney, isCrewLead, closeHref, previewHref, 
           </>)}
           </details>
 
-          {!isCrewLead && <JobDelete jobId={j.id} name={d.customer.name} blocked={d.payments.length > 0 ? "paid" : d.invoices.some((i) => i.status !== "draft" && i.status !== "void") ? "invoiced" : null} hasQuote={Boolean(quote)} hasInvoices={d.invoices.length > 0} onlyJob={d.lead?.customerOtherJobs === 0} />}
         </div>
 
         {/* Team + call: only once it's sold (before that there's no crew to add, and Contact has text/call). */}
