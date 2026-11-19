@@ -4,11 +4,11 @@
 import Link from "next/link";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { ItemIcon } from "@/components/item-icons";
-import { cx } from "@/components/ui";
 import type { Docket } from "@/lib/job-docket-server";
 import { roofSheet } from "@/lib/roof-sheet";
 import { TORN } from "@/lib/torn";
 import { RoofDrawing } from "./document-drop";
+import { MarginEdit } from "./margin-edit";
 import { Icon } from "./job-section-ui";
 import { sendQuoteEmail } from "./quote-actions";
 
@@ -29,7 +29,6 @@ export function TaskQuote({ d, previewHref, minMarginPct = 0 }: { d: Docket; pre
   const sheet = d.roof ? roofSheet(d.roof.summary, d.roof.m) : null;
   const src = q.measurement_source;
   const mg = q.margin ?? null;
-  const low = Boolean(mg && minMarginPct > 0 && mg.pct < minMarginPct);
   const byClaude = Boolean(sheet) && (src === "plans" || src === "documents");
 
   return (
@@ -64,13 +63,7 @@ export function TaskQuote({ d, previewHref, minMarginPct = 0 }: { d: Docket; pre
           ) : (
             <p className="font-mono text-[12.5px] text-slate-500">No prices yet. Tap Edit to price it.</p>
           )}
-          {mg && (
-            // Only you see this: what you make on it (ex GST), flagged when it's under your minimum.
-            <div className="mt-2.5 flex items-baseline justify-between gap-3 border-t-2 border-dashed border-slate-200 pt-2.5 font-mono text-[12.5px]" data-task-margin={low ? "low" : "ok"}>
-              <span className="text-slate-500">Your margin <span className="text-slate-400">· ex GST</span>{low && <span className="block text-[11px] font-semibold text-amber-700">Under your {minMarginPct}% minimum</span>}</span>
-              <span className={cx("shrink-0 font-semibold tabular-nums", low ? "text-amber-700" : "text-green-700")}>{aud(mg.profit)} · {mg.pct.toFixed(1)}%</span>
-            </div>
-          )}
+          {mg && <MarginEdit estimateId={q.id} basis={mg.basis} profit={mg.profit} pct={mg.pct} total={q.total} minMarginPct={minMarginPct} />}
           <div className="mt-2.5 flex items-baseline justify-between border-t-2 border-dashed border-slate-200 pt-2.5">
             <span className="font-mono text-xs font-semibold uppercase tracking-wider text-slate-500">Total inc GST</span>
             <span className="font-display text-xl font-bold tabular-nums text-ink" data-task-total>{aud(q.total)}</span>

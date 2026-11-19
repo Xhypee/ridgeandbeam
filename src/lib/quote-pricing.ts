@@ -89,3 +89,72 @@ export function dueOnSigning(mode: string | null | undefined, when: string | nul
   if (mode === "full") return when === "signed";
   return true;
 }
+
+// ---------------------------------------------------------------------------------------------------------
+// Changing the margin from the job sidebar: by margin %, margin $ or the total. All three come down to a target
+// price ex GST; the quote margin that gets there is found and every costed line is repriced at it (applyMargin),
+// so lines without a cost keep their price, same as the quote editor.
+
+/** The counted lines boiled down: cost of costed lines, price of uncosted lines (in the lines' own GST convention). */
+export type MarginBasis = { costed: number; uncosted: number; discount: number; rate: number; inclusive: boolean };
+export type MarginTarget = { mode: "pct" | "profit" | "total"; value: number };
+
+export function marginBasis(lines: PricedLine[], discount: number, gstRatePct: number, inclusive: boolean): MarginBasis {
+  const live = lines.filter((l) => l.extra_status !== "offered" && !l.customer_removed);
+  let costed = 0, uncosted = 0;
+  for (const l of live) {
+    const q = Number(l.quantity) || 0;
+    if (Number(l.unit_cost) > 0) costed += q * Number(l.unit_cost);
+    else uncosted += q * (Number(l.unit_price) || 0);
+  }
+  return { costed: round2(costed), uncosted: round2(uncosted), discount: Math.max(0, Number(discount) || 0), rate: Math.max(0, Number(gstRatePct) || 0), inclusive };
+}
+
+/** What the quote comes to at quote margin m (0–1): ex GST, total, profit and margin %. */
+export function moneyAtMargin(b: MarginBasis, m: number) {
+  const k = b.inclusive ? 1 + b.rate / 100 : 1;
+  const exGst = Math.max(0, (b.costed * k / (1 - m) + b.uncosted - b.discount) / k);
+  const total = exGst * (1 + b.rate / 100);
+  const profit = exGst - b.costed;
+  return { exGst: round2(exGst), total: round2(total), profit: round2(profit), pct: exGst > 0 ? round2((profit / exGst) * 100) : 0 };
+}
+
+/** The quote margin (as a %, for applyMargin) that lands on the target, or why it can't. */
+export function marginForTarget(b: MarginBasis, t: MarginTarget): { marginPct: number } | { error: string } {
+  if (!(b.costed > 0)) return { error: "None of the lines have a cost yet, so there's no margin to change. Add costs in the price book." };
+  const v = Number(t.value);
+  if (!Number.isFinite(v)) return { error: "Type a number." };
+  const r = 1 + b.rate / 100;
+  const exGst = t.mode === "total" ? v / r : t.mode === "profit" ? b.costed + v : v >= 100 ? NaN : b.costed / (1 - v / 100);
+  if (!Number.isFinite(exGst) || exGst <= 0) return { error: "That margin isn't possible." };
+  const k = b.inclusive ? r : 1;
+  const sellCosted = exGst * k - b.uncosted + b.discount; // what the costed lines must add up to
+  if (sellCosted <= b.costed * k) return { error: `That's at or below what it costs you. The lowest is ${(moneyAtMargin(b, 0).total).toLocaleString("en-AU", { style: "currency", currency: "AUD" })}.` };
+  const m = 1 - (b.costed * k) / sellCosted;
+  if (m > 0.9) return { error: "That's over a 90% markup on the costs. Check the number." };
+  return { marginPct: m * 100 };
+}
+
+/** The price ex GST the target asks for. */
+export function targetExGst(b: MarginBasis, t: MarginTarget): number {
+  const v = Number(t.value);
+  return t.mode === "total" ? v / (1 + b.rate / 100) : t.mode === "profit" ? b.costed + v : b.costed / (1 - v / 100);
+}
+
+/** Reprice at the margin, then put the leftover cents from rounding on one line (the biggest costed line sold
+ *  as a quantity of 1, if there is one) so a typed total or margin lands exactly. `counts` marks the lines in the price. */
+export function repriceToTarget<T extends PricedLine>(lines: T[], counts: boolean[], b: MarginBasis, t: MarginTarget, marginPct: number): T[] {
+  const out = applyMargin(lines, marginPct, b.rate, b.inclusive);
+  const money = quoteMoney(out.filter((_, i) => counts[i]), b.rate, b.inclusive, b.discount);
+  const r = b.rate / 100;
+  const want = t.mode === "total" ? Number(t.value) : round2(targetExGst(b, t) * (1 + r));
+  const diffTotal = round2(want - money.total);
+  if (Math.abs(diffTotal) < 0.01 || Math.abs(diffTotal) > 5) return out;
+  let at = -1;
+  out.forEach((l, i) => {
+    if (counts[i] && Number(l.unit_cost) > 0 && Number(l.quantity) === 1 && l.extra_status !== "offered" && (at < 0 || l.unit_price > out[at].unit_price)) at = i;
+  });
+  if (at < 0) return out;
+  const step = b.inclusive ? diffTotal : round2(diffTotal / (1 + r));
+  return out.map((l, i) => (i === at ? { ...l, unit_price: round2(l.unit_price + step) } : l));
+}
