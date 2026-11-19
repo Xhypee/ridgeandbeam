@@ -8,7 +8,7 @@ import { marginForTarget, moneyAtMargin, type MarginBasis, type MarginTarget } f
 import { setQuoteMargin } from "./quote-margin-actions";
 
 const aud = (n: number) => n.toLocaleString("en-AU", { style: "currency", currency: "AUD", minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
-const MODES: { key: MarginTarget["mode"]; label: string }[] = [{ key: "pct", label: "Margin %" }, { key: "profit", label: "Margin $" }, { key: "total", label: "Total" }];
+const MODES: { key: MarginTarget["mode"]; label: string; short: string }[] = [{ key: "pct", label: "Margin %", short: "%" }, { key: "profit", label: "Margin $", short: "$" }, { key: "total", label: "Total", short: "Total" }];
 const PEN = "M4 20l4-1 11-11-3-3L5 16zM14 6l3 3";
 
 export function MarginEdit({ estimateId, basis, profit, pct, total, minMarginPct }: { estimateId: string; basis: MarginBasis; profit: number; pct: number; total: number; minMarginPct: number }) {
@@ -52,30 +52,38 @@ export function MarginEdit({ estimateId, basis, profit, pct, total, minMarginPct
     );
   }
 
-  const prefix = mode === "pct" ? null : "$";
+  const bad = err ?? (r && "error" in r ? r.error : null);
+  const show = at ?? { profit, pct };
   return (
-    <div className="mt-2.5 border-t-2 border-dashed border-slate-200 pt-3" data-margin-editor>
-      <p className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-slate-400">Change the price by</p>
-      <div className="mt-1.5 grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1" role="tablist">
-        {MODES.map((m) => (
-          <button key={m.key} type="button" role="tab" aria-selected={mode === m.key} onClick={() => pick(m.key)} data-margin-mode={m.key}
-            className={cx("h-9 rounded-lg font-mono text-[11px] font-semibold uppercase tracking-wider", mode === m.key ? "bg-white text-ink ring-1 ring-slate-300" : "text-slate-500 hover:text-ink")}>{m.label}</button>
-        ))}
+    <div className="mt-2.5 border-t-2 border-dashed border-slate-200 pt-2.5" data-margin-editor>
+      {/* The margin line shows the new margin as you type. */}
+      <div className="flex items-baseline justify-between gap-3 font-mono text-[12.5px]">
+        <span className="text-slate-500">Your margin <span className="text-slate-400">· ex GST</span></span>
+        <span className={cx("shrink-0 font-semibold tabular-nums", atLow || (!at && low) ? "text-amber-700" : "text-green-700")} data-margin-preview>{aud(show.profit)} · {show.pct.toFixed(1)}%</span>
       </div>
-      <label className="mt-2 flex h-12 items-center gap-1 rounded-xl bg-white px-3 ring-1 ring-slate-300 focus-within:ring-2 focus-within:ring-ink">
-        {prefix && <span className="font-display text-lg font-bold text-slate-400">{prefix}</span>}
-        <input autoFocus inputMode="decimal" value={value} onChange={(e) => { setValue(e.target.value); setErr(null); }} onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") setOpen(false); }}
-          aria-label={MODES.find((m) => m.key === mode)!.label} className="min-w-0 flex-1 bg-transparent font-display text-lg font-bold tabular-nums text-ink outline-none" data-margin-input />
-        {mode === "pct" && <span className="font-display text-lg font-bold text-slate-400">%</span>}
-        {mode === "total" && <span className="font-mono text-[10.5px] uppercase tracking-wider text-slate-400">inc GST</span>}
-      </label>
-      <p className={cx("mt-2 font-mono text-[12px] leading-snug", err || (r && "error" in r) ? "text-red-700" : atLow ? "text-amber-700" : "text-slate-500")} data-margin-preview>
-        {err ?? (r && "error" in r ? r.error : at ? <>Total <b className="text-ink">{aud(at.total)}</b> · margin {aud(at.profit)} · {at.pct.toFixed(1)}%{atLow ? ` · under your ${minMarginPct}% minimum` : ""}</> : "Type a number.")}
-      </p>
-      <div className="mt-2.5 flex justify-end gap-1">
-        <button type="button" onClick={() => setOpen(false)} className="h-10 rounded-xl px-4 font-mono text-xs font-semibold uppercase tracking-wider text-slate-500 hover:bg-slate-50 hover:text-ink">Cancel</button>
-        <button type="button" onClick={save} disabled={!at || saving} className="h-10 rounded-xl bg-ink px-5 font-mono text-xs font-semibold uppercase tracking-wider text-white hover:bg-ink/90 disabled:opacity-40" data-margin-save>{saving ? "Saving…" : "Save price"}</button>
+      {/* One row: change by (% · $ · Total) · the number, with the new total in it · Save · close. */}
+      <div className="mt-2 flex items-center gap-1.5">
+        <div className="flex shrink-0 rounded-lg bg-slate-100 p-0.5" role="tablist" aria-label="Change the price by">
+          {MODES.map((m) => (
+            <button key={m.key} type="button" role="tab" aria-selected={mode === m.key} onClick={() => pick(m.key)} data-margin-mode={m.key} title={m.label}
+              className={cx("h-9 rounded-md px-2.5 font-mono text-[11px] font-semibold uppercase tracking-wider", mode === m.key ? "bg-white text-ink ring-1 ring-slate-300" : "text-slate-500 hover:text-ink")}>{m.short}</button>
+          ))}
+        </div>
+        <label className={cx("flex h-10 min-w-0 flex-1 items-center gap-0.5 rounded-lg bg-white px-2 ring-1 focus-within:ring-2", bad ? "ring-red-300 focus-within:ring-red-500" : "ring-slate-300 focus-within:ring-ink")}>
+          {mode !== "pct" && <span className="font-display text-[15px] font-bold text-slate-400">$</span>}
+          <input autoFocus inputMode="decimal" value={value} onChange={(e) => { setValue(e.target.value); setErr(null); }} onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") setOpen(false); }}
+            aria-label={MODES.find((m) => m.key === mode)!.label} className="w-full min-w-0 bg-transparent font-display text-[15px] font-bold tabular-nums text-ink outline-none" data-margin-input />
+          {mode === "pct" && <span className="font-display text-[15px] font-bold text-slate-400">%</span>}
+          {mode !== "total" && at && <span className="ml-1 shrink-0 font-mono text-[11px] tabular-nums text-slate-500" data-margin-new-total>= {aud(at.total)}</span>}
+          {mode === "total" && <span className="ml-1 shrink-0 font-mono text-[10px] uppercase tracking-wider text-slate-400">inc GST</span>}
+        </label>
+        <button type="button" onClick={save} disabled={!at || saving} className="h-10 shrink-0 rounded-lg bg-ink px-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-ink/90 disabled:opacity-40" data-margin-save>{saving ? "…" : "Save"}</button>
+        <button type="button" onClick={() => setOpen(false)} aria-label="Cancel" title="Cancel" className="grid h-10 w-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-slate-50 hover:text-ink">
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
       </div>
+      {/* Only when something's wrong (or under the minimum). */}
+      {(bad || atLow) && <p className={cx("mt-1.5 font-mono text-[11.5px] leading-snug", bad ? "text-red-700" : "text-amber-700")} data-margin-problem>{bad ?? `Under your ${minMarginPct}% minimum`}</p>}
     </div>
   );
 }
