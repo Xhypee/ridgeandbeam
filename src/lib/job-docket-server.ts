@@ -14,6 +14,7 @@ import { nextStep, pipelineColumn, type NextStep, type PipelineColumn } from "./
 import { asNextStepJob, loadNextStepCtx, NEXT_STEP_JOB_COLS } from "./next-step-server";
 import { normalizeMeasurements, summarize, type CostedItem, type Measurements, type RoofSummary } from "./roof";
 import { effectiveOptionId, itemsForOption, marginExGst, type EstimateOptionLite } from "./estimate-totals";
+import { marginBasis, type MarginBasis } from "./quote-pricing";
 import type { Organization } from "./types";
 
 type Person = { user_id: string; full_name: string | null; email: string | null; role: string; phone: string | null };
@@ -38,7 +39,7 @@ export type Docket = {
     id: string; number: number; status: string; public_token: string; sent_at: string | null; accepted_at: string | null; accepted_name: string | null;
     roof_profile: string | null; roof_colour: string | null; measurement_source: string | null; total: number; gst: number;
     /** Ex GST: profit and margin % on the price, and the cost. Null when the lines have no costs. */
-    margin?: { profit: number; pct: number; cost: number } | null;
+    margin?: { profit: number; pct: number; cost: number; basis: MarginBasis } | null;
     lines: { description: string; quantity: number; unit: string; amount: number; extra_status: string | null; calc_key: string | null }[];
   } | null;
   roof: { summary: RoofSummary; m: Measurements } | null;
@@ -123,7 +124,7 @@ export async function loadDocket(supabase: SupabaseClient, org: Organization, jo
   const quoteMargin = (x: E) => {
     const items = itemsForOption((x.estimate_items ?? []).map((i) => ({ ...i, quantity: Number(i.quantity), unit_price: Number(i.unit_price), unit_cost: Number(i.unit_cost) || 0 })), effectiveOptionId(x.estimate_options ?? [], x.selected_option_id));
     const mg = marginExGst(items as unknown as CostedItem[], Number(x.discount) || 0, Number(x.tax_rate ?? 10), x.gst_inclusive !== false);
-    return mg.cost > 0 ? { profit: mg.profit, pct: mg.pct, cost: mg.cost } : null;
+    return mg.cost > 0 ? { profit: mg.profit, pct: mg.pct, cost: mg.cost, basis: marginBasis(items, Number(x.discount) || 0, Number(x.tax_rate ?? 10), x.gst_inclusive !== false) } : null;
   };
   const e = list.find((x) => x.status === "accepted") ?? list.find((x) => x.status === "sent") ?? list[0] ?? null;
   const et = e ? one(e.estimate_totals as { total: number; tax: number }) : null;
