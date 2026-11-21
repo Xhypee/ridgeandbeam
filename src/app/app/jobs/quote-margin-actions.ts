@@ -1,7 +1,7 @@
 "use server";
 // Change a draft quote's margin from the job sidebar: by margin %, margin $ or the total. Finds the quote margin
 // that lands there, reprices every costed line at it (lines without a cost keep their price) and saves it as the
-// quote's margin, same as the quote editor's margin box.
+// quote's margin, same as the quote editor's margin box. It also becomes the margin new quotes start at.
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type { ActionResult } from "@/components/action-form";
@@ -14,7 +14,7 @@ const Input = z.object({ estimateId: z.uuid(), mode: z.enum(["pct", "profit", "t
 export async function setQuoteMargin(input: z.input<typeof Input>): Promise<ActionResult> {
   const p = Input.safeParse(input);
   if (!p.success) return { error: "Type a number." };
-  const { supabase } = await requireMoneyAccess();
+  const { supabase, org } = await requireMoneyAccess();
   const { data: est } = await supabase.from("estimates")
     .select("id, status, discount, tax_rate, gst_inclusive, selected_option_id, estimate_options!estimate_options_estimate_id_fkey(id, position, recommended), estimate_items(id, quantity, unit_price, unit_cost, option_id, extra_status)")
     .eq("id", p.data.estimateId).maybeSingle();
@@ -33,9 +33,11 @@ export async function setQuoteMargin(input: z.input<typeof Input>): Promise<Acti
   const inPrice = new Set(counted.map((i) => i.id));
   const repriced = repriceToTarget(items, items.map((i) => inPrice.has(i.id)), basis, target, r.marginPct);
   const changed = repriced.filter((x, i) => x.unit_price !== items[i].unit_price);
+  const pct = Math.round(r.marginPct * 100) / 100;
   const results = await Promise.all([
     ...changed.map((x) => supabase.from("estimate_items").update({ unit_price: x.unit_price }).eq("id", x.id)),
-    supabase.from("estimates").update({ margin_pct: Math.round(r.marginPct * 100) / 100 }).eq("id", est.id),
+    supabase.from("estimates").update({ margin_pct: pct }).eq("id", est.id),
+    supabase.rpc("set_quote_margin", { p_org: org.id, p_pct: pct }),
   ]);
   const failed = results.find((x) => x.error);
   if (failed?.error) return { error: "Couldn't save the new price. Try again." };

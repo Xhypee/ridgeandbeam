@@ -12,7 +12,7 @@ const friendly = (e: { message?: string } | null) => (e?.message ?? "Couldn't sa
 
 async function editableEstimate(id: string) {
   const ctx = await requireMoneyAccess();
-  const { data: est } = await ctx.supabase.from("estimates").select("id, status, job_id, org_id, jobs(customer_id)").eq("id", id).maybeSingle();
+  const { data: est } = await ctx.supabase.from("estimates").select("id, status, job_id, org_id, margin_pct, jobs(customer_id)").eq("id", id).maybeSingle();
   if (!est) return { ctx, est: null, error: "Quote not found." } as const;
   if (est.status === "accepted") return { ctx, est: null, error: "This quote is signed and locked. Duplicate it to make changes." } as const;
   return { ctx, est, error: null } as const;
@@ -66,6 +66,9 @@ export async function saveQuoteMoney(input: z.input<typeof Money>): Promise<Acti
     margin_pct: p.data.margin_pct, payment_mode: p.data.payment_mode, payment_when: p.data.payment_when, payment_stages: stages,
   }).eq("id", p.data.id);
   if (e) return { error: friendly(e) };
+  // A margin someone changed here sticks: new quotes start at it.
+  const before = est.margin_pct === null || est.margin_pct === undefined ? null : Number(est.margin_pct);
+  if (p.data.margin_pct !== null && p.data.margin_pct !== before) await ctx.supabase.rpc("set_quote_margin", { p_org: ctx.org.id, p_pct: p.data.margin_pct });
   return { ok: "Saved." };
 }
 

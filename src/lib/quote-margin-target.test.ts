@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyMargin, marginBasis, marginForTarget, moneyAtMargin, quoteMoney, repriceToTarget } from "./quote-pricing";
+import { applyMargin, marginBasis, marginForTarget, moneyAtMargin, quoteMarginFor, quoteMoney, repriceToTarget, withQuoteMargin } from "./quote-pricing";
 
 // Priya's valley repair: four costed lines plus labour, prices inc GST, an offered extra that doesn't count.
 const lines = [
@@ -62,5 +62,21 @@ describe("changing the margin from the sidebar", () => {
     const r = marginForTarget(b3, t);
     if (!("marginPct" in r)) throw new Error("no margin");
     expect(Math.abs(quoteMoney(repriceToTarget(lines, lines.map(() => true), b3, t, r.marginPct), 10, false).profit - 600)).toBeLessThanOrEqual(0.01);
+  });
+});
+
+describe("the margin sticks for new quotes", () => {
+  it("uses the quote's own margin first, then the one last set", () => {
+    expect(quoteMarginFor(28, 31.6)).toBe(28);
+    expect(quoteMarginFor(null, 31.6)).toBe(31.6);
+    expect(quoteMarginFor(null, "31.60")).toBe(31.6);
+    expect(quoteMarginFor(undefined, null)).toBeNull();
+  });
+  it("prices costed lines at it and leaves the rest", () => {
+    const lines = [{ quantity: 2, unit_price: 50, unit_cost: 40 }, { quantity: 1, unit_price: 99, unit_cost: 0 }];
+    const out = withQuoteMargin(lines, 20, { inclusive: true, gstRatePct: 10 });
+    expect(out[0].unit_price).toBe(55);
+    expect(out[1].unit_price).toBe(99);
+    expect(withQuoteMargin(lines, null, { inclusive: true, gstRatePct: 10 })).toBe(lines);
   });
 });

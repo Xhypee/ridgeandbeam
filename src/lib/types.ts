@@ -23,6 +23,8 @@ export type Organization = {
   payment_schedule: { label: string; pct: number; trigger: string }[];
   financing: { enabled: boolean; apr: number; term_months: number; lenders: { name: string; url: string; dealer_fee_pct?: number }[] };
   min_margin_pct: number;
+  /** The margin last set on a quote; new quotes are priced at it until someone changes it. */
+  quote_margin_pct?: number | null;
   bundles_per_square: number;
   card_fee_pct: number;
   pass_card_fee: boolean;

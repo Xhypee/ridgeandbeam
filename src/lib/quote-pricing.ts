@@ -17,6 +17,17 @@ export function applyMargin<T extends PricedLine>(lines: T[], marginPct: number,
   return lines.map((l) => (Number(l.unit_cost) > 0 ? { ...l, unit_price: priceFromCost(l.unit_cost, marginPct, gstRatePct, inclusive) } : l));
 }
 
+/** The margin a quote is priced at: its own, else the one last set on a quote (null: the price book's markups). */
+export function quoteMarginFor(own: number | string | null | undefined, saved: number | string | null | undefined): number | null {
+  for (const v of [own, saved]) if (v !== null && v !== undefined && v !== "" && Number.isFinite(Number(v))) return Number(v);
+  return null;
+}
+
+/** Lines priced at the quote margin, or left at the price book's markups when there isn't one. */
+export function withQuoteMargin<T extends PricedLine>(lines: T[], marginPct: number | null, mode: { inclusive: boolean; gstRatePct: number }): T[] {
+  return marginPct === null ? lines : applyMargin(lines, marginPct, mode.gstRatePct, mode.inclusive);
+}
+
 export type QuoteMoney = { cost: number; exGst: number; gst: number; total: number; profit: number; marginPct: number; uncosted: number };
 
 /** Totals for the lines in the price (offered extras and lines the customer removed are left out). */
