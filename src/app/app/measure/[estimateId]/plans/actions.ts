@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireMoneyAccess } from "@/lib/dal";
 import { friendly } from "@/lib/form";
 import { fillQuoteLines } from "@/lib/docket";
+import { quoteMarginFor, withQuoteMargin } from "@/lib/quote-pricing";
 import { quotePriceBook, usableCatalog } from "@/lib/docket-server";
 import { isCalculatorLine, type CatalogRow, type DraftItem } from "@/lib/estimating";
 import { mergeMeasurements, METAL_PROFILE_INFO, METAL_PROFILES, normalizeMeasurements, type MetalProfile } from "@/lib/roof";
@@ -19,7 +20,7 @@ async function estimateCtx(estimateId: string) {
   const ctx = await requireMoneyAccess();
   const { data: est } = await ctx.supabase
     .from("estimates")
-    .select("id, org_id, job_id, status, measurements, org_supplier_id, tax_rate, gst_inclusive, option_label, discount, notes, terms, estimate_items(*), estimate_options!estimate_options_estimate_id_fkey(*), jobs(id, title, site_address, state, zip, job_type, roof_material, notes, customer_id, customers(id, name, address, city, state, zip))")
+    .select("id, org_id, job_id, status, measurements, margin_pct, org_supplier_id, tax_rate, gst_inclusive, option_label, discount, notes, terms, estimate_items(*), estimate_options!estimate_options_estimate_id_fkey(*), jobs(id, title, site_address, state, zip, job_type, roof_material, notes, customer_id, customers(id, name, address, city, state, zip))")
     .eq("id", estimateId)
     .maybeSingle();
   return { ...ctx, est };
@@ -124,7 +125,9 @@ export async function savePlansTakeoff(input: SavePlansInput): Promise<Result & 
   }));
   const custom = existing.filter((it) => !isCalculatorLine(it, calcNames));
   const built = fillQuoteLines({ m, book, options, mode, previous: existing, colour: d.colour || null, keepCustom: custom });
-  const generated = built.items;
+  // Priced at the quote margin (this quote's, or the one last set on a quote), when there is one.
+  const margin = quoteMarginFor(est.margin_pct, org.quote_margin_pct);
+  const generated = withQuoteMargin(built.items, margin, mode);
   const { error: saveErr } = await supabase.rpc("save_estimate_content", {
     p_id: est.id,
     p_estimate: {
@@ -136,6 +139,7 @@ export async function savePlansTakeoff(input: SavePlansInput): Promise<Result & 
     p_items: [...generated, ...custom],
   });
   if (saveErr) return { error: friendly(saveErr) };
+  if (margin !== null && est.margin_pct === null) await supabase.from("estimates").update({ margin_pct: margin }).eq("id", est.id);
 
   // 3. Job and customer details the user ticked.
   const street = value("street"), suburb = value("suburb"), state = value("state"), postcode = value("postcode");

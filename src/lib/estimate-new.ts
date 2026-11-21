@@ -3,7 +3,7 @@ import type { requireOrg } from "./dal";
 
 type Ctx = Awaited<ReturnType<typeof requireOrg>>;
 
-/** A new draft quote for a job with the org's defaults (GST, supplier, terms, waste). */
+/** A new draft quote for a job with the org's defaults (GST, supplier, terms, waste, the quote margin last used). */
 export async function insertDraftEstimate({ supabase, org, user }: Ctx, jobId: string) {
   return supabase
     .from("estimates")
@@ -15,6 +15,7 @@ export async function insertDraftEstimate({ supabase, org, user }: Ctx, jobId: s
       org_supplier_id: org.default_supplier_id ?? null,
       terms: org.estimate_terms,
       measurements: { units: "metric", wastePct: Number(org.default_waste_pct) },
+      margin_pct: org.quote_margin_pct === null || org.quote_margin_pct === undefined ? null : Number(org.quote_margin_pct),
       created_by: user.id,
     })
     .select("id")
