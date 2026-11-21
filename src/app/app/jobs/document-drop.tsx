@@ -318,8 +318,10 @@ export function DocumentDrop({ jobId, estimateId, variant = "sidebar", measured 
           onDragOver={(e) => { e.preventDefault(); if (!busy && !reading) setOver(true); }}
           onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(false); }}
           onDrop={onDrop}
+          // A click anywhere on the box opens the file picker (the "a folder" link still opens the folder picker).
+          onClick={(e) => { if (busy || reading || (e.target as HTMLElement).closest("button, input")) return; files.current?.click(); }}
           data-plan-line={reading ? "reading" : busy ? "uploading" : "waiting"}
-          className={cx("rounded-2xl transition", over ? "ring-2 ring-ink" : "ring-1 ring-slate-200")} style={GRID}>
+          className={cx("rounded-2xl transition", over ? "ring-2 ring-ink" : "ring-1 ring-slate-200", !busy && !reading && "cursor-pointer hover:ring-slate-400")} style={GRID}>
           {reading ? (
             <div className="px-4 py-5"><ReadingLine done={reading.done} total={reading.total} name={readingName} /></div>
           ) : busy ? (
